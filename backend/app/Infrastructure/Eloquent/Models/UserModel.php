@@ -8,10 +8,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class UserModel extends Authenticatable
 {
-    use HasApiTokens, HasUuids, SoftDeletes;
+    use HasApiTokens, HasUuids, SoftDeletes, HasFactory;
 
     protected $connection = 'tenant';
     protected $table = 'users';

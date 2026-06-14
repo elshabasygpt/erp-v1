@@ -50,5 +50,35 @@ class RepositoryServiceProvider extends ServiceProvider
         foreach ($this->bindings as $abstract => $concrete) {
             $this->app->bind($abstract, $concrete);
         }
+
+        // HR
+        $this->app->bind(
+            \App\Domain\HR\Repositories\EmployeeRepositoryInterface::class,
+            \App\Infrastructure\Eloquent\Repositories\HR\EloquentEmployeeRepository::class
+        );
+        $this->app->bind(
+            \App\Domain\HR\Repositories\AttendanceRepositoryInterface::class,
+            \App\Infrastructure\Eloquent\Repositories\HR\EloquentAttendanceRepository::class
+        );
+        $this->app->bind(
+            \App\Domain\HR\Repositories\PayrollRepositoryInterface::class,
+            \App\Infrastructure\Eloquent\Repositories\HR\EloquentPayrollRepository::class
+        );
+
+        // Treasury
+        $this->app->bind(
+            \App\Domain\Treasury\Repositories\SafeRepositoryInterface::class,
+            \App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeRepository::class
+        );
+        $this->app->bind(
+            \App\Domain\Treasury\Repositories\SafeTransactionRepositoryInterface::class,
+            \App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeTransactionRepository::class
+        );
+
+        // Approvals
+        $this->app->bind(
+            \App\Domain\Approvals\Repositories\ApprovalRepositoryInterface::class,
+            \App\Infrastructure\Eloquent\Repositories\Approvals\EloquentApprovalRepository::class
+        );
     }
 }

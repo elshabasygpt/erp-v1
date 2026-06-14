@@ -294,11 +294,11 @@ export const fixedAssetsApi = {
 
 export const analyticsApi = {
     getInventoryForecast: (threshold?: number) => 
-        api.get('/analytics/inventory-forecast', { params: { threshold } }),
+        api.get('/forecasting/inventory-forecast', { params: { threshold } }),
     autoDraftPurchaseOrder: (warehouseId: string) => 
-        api.post('/analytics/auto-draft-po', { warehouse_id: warehouseId }),
+        api.post('/forecasting/auto-draft-po', { warehouse_id: warehouseId }),
     getPartnerForecast: () => 
-        api.get('/analytics/partner-forecast'),
+        api.get('/forecasting/partner-forecast'),
 };
 
 export const reportsApi = {

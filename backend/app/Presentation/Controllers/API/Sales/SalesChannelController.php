@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Presentation\Controllers\Sales;
+namespace App\Presentation\Controllers\API\Sales;
 
 use App\Application\Sales\DTOs\SalesChannelDTO;
 use App\Application\Sales\UseCases\CreateSalesChannelUseCase;

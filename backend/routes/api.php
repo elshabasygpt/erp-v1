@@ -44,8 +44,8 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
     // Sales / POS
     Route::prefix('sales')->group(function () {
         // Channels
-        Route::post('/channels/upload-image', [\App\Presentation\Controllers\Sales\SalesChannelController::class, 'uploadImage']);
-        Route::apiResource('channels', \App\Presentation\Controllers\Sales\SalesChannelController::class);
+        Route::post('/channels/upload-image', [\App\Presentation\Controllers\API\Sales\SalesChannelController::class, 'uploadImage']);
+        Route::apiResource('channels', \App\Presentation\Controllers\API\Sales\SalesChannelController::class);
         
         Route::get('/invoices', [InvoiceController::class, 'index']);
         Route::post('/invoices/bulk', [InvoiceController::class, 'bulkStore'])->middleware('throttle:30,1');
@@ -324,7 +324,7 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
     });
 
     // AI & Forecasting Analytics
-    Route::prefix('analytics')->group(function () {
+    Route::prefix('forecasting')->group(function () {
         Route::get('/inventory-forecast', [\App\Presentation\Controllers\API\Analytics\ForecastingController::class, 'getInventoryForecast']);
         Route::post('/auto-draft-po', [\App\Presentation\Controllers\API\Analytics\ForecastingController::class, 'autoDraftPurchaseOrder']);
         Route::get('/partner-forecast', [\App\Presentation\Controllers\API\Analytics\ForecastingController::class, 'getPartnerForecast']);

@@ -6,12 +6,13 @@ namespace App\Infrastructure\Eloquent\Models\Approvals;
 
 use App\Infrastructure\Eloquent\Models\BaseTenantModel;
 use App\Infrastructure\Eloquent\Models\UserModel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApprovalRequestModel extends BaseTenantModel
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $table = 'approval_requests';
 

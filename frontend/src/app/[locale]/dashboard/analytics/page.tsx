@@ -28,7 +28,7 @@ export default function AIAnalyticsPage() {
     const runInventoryForecast = async () => {
         setLoading(l => ({ ...l, forecast: true }));
         try {
-            const res = await api.get('/analytics/inventory-forecast', { params: { threshold } });
+            const res = await api.get('/forecasting/inventory-forecast', { params: { threshold } });
             setForecastData(res.data?.data);
         } catch { setForecastData(null); } finally { setLoading(l => ({ ...l, forecast: false })); }
     };
@@ -36,7 +36,7 @@ export default function AIAnalyticsPage() {
     const runPartnerForecast = async () => {
         setLoading(l => ({ ...l, partnerForecast: true }));
         try {
-            const res = await api.get('/analytics/partner-forecast');
+            const res = await api.get('/forecasting/partner-forecast');
             setPartnerForecast(res.data?.data);
         } catch { setPartnerForecast(null); } finally { setLoading(l => ({ ...l, partnerForecast: false })); }
     };
@@ -46,7 +46,7 @@ export default function AIAnalyticsPage() {
         setLoading(l => ({ ...l, autoPO: true }));
         setAutoPO(null);
         try {
-            const res = await api.post('/analytics/auto-draft-po', { warehouse_id: selectedWarehouse });
+            const res = await api.post('/forecasting/auto-draft-po', { warehouse_id: selectedWarehouse });
             setAutoPO(res.data?.data);
         } catch (err: any) {
             alert(err?.response?.data?.message || 'Error generating purchase order');
