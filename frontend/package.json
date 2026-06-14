@@ -1,0 +1,41 @@
+{
+    "name": "saas-accounting-frontend",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "@ducanh2912/next-pwa": "^10.2.9",
+        "@radix-ui/react-slot": "^1.0.2",
+        "@tanstack/react-query": "^5.20.0",
+        "axios": "^1.6.0",
+        "class-variance-authority": "^0.7.0",
+        "clsx": "^2.1.0",
+        "date-fns": "^3.3.0",
+        "idb": "^8.0.3",
+        "lucide-react": "^0.330.0",
+        "next": "14.2.0",
+        "next-intl": "^4.9.1",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "recharts": "^2.12.0",
+        "tailwind-merge": "^2.2.0",
+        "tailwindcss-animate": "^1.0.7",
+        "xlsx": "^0.18.5"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "@types/react": "^18.2.0",
+        "@types/react-dom": "^18.2.0",
+        "autoprefixer": "^10.4.17",
+        "eslint": "^8.56.0",
+        "eslint-config-next": "14.2.0",
+        "postcss": "^8.4.33",
+        "tailwindcss": "^3.4.0",
+        "typescript": "^5.3.0"
+    }
+}

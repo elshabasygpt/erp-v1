@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: pos-11-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=saas_accounting_central
+      - DB_USERNAME=pos_user
+      - DB_PASSWORD=pos_secret
+      - REDIS_HOST=redis
+      - CACHE_STORE=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+    networks:
+      - pos-network
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    ports:
+      - "5499:5432"
+    environment:
+      - POSTGRES_DB=saas_accounting_central
+      - POSTGRES_USER=pos_user
+      - POSTGRES_PASSWORD=pos_secret
+    volumes:
+      - pos-db-data:/var/lib/postgresql/data
+    networks:
+      - pos-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - pos-redis-data:/data
+    networks:
+      - pos-network
+
+  queue:
+    image: pos-11-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan queue:work --tries=3
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DATABASE=saas_accounting_central
+      - DB_USERNAME=pos_user
+      - DB_PASSWORD=pos_secret
+      - REDIS_HOST=redis
+      - CACHE_STORE=redis
+      - QUEUE_CONNECTION=redis
+    networks:
+      - pos-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: pos-11-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    depends_on:
+      - app
+    networks:
+      - pos-network
+
+volumes:
+  pos-db-data:
+  pos-redis-data:
+
+networks:
+  pos-network:
+    driver: bridge
