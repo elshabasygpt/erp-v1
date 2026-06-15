@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class GetAgingReportUseCase
 {
-    public function execute(): array
+    public function execute(string $tenantId): array
     {
         $sql = "
             SELECT 
@@ -21,7 +21,9 @@ class GetAgingReportUseCase
                 SUM(CASE WHEN CURRENT_DATE - i.due_date > 90 THEN i.total - i.paid_amount ELSE 0 END) as over_90_days
             FROM customers c
             JOIN invoices i ON c.id = i.customer_id
-            WHERE i.type = 'credit' 
+            WHERE c.tenant_id = :tenantId
+              AND i.tenant_id = :tenantId
+              AND i.type = 'credit' 
               AND i.payment_status != 'paid'
               AND i.due_date IS NOT NULL
               AND i.due_date < CURRENT_DATE
@@ -30,6 +32,6 @@ class GetAgingReportUseCase
             ORDER BY over_90_days DESC, _61_90_days DESC
         ";
 
-        return DB::select($sql);
+        return DB::select($sql, ['tenantId' => $tenantId]);
     }
 }

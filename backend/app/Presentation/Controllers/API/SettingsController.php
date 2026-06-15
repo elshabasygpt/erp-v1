@@ -13,7 +13,7 @@ class SettingsController extends BaseTenantController
      */
     public function index(Request $request): JsonResponse
     {
-        $settings = DB::table('tenant_settings')->pluck('value', 'key');
+        $settings = DB::table('tenant_settings')->where('tenant_id', $this->getTenantId($request))->pluck('value', 'key');
 
         return $this->success([
             'company_name' => $settings['company_name'] ?? null,
@@ -46,15 +46,22 @@ class SettingsController extends BaseTenantController
                     $value = json_encode($value);
                 }
                 
-                $exists = DB::table('tenant_settings')->where('key', $key)->exists();
+                $exists = DB::table('tenant_settings')
+                    ->where('tenant_id', $this->getTenantId($request))
+                    ->where('key', $key)
+                    ->exists();
                 if ($exists) {
-                    DB::table('tenant_settings')->where('key', $key)->update([
-                        'value' => $value,
-                        'updated_at' => now()
-                    ]);
+                    DB::table('tenant_settings')
+                        ->where('tenant_id', $this->getTenantId($request))
+                        ->where('key', $key)
+                        ->update([
+                            'value' => $value,
+                            'updated_at' => now()
+                        ]);
                 } else {
                     DB::table('tenant_settings')->insert([
                         'id' => \Illuminate\Support\Str::uuid(),
+                        'tenant_id' => $this->getTenantId($request),
                         'key' => $key,
                         'value' => $value,
                         'created_at' => now(),

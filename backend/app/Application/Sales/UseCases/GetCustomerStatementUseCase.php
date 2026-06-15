@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class GetCustomerStatementUseCase
 {
-    public function execute(string $customerId, ?string $fromDate = null, ?string $toDate = null): array
+    public function execute(string $tenantId, string $customerId, ?string $fromDate = null, ?string $toDate = null): array
     {
         // Get all credit invoices
         $invoicesQuery = DB::table('invoices')
@@ -21,6 +21,7 @@ class GetCustomerStatementUseCase
                 DB::raw("0 as credit"),
                 'notes as description'
             ])
+            ->where('tenant_id', $tenantId)
             ->where('customer_id', $customerId)
             ->where('type', 'credit')
             ->where('status', 'confirmed');
@@ -39,6 +40,7 @@ class GetCustomerStatementUseCase
                 'amount as credit',
                 'notes as description'
             ])
+            ->where('tenant_id', $tenantId)
             ->where('customer_id', $customerId)
             ->where('status', 'completed');
 

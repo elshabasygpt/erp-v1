@@ -20,9 +20,9 @@ class CollectPaymentUseCase
         private readonly JournalEntryRepositoryInterface $journalEntryRepository
     ) {}
 
-    public function execute(array $data, string $userId): CustomerPaymentModel
+    public function execute(string $tenantId, array $data, string $userId): CustomerPaymentModel
     {
-        return DB::transaction(function () use ($data, $userId) {
+        return DB::transaction(function () use ($tenantId, $data, $userId) {
             $customer = CustomerModel::findOrFail($data['customer_id']);
 
             // 1. Create Payment Record
@@ -96,6 +96,7 @@ class CollectPaymentUseCase
     {
         // Try getting the primary safe for current user
         $safeId = DB::table('safe_users')
+            ->where('tenant_id', $tenantId)
             ->where('user_id', $userId)
             ->where('is_primary', true)
             ->value('safe_id');
@@ -103,7 +104,7 @@ class CollectPaymentUseCase
         if (!$safeId) {
             // Fallback: if cash payment, get first cash safe. Else get first bank safe.
             $safeType = $payment->payment_method === 'cash' ? 'cash' : 'bank';
-            $safeId = \App\Infrastructure\Eloquent\Models\SafeModel::where('type', $safeType)->value('id');
+            $safeId = \App\Infrastructure\Eloquent\Models\SafeModel::where('tenant_id', $tenantId)->where('type', $safeType)->value('id');
         }
 
         if ($safeId) {
