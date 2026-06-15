@@ -186,6 +186,18 @@ class InvoiceController extends BaseTenantController
                 $confirmUseCase->execute($invoice->id, auth()->id() ?? '');
                 // The use case changes status to confirmed and persists.
                 $invoice->refresh();
+
+                \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
+                    tenantId: (string) $this->getTenantId($request),
+                    event: 'invoice.confirmed',
+                    payload: [
+                        'invoice_id'     => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'total'          => $invoice->total,
+                        'customer_id'    => $invoice->customer_id,
+                        'status'         => 'confirmed',
+                    ]
+                );
             } catch (\Exception $e) {
                 \Log::error('Confirmation failed: ' . $e->getMessage());
                 return $this->error('Failed to confirm invoice: ' . $e->getMessage(), 500);

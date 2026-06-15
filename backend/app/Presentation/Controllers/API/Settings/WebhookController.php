@@ -19,10 +19,12 @@ class WebhookController extends BaseTenantController
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'url' => 'required|url',
-            'name' => 'nullable|string',
-            'events' => 'required|array',
-            'is_active' => 'boolean',
+            'url'       => 'required|url|max:500',
+            'events'    => 'required|array|min:1',
+            'events.*'  => 'required|string|in:invoice.confirmed,purchase.confirmed,stock.transfer.received,payroll.generated,*',
+            'is_active' => 'sometimes|boolean',
+            'secret'    => 'nullable|string|max:255',
+            'name'      => 'nullable|string',
         ]);
 
         $validated['secret'] = 'whsec_' . Str::random(32);
@@ -33,7 +35,7 @@ class WebhookController extends BaseTenantController
         return $this->created($endpoint, 'Webhook created successfully');
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $endpoint = WebhookEndpointModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         return $this->success($endpoint);
@@ -44,10 +46,12 @@ class WebhookController extends BaseTenantController
         $endpoint = WebhookEndpointModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
 
         $validated = $request->validate([
-            'url' => 'required|url',
-            'name' => 'nullable|string',
-            'events' => 'required|array',
-            'is_active' => 'boolean',
+            'url'       => 'required|url|max:500',
+            'events'    => 'required|array|min:1',
+            'events.*'  => 'required|string|in:invoice.confirmed,purchase.confirmed,stock.transfer.received,payroll.generated,*',
+            'is_active' => 'sometimes|boolean',
+            'secret'    => 'nullable|string|max:255',
+            'name'      => 'nullable|string',
         ]);
 
         $endpoint->update($validated);
@@ -55,7 +59,7 @@ class WebhookController extends BaseTenantController
         return $this->success($endpoint, 'Webhook updated successfully');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $endpoint = WebhookEndpointModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         $endpoint->delete();
@@ -63,7 +67,7 @@ class WebhookController extends BaseTenantController
         return $this->success(null, 'Webhook deleted successfully');
     }
 
-    public function getLogs($id)
+    public function getLogs(Request $request, $id)
     {
         $logs = WebhookLogModel::where('tenant_id', $this->getTenantId($request))->where('endpoint_id', $id)
             ->orderBy('created_at', 'desc')

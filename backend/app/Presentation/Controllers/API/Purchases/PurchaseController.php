@@ -167,6 +167,16 @@ class PurchaseController extends BaseTenantController
                 $paymentType = $validated['payment_type'] ?? 'cash';
                 $this->confirmPurchaseUseCase->execute($purchase->id, $paymentType, auth()->id() ?? '');
                 $purchase->refresh();
+
+                \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
+                    tenantId: (string) $this->getTenantId($request),
+                    event: 'purchase.confirmed',
+                    payload: [
+                        'purchase_id' => $purchase->id,
+                        'supplier_id' => $purchase->supplier_id,
+                        'total'       => $purchase->total,
+                    ]
+                );
             } catch (\Exception $e) {
                 \Log::error('Purchase confirmation failed: ' . $e->getMessage());
                 return $this->error('Failed to confirm purchase: ' . $e->getMessage(), 500);

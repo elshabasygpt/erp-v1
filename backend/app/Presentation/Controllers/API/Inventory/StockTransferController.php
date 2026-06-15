@@ -88,6 +88,17 @@ class StockTransferController extends BaseTenantController
 
         try {
             $transfer = $this->service->receiveTransfer($id, $userId, $data['items'] ?? []);
+            
+            \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
+                tenantId: (string) $this->getTenantId($request),
+                event: 'stock.transfer.received',
+                payload: [
+                    'transfer_id'    => $transfer->id,
+                    'from_warehouse' => $transfer->from_warehouse_id,
+                    'to_warehouse'   => $transfer->to_warehouse_id,
+                ]
+            );
+
             return $this->success(['transfer' => $transfer], 'Stock transfer received and inventory added.');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
