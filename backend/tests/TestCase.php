@@ -24,49 +24,67 @@ abstract class TestCase extends BaseTestCase
         });
     }
 
-    protected function refreshTestDatabase()
+                    protected function refreshTestDatabase()
     {
-        $sqlite = \Illuminate\Support\Facades\DB::connection('sqlite');
-        $pgsql = \Illuminate\Support\Facades\DB::connection('pgsql');
-        $tenant = \Illuminate\Support\Facades\DB::connection('tenant');
+        // Override all connections to use sqlite
+        $sqliteConfig = [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+            'prefix'   => '',
+            'foreign_key_constraints' => false,
+        ];
 
-        $pgsql->setPdo($sqlite->getPdo());
-        $tenant->setPdo($sqlite->getPdo());
+        config(['database.connections.pgsql'  => $sqliteConfig]);
+        config(['database.connections.tenant' => $sqliteConfig]);
+        config(['database.default'            => 'sqlite']);
 
-        $sync = function ($target, $source) {
-            $target->transactions = &$source->transactions;
-        };
-        $sync = $sync->bindTo(null, \Illuminate\Database\Connection::class);
-        $sync($pgsql, $sqlite);
-        $sync($tenant, $sqlite);
+        if (!\Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated) {
 
-        if (! \Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated) {
-            \Illuminate\Support\Facades\DB::connection('sqlite')->commit();
+            // Purge cached connections ONLY on first run
+            \DB::purge('pgsql');
+            \DB::purge('tenant');
+            \DB::purge('sqlite');
 
-            Artisan::call('migrate:fresh', [
+            // Get fresh sqlite connection
+            $sqlite = \DB::connection('sqlite');
+
+            // Bump transaction levels so any further beginTransaction() uses savepoints
+            \DB::connection('pgsql')->beginTransaction();
+            \DB::connection('tenant')->beginTransaction();
+
+            // Share PDO with all connections
+            \DB::connection('pgsql')->setPdo($sqlite->getPdo());
+            \DB::connection('tenant')->setPdo($sqlite->getPdo());
+
+            // Run all migrations on sqlite
+            \Artisan::call('migrate:fresh', [
                 '--database' => 'sqlite',
+                '--force'    => true,
             ]);
 
-            // Now we ONLY run migrations on the sqlite connection because they share the same PDO!
-            Artisan::call('migrate', [
+            \Artisan::call('migrate', [
                 '--path'     => 'database/migrations/central',
                 '--database' => 'sqlite',
                 '--force'    => true,
             ]);
 
-            Artisan::call('migrate', [
+            \Artisan::call('migrate', [
                 '--path'     => 'database/migrations/tenant',
                 '--database' => 'sqlite',
                 '--force'    => true,
             ]);
 
-            if (!\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('cache')) {
-                \Illuminate\Support\Facades\Schema::connection('sqlite')->create('cache', function (\Illuminate\Database\Schema\Blueprint $table) {
+            // Create cache tables manually if missing
+            if (!\Schema::connection('sqlite')->hasTable('cache')) {
+                \Schema::connection('sqlite')->create('cache', function ($table) {
                     $table->string('key')->primary();
                     $table->mediumText('value');
                     $table->integer('expiration');
                 });
-                \Illuminate\Support\Facades\Schema::connection('sqlite')->create('cache_locks', function (\Illuminate\Database\Schema\Blueprint $table) {
+            }
+
+            if (!\Schema::connection('sqlite')->hasTable('cache_locks')) {
+                \Schema::connection('sqlite')->create('cache_locks', function ($table) {
                     $table->string('key')->primary();
                     $table->string('owner');
                     $table->integer('expiration');
@@ -74,13 +92,24 @@ abstract class TestCase extends BaseTestCase
             }
 
             \Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated = true;
+            
+            // Share the sqlite PDO for all memory connections so Laravel natively reuses it!
+            foreach (['sqlite', 'pgsql', 'tenant'] as $name) {
+                \Illuminate\Foundation\Testing\RefreshDatabaseState::$inMemoryConnections[$name] = $sqlite->getPdo();
+            }
+        } else {
+            // For subsequent tests, just ensure the PDO is shared
+            $sqlite = \DB::connection('sqlite');
+
+            // Bump transaction levels so any further beginTransaction() uses savepoints
+            \DB::connection('pgsql')->beginTransaction();
+            \DB::connection('tenant')->beginTransaction();
+
+            \DB::connection('pgsql')->setPdo($sqlite->getPdo());
+            \DB::connection('tenant')->setPdo($sqlite->getPdo());
         }
 
         $this->beginDatabaseTransaction();
-
-        foreach ($this->connectionsToTransact() as $name) {
-            \Illuminate\Foundation\Testing\RefreshDatabaseState::$inMemoryConnections[$name] = \Illuminate\Support\Facades\DB::connection($name)->getPdo();
-        }
     }
 
     protected function connectionsToTransact()
@@ -98,46 +127,69 @@ abstract class TestCase extends BaseTestCase
         parent::tearDown();
     }
 
-    protected function actingAsAuthenticatedUser($tenantId = 1)   {
-        $this->withoutMiddleware(\App\Presentation\Middleware\TenantMiddleware::class);
+        protected function actingAsAuthenticatedUser($tenantId = 1): void
+    {
+        // Bypass tenant middleware completely
+        $this->withoutMiddleware([
+            \App\Presentation\Middleware\TenantMiddleware::class,
+        ]);
 
-        // Create a Tenant in the central database
-        $tenantId = '1';
-        $tenant = \App\Infrastructure\Eloquent\Models\TenantModel::where('id', $tenantId)->first();
-        if (!$tenant) {
-            $tenant = \App\Infrastructure\Eloquent\Models\TenantModel::forceCreate([
-                'id' => $tenantId,
-                'name' => 'Test Tenant',
-                'domain' => 'test.example.com',
-                'database_name' => 'tenant', // This doesn't matter because DatabaseManager is mocked or we share PDO
-                'status' => 'active',
+        // Create tenant directly via DB (bypass Eloquent UUID issues)
+        $tenantExists = \DB::connection('sqlite')
+            ->table('tenants')
+            ->where('id', '00000000-0000-0000-0000-000000000001')
+            ->exists();
+
+        if (!$tenantExists) {
+            \DB::connection('sqlite')->table('tenants')->insert([
+                'id'            => '00000000-0000-0000-0000-000000000001',
+                'name'          => 'Test Tenant',
+                'domain'        => 'test.example.com',
+                'database_name' => 'sqlite',
+                'status'        => 'active',
+                'created_at'    => now(),
+                'updated_at'    => now(),
             ]);
         }
 
-        // Bind current tenant to the container, since we disabled the middleware
+        $tenant = \App\Infrastructure\Eloquent\Models\TenantModel::find(
+            '00000000-0000-0000-0000-000000000001'
+        );
+
+        // Bind tenant to container
         $this->app->instance('current_tenant', $tenant);
 
-        if (!\App\Infrastructure\Eloquent\Models\RoleModel::where('name', 'admin')->exists()) {
-            $role = \App\Infrastructure\Eloquent\Models\RoleModel::forceCreate([
-                'id' => \Illuminate\Support\Str::uuid()->toString(),
-                'name' => 'admin',
+        // Create or get admin role
+        $role = \DB::connection('sqlite')
+            ->table('roles')
+            ->where('name', 'admin')
+            ->first();
+
+        if (!$role) {
+            $roleId = \Illuminate\Support\Str::uuid()->toString();
+            \DB::connection('sqlite')->table('roles')->insert([
+                'id'         => $roleId,
+                'name'       => 'admin',
                 'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         } else {
-            $role = \App\Infrastructure\Eloquent\Models\RoleModel::where('name', 'admin')->first();
+            $roleId = $role->id;
         }
 
-        $user = UserModel::factory()->create([
-            'email'     => 'test@example.com',
-            'role_id'   => $role->id,
+        // Create test user
+        $user = \App\Infrastructure\Eloquent\Models\UserModel::factory()->create([
+            'tenant_id' => '00000000-0000-0000-0000-000000000001',
+            'email'     => 'test_' . uniqid() . '@example.com',
+            'role_id'   => $roleId,
         ]);
 
         $this->actingAs($user, 'sanctum');
-        
-        // Add the Tenant ID header for all subsequent API requests in the test!
-        // We pass the domain because if it's not a UUID, the middleware checks domain
+
         $this->withHeaders([
             'X-Tenant-ID' => 'test.example.com',
+            'Accept'      => 'application/json',
         ]);
     }
 

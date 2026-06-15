@@ -1,20 +1,15 @@
 <?php
-
 namespace Tests\Feature\Inventory;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Infrastructure\Eloquent\Models\WarehouseModel;
-use App\Infrastructure\Eloquent\Models\BranchModel;
+use Illuminate\Support\Str;
 
 class InventoryTest extends TestCase
 {
     public function test_can_list_products(): void
     {
-        dump(getcwd());
-        dump(database_path('migrations/central'));
-        dump(glob(database_path('migrations/central') . '/*_*.php'));
         $this->actingAsAuthenticatedUser();
 
         $response = $this->getJson('/api/inventory/products');
@@ -31,17 +26,14 @@ class InventoryTest extends TestCase
             'name'          => 'منتج تجريبي',
             'sku'           => 'SKU-TEST-001',
             'barcode'       => '1234567890',
-            'price'         => 100.00,
-            'cost'          => 60.00,
+            'selling_price' => 100.00,
+            'purchase_price'=> 60.00,
             'stock'         => 50,
-            'sell_price'    => 150,
             'min_stock'     => 5,
-            'unit'          => 'piece',
+            'unit_of_measure' => 'piece',
         ]);
 
-        if ($response->status() !== 201) {
-            dump($response->json());
-        }
+        if ($response->status() !== 201) { dump($response->json()); }
         $response->assertStatus(201)
                  ->assertJsonPath('data.name', 'منتج تجريبي');
     }
@@ -54,6 +46,7 @@ class InventoryTest extends TestCase
 
         $response = $this->getJson("/api/inventory/products/{$product->id}");
 
+        if ($response->status() !== 200) { dump($response->json()); }
         $response->assertStatus(200);
     }
 
@@ -65,9 +58,10 @@ class InventoryTest extends TestCase
 
         $response = $this->putJson("/api/inventory/products/{$product->id}", [
             'name'  => 'منتج محدّث',
-            'price' => 150.00,
+            'selling_price' => 150.00,
         ]);
 
+        if ($response->status() !== 200) { dump($response->json()); }
         $response->assertStatus(200);
     }
 
@@ -79,15 +73,18 @@ class InventoryTest extends TestCase
 
         $response = $this->deleteJson("/api/inventory/products/{$product->id}");
 
+        if ($response->status() !== 200) { dump($response->json()); }
         $response->assertStatus(200);
     }
 
     public function test_can_search_products_by_barcode(): void
     {
         $this->actingAsAuthenticatedUser();
+        ProductModel::factory()->create(['barcode' => '1234567890']);
 
         $response = $this->getJson('/api/inventory/products/barcode/1234567890');
 
+        if ($response->status() !== 200) { dump($response->json()); }
         $response->assertStatus(200);
     }
 
@@ -97,6 +94,7 @@ class InventoryTest extends TestCase
 
         $response = $this->getJson('/api/inventory/warehouses');
 
+        if ($response->status() !== 200) { dump($response->json()); }
         $response->assertStatus(200)
                  ->assertJsonStructure(['data']);
     }
@@ -104,12 +102,18 @@ class InventoryTest extends TestCase
     public function test_can_create_warehouse(): void
     {
         $this->actingAsAuthenticatedUser();
-
+        $branchId = Str::uuid()->toString();
+        \DB::connection('tenant')->table('branches')->insert([
+            'id' => $branchId,
+            'name' => 'Test Branch', 'name_ar' => 'Test Branch',
+            'tenant_id' => '00000000-0000-0000-0000-000000000001',
+        ]);
         $response = $this->postJson('/api/inventory/warehouses', [
             'name'     => 'مستودع رئيسي',
             'location' => 'الرياض',
+            'branch_id'=> $branchId,
         ]);
-
+        if ($response->status() !== 201) { dump($response->json()); }
         $response->assertStatus(201);
     }
 
@@ -119,6 +123,7 @@ class InventoryTest extends TestCase
 
         $response = $this->getJson('/api/inventory/movements');
 
+        if ($response->status() !== 200) { dump($response->json()); }
         $response->assertStatus(200)
                  ->assertJsonStructure(['data']);
     }
@@ -133,15 +138,17 @@ class InventoryTest extends TestCase
         $response = $this->postJson('/api/inventory/adjustments', [
             'warehouse_id' => $warehouse->id,
             'notes'        => 'جرد دوري',
+            'type'         => 'reconciliation',
+            'date'         => now()->toDateString(),
             'items'        => [
                 [
                     'product_id'   => $product->id,
-                    'quantity'     => 10,
-                    'reason'       => 'count_adjustment',
+                    'actual_quantity'=> 60,
                 ],
             ],
         ]);
 
+        if ($response->status() !== 201) { dump($response->json()); }
         $response->assertStatus(201);
     }
 

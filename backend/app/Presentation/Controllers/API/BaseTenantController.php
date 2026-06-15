@@ -9,9 +9,9 @@ abstract class BaseTenantController extends BaseController
     /**
      * جيب الـ tenant_id من الـ authenticated user
      */
-    protected function getTenantId(Request $request): int
+    protected function getTenantId(Request $request): string
     {
-        return (int) ($request->user()->tenant_id ?? 0);
+        return (string) ($request->user()->tenant_id ?? '');
     }
 
     /**
@@ -28,7 +28,7 @@ abstract class BaseTenantController extends BaseController
 
         $tenantId = $this->getTenantId($request);
 
-        if ((int) ($model->$column ?? 0) !== $tenantId) {
+        if ((string) ($model->$column ?? '') !== $tenantId) {
             abort(403, 'Access denied. Resource belongs to another tenant.');
         }
     }

@@ -19,7 +19,7 @@ return new class extends Migration
 
             if (!$connection->hasColumn($table, 'tenant_id')) {
                 $connection->table($table, function (Blueprint $blueprint) {
-                    $blueprint->uuid('tenant_id')->default('1')->after('id');
+                    $blueprint->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->after('id');
                 });
             }
         }
