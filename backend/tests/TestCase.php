@@ -19,11 +19,8 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
         
         \Illuminate\Database\Eloquent\Factories\Factory::guessFactoryNamesUsing(function (string $modelName) {
-            if (str_ends_with($modelName, 'UserModel')) return \Database\Factories\UserFactory::class;
-            if (str_ends_with($modelName, 'EmployeeModel')) return \Database\Factories\EmployeeFactory::class;
-            if (str_ends_with($modelName, 'SafeModel')) return \Database\Factories\SafeFactory::class;
-            if (str_ends_with($modelName, 'ApprovalRequestModel')) return \Database\Factories\ApprovalRequestFactory::class;
-            return 'Database\\Factories\\'.class_basename($modelName).'Factory';
+            $basename = str_replace('Model', '', class_basename($modelName));
+            return 'Database\\Factories\\'.$basename.'Factory';
         });
     }
 
@@ -36,11 +33,12 @@ abstract class TestCase extends BaseTestCase
         $pgsql->setPdo($sqlite->getPdo());
         $tenant->setPdo($sqlite->getPdo());
 
-        $sync = function ($source) {
-            $this->transactions = &$source->transactions;
+        $sync = function ($target, $source) {
+            $target->transactions = &$source->transactions;
         };
-        $sync->call($pgsql, $sqlite);
-        $sync->call($tenant, $sqlite);
+        $sync = $sync->bindTo(null, \Illuminate\Database\Connection::class);
+        $sync($pgsql, $sqlite);
+        $sync($tenant, $sqlite);
 
         if (! \Illuminate\Foundation\Testing\RefreshDatabaseState::$migrated) {
             \Illuminate\Support\Facades\DB::connection('sqlite')->commit();
@@ -90,8 +88,17 @@ abstract class TestCase extends BaseTestCase
         return ['sqlite'];
     }
 
-    protected function actingAsAuthenticatedUser(): void
+    protected function tearDown(): void
     {
+        $pdo = \Illuminate\Support\Facades\DB::connection('sqlite')->getPdo();
+        while ($pdo && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        parent::tearDown();
+    }
+
+    protected function actingAsAuthenticatedUser($tenantId = 1)   {
         $this->withoutMiddleware(\App\Presentation\Middleware\TenantMiddleware::class);
 
         // Create a Tenant in the central database

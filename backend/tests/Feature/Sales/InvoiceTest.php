@@ -17,6 +17,8 @@ class InvoiceTest extends TestCase
         $product = ProductModel::create([
             'id' => \Illuminate\Support\Str::uuid()->toString(),
             'name' => 'Test Product',
+            'name_ar' => 'Test Product AR',
+            'sku' => 'SKU-TEST',
             'barcode' => '123456789',
             'type' => 'standard',
             'cost_price' => 50,
@@ -27,6 +29,7 @@ class InvoiceTest extends TestCase
         $invoice = InvoiceModel::create([
             'id' => \Illuminate\Support\Str::uuid()->toString(),
             'invoice_number' => 'INV-001',
+            'type' => 'tax',
             'invoice_date' => now(),
             'subtotal' => 200,
             'vat_amount' => 30,

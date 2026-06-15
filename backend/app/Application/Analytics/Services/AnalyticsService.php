@@ -34,7 +34,7 @@ class AnalyticsService
                 default => "TO_CHAR(invoice_date, 'YYYY-MM-DD')"
             };
 
-            return DB::connection('tenant')->table('invoices')
+            return DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->where('status', 'confirmed')
                 ->whereBetween('invoice_date', [$startDate, $endDate])
                 ->select(
@@ -60,7 +60,7 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('profitability', $filters);
 
         $data = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate, $dimension) {
-            $query = DB::connection('tenant')->table('invoice_items')
+            $query = DB::connection('tenant')->table('invoice_items')->where('tenant_id', $this->tenantId)
                 ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
                 ->where('invoices.status', 'confirmed')
                 ->whereBetween('invoices.invoice_date', [$startDate, $endDate]);
@@ -120,7 +120,7 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('sales_channel', $filters);
 
         $data = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate) {
-            return DB::connection('tenant')->table('invoices')
+            return DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->where('status', 'confirmed')
                 ->whereBetween('invoice_date', [$startDate, $endDate])
                 ->select(
@@ -144,12 +144,12 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('returns_analysis', $filters);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate) {
-            $totalSales = DB::connection('tenant')->table('invoices')
+            $totalSales = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->where('status', 'confirmed')
                 ->whereBetween('invoice_date', [$startDate, $endDate])
                 ->sum(DB::raw('subtotal - discount_amount'));
 
-            $returns = DB::connection('tenant')->table('sales_returns')
+            $returns = DB::connection('tenant')->table('sales_returns')->where('tenant_id', $this->tenantId)
                 ->where('status', 'completed')
                 ->whereBetween('return_date', [$startDate, $endDate])
                 ->select(
@@ -178,7 +178,7 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('customer_lifetime_value', $filters);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () {
-            $metrics = DB::connection('tenant')->table('invoices')
+            $metrics = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->where('status', 'confirmed')
                 ->whereNotNull('customer_id')
                 ->select(
@@ -198,7 +198,7 @@ class AnalyticsService
             
             $historicalClv = $averageOrderValue * $purchaseFrequency;
 
-            $topCustomers = DB::connection('tenant')->table('invoices')
+            $topCustomers = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->join('customers', 'invoices.customer_id', '=', 'customers.id')
                 ->where('invoices.status', 'confirmed')
                 ->select(
@@ -230,7 +230,7 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('discount_analysis', $filters);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate) {
-            $metrics = DB::connection('tenant')->table('invoices')
+            $metrics = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->where('status', 'confirmed')
                 ->whereBetween('invoice_date', [$startDate, $endDate])
                 ->select(
@@ -243,7 +243,7 @@ class AnalyticsService
             $totalDiscounts = (float)($metrics->total_discounts ?? 0);
             $discountRate = $grossSales > 0 ? ($totalDiscounts / $grossSales) * 100 : 0;
 
-            $discountsBySalesperson = DB::connection('tenant')->table('invoices')
+            $discountsBySalesperson = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->join('users', 'invoices.salesperson_id', '=', 'users.id')
                 ->where('invoices.status', 'confirmed')
                 ->whereBetween('invoices.invoice_date', [$startDate, $endDate])
@@ -277,7 +277,7 @@ class AnalyticsService
         $data = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate) {
             $revenueSql = 'invoice_items.quantity * invoice_items.unit_price * (1 - COALESCE(invoice_items.discount_percent, 0) / 100)';
 
-            return DB::connection('tenant')->table('invoice_items')
+            return DB::connection('tenant')->table('invoice_items')->where('tenant_id', $this->tenantId)
                 ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
                 ->join('products', 'invoice_items.product_id', '=', 'products.id')
                 ->where('invoices.status', 'confirmed')
@@ -304,15 +304,15 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('conversion_funnel', $filters);
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate) {
-            $quotations = DB::connection('tenant')->table('quotations')
+            $quotations = DB::connection('tenant')->table('quotations')->where('tenant_id', $this->tenantId)
                 ->whereBetween('quotation_date', [$startDate, $endDate])
                 ->count();
 
-            $salesOrders = DB::connection('tenant')->table('sales_orders')
+            $salesOrders = DB::connection('tenant')->table('sales_orders')->where('tenant_id', $this->tenantId)
                 ->whereBetween('order_date', [$startDate, $endDate])
                 ->count();
 
-            $convertedInvoices = DB::connection('tenant')->table('invoices')
+            $convertedInvoices = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->whereBetween('invoice_date', [$startDate, $endDate])
                 ->whereNotNull('reference_no') 
                 ->count();

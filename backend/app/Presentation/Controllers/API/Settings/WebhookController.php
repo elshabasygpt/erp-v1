@@ -32,7 +32,7 @@ class WebhookController extends BaseTenantController
         $validated['tenant_id'] = $this->getTenantId($request);
         $endpoint = WebhookEndpointModel::create($validated);
 
-        return $this->created($endpoint, 'Webhook created successfully');
+        return response()->json(['data' => $endpoint, 'message' => 'Webhook created successfully'], 201);
     }
 
     public function show(Request $request, $id)

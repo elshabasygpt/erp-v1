@@ -14,7 +14,7 @@ final class AccountingService
         private JournalEntryRepositoryInterface $journalEntryRepository,
     ) {}
 
-    public function generateIncomeStatement(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function generateIncomeStatement(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId): array
     {
         // Instead of fetching all ledger lines, we fetch aggregated balances.
         // We can use a modified trial balance query that accepts date ranges.
@@ -99,7 +99,7 @@ final class AccountingService
 
     private function getAggregatedBalances(\DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        return \Illuminate\Support\Facades\DB::connection('tenant')->table('journal_entry_lines')
+        return \Illuminate\Support\Facades\DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
             ->join('journal_entries','journal_entry_lines.journal_entry_id','=','journal_entries.id')
             ->join('accounts','journal_entry_lines.account_id','=','accounts.id')
             ->where('journal_entries.is_posted', true)

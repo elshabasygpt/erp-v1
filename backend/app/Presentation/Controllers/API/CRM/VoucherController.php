@@ -56,6 +56,7 @@ class VoucherController extends BaseTenantController
             
             $journalId = Str::uuid()->toString();
             DB::connection('tenant')->table('journal_entries')->insert([
+                'tenant_id' => $this->getTenantId($request),
                 'id' => $journalId,
                 'entry_number' => 'JE-' . time() . '-' . rand(10, 99),
                 'date' => $validated['date'],
@@ -78,9 +79,10 @@ class VoucherController extends BaseTenantController
             // Dummy logic representing the two sides of the accounting equation
             // Side A: Asset/Expense
             DB::connection('tenant')->table('journal_entry_lines')->insert([
+                'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'journal_entry_id' => $journalId,
-                'account_id' => self::getSystemAccountId('cash_or_expense'), // Abstracted resolver
+                'account_id' => self::getSystemAccountId('cash_or_expense', $this->getTenantId($request)), // Abstracted resolver
                 'debit' => $isCustomerCredit ? $validated['amount'] : 0,
                 'credit' => $isCustomerCredit ? 0 : $validated['amount'],
                 'description' => 'حساب نقدية/أخرى',
@@ -90,9 +92,10 @@ class VoucherController extends BaseTenantController
 
             // Side B: Accounts Receivable (Customer)
             DB::connection('tenant')->table('journal_entry_lines')->insert([
+                'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'journal_entry_id' => $journalId,
-                'account_id' => self::getSystemAccountId('accounts_receivable'),
+                'account_id' => self::getSystemAccountId('accounts_receivable', $this->getTenantId($request)),
                 'debit' => $isCustomerCredit ? 0 : $validated['amount'],
                 'credit' => $isCustomerCredit ? $validated['amount'] : 0,
                 'description' => 'ذمم عملاء',
@@ -114,14 +117,15 @@ class VoucherController extends BaseTenantController
      * Helper to resolve standard system accounts.
      * In a full system, these are queried from Settings or constants.
      */
-    private static function getSystemAccountId(string $alias): string
+    private static function getSystemAccountId(string $alias, int|string $tenantId): string
     {
         // Simple mock returning the first asset/revenue account IDs to avoid crash.
-        $acc = DB::connection('tenant')->table('accounts')->first();
+        $acc = DB::connection('tenant')->table('accounts')->where('tenant_id', $tenantId)->first();
         if (!$acc) {
             // Seed a dummy account if pure empty DB
             $id = Str::uuid()->toString();
             DB::connection('tenant')->table('accounts')->insert([
+                'tenant_id' => $tenantId,
                 'id' => $id,
                 'code' => rand(1000, 9999),
                 'name' => 'System Account ' . $alias,

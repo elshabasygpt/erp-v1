@@ -19,6 +19,11 @@ class UserModel extends Authenticatable
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Infrastructure\Eloquent\Models\Scopes\TenantScope);
+    }
+
     protected $fillable = [
         'name', 'email', 'password', 'role_id', 'branch_id',
         'is_active', 'phone', 'locale', 'commission_rate',

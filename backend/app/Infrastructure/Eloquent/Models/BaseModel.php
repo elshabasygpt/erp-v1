@@ -23,4 +23,9 @@ class BaseModel extends Model
     {
         return 'tenant';
     }
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new \App\Infrastructure\Eloquent\Models\Scopes\TenantScope);
+    }
 }

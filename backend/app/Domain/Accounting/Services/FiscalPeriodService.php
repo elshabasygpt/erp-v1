@@ -85,6 +85,7 @@ final class FiscalPeriodService
         }
 
         DB::connection('tenant')->table('fiscal_periods')
+            ->where('tenant_id', $tenantId)
             ->where('id', $periodId)
             ->update([
                 'status' => 'closed',
@@ -119,6 +120,7 @@ final class FiscalPeriodService
         }
 
         DB::connection('tenant')->table('fiscal_periods')
+            ->where('tenant_id', $tenantId)
             ->where('id', $periodId)
             ->update([
                 'status' => 'open',
@@ -154,6 +156,7 @@ final class FiscalPeriodService
         $id = Str::uuid()->toString();
 
         DB::connection('tenant')->table('fiscal_periods')->insert([
+            'tenant_id' => $tenantId,
             'id' => $id,
             'name' => $name,
             'start_date' => $startDate,

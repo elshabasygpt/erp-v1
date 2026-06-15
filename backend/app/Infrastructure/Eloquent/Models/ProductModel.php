@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 class ProductModel extends BaseModel
 {
+    use HasFactory;
+
     protected $table = 'products';
 
     protected $fillable = [

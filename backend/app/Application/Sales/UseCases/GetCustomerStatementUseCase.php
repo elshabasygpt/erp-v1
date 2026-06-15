@@ -11,7 +11,7 @@ class GetCustomerStatementUseCase
     public function execute(string $tenantId, string $customerId, ?string $fromDate = null, ?string $toDate = null): array
     {
         // Get all credit invoices
-        $invoicesQuery = DB::table('invoices')
+        $invoicesQuery = DB::table('invoices')->where('tenant_id', $tenantId)
             ->select([
                 'id',
                 'invoice_date as date',
@@ -30,7 +30,7 @@ class GetCustomerStatementUseCase
         if ($toDate) $invoicesQuery->whereDate('invoice_date', '<=', $toDate);
 
         // Get all payments
-        $paymentsQuery = DB::table('customer_payments')
+        $paymentsQuery = DB::table('customer_payments')->where('tenant_id', $tenantId)
             ->select([
                 'id',
                 'payment_date as date',

@@ -99,6 +99,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        //
+        $this->app->singleton('validation.presence', function ($app) {
+            return new \App\Infrastructure\Validation\TenantPresenceVerifier($app['db']);
+        });
     }
 }

@@ -13,18 +13,18 @@ class ReportingService
     public function getProfitAndLoss(string $startDate, string $endDate): array
     {
         // Revenues: Total confirmed sales invoices
-        $totalSales = DB::connection('tenant')->table('invoices')
+        $totalSales = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
             ->where('status', 'confirmed')
             ->whereBetween('invoice_date', [$startDate, $endDate])
             ->sum('total');
 
         // Expenses: Safe transactions of type 'withdrawal' for expenses
-        $totalExpenses = DB::connection('tenant')->table('expenses')
+        $totalExpenses = DB::connection('tenant')->table('expenses')->where('tenant_id', $this->tenantId)
             ->whereBetween('expense_date', [$startDate, $endDate])
             ->sum('amount');
         
         // Purchases: Total confirmed purchase invoices
-        $totalPurchases = DB::connection('tenant')->table('purchase_invoices')
+        $totalPurchases = DB::connection('tenant')->table('purchase_invoices')->where('tenant_id', $this->tenantId)
             ->where('status', 'confirmed')
             ->whereBetween('invoice_date', [$startDate, $endDate])
             ->sum('total');
@@ -51,8 +51,8 @@ class ReportingService
 
     public function getVatReport(string $year, string $period, string $value): array
     {
-        $querySales = DB::connection('tenant')->table('invoices')->where('status', 'confirmed');
-        $queryPurchases = DB::connection('tenant')->table('purchase_invoices')->where('status', 'confirmed');
+        $querySales = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)->where('status', 'confirmed');
+        $queryPurchases = DB::connection('tenant')->table('purchase_invoices')->where('tenant_id', $this->tenantId)->where('status', 'confirmed');
 
         if ($period === 'monthly') {
             $querySales->whereYear('invoice_date', $year)->whereMonth('invoice_date', $value);
@@ -90,15 +90,15 @@ class ReportingService
     {
         try {
             // Total items
-            $totalItems = DB::connection('tenant')->table('products')->count();
+            $totalItems = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)->count();
 
             // Total stock quantity & financial valuation (qty * average_cost)
-            $inventoryValue = DB::connection('tenant')->table('products')
+            $inventoryValue = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)
                 ->selectRaw('SUM(stock_quantity * price) as total_value')
                 ->first()
                 ->total_value ?? 0;
 
-            $lowStockItems = DB::connection('tenant')->table('products')
+            $lowStockItems = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)
                 ->where('stock_quantity', '<=', 5) // Hardcoded threshold for now
                 ->take(10)
                 ->get();
@@ -117,11 +117,11 @@ class ReportingService
 
     public function getAccountsReport(): array
     {
-        $safes = DB::connection('tenant')->table('safes')->get();
+        $safes = DB::connection('tenant')->table('safes')->where('tenant_id', $this->tenantId)->get();
         $totalLiquidity = $safes->sum('balance');
 
         // Recent deposits and withdrawals
-        $recentTransactions = DB::connection('tenant')->table('safe_transactions')
+        $recentTransactions = DB::connection('tenant')->table('safe_transactions')->where('tenant_id', $this->tenantId)
             ->orderBy('transaction_date', 'desc')
             ->take(20)
             ->get();
@@ -136,20 +136,20 @@ class ReportingService
     public function getGeneralKpis(): array
     {
         // Totals
-        $totalSales = DB::connection('tenant')->table('invoices')->where('status', 'confirmed')->sum('total');
-        $totalPurchases = DB::connection('tenant')->table('purchase_invoices')->where('status', 'confirmed')->sum('total');
-        $totalExpenses = DB::connection('tenant')->table('expenses')->sum('amount');
+        $totalSales = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)->where('status', 'confirmed')->sum('total');
+        $totalPurchases = DB::connection('tenant')->table('purchase_invoices')->where('tenant_id', $this->tenantId)->where('status', 'confirmed')->sum('total');
+        $totalExpenses = DB::connection('tenant')->table('expenses')->where('tenant_id', $this->tenantId)->sum('amount');
         
-        $totalProducts = DB::connection('tenant')->table('products')->count();
-        $totalCustomers = DB::connection('tenant')->table('customers')->count();
+        $totalProducts = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)->count();
+        $totalCustomers = DB::connection('tenant')->table('customers')->where('tenant_id', $this->tenantId)->count();
 
         // Financial Distribution (Pie Chart)
-        $assets = DB::connection('tenant')->table('safes')->sum('balance') + DB::connection('tenant')->table('customers')->sum('balance');
-        $liabilities = DB::connection('tenant')->table('suppliers')->sum('balance');
+        $assets = DB::connection('tenant')->table('safes')->where('tenant_id', $this->tenantId)->sum('balance') + DB::connection('tenant')->table('customers')->where('tenant_id', $this->tenantId)->sum('balance');
+        $liabilities = DB::connection('tenant')->table('suppliers')->where('tenant_id', $this->tenantId)->sum('balance');
         $equity = max(0, $assets - $liabilities);
 
         // Top Products (by sales count)
-        $topProducts = DB::connection('tenant')->table('invoice_items')
+        $topProducts = DB::connection('tenant')->table('invoice_items')->where('tenant_id', $this->tenantId)
             ->select('product_id', DB::raw('SUM(quantity) as total_sold'))
             ->groupBy('product_id')
             ->orderBy('total_sold', 'desc')
@@ -157,13 +157,13 @@ class ReportingService
             ->get();
         
         foreach ($topProducts as $tp) {
-            $prod = DB::connection('tenant')->table('products')->where('id', $tp->product_id)->first();
+            $prod = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)->where('id', $tp->product_id)->first();
             $tp->name = $prod->name ?? 'Product ' . substr($tp->product_id, 0, 8);
             $tp->name_ar = $prod->name_ar ?? $tp->name;
         }
 
         // Top Customers (by sales total)
-        $topCustomers = DB::connection('tenant')->table('invoices')
+        $topCustomers = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
             ->where('status', 'confirmed')
             ->select('customer_id', DB::raw('SUM(total) as total_spent'), DB::raw('COUNT(id) as orders_count'))
             ->whereNotNull('customer_id')
@@ -173,13 +173,13 @@ class ReportingService
             ->get();
 
         foreach ($topCustomers as $tc) {
-            $cust = DB::connection('tenant')->table('customers')->where('id', $tc->customer_id)->first();
+            $cust = DB::connection('tenant')->table('customers')->where('tenant_id', $this->tenantId)->where('id', $tc->customer_id)->first();
             $tc->name = $cust->name ?? 'Cash Customer';
             $tc->name_ar = $cust->name_ar ?? $tc->name;
         }
 
         // Daily sales trend for chart
-        $dailySales = DB::connection('tenant')->table('invoices')
+        $dailySales = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
             ->where('status', 'confirmed')
             ->where('invoice_date', '>=', now()->subDays(30))
             ->select(DB::raw('DATE(invoice_date) as date'), DB::raw('SUM(total) as revenue'))
@@ -213,7 +213,7 @@ class ReportingService
         $now = now();
         
         if ($type === 'receivable') {
-            $entities = DB::connection('tenant')->table('customers')
+            $entities = DB::connection('tenant')->table('customers')->where('tenant_id', $this->tenantId)
                 ->where('balance', '>', 0)
                 ->get();
             
@@ -222,7 +222,7 @@ class ReportingService
 
             foreach ($entities as $customer) {
                 // Fetch credit invoices for this customer ordered by date desc
-                $invoices = DB::connection('tenant')->table('invoices')
+                $invoices = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                     ->where('customer_id', $customer->id)
                     ->where('type', 'credit')
                     ->where('status', 'confirmed')
@@ -283,7 +283,7 @@ class ReportingService
             return ['data' => $report, 'totals' => $totals, 'type' => 'receivable'];
         } else {
             // Payable (Suppliers)
-            $entities = DB::connection('tenant')->table('suppliers')
+            $entities = DB::connection('tenant')->table('suppliers')->where('tenant_id', $this->tenantId)
                 ->where('balance', '>', 0)
                 ->get();
             
@@ -292,7 +292,7 @@ class ReportingService
 
             foreach ($entities as $supplier) {
                 // Fetch credit invoices for this supplier ordered by date desc
-                $invoices = DB::connection('tenant')->table('purchase_invoices')
+                $invoices = DB::connection('tenant')->table('purchase_invoices')->where('tenant_id', $this->tenantId)
                     ->where('supplier_id', $supplier->id)
                     ->where('status', 'confirmed')
                     ->orderBy('invoice_date', 'asc')

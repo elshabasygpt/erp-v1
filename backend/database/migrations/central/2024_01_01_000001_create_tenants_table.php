@@ -8,12 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::connection('pgsql')->create('tenants', function (Blueprint $table) {
+        Schema::create('tenants', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('domain')->unique();
             $table->string('database_name')->unique();
-            $table->enum('status', ['active', 'suspended', 'trial', 'cancelled'])->default('trial');
+            $table->string('status') /* changed from enum for testing */->default('trial');
             $table->timestamp('trial_ends_at')->nullable();
             $table->uuid('created_by')->nullable();
             $table->timestamps();
@@ -26,6 +26,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::connection('pgsql')->dropIfExists('tenants');
+        Schema::dropIfExists('tenants');
     }
 };

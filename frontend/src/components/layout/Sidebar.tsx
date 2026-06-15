@@ -166,6 +166,11 @@ const SINGLE_ITEMS: SingleItem[] = [
     { key: 'branches', path: '/branches', iconKey: 'branches', labelAr: 'الفروع', labelEn: 'Branches' },
     { key: 'users', path: '/users', iconKey: 'users', labelAr: 'المستخدمون', labelEn: 'Users' },
     { key: 'settings', path: '/settings', iconKey: 'settings', labelAr: 'الإعدادات', labelEn: 'Settings' },
+    { key: 'approvals', path: '/approvals', iconKey: 'reports', labelAr: 'الموافقات', labelEn: 'Approvals' },
+    { key: 'deliveries', path: '/deliveries', iconKey: 'transfers', labelAr: 'التوصيل', labelEn: 'Deliveries' },
+    { key: 'expenses', path: '/expenses', iconKey: 'accounting', labelAr: 'المصروفات', labelEn: 'Expenses' },
+    { key: 'webhooks', path: '/webhooks', iconKey: 'settings', labelAr: 'الـ Webhooks', labelEn: 'Webhooks' },
+    { key: 'subscriptions', path: '/subscriptions', iconKey: 'reports', labelAr: 'الاشتراك', labelEn: 'Subscription' },
 ];
 
 

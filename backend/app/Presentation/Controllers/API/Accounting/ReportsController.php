@@ -36,7 +36,7 @@ class ReportsController extends BaseTenantController
     {
         $from = new \DateTimeImmutable($request->get('from', date('Y-m-01')));
         $to = new \DateTimeImmutable($request->get('to', date('Y-m-d')));
-        return $this->success($this->accountingService->generateIncomeStatement($from, $to));
+        return $this->success($this->accountingService->generateIncomeStatement($from, $to, (string) $this->getTenantId($request)));
     }
 
     public function balanceSheet(Request $request): JsonResponse

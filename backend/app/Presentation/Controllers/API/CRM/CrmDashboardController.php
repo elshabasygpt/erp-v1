@@ -42,7 +42,7 @@ class CrmDashboardController extends BaseTenantController
         $averageBasket = $totalInvoices > 0 ? $totalSpend / $totalInvoices : 0;
 
         // Preferred Products
-        $preferredProducts = DB::connection('tenant')->table('invoice_items')
+        $preferredProducts = DB::connection('tenant')->table('invoice_items')->where('invoice_items.tenant_id', $this->getTenantId($request))
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('products', 'invoice_items.product_id', '=', 'products.id')
             ->where('invoices.customer_id', $id)

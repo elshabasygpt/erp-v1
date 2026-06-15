@@ -47,7 +47,7 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
 
     public function getGeneralLedger(\DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        return DB::connection('tenant')->table('journal_entry_lines')
+        return DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
             ->join('journal_entries','journal_entry_lines.journal_entry_id','=','journal_entries.id')
             ->where('journal_entries.is_posted', true)
             ->whereBetween('journal_entries.date', [$from->format('Y-m-d'), $to->format('Y-m-d')])
@@ -58,7 +58,7 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
 
     public function getTrialBalance(\DateTimeImmutable $asOf): array
     {
-        return DB::connection('tenant')->table('journal_entry_lines')
+        return DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
             ->join('journal_entries','journal_entry_lines.journal_entry_id','=','journal_entries.id')
             ->join('accounts','journal_entry_lines.account_id','=','accounts.id')
             ->where('journal_entries.is_posted', true)

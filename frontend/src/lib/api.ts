@@ -353,3 +353,55 @@ export const hrApi = {
     generatePayroll: (data: { month: number; year: number }) => api.post('/hr/payroll/generate', data),
     markPayrollAsPaid: (id: string) => api.post(`/hr/payroll/${id}/pay`),
 };
+
+
+
+
+
+
+
+// Approvals
+export const approvalsApiNew = {
+  getInbox: () => api.get('/approvals/inbox'),
+  approve: (id: string, notes?: string) =>
+    api.post(`/approvals/${id}/approve`, { notes }),
+  reject: (id: string, notes?: string) =>
+    api.post(`/approvals/${id}/reject`, { notes }),
+  getRules: () => api.get('/approvals/rules'),
+  saveRule: (data: any) => api.post('/approvals/rules', data),
+};
+
+// Deliveries
+export const deliveriesApiNew = {
+  getAll: (params?: any) => api.get('/sales/deliveries', { params }),
+  create: (data: any) => api.post('/sales/deliveries', data),
+  updateStatus: (id: string, status: string) =>
+    api.put(`/sales/deliveries/${id}/status`, { status }),
+  assign: (id: string, driverId: string) =>
+    api.post(`/sales/deliveries/${id}/assign`, { driver_id: driverId }),
+};
+
+// Expenses
+export const expensesApiNew = {
+  getAll: (params?: any) => api.get('/expenses', { params }),
+  create: (data: any) => api.post('/expenses', data),
+  getCategories: () => api.get('/expenses/categories'),
+  createCategory: (data: any) => api.post('/expenses/categories', data),
+};
+
+// Webhooks
+export const webhooksApiNew = {
+  getAll: () => api.get('/webhooks'),
+  create: (data: any) => api.post('/webhooks', data),
+  update: (id: string, data: any) => api.put(`/webhooks/${id}`, data),
+  delete: (id: string) => api.delete(`/webhooks/${id}`),
+  getLogs: (id: string) => api.get(`/webhooks/${id}/logs`),
+};
+
+// Subscriptions
+export const subscriptionsApiNew = {
+  getCurrent: () => api.get('/subscriptions/current'),
+  checkout: (planId: string) =>
+    api.post('/subscriptions/checkout', { plan_id: planId }),
+};
+

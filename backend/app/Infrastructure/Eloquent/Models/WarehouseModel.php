@@ -2,10 +2,14 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use App\Infrastructure\Eloquent\Traits\BranchScoped;
 
 class WarehouseModel extends BaseModel
 {
+    use HasFactory;
+
     use BranchScoped;
     protected $table = 'warehouses';
     protected $fillable = ['name', 'location', 'is_default', 'is_active', 'branch_id', 'created_by', 'updated_by'];

@@ -105,6 +105,14 @@ return new class extends Migration
 
     private function indexExists(string $table, string $indexName): bool
     {
+        $driver = \DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            return collect(\DB::select("
+                SELECT name FROM sqlite_master
+                WHERE type = 'index' AND tbl_name = ? AND name = ?
+            ", [$table, $indexName]))->isNotEmpty();
+        }
+
         return collect(\DB::select("
             SELECT indexname FROM pg_indexes
             WHERE tablename = ? AND indexname = ?

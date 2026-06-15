@@ -230,6 +230,8 @@ class InvoiceController extends BaseTenantController
             try {
                 $req = new Request();
                 $req->replace($invoiceData);
+                $req->headers->replace($request->headers->all());
+                $req->setUserResolver($request->getUserResolver());
                 $response = $this->store($req);
 
                 if ($response->getStatusCode() === 201) {

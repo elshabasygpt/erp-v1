@@ -83,7 +83,7 @@ class ZatcaOnboardingService
     private function saveTenantSetting(string $key, ?string $value): void
     {
         DB::connection('tenant')->table('tenant_settings')->updateOrInsert(
-            ['key' => $key],
+            ['key' => $key, 'tenant_id' => $tenantId],
             ['value' => $value, 'updated_at' => now(), 'id' => \Illuminate\Support\Str::uuid()]
         );
 

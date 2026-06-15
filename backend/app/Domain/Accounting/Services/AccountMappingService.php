@@ -100,7 +100,7 @@ final class AccountMappingService
         }
 
         DB::connection('tenant')->table('tenant_settings')->updateOrInsert(
-            ['key' => $settingKey],
+            ['key' => $settingKey, 'tenant_id' => $tenantId],
             ['value' => $accountId, 'updated_at' => now()]
         );
 
