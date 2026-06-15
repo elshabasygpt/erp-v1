@@ -6,12 +6,12 @@ use App\Application\Accounting\Services\AccountingService;
 use App\Infrastructure\Eloquent\Models\Accounting\AccountModel;
 use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryModel;
 use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryLineModel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Tests\TestCase;
 
 class AccountingServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    
 
     protected function setUp(): void
     {

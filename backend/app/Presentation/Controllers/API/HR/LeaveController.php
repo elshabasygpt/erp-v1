@@ -2,16 +2,19 @@
 
 namespace App\Presentation\Controllers\API\HR;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\LeaveModel;
 use Illuminate\Http\Request;
 
-class LeaveController extends BaseController
+class LeaveController extends BaseTenantController
 {
     public function index(Request $request)
     {
-        $query = LeaveModel::with('employee')->orderBy('start_date', 'desc');
-        return $this->success($query->get());
+        $tenantId = $this->getTenantId($request);
+        $query = LeaveModel::with('employee')
+            ->whereHas('employee', fn($q) => $q->where('tenant_id', $tenantId))
+            ->orderBy('start_date', 'desc');
+        return $this->paginated($query->paginate($request->get('per_page', 25))->toArray());
     }
 
     public function store(Request $request)
@@ -24,6 +27,9 @@ class LeaveController extends BaseController
             'reason'      => 'required|string'
         ]);
 
+        $employee = \App\Infrastructure\Eloquent\Models\EmployeeModel::where('tenant_id', $this->getTenantId($request))
+            ->findOrFail($validated['employee_id']);
+
         $leave = LeaveModel::create($validated);
         return $this->success($leave, 'Leave applied successfully', 201);
     }
@@ -34,9 +40,13 @@ class LeaveController extends BaseController
             'status' => 'required|in:approved,rejected,pending',
         ]);
 
-        $leave = LeaveModel::findOrFail($id);
+        $leave = LeaveModel::whereHas('employee', fn($q) =>
+            $q->where('tenant_id', $this->getTenantId($request))
+        )->findOrFail($id);
+        
         $leave->update(['status' => $request->status]);
 
         return $this->success($leave, 'Leave status updated successfully');
     }
 }
+

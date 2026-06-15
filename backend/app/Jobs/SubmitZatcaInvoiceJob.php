@@ -39,19 +39,30 @@ class SubmitZatcaInvoiceJob implements ShouldQueue
         $invoiceEntity = app(\App\Domain\Sales\Repositories\InvoiceRepositoryInterface::class)->findById($this->invoiceId);
         if (!$invoiceEntity) return;
 
+        // Get CSID for auth and other settings
+        $zatcaService = app(\App\Infrastructure\Zatca\ZatcaOnboardingService::class);
+
         // Extract settings
-        // Hardcoding standard defaults for Simulation Environment
-        $sellerName = 'شركة تجريبية';
-        $vatNumber = '300000000000003';
+        $sellerName = $zatcaService->getTenantSetting('company_name') ?? 'شركة تجريبية';
+        $vatNumber  = $zatcaService->getTenantSetting('vat_number')   ?? '300000000000003';
         
         $zatcaUuid = Str::uuid()->toString();
         $xml = UblXmlGenerator::generateInvoiceXml($invoiceEntity, $sellerName, $vatNumber, $zatcaUuid);
         
-        // Hash the XML using SHA-256 and base64
-        $xmlHash = base64_encode(hash('sha256', $xml, true));
+        // Sign the XML if credentials exist
+        $signer = new \App\Infrastructure\Zatca\ZatcaXmlSigner();
+        $xmlHash = $signer->hashXml($xml);
 
-        // Get CSID for auth
-        $zatcaService = app(\App\Infrastructure\Zatca\ZatcaOnboardingService::class);
+        $privateKeyPem = $zatcaService->getTenantSetting('zatca_private_key');
+        $certificatePem = $zatcaService->getTenantSetting('zatca_certificate');
+
+        if ($privateKeyPem && $certificatePem) {
+            $signature = $signer->signXml($xmlHash, $privateKeyPem);
+            $xml = $signer->embedSignature($xml, $signature, $xmlHash, $certificatePem);
+            // Re-hash after embedding signature
+            $xmlHash = base64_encode(hash('sha256', $xml, true));
+        }
+
         $csidToken = $zatcaService->getTenantSetting('zatca_compliance_csid');
         $secret = $zatcaService->getTenantSetting('zatca_compliance_secret');
 
@@ -73,7 +84,7 @@ class SubmitZatcaInvoiceJob implements ShouldQueue
                 'Accept-Version' => 'V2',
                 'Clearance-Status' => '1',
                 'Accept-Language' => 'en',
-            ])->post('https://gw-fatoora.zatca.gov.sa/e-invoicing/simulation/invoices/reporting/single', [
+            ])->post($zatcaService->getBaseUrl() . '/invoices/reporting/single', [
                 'invoiceHash' => $xmlHash,
                 'uuid' => $zatcaUuid,
                 'invoice' => base64_encode($xml)

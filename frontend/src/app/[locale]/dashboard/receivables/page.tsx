@@ -1,12 +1,11 @@
 import ReceivablesDashboard from '@/components/receivables/ReceivablesDashboard';
-import { getLocale } from 'next-intl/server';
+
 
 export const metadata = {
     title: 'Receivables | SaaS POS',
 };
 
-export default async function ReceivablesPage() {
-    const locale = await getLocale();
-    const isRTL = locale === 'ar';
+export default async function ReceivablesPage({ params }: { params: { locale: string } }) {
+    const isRTL = params.locale === 'ar';
     return <ReceivablesDashboard isRTL={isRTL} />;
 }

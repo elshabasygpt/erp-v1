@@ -24,7 +24,7 @@ class PurchaseController extends BaseController
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
         
-        $query = PurchaseInvoiceModel::with(['supplier'])->orderBy('invoice_date', 'desc');
+        $query = PurchaseInvoiceModel::with(['supplier', 'items.product'])->orderBy('invoice_date', 'desc');
         
         if ($status && $status !== 'all') {
             $query->where('status', $status);

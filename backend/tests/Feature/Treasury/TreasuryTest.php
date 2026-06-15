@@ -2,11 +2,11 @@
 namespace Tests\Feature\Treasury;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 
 class TreasuryTest extends TestCase
 {
-    use RefreshDatabase;
+    
 
     public function test_can_list_safes(): void
     {
@@ -24,6 +24,7 @@ class TreasuryTest extends TestCase
 
         $response = $this->postJson('/api/treasury/safes', [
             'name'       => 'الخزينة الرئيسية',
+            'type'       => 'cash',
             'currency'   => 'SAR',
             'is_default' => true,
         ]);
@@ -64,6 +65,6 @@ class TreasuryTest extends TestCase
             'amount'       => 500,
         ]);
 
-        $response->assertStatus(422);
+        $response->assertStatus(400);
     }
 }

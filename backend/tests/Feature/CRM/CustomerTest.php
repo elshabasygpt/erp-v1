@@ -3,12 +3,12 @@
 namespace Tests\Feature\CRM;
 
 use App\Infrastructure\Eloquent\Models\CustomerModel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Tests\TestCase;
 
 class CustomerTest extends TestCase
 {
-    use RefreshDatabase;
+    
 
     public function test_customer_creation_sets_default_balance()
     {

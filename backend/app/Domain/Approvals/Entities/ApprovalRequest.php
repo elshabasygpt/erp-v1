@@ -4,13 +4,13 @@ namespace App\Domain\Approvals\Entities;
 class ApprovalRequest
 {
     public function __construct(
-        public readonly ?int $id,
-        public readonly int $tenantId,
+        public readonly ?string $id,
+        public readonly string $tenantId,
         public readonly string $requestableType,
-        public readonly int $requestableId,
-        public readonly int $requestedBy,
+        public readonly string $requestableId,
+        public readonly string $requestedBy,
         public readonly string $status,
-        public readonly ?int $assignedTo,
+        public readonly ?string $assignedTo,
         public readonly ?string $notes,
         public readonly ?string $decidedAt,
     ) {}

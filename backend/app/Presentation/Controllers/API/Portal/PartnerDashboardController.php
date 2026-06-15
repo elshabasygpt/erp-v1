@@ -8,18 +8,23 @@ use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\PartnerModel;
 use App\Infrastructure\Eloquent\Models\PartnerWithdrawalModel;
 use App\Infrastructure\Eloquent\Models\PartnerProfitShareModel;
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Partnerships\Services\PartnerForecastingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class PartnerDashboardController extends BaseController
+class PartnerDashboardController extends BaseTenantController
 {
     public function __construct(
         private PartnerForecastingService $forecastingService,
     ) {}
+
+    private function getPartnerTenantId(Request $request): int
+    {
+        return (int) ($request->partner->tenant_id ?? $request->get('partner_tenant_id') ?? 0);
+    }
 
     /**
      * GET /api/portal/dashboard — Main KPIs for partner
@@ -27,15 +32,18 @@ class PartnerDashboardController extends BaseController
     public function dashboard(Request $request): JsonResponse
     {
         $partner = $request->attributes->get('partner');
+        $tenantId = $this->getPartnerTenantId($request);
         $today = Carbon::today();
         $yesterday = Carbon::yesterday();
 
         // Today's total sales
-        $todaySales = InvoiceModel::where('status', 'confirmed')
+        $todaySales = InvoiceModel::where('tenant_id', $tenantId)
+            ->where('status', 'confirmed')
             ->whereDate('invoice_date', $today)
             ->sum('total');
 
-        $yesterdaySales = InvoiceModel::where('status', 'confirmed')
+        $yesterdaySales = InvoiceModel::where('tenant_id', $tenantId)
+            ->where('status', 'confirmed')
             ->whereDate('invoice_date', $yesterday)
             ->sum('total');
 
@@ -48,6 +56,7 @@ class PartnerDashboardController extends BaseController
             ->table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('products', 'invoice_items.product_id', '=', 'products.id')
+            ->where('invoices.tenant_id', $tenantId)
             ->where('invoices.status', 'confirmed')
             ->whereDate('invoices.invoice_date', $today)
             ->selectRaw('SUM((invoice_items.unit_price - products.cost_price) * invoice_items.quantity) as gross')
@@ -61,6 +70,7 @@ class PartnerDashboardController extends BaseController
             ->table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('products', 'invoice_items.product_id', '=', 'products.id')
+            ->where('invoices.tenant_id', $tenantId)
             ->where('invoices.status', 'confirmed')
             ->where('invoices.invoice_date', '>=', $monthStart)
             ->selectRaw('SUM((invoice_items.unit_price - products.cost_price) * invoice_items.quantity) as gross')
@@ -88,17 +98,19 @@ class PartnerDashboardController extends BaseController
     public function profits(Request $request): JsonResponse
     {
         $partner = $request->attributes->get('partner');
+        $tenantId = $this->getPartnerTenantId($request);
         $period = $request->get('period', 'month'); // month | year
 
         $start = $period === 'year' ? Carbon::now()->startOfYear() : Carbon::now()->startOfMonth();
         $prevStart = $period === 'year' ? Carbon::now()->subYear()->startOfYear() : Carbon::now()->subMonth()->startOfMonth();
         $prevEnd   = $period === 'year' ? Carbon::now()->subYear()->endOfYear() : Carbon::now()->subMonth()->endOfMonth();
 
-        $calcProfit = function ($from, $to = null) {
+        $calcProfit = function ($from, $to = null) use ($tenantId) {
             $q = DB::connection('tenant')
                 ->table('invoice_items')
                 ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
                 ->join('products', 'invoice_items.product_id', '=', 'products.id')
+                ->where('invoices.tenant_id', $tenantId)
                 ->where('invoices.status', 'confirmed')
                 ->where('invoices.invoice_date', '>=', $from);
             if ($to) $q->where('invoices.invoice_date', '<=', $to);
@@ -144,9 +156,11 @@ class PartnerDashboardController extends BaseController
     public function statement(Request $request): JsonResponse
     {
         $partner = $request->attributes->get('partner');
+        $tenantId = $this->getPartnerTenantId($request);
 
         // Profit shares (credits)
         $profitShares = PartnerProfitShareModel::with('distribution')
+            ->where('tenant_id', $tenantId)
             ->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get()
@@ -204,6 +218,7 @@ class PartnerDashboardController extends BaseController
      */
     public function topProducts(Request $request): JsonResponse
     {
+        $tenantId = $this->getPartnerTenantId($request);
         $limit = (int) $request->get('limit', 10);
         $from  = $request->get('from', Carbon::now()->startOfMonth()->toDateString());
 
@@ -211,6 +226,7 @@ class PartnerDashboardController extends BaseController
             ->table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('products', 'invoice_items.product_id', '=', 'products.id')
+            ->where('invoices.tenant_id', $tenantId)
             ->where('invoices.status', 'confirmed')
             ->where('invoices.invoice_date', '>=', $from)
             ->selectRaw('
@@ -235,7 +251,9 @@ class PartnerDashboardController extends BaseController
     public function forecast(Request $request): JsonResponse
     {
         $partner = $request->attributes->get('partner');
-        $full    = $this->forecastingService->getEndOfYearProjections();
+        $tenantId = $this->getPartnerTenantId($request);
+        
+        $full    = $this->forecastingService->getEndOfYearProjections($tenantId);
 
         // Filter to only this partner's projection
         $partnerProjection = collect($full['partner_projections'])
@@ -253,9 +271,11 @@ class PartnerDashboardController extends BaseController
     public function exportPdf(Request $request): \Illuminate\Http\Response
     {
         $partner = $request->attributes->get('partner');
+        $tenantId = $this->getPartnerTenantId($request);
 
         // Get statement data
         $sharesQuery = PartnerProfitShareModel::with('distribution')
+            ->where('tenant_id', $tenantId)
             ->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get();

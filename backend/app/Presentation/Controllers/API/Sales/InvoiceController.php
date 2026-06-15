@@ -29,7 +29,8 @@ class InvoiceController extends BaseController
     public function __construct(
         private readonly CreateInvoiceUseCase $createInvoiceUseCase,
         private readonly UpdateInvoiceUseCase $updateInvoiceUseCase,
-    ) {}
+    ) {
+    }
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
@@ -44,8 +45,16 @@ class InvoiceController extends BaseController
         $sortBy = $request->query('sort_by', 'invoice_date');
         $sortDesc = $request->query('sort_desc', 'true') === 'true';
 
-        $query = InvoiceModel::with(['customer', 'items.product', 'creator']);
-        
+        $query = InvoiceModel::select([
+            'id',
+            'invoice_number',
+            'customer_id',
+            'total',
+            'status',
+            'invoice_date',
+            'created_at'
+        ])->with(['customer:id,name', 'items.product']);
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -153,8 +162,10 @@ class InvoiceController extends BaseController
     public function updateStatus(Request $request, string $id): JsonResponse
     {
         $invoice = InvoiceModel::find($id);
-        if (!$invoice) { return $this->error('Sales invoice not found', 404); }
-        
+        if (!$invoice) {
+            return $this->error('Sales invoice not found', 404);
+        }
+
         if ($invoice->status === 'pending_approval') {
             return $this->error('Cannot manually update status. This invoice requires approval.', 403);
         }
@@ -162,11 +173,11 @@ class InvoiceController extends BaseController
         $validated = $request->validate([
             'status' => 'required|string|in:draft,confirmed,cancelled',
         ]);
-        
+
         if ($invoice->status === 'confirmed' && $validated['status'] !== 'confirmed') {
             return $this->error('A confirmed invoice cannot be cancelled or reverted to draft. Please issue a Sales Return instead.', 403);
         }
-        
+
         if ($invoice->status !== 'confirmed' && $validated['status'] === 'confirmed') {
             try {
                 $confirmUseCase = app(\App\Application\Sales\UseCases\ConfirmInvoiceUseCase::class);
@@ -180,14 +191,16 @@ class InvoiceController extends BaseController
         } else {
             $invoice->update(['status' => $validated['status']]);
         }
-        
+
         return $this->success($invoice, 'Sales invoice status updated successfully');
     }
 
     public function show(string $id): JsonResponse
     {
         $invoice = InvoiceModel::with(['customer', 'items.product', 'shippingInvoices'])->find($id);
-        if (!$invoice) { return $this->error('Sales invoice not found', 404); }
+        if (!$invoice) {
+            return $this->error('Sales invoice not found', 404);
+        }
         return $this->success($invoice->toArray());
     }
 
@@ -204,7 +217,7 @@ class InvoiceController extends BaseController
                 $req = new Request();
                 $req->replace($invoiceData);
                 $response = $this->store($req);
-                
+
                 if ($response->getStatusCode() === 201) {
                     $results['success']++;
                 } else {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\HR;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\PayrollModel;
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use App\Infrastructure\Eloquent\Models\ExpenseModel;
@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class PayrollController extends BaseController
+class PayrollController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
@@ -23,7 +23,9 @@ class PayrollController extends BaseController
         $month = $request->query('month', date('n'));
         $year = $request->query('year', date('Y'));
 
+        $tenantId = $this->getTenantId($request);
         $query = PayrollModel::with('employee')
+            ->whereHas('employee', fn($q) => $q->where('tenant_id', $tenantId))
             ->where('month', $month)
             ->where('year', $year)
             ->orderBy('created_at', 'desc');
@@ -40,71 +42,26 @@ class PayrollController extends BaseController
             'year' => 'required|integer|min:2000',
         ]);
 
-        $month = (int) $validated['month'];
-        $year = (int) $validated['year'];
+        $tenantId = $this->getTenantId($request);
 
-        try {
-            DB::beginTransaction();
+        \App\Jobs\GeneratePayrollJob::dispatch(
+            tenantId: (string) $tenantId,
+            month: (int) $validated['month'],
+            year: (int) $validated['year'],
+        );
 
-            $employees = EmployeeModel::where('is_active', true)->get();
-            $generatedCount = 0;
-
-            foreach ($employees as $employee) {
-                // Check if payroll already exists for this month
-                $existing = PayrollModel::where('employee_id', $employee->id)
-                    ->where('month', $month)
-                    ->where('year', $year)
-                    ->first();
-
-                if ($existing) continue;
-
-                // Simple logic: Base deduction on late minutes (e.g. 1 unit of currency per minute)
-                // In a real ERP, this links to HR policies. For now, we do a basic deduction calculation.
-                $attendances = $employee->attendances()
-                    ->whereMonth('date', $month)
-                    ->whereYear('date', $year)
-                    ->get();
-
-                $totalLateMinutes = $attendances->sum('late_minutes');
-                // Assume 1 late minute = 0.5 deduction
-                $deductions = $totalLateMinutes * 0.5;
-
-                // Base Salary
-                $baseSalary = (float)$employee->base_salary;
-                $bonuses = 0; // Fixed bonuses could be added
-                $netSalary = $baseSalary + $bonuses - $deductions;
-
-                PayrollModel::create([
-                    'id' => Str::uuid()->toString(),
-                    'employee_id' => $employee->id,
-                    'month' => $month,
-                    'year' => $year,
-                    'base_salary' => $baseSalary,
-                    'bonuses' => $bonuses,
-                    'deductions' => $deductions,
-                    'net_salary' => $netSalary,
-                    'status' => 'draft'
-                ]);
-
-                $generatedCount++;
-            }
-
-            DB::commit();
-
-            return $this->success(['generated_count' => $generatedCount], "Generated payrolls for $generatedCount employees.", 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error('Failed to generate payrolls: ' . $e->getMessage(), 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Payroll generation queued successfully. Results will be available shortly.',
+            'data'    => null,
+        ], 202);
     }
 
     public function markAsPaid(Request $request, string $id): JsonResponse
     {
-        $payroll = PayrollModel::with('employee')->find($id);
-
-        if (!$payroll) {
-            return $this->error('Payroll record not found', 404);
-        }
+        $payroll = PayrollModel::whereHas('employee', fn($q) =>
+            $q->where('tenant_id', $this->getTenantId($request))
+        )->with('employee')->findOrFail($id);
 
         if ($payroll->status === 'paid') {
             return $this->error('Payroll is already paid', 400);
@@ -146,3 +103,4 @@ class PayrollController extends BaseController
         }
     }
 }
+

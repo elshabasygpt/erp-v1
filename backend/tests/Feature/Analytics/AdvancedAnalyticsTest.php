@@ -6,7 +6,7 @@ use Tests\TestCase;
 use App\Infrastructure\Eloquent\Models\UserModel;
 use App\Infrastructure\Eloquent\Models\TenantModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Illuminate\Support\Str;
 
 class AdvancedAnalyticsTest extends TestCase

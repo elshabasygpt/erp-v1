@@ -38,6 +38,15 @@ class UserModel extends Authenticatable
         return $this->belongsTo(RoleModel::class, 'role_id');
     }
 
+    public function getRolesAttribute()
+    {
+        return collect([$this->role])->filter();
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        return $this->role && $this->role->name === $roleName;
+    }
     public function branch()
     {
         return $this->belongsTo(BranchModel::class, 'branch_id');

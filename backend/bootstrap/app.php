@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         apiPrefix: 'api',
     )
+    ->withProviders([
+        \App\Providers\AppServiceProvider::class,
+    ])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'tenant' => TenantMiddleware::class,

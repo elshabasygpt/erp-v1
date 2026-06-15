@@ -16,10 +16,12 @@ class SupplierController extends BaseController
      */
     public function index(Request $request): JsonResponse
     {
-        $limit = $request->query('limit', 15);
+        $limit = $request->query('limit', '15');
         $search = $request->query('search');
 
-        $query = SupplierModel::query();
+        $query = SupplierModel::select([
+            'id', 'name', 'email', 'phone', 'balance', 'is_active', 'created_at'
+        ])->with(['purchaseInvoices' => fn($q) => $q->select('id', 'supplier_id', 'total', 'status')]);
 
         if ($search) {
             $query->where(function($q) use ($search) {

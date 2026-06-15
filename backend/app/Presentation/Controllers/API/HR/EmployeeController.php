@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\HR;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Requests\HR\StoreEmployeeRequest;
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
-class EmployeeController extends BaseController
+class EmployeeController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
-        $query = EmployeeModel::with('user');
+        $query = EmployeeModel::select([
+            'id', 'user_id', 'name', 'position', 'phone', 'base_salary', 'is_active', 'created_at'
+        ])->with('user:id,name,email')->where('tenant_id', $this->getTenantId($request));
 
         if ($request->filled('search')) {
             $search = $request->query('search');
@@ -34,21 +37,13 @@ class EmployeeController extends BaseController
         return $this->paginated($employees->toArray(), 'Employees retrieved successfully');
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreEmployeeRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'user_id' => 'nullable|uuid|exists:users,id',
-            'name' => 'required|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'base_salary' => 'required|numeric|min:0',
-            'shift_start' => 'nullable|date_format:H:i',
-            'shift_end' => 'nullable|date_format:H:i',
-            'is_active' => 'boolean'
-        ]);
+        $validated = $request->validated();
 
         $employee = EmployeeModel::create([
             'id' => Str::uuid()->toString(),
+            'tenant_id' => $this->getTenantId($request),
             'user_id' => $validated['user_id'] ?? null,
             'name' => $validated['name'],
             'position' => $validated['position'] ?? null,
@@ -62,9 +57,10 @@ class EmployeeController extends BaseController
         return $this->success($employee->load('user'), 'Employee created successfully', 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $employee = EmployeeModel::with('user')->find($id);
+        $this->assertBelongsToTenant($employee, $request);
 
         if (!$employee) {
             return $this->error('Employee not found', 404);
@@ -76,6 +72,7 @@ class EmployeeController extends BaseController
     public function update(Request $request, string $id): JsonResponse
     {
         $employee = EmployeeModel::find($id);
+        $this->assertBelongsToTenant($employee, $request);
 
         if (!$employee) {
             return $this->error('Employee not found', 404);
@@ -105,9 +102,10 @@ class EmployeeController extends BaseController
         return $this->success($employee->load('user'), 'Employee updated successfully');
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $employee = EmployeeModel::find($id);
+        $this->assertBelongsToTenant($employee, $request);
 
         if (!$employee) {
             return $this->error('Employee not found', 404);

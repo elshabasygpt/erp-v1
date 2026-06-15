@@ -15,7 +15,7 @@ class PartnerForecastingService
      *
      * @return array
      */
-    public function getEndOfYearProjections(): array
+    public function getEndOfYearProjections(int $tenantId): array
     {
         $startOfYear = Carbon::now()->startOfYear();
         $today = Carbon::now();
@@ -33,6 +33,7 @@ class PartnerForecastingService
             ->table('invoice_items')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('products', 'invoice_items.product_id', '=', 'products.id')
+            ->where('invoices.tenant_id', $tenantId)
             ->where('invoices.status', 'confirmed')
             ->whereBetween('invoices.invoice_date', [$startOfYear, $today])
             ->selectRaw('SUM((invoice_items.unit_price - products.cost_price) * invoice_items.quantity) as gross_profit')
@@ -45,7 +46,7 @@ class PartnerForecastingService
         
         $totalExpectedYearlyProfit = $totalSystemProfit + $projectedRemainingProfit;
 
-        $partners = PartnerModel::where('is_active', true)->get();
+        $partners = PartnerModel::where('tenant_id', $tenantId)->where('is_active', true)->get();
         $projections = [];
 
         foreach ($partners as $partner) {

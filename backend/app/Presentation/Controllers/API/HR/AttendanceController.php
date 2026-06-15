@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\HR;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\AttendanceModel;
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use Illuminate\Http\JsonResponse;
@@ -12,14 +12,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
-class AttendanceController extends BaseController
+class AttendanceController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '30');
         $date = $request->query('date', now()->toDateString());
         
-        $query = AttendanceModel::with('employee')
+        $query = AttendanceModel::with(['employee:id,name,position'])
+            ->where('tenant_id', $this->getTenantId($request))
             ->whereDate('date', $date)
             ->orderBy('created_at', 'desc');
 

@@ -2,7 +2,7 @@
 
 namespace App\Presentation\Controllers\API\Treasury;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\ExpenseCategoryModel;
 use App\Infrastructure\Eloquent\Models\ExpenseModel;
 use App\Infrastructure\Eloquent\Models\SafeModel;
@@ -10,39 +10,44 @@ use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class ExpenseController extends BaseController
+class ExpenseController extends BaseTenantController
 {
     // GET /api/expenses/categories
-    public function getCategories()
+    public function getCategories(Request $request)
     {
-        $categories = ExpenseCategoryModel::all();
+        $tenantId = $this->getTenantId($request);
+        $categories = ExpenseCategoryModel::where('tenant_id', $tenantId)->get();
         return response()->json(['status' => 'success', 'data' => $categories]);
     }
 
     // POST /api/expenses/categories
     public function storeCategory(Request $request)
     {
-        $validated = $request->validate([
+        $data = $request->validate([
             'name' => 'required|string|max:255',
             'name_ar' => 'nullable|string|max:255',
             'is_advance_or_salary' => 'boolean'
         ]);
 
-        $category = ExpenseCategoryModel::create($validated);
+        $data['tenant_id'] = $this->getTenantId($request);
+        $data['id'] = \Illuminate\Support\Str::uuid()->toString();
+
+        $category = ExpenseCategoryModel::create($data);
         return response()->json(['status' => 'success', 'data' => $category], 201);
     }
 
     // GET /api/expenses
     public function index(Request $request)
     {
-        $expenses = ExpenseModel::with(['category', 'safe'])->orderBy('expense_date', 'desc')->get();
+        $tenantId = $this->getTenantId($request);
+        $expenses = ExpenseModel::with(['category', 'safe'])->where('tenant_id', $tenantId)->orderBy('expense_date', 'desc')->get();
         return response()->json(['status' => 'success', 'data' => $expenses]);
     }
 
     // POST /api/expenses
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $data = $request->validate([
             'category_id' => 'required|uuid|exists:tenant.expense_categories,id',
             'safe_id' => 'required|uuid|exists:tenant.safes,id',
             'amount' => 'required|numeric|min:0.01',
@@ -50,24 +55,29 @@ class ExpenseController extends BaseController
             'expense_date' => 'nullable|date'
         ]);
 
-        return DB::transaction(function () use ($validated) {
-            $safe = SafeModel::lockForUpdate()->findOrFail($validated['safe_id']);
+        $tenantId = $this->getTenantId($request);
 
-            if ((float)$safe->balance < (float)$validated['amount']) {
+        return DB::transaction(function () use ($data, $tenantId, $request) {
+            $safe = SafeModel::lockForUpdate()->findOrFail($data['safe_id']);
+            $this->assertBelongsToTenant($safe, $request);
+
+            if ((float)$safe->balance < (float)$data['amount']) {
                 abort(400, 'Insufficient balance in safe to pay this expense.');
             }
 
             // Deduct from safe
-            $safe->balance -= $validated['amount'];
+            $safe->balance -= $data['amount'];
             $safe->save();
 
             // Create Expense record
             $expense = ExpenseModel::create([
-                'category_id' => $validated['category_id'],
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'tenant_id' => $tenantId,
+                'category_id' => $data['category_id'],
                 'safe_id' => $safe->id,
-                'amount' => $validated['amount'],
-                'description' => $validated['description'] ?? '',
-                'expense_date' => $validated['expense_date'] ?? now(),
+                'amount' => $data['amount'],
+                'description' => $data['description'] ?? '',
+                'expense_date' => $data['expense_date'] ?? now(),
             ]);
 
             // Register transaction
@@ -85,3 +95,4 @@ class ExpenseController extends BaseController
         });
     }
 }
+

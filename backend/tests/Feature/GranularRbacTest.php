@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Tests\TestCase;
 use App\Infrastructure\Eloquent\Models\RoleModel;
 use App\Infrastructure\Eloquent\Models\UserModel;
@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 
 class GranularRbacTest extends TestCase
 {
-    use RefreshDatabase;
+    
 
     public function setUp(): void
     {

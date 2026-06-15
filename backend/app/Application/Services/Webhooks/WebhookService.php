@@ -13,48 +13,24 @@ class WebhookService
      * Dispatch an event to all subscribed endpoints.
      * In a production environment, this should be queued.
      */
-    public function dispatch(string $event, array $payload)
+    public function dispatch(string $event, array $payload): void
     {
-        // Find active endpoints that subscribe to this event
-        $endpoints = WebhookEndpointModel::where('is_active', true)->get()
-            ->filter(function ($endpoint) use ($event) {
-                return in_array($event, $endpoint->events);
-            });
+        $tenantId = app('currentTenant')->id ?? config('app.tenant_id') ?? '1';
 
-        foreach ($endpoints as $endpoint) {
-            $this->send($endpoint, $event, $payload);
-        }
-    }
+        $webhooks = WebhookEndpointModel::where('is_active', true)
+            ->where(function ($q) use ($event) {
+                $q->whereJsonContains('events', $event)
+                  ->orWhereJsonContains('events', '*');
+            })
+            ->get();
 
-    protected function send(WebhookEndpointModel $endpoint, string $event, array $payload)
-    {
-        $signature = hash_hmac('sha256', json_encode($payload), $endpoint->secret);
-
-        try {
-            $response = Http::withHeaders([
-                'X-POS11-Event' => $event,
-                'X-POS11-Signature' => $signature,
-            ])->timeout(10)->post($endpoint->url, $payload);
-
-            WebhookLogModel::create([
-                'endpoint_id' => $endpoint->id,
-                'event_name' => $event,
-                'payload' => $payload,
-                'response_status' => $response->status(),
-                'response_body' => substr($response->body(), 0, 1000), // truncate long responses
-                'is_successful' => $response->successful(),
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Webhook delivery failed to {$endpoint->url}: " . $e->getMessage());
-            
-            WebhookLogModel::create([
-                'endpoint_id' => $endpoint->id,
-                'event_name' => $event,
-                'payload' => $payload,
-                'response_status' => null,
-                'response_body' => $e->getMessage(),
-                'is_successful' => false,
-            ]);
+        foreach ($webhooks as $webhook) {
+            \App\Jobs\SendWebhookJob::dispatch(
+                tenantId: (string) $tenantId,
+                webhookId: (string) $webhook->id,
+                event: $event,
+                payload: $payload,
+            );
         }
     }
 }

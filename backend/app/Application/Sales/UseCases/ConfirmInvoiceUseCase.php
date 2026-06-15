@@ -162,6 +162,14 @@ class ConfirmInvoiceUseCase
             // ── ZATCA Phase 2 ──
             $tenantId = app('currentTenant')->id ?? 'tenant_context';
             SubmitZatcaInvoiceJob::dispatch($invoice->getId(), $tenantId);
+
+            // ── Dispatch webhook event ──
+            app(\App\Application\Services\Webhooks\WebhookService::class)
+                ->dispatch('invoice.confirmed', [
+                    'invoice_id' => $invoice->getId(),
+                    'total'      => $invoice->getTotal(),
+                    'status'     => 'confirmed',
+                ]);
         });
     }
 

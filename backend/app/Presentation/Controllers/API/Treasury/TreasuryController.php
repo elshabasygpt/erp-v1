@@ -2,37 +2,37 @@
 
 namespace App\Presentation\Controllers\API\Treasury;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Requests\Treasury\StoreSafeRequest;
+use App\Presentation\Requests\Treasury\TransferRequest;
 use App\Infrastructure\Eloquent\Models\SafeModel;
 use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class TreasuryController extends BaseController
+class TreasuryController extends BaseTenantController
 {
     // GET /api/treasury/safes
-    public function getSafes()
+    public function getSafes(Request $request)
     {
-        $safes = SafeModel::with('users')->get();
+        $safes = SafeModel::with('users')->where('tenant_id', $this->getTenantId($request))->get();
         return response()->json(['status' => 'success', 'data' => $safes]);
     }
 
     // POST /api/treasury/safes
-    public function storeSafe(Request $request)
+    public function storeSafe(StoreSafeRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'name_ar' => 'nullable|string|max:255',
-            'type' => 'required|in:cash,bank',
-            'balance' => 'nullable|numeric',
-        ]);
+        $validated = $request->validated();
 
         if (!isset($validated['balance'])) {
             $validated['balance'] = 0;
         }
 
-        $safe = SafeModel::create($validated);
+        $safe = SafeModel::create(array_merge($validated, [
+            'id' => Str::uuid()->toString(),
+            'tenant_id' => $this->getTenantId($request)
+        ]));
         return response()->json(['status' => 'success', 'data' => $safe], 201);
     }
 
@@ -90,18 +90,15 @@ class TreasuryController extends BaseController
     }
 
     // POST /api/treasury/transfer
-    public function transfer(Request $request)
+    public function transfer(TransferRequest $request)
     {
-        $validated = $request->validate([
-            'from_safe_id' => 'required|uuid|exists:tenant.safes,id|different:to_safe_id',
-            'to_safe_id' => 'required|uuid|exists:tenant.safes,id',
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($validated, $request) {
             $fromSafe = SafeModel::lockForUpdate()->findOrFail($validated['from_safe_id']);
             $toSafe = SafeModel::lockForUpdate()->findOrFail($validated['to_safe_id']);
+            $this->assertBelongsToTenant($fromSafe, $request);
+            $this->assertBelongsToTenant($toSafe, $request);
 
             if ((float)$fromSafe->balance < (float)$validated['amount']) {
                 abort(400, 'Insufficient balance in source safe.');

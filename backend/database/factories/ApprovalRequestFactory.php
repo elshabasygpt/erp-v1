@@ -11,14 +11,13 @@ class ApprovalRequestFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id'        => 1,
-            'requestable_type' => 'PurchaseInvoice',
-            'requestable_id'   => $this->faker->numberBetween(1, 100),
-            'requested_by'     => 1,
-            'status'           => 'pending',
-            'assigned_to'      => null,
-            'notes'            => null,
-            'decided_at'       => null,
+            'entity_type'  => 'PurchaseInvoice',
+            'entity_id'    => $this->faker->uuid(),
+            'trigger_type' => 'high_discount',
+            'requested_by' => $this->faker->uuid(),
+            'status'       => 'pending',
+            'resolved_by'  => null,
+            'notes'        => null,
         ];
     }
 }

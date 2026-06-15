@@ -10,7 +10,7 @@ class RejectRequestUseCase
         private ApprovalRepositoryInterface $repo
     ) {}
 
-    public function execute(int $requestId, int $rejectorId, ?string $notes = null): void
+    public function execute(string $requestId, string $rejectorId, ?string $notes = null): void
     {
         $request = $this->repo->findById($requestId);
 

@@ -1,12 +1,11 @@
 import CollectPaymentScreen from '@/components/receivables/CollectPaymentScreen';
-import { getLocale } from 'next-intl/server';
+
 
 export const metadata = {
     title: 'Collect Payment | SaaS POS',
 };
 
-export default async function CollectPaymentPage() {
-    const locale = await getLocale();
-    const isRTL = locale === 'ar';
+export default async function CollectPaymentPage({ params }: { params: { locale: string } }) {
+    const isRTL = params.locale === 'ar';
     return <CollectPaymentScreen isRTL={isRTL} />;
 }

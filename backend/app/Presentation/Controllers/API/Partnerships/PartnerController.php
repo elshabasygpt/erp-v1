@@ -4,22 +4,29 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Partnerships;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\PartnerModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class PartnerController extends BaseController
+class PartnerController extends BaseTenantController
 {
     /**
      * Display a listing of partners.
      */
     public function index(Request $request): JsonResponse
     {
-        $limit = $request->query('limit', 15);
+        $limit = $request->query('limit', '15');
+        $tenantId = $this->getTenantId($request);
         
-        $partners = PartnerModel::orderBy('created_at', 'desc')
+        $partners = PartnerModel::where('tenant_id', $tenantId)
+            ->select([
+                'id', 'name', 'phone', 'email', 'capital_amount',
+                'profit_share_percentage', 'is_active', 'created_at', 'total_pending', 'total_withdrawn'
+            ])
+            ->with(['withdrawals', 'profitShares'])
+            ->orderBy('created_at', 'desc')
             ->paginate((int) $limit);
 
         return $this->paginated($partners->toArray(), 'Partners retrieved successfully');
@@ -41,13 +48,14 @@ class PartnerController extends BaseController
         ]);
 
         // Check if total profit share exceeds 100%
-        $currentTotalPercentage = PartnerModel::where('is_active', true)->sum('profit_share_percentage');
+        $currentTotalPercentage = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('is_active', true)->sum('profit_share_percentage');
         if (($currentTotalPercentage + $validated['profit_share_percentage']) > 100) {
             return $this->error('Total profit share percentage cannot exceed 100%. Current total: ' . $currentTotalPercentage . '%', 422);
         }
 
         $partner = PartnerModel::create([
             'id' => Str::uuid()->toString(),
+            'tenant_id' => $this->getTenantId($request),
             'name' => $validated['name'],
             'phone' => $validated['phone'] ?? null,
             'capital_amount' => $validated['capital_amount'],
@@ -65,9 +73,10 @@ class PartnerController extends BaseController
     /**
      * Display the specified partner.
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $partner = PartnerModel::with(['profitShares.distribution', 'withdrawals'])->find($id);
+        $this->assertBelongsToTenant($partner, $request);
 
         if (!$partner) {
             return $this->error('Partner not found', 404);
@@ -82,6 +91,7 @@ class PartnerController extends BaseController
     public function update(Request $request, string $id): JsonResponse
     {
         $partner = PartnerModel::find($id);
+        $this->assertBelongsToTenant($partner, $request);
 
         if (!$partner) {
             return $this->error('Partner not found', 404);
@@ -115,9 +125,10 @@ class PartnerController extends BaseController
     /**
      * Remove the specified partner from storage.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $partner = PartnerModel::find($id);
+        $this->assertBelongsToTenant($partner, $request);
 
         if (!$partner) {
             return $this->error('Partner not found', 404);
@@ -137,7 +148,7 @@ class PartnerController extends BaseController
      */
     public function withdrawProfits(Request $request, string $id): JsonResponse
     {
-        $partner = PartnerModel::find($id);
+        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$partner) {
             return $this->error('Partner not found', 404);
@@ -216,3 +227,4 @@ class PartnerController extends BaseController
         );
     }
 }
+

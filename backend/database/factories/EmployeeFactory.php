@@ -11,13 +11,11 @@ class EmployeeFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id'   => 1,
             'name'        => $this->faker->name(),
-            'email'       => $this->faker->unique()->safeEmail(),
-            'job_title'   => $this->faker->jobTitle(),
+            'position'    => $this->faker->jobTitle(),
+            'phone'       => $this->faker->phoneNumber(),
             'base_salary' => $this->faker->numberBetween(3000, 15000),
-            'status'      => 'active',
-            'hired_at'    => $this->faker->date(),
+            'is_active'   => true,
         ];
     }
 }

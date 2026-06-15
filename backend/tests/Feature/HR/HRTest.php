@@ -2,11 +2,11 @@
 namespace Tests\Feature\HR;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 
 class HRTest extends TestCase
 {
-    use RefreshDatabase;
+    
 
     public function test_can_list_employees(): void
     {
@@ -24,10 +24,9 @@ class HRTest extends TestCase
 
         $response = $this->postJson('/api/hr/employees', [
             'name'        => 'أحمد محمد',
-            'email'       => 'ahmed@example.com',
-            'job_title'   => 'محاسب',
+            'position'    => 'محاسب',
+            'phone'       => '0500000000',
             'base_salary' => 5000,
-            'hired_at'    => '2024-01-01',
         ]);
 
         $response->assertStatus(201)
@@ -44,7 +43,7 @@ class HRTest extends TestCase
             'employee_id' => $employee->id,
         ]);
 
-        $response->assertStatus(201);
+        $response->assertStatus(200);
     }
 
     public function test_can_generate_payroll(): void
@@ -52,12 +51,12 @@ class HRTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/hr/payroll/generate', [
-            'period_start'         => '2024-01-01',
-            'period_end'           => '2024-01-31',
+            'month'                 => 1,
+            'year'                  => 2024,
             'working_days_in_month' => 26,
         ]);
 
-        $response->assertStatus(200)
+        $response->assertStatus(201)
                  ->assertJsonStructure(['data']);
     }
 

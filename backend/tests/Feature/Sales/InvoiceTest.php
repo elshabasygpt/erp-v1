@@ -5,12 +5,12 @@ namespace Tests\Feature\Sales;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Tests\TestCase;
 
 class InvoiceTest extends TestCase
 {
-    use RefreshDatabase;
+    
 
     public function test_invoice_creation_calculates_totals_correctly()
     {

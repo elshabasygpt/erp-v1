@@ -6,13 +6,25 @@ use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
 
 class EloquentApprovalRepository implements ApprovalRepositoryInterface
 {
-    public function findById(int $id): ?ApprovalRequest
+    public function findById(string $id): ?ApprovalRequest
     {
-        // Dummy implementation to satisfy interface
-        return null;
+        $model = \App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel::find($id);
+        if (!$model) return null;
+
+        return new ApprovalRequest(
+            id: $model->id,
+            tenantId: (string) $model->tenant_id,
+            requestableType: (string) $model->requestable_type,
+            requestableId: (string) $model->requestable_id,
+            requestedBy: (string) $model->requested_by,
+            status: $model->status,
+            assignedTo: $model->assigned_to ? (string) $model->assigned_to : null,
+            notes: $model->notes,
+            decidedAt: $model->decided_at?->toDateTimeString(),
+        );
     }
 
-    public function findPendingForUser(int $userId): array
+    public function findPendingForUser(string $userId): array
     {
         return [];
     }
@@ -27,19 +39,15 @@ class EloquentApprovalRepository implements ApprovalRepositoryInterface
         return $request;
     }
 
-    public function updateStatus(int $id, string $status, int $decidedBy, ?string $notes = null): ApprovalRequest
+    public function updateStatus(string $id, string $status, string $userId, ?string $notes = null): ApprovalRequest
     {
-        // Return a dummy object to satisfy interface return type
-        return new ApprovalRequest(
-            id: $id,
-            tenantId: 1,
-            requestableType: 'dummy',
-            requestableId: 1,
-            requestedBy: 1,
-            status: $status,
-            assignedTo: null,
-            notes: $notes,
-            decidedAt: now()->toDateTimeString(),
-        );
+        $model = \App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel::findOrFail($id);
+        $model->update([
+            'status' => $status,
+            'notes' => $notes,
+            'decided_at' => now(),
+        ]);
+
+        return $this->findById($id);
     }
 }

@@ -12,6 +12,17 @@ class ZatcaOnboardingService
 {
     private const ZATCA_SIMULATION_URL = 'https://gw-fatoora.zatca.gov.sa/e-invoicing/simulation';
     private const ZATCA_DEVELOPER_URL = 'https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal';
+    private const ZATCA_PRODUCTION_URL = 'https://gw-fatoora.zatca.gov.sa/e-invoicing/core';
+
+    public function getBaseUrl(): string
+    {
+        $env = $this->getTenantSetting('zatca_environment') ?? 'simulation';
+        return match($env) {
+            'production' => self::ZATCA_PRODUCTION_URL,
+            'developer'  => self::ZATCA_DEVELOPER_URL,
+            default      => self::ZATCA_SIMULATION_URL,
+        };
+    }
 
     /**
      * Submit OTP to get Compliance CSID from ZATCA.
@@ -29,7 +40,7 @@ class ZatcaOnboardingService
             'OTP' => $otp,
             'Accept-Version' => 'V2',
             'Content-Type' => 'application/json'
-        ])->post(self::ZATCA_DEVELOPER_URL . '/compliance', [
+        ])->post($this->getBaseUrl() . '/compliance', [
             'csr' => base64_encode($keys['csr'])
         ]);
 
@@ -52,6 +63,14 @@ class ZatcaOnboardingService
         $this->saveTenantSetting('zatca_compliance_secret', Crypt::encryptString($secret));
         $this->saveTenantSetting('zatca_status', 'compliance_issued');
 
+        // احفظ الـ certificate لو رجع في الـ response
+        if (!empty($data['binarySecurityToken'])) {
+            $certificate = base64_decode($data['binarySecurityToken']);
+            $this->saveTenantSetting('zatca_certificate', Crypt::encryptString($certificate));
+        }
+
+        $this->saveTenantSetting('zatca_onboarded_at', now()->toISOString());
+
         return [
             'status' => 'success',
             'message' => 'Compliance CSID acquired successfully.',
@@ -67,6 +86,9 @@ class ZatcaOnboardingService
             ['key' => $key],
             ['value' => $value, 'updated_at' => now(), 'id' => \Illuminate\Support\Str::uuid()]
         );
+
+        // امسح الـ Cache عشان القيمة الجديدة تتحمّل
+        \Illuminate\Support\Facades\Cache::forget("tenant_setting_{$key}");
     }
 
     /**
@@ -74,20 +96,33 @@ class ZatcaOnboardingService
      */
     public function getTenantSetting(string $key): ?string
     {
-        $setting = DB::connection('tenant')->table('tenant_settings')->where('key', $key)->first();
-        if (!$setting || !$setting->value) return null;
+        $cacheKey = "tenant_setting_{$key}";
+
+        $value = \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addMinutes(30),
+            function () use ($key) {
+                $setting = DB::connection('tenant')
+                    ->table('tenant_settings')
+                    ->where('key', $key)
+                    ->first();
+                return $setting?->value;
+            }
+        );
+
+        if (!$value) return null;
 
         // Try decrypting if it's an encrypted secure key
         try {
             if (str_starts_with($key, 'zatca_')) {
-                return Crypt::decryptString($setting->value);
+                return Crypt::decryptString($value);
             }
         } catch (\Exception $e) {
             // Value wasn't encrypted or changed app key
-            return $setting->value;
+            return $value;
         }
 
-        return $setting->value;
+        return $value;
     }
 
     /**
@@ -105,10 +140,11 @@ class ZatcaOnboardingService
         openssl_pkey_export($res, $privateKey);
 
         $dn = [
-            "countryName" => "SA",
-            "organizationName" => "KIMO Store",
-            "commonName" => "Testing Branch",
-            "organizationalUnitName" => "Riyadh Branch"
+            "countryName"            => "SA",
+            "organizationName"       => $this->getTenantSetting('company_name') ?? 'My Company',
+            "commonName"             => $this->getTenantSetting('branch_name') ?? 'Main Branch',
+            "organizationalUnitName" => $this->getTenantSetting('branch_name') ?? 'Main Branch',
+            "serialNumber"           => "1-" . ($this->getTenantSetting('company_name') ?? 'ERP') . "|2-XXXXXX|3-" . ($this->getTenantSetting('vat_number') ?? '300000000000003'),
         ];
         
         $csr = openssl_csr_new($dn, $res, $config);

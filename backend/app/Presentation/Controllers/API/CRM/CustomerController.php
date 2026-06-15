@@ -17,10 +17,12 @@ class CustomerController extends BaseController
      */
     public function index(Request $request): JsonResponse
     {
-        $limit = $request->query('limit', 15);
+        $limit = $request->query('limit', '15');
         $search = $request->query('search');
 
-        $query = CustomerModel::query();
+        $query = CustomerModel::select([
+            'id', 'name', 'email', 'phone', 'balance', 'credit_limit', 'is_active', 'created_at'
+        ])->with(['invoices' => fn($q) => $q->select('id', 'customer_id', 'total', 'status')]);
 
         if ($search) {
             $query->where(function($q) use ($search) {

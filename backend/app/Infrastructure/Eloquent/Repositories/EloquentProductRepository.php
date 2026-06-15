@@ -74,7 +74,10 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
     public function paginate(int $perPage = 15, array $filters = []): array
     {
-        $query = ProductModel::with('warehouseStocks');
+        $query = ProductModel::select([
+            'id', 'name', 'name_ar', 'sku', 'barcode', 'cost_price', 
+            'sell_price', 'is_active', 'unit_of_measure', 'category_id'
+        ])->with(['warehouseStocks', 'units']);
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'ilike', "%{$filters['search']}%")

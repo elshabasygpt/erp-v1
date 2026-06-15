@@ -9,10 +9,11 @@ use App\Infrastructure\Eloquent\Models\UserModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class ApprovalRequestModel extends BaseTenantModel
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, HasFactory, HasUuids;
 
     protected $table = 'approval_requests';
 
