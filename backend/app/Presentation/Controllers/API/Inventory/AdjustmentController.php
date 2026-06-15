@@ -13,9 +13,22 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use App\Application\Services\InventoryService;
+
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
+use App\Domain\Accounting\Entities\JournalEntry;
+use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Services\AccountMappingService;
 
 class AdjustmentController extends BaseTenantController
 {
+    public function __construct(
+        private InventoryService $inventoryService,
+        private JournalEntryRepositoryInterface $journalEntryRepository,
+        private AccountMappingService $accountMapping
+    ) {
+    }
     public function index(Request $request): JsonResponse
     {
         $query = InventoryAdjustmentModel::where('tenant_id', $this->getTenantId($request))->with([
@@ -39,12 +52,20 @@ class AdjustmentController extends BaseTenantController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'warehouse_id' => 'required|uuid|exists:tenant.warehouses,id',
+            'warehouse_id' => [
+                'required',
+                'uuid',
+                Rule::exists('tenant.warehouses', 'id')->where('tenant_id', $this->getTenantId($request))
+            ],
             'type' => 'required|in:spoilage,reconciliation',
             'date' => 'required|date',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|uuid|exists:tenant.products,id',
+            'items.*.product_id' => [
+                'required',
+                'uuid',
+                Rule::exists('tenant.products', 'id')->where('tenant_id', $this->getTenantId($request))
+            ],
             'items.*.actual_quantity' => 'required|numeric|min:0',
         ]);
 
@@ -69,6 +90,7 @@ class AdjustmentController extends BaseTenantController
                 // Find current stock
                 $currentStock = WarehouseProductModel::firstOrCreate(
                     [
+                        'tenant_id'    => $this->getTenantId($request),
                         'warehouse_id' => $validated['warehouse_id'],
                         'product_id'   => $item['product_id']
                     ],
@@ -82,7 +104,7 @@ class AdjustmentController extends BaseTenantController
                 $actual   = (float) $item['actual_quantity'];
                 $diff     = $actual - $expected;
 
-                $product = ProductModel::where('tenant_id', $this->getTenantId($request))->find($item['product_id']);
+                $product = ProductModel::where('tenant_id', $this->getTenantId($request))->findOrFail($item['product_id']);
                 $unitCost = $product->cost_price;
 
                 $adjustment->items()->create([
@@ -101,22 +123,52 @@ class AdjustmentController extends BaseTenantController
                     // Usually we log 'adjustment' as movement type from the migration: 'in', 'out', 'transfer', 'adjustment'
                     // We can use 'adjustment' and just log the numeric change (+ / -) wait, the migration allows quantity
                     
-                    StockMovementModel::create([
-            'tenant_id' => $this->getTenantId($request),
-                        'product_id' => $item['product_id'],
-                        'warehouse_id' => $validated['warehouse_id'],
-                        'type' => 'adjustment',
-                        'quantity' => $diff, // Will be negative if stock decreased
-                        'cost_per_unit' => $unitCost,
-                        'reference_type' => $validated['type'],
-                        'reference_id' => $adjustment->id,
-                        'notes' => "Inventory $validated[type]: expected $expected, actual $actual",
-                        'created_by' => $request->user()?->id,
-                    ]);
+                    $this->inventoryService->logMovement(
+                        $this->getTenantId($request),
+                        $item['product_id'],
+                        $validated['warehouse_id'],
+                        'adjustment',
+                        $diff,
+                        $unitCost,
+                        $validated['type'],
+                        $adjustment->id,
+                        "Inventory $validated[type]: expected $expected, actual $actual",
+                        $request->user()?->id
+                    );
 
                     // Update stock
                     $currentStock->quantity = $actual;
                     $currentStock->save();
+
+                    // Generate Journal Entry
+                    $totalCostDiff = abs($diff) * $unitCost;
+                    if ($totalCostDiff > 0) {
+                        $entry = new JournalEntry(
+                            id: null,
+                            entryNumber: $this->journalEntryRepository->getNextEntryNumber(),
+                            date: new \DateTimeImmutable($validated['date']),
+                            description: "Inventory Adjustment: {$validated['type']} (Ref: $ref)",
+                            isPosted: true,
+                            referenceType: 'inventory_adjustment',
+                            referenceId: $adjustment->id,
+                            createdBy: $request->user()?->id ?? ''
+                        );
+
+                        $inventoryAccount = $this->accountMapping->resolve('inventory');
+                        $shrinkageAccount = $this->accountMapping->resolve('inventory_shrinkage');
+
+                        if ($diff < 0) {
+                            // Loss (Spoilage/Shrinkage): Debit Shrinkage, Credit Inventory
+                            $entry->addLine(new JournalEntryLine(null, '', $shrinkageAccount, $totalCostDiff, 0, 'Inventory Loss/Shrinkage'));
+                            $entry->addLine(new JournalEntryLine(null, '', $inventoryAccount, 0, $totalCostDiff, 'Inventory Loss/Shrinkage'));
+                        } else {
+                            // Gain: Debit Inventory, Credit Shrinkage (or Gain account)
+                            $entry->addLine(new JournalEntryLine(null, '', $inventoryAccount, $totalCostDiff, 0, 'Inventory Gain'));
+                            $entry->addLine(new JournalEntryLine(null, '', $shrinkageAccount, 0, $totalCostDiff, 'Inventory Gain'));
+                        }
+
+                        $this->journalEntryRepository->create($entry);
+                    }
                 }
             }
 
@@ -129,7 +181,7 @@ class AdjustmentController extends BaseTenantController
         }
     }
 
-    public function show($id): JsonResponse
+    public function show(Request $request, $id): JsonResponse
     {
         $adj = InventoryAdjustmentModel::where('tenant_id', $this->getTenantId($request))->with(['warehouse', 'items.product'])->find($id);
         if (!$adj) return $this->error('Not Found', 404);

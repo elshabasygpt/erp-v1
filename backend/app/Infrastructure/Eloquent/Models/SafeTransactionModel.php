@@ -19,7 +19,10 @@ class SafeTransactionModel extends Model
         'reference_id',
         'reference_type',
         'transaction_date',
-        'created_by'
+        'created_by',
+        'cost_center_id',
+        'currency_id',
+        'exchange_rate'
     ];
 
     public function safe()

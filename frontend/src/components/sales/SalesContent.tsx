@@ -47,7 +47,7 @@ export default function SalesContent({ dict, locale, initialTab = 'invoices' }: 
             ? ['الرقم', 'العميل', 'التاريخ', 'الموظف', 'الإجمالي', 'الحالة']
             : ['No.', 'Customer', 'Date', 'Employee', 'Total', 'Status'];
 
-        const rows = filteredData.map(item => [
+        const rows = filteredData.map((item: any) => [
             item.invoice_number || item.return_number || item.quotation_number || item.so_number || item.shipping_number,
             item.customer?.name || item.sales_invoice?.customer?.name || 'Walk-in',
             new Date(item.invoice_date || item.created_at).toLocaleDateString(locale),
@@ -70,7 +70,7 @@ export default function SalesContent({ dict, locale, initialTab = 'invoices' }: 
     const handleExportDetailedPDF = () => {
         let overallProfit = 0;
         let overallCommission = 0;
-        filteredData.forEach(doc => {
+        filteredData.forEach((doc: any) => {
             overallCommission += Number(doc.commission_amount || 0);
             const items = doc.items || doc.sales_invoice?.items || [];
             items.forEach((item: any) => {
@@ -130,7 +130,7 @@ export default function SalesContent({ dict, locale, initialTab = 'invoices' }: 
                 }
             },
             [
-                { label: isRTL ? 'إجمالي المبيعات' : 'Total Sales', value: formatCurrency(filteredData.reduce((acc, curr) => acc + Number(curr.total || curr.shipping_cost || 0), 0)) },
+                { label: isRTL ? 'إجمالي المبيعات' : 'Total Sales', value: formatCurrency(filteredData.reduce((acc: number, curr: any) => acc + Number(curr.total || curr.shipping_cost || 0), 0)) },
                 { label: s.totalProfit, value: formatCurrency(overallProfit) },
                 { label: s.totalCommission, value: formatCurrency(overallCommission) },
                 { label: isRTL ? 'صافي الربح المتبقي' : 'Net Profit Remaining', value: formatCurrency(overallProfit - overallCommission) },
@@ -143,7 +143,7 @@ export default function SalesContent({ dict, locale, initialTab = 'invoices' }: 
 
     const handleExportCSV = () => {
         const headers = ['Doc No.', 'Customer', 'Date', 'Employee', 'Total', 'Status'];
-        const rows = filteredData.map(item => [
+        const rows = filteredData.map((item: any) => [
             item.invoice_number || item.return_number || item.quotation_number || item.so_number || item.shipping_number,
             item.customer?.name || item.sales_invoice?.customer?.name || 'Walk-in',
             item.invoice_date || item.created_at,
@@ -152,7 +152,7 @@ export default function SalesContent({ dict, locale, initialTab = 'invoices' }: 
             item.status
         ]);
 
-        let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(r => r.join(",")).join("\n");
+        let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map((r: any) => r.join(",")).join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);

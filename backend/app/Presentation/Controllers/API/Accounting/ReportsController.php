@@ -19,6 +19,7 @@ class ReportsController extends BaseTenantController
         private GenerateTrialBalanceUseCase $trialBalanceUseCase,
         private AccountRepositoryInterface $accountRepository,
         private JournalEntryRepositoryInterface $journalEntryRepository,
+        private \App\Application\Accounting\Services\CashFlowService $cashFlowService,
     ) {}
 
     public function chartOfAccounts(): JsonResponse
@@ -29,27 +30,38 @@ class ReportsController extends BaseTenantController
     public function trialBalance(Request $request): JsonResponse
     {
         $asOf = new \DateTimeImmutable($request->get('as_of', date('Y-m-d')));
-        return $this->success($this->trialBalanceUseCase->execute($asOf));
+        $costCenterId = $request->get('cost_center_id');
+        return $this->success($this->trialBalanceUseCase->execute($asOf, $costCenterId));
     }
 
     public function incomeStatement(Request $request): JsonResponse
     {
         $from = new \DateTimeImmutable($request->get('from', date('Y-m-01')));
         $to = new \DateTimeImmutable($request->get('to', date('Y-m-d')));
-        return $this->success($this->accountingService->generateIncomeStatement($from, $to, (string) $this->getTenantId($request)));
+        $costCenterId = $request->get('cost_center_id');
+        return $this->success($this->accountingService->generateIncomeStatement($from, $to, (string) $this->getTenantId($request), $costCenterId));
     }
 
     public function balanceSheet(Request $request): JsonResponse
     {
         $asOf = new \DateTimeImmutable($request->get('as_of', date('Y-m-d')));
-        return $this->success($this->accountingService->generateBalanceSheet($asOf));
+        $costCenterId = $request->get('cost_center_id');
+        return $this->success($this->accountingService->generateBalanceSheet($asOf, (string) $this->getTenantId($request), $costCenterId));
+    }
+
+    public function cashFlow(Request $request): JsonResponse
+    {
+        $from = new \DateTimeImmutable($request->get('from', date('Y-m-01')));
+        $to = new \DateTimeImmutable($request->get('to', date('Y-m-d')));
+        return $this->success($this->cashFlowService->generateCashFlowStatement($from, $to, (string) $this->getTenantId($request)));
     }
 
     public function generalLedger(Request $request): JsonResponse
     {
         $from = new \DateTimeImmutable($request->get('from', date('Y-m-01')));
         $to = new \DateTimeImmutable($request->get('to', date('Y-m-d')));
-        return $this->success($this->journalEntryRepository->getGeneralLedger($from, $to));
+        $costCenterId = $request->get('cost_center_id');
+        return $this->success($this->journalEntryRepository->getGeneralLedger($from, $to, $costCenterId));
     }
 
     public function journalEntries(Request $request): JsonResponse

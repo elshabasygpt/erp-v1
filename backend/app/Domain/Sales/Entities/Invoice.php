@@ -40,6 +40,9 @@ final class Invoice extends Entity
         private ?string $referenceNo = null,
         private float $paidAmount = 0,
         private ?string $salespersonId = null,
+        private ?string $costCenterId = null,
+        private ?string $currencyId = null,
+        private ?float $exchangeRate = null,
     ) {
         parent::__construct($id);
         $this->invoiceDate = $invoiceDate ?? new \DateTimeImmutable();
@@ -68,6 +71,9 @@ final class Invoice extends Entity
     public function getReferenceNo(): ?string { return $this->referenceNo; }
     public function getPaidAmount(): float { return $this->paidAmount; }
     public function getSalespersonId(): ?string { return $this->salespersonId; }
+    public function getCostCenterId(): ?string { return $this->costCenterId; }
+    public function getCurrencyId(): ?string { return $this->currencyId; }
+    public function getExchangeRate(): ?float { return $this->exchangeRate; }
     
     public function getZatcaQrCode(): ?string { return $this->zatcaQrCode; }
     public function getZatcaXml(): ?string { return $this->zatcaXml; }
@@ -156,6 +162,9 @@ final class Invoice extends Entity
             'zatca_qr_code' => $this->zatcaQrCode,
             'zatca_status' => $this->zatcaStatus,
             'zatca_error_message' => $this->zatcaErrorMessage,
+            'cost_center_id' => $this->costCenterId,
+            'currency_id' => $this->currencyId,
+            'exchange_rate' => $this->exchangeRate,
             'items' => array_map(fn(InvoiceItem $item) => $item->toArray(), $this->items),
         ];
     }

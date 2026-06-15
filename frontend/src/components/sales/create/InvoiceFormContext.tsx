@@ -19,6 +19,9 @@ export interface InvoiceFormState {
   paid_amount: number;
   credit_limit_override: boolean;
   installments: any[];
+  cost_center_id: string;
+  currency_id: string;
+  exchange_rate: number;
 }
 
 interface InvoiceContextProps {
@@ -35,6 +38,8 @@ interface InvoiceContextProps {
   warehouses: any[];
   salesChannels: any[];
   employees: any[];
+  costCenters: any[];
+  currencies: any[];
   
   subtotal: number;
   discountTotal: number;
@@ -67,6 +72,8 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [salesChannels, setSalesChannels] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [costCenters, setCostCenters] = useState<any[]>([]);
+  const [currencies, setCurrencies] = useState<any[]>([]);
 
   const [form, setForm] = useState<InvoiceFormState>({
     customer_id: '',
@@ -83,6 +90,9 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
     paid_amount: 0,
     credit_limit_override: false,
     installments: [],
+    cost_center_id: '',
+    currency_id: '',
+    exchange_rate: 1,
   });
 
   const [items, setItems] = useState<any[]>([]);
@@ -100,6 +110,8 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
     crmApi.getCustomers().then(res => setCustomers(extractArray(res))).catch(() => setCustomers([]));
     api.get('/users?role=sales').then(res => setEmployees(extractArray(res))).catch(() => setEmployees([]));
     api.get('/sales/channels?active_only=1').then(res => setSalesChannels(extractArray(res))).catch(() => setSalesChannels([]));
+    api.get('/accounting/cost-centers').then(res => setCostCenters(extractArray(res))).catch(() => setCostCenters([]));
+    api.get('/accounting/currencies').then(res => setCurrencies(extractArray(res))).catch(() => setCurrencies([]));
   }, []);
 
   const calculateAdjustedPrice = (basePrice: number, channelId: string, vatRate: number = 15) => {
@@ -181,6 +193,9 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
       const payload = {
         ...form,
         customer_id: form.customer_id || undefined,
+        cost_center_id: form.cost_center_id || undefined,
+        currency_id: form.currency_id || undefined,
+        exchange_rate: form.exchange_rate,
         paid_amount: form.type === 'cash' ? grandTotal : form.paid_amount,
         status,
         items: items.map(i => ({
@@ -226,6 +241,7 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
     <InvoiceFormContext.Provider value={{
       isRTL, loading, setLoading, form, setForm, items, setItems,
       customers, products, branches, warehouses, salesChannels, employees,
+      costCenters, currencies,
       subtotal, discountTotal, netSubtotal, taxTotal, grandTotal, dueAmount,
       addItem, removeItem, updateItem, handleSubmit,
       showPrintPreview, savedInvoiceData, handlePrintConfirm, handlePrintSkip,

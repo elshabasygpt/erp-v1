@@ -1,144 +1,101 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Presentation\Controllers\API\Treasury;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use App\Presentation\Requests\Treasury\StoreSafeRequest;
-use App\Presentation\Requests\Treasury\TransferRequest;
-use App\Infrastructure\Eloquent\Models\SafeModel;
-use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Presentation\Controllers\API\BaseController;
+use App\Application\Treasury\UseCases\CreateTreasuryReceiptUseCase;
+use App\Application\Treasury\UseCases\CreateTreasuryPaymentUseCase;
+use App\Application\Treasury\UseCases\TransferBetweenSafesUseCase;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Http\JsonResponse;
 
-class TreasuryController extends BaseTenantController
+class TreasuryController extends BaseController
 {
-    // GET /api/treasury/safes
-    public function getSafes(Request $request)
-    {
-        $safes = SafeModel::where('tenant_id', $this->getTenantId($request))->with('users')->where('tenant_id', $this->getTenantId($request))->get();
-        return response()->json(['status' => 'success', 'data' => $safes]);
-    }
+    public function __construct(
+        private readonly CreateTreasuryReceiptUseCase $receiptUseCase,
+        private readonly CreateTreasuryPaymentUseCase $paymentUseCase,
+        private readonly TransferBetweenSafesUseCase $transferUseCase
+    ) {}
 
-    // POST /api/treasury/safes
-    public function storeSafe(StoreSafeRequest $request)
-    {
-        $validated = $request->validated();
-
-        if (!isset($validated['balance'])) {
-            $validated['balance'] = 0;
-        }
-
-        $safe = SafeModel::create(array_merge($validated, [
-            'id' => Str::uuid()->toString(),
-            'tenant_id' => $this->getTenantId($request)
-        ]));
-        return response()->json(['status' => 'success', 'data' => $safe], 201);
-    }
-
-    // POST /api/treasury/safes/{safe_id}/assign-user
-    public function assignUser(Request $request, $safe_id)
-    {
-        $validated = $request->validate([
-            'user_id' => 'required|uuid',
-            'is_primary' => 'boolean'
-        ]);
-
-        $safe = SafeModel::where('tenant_id', $this->getTenantId($request))->findOrFail($safe_id);
-        $safe->users()->syncWithoutDetaching([
-            $validated['user_id'] => ['is_primary' => $validated['is_primary'] ?? false]
-        ]);
-
-        return response()->json(['status' => 'success', 'message' => 'User assigned successfully']);
-    }
-
-    // POST /api/treasury/transactions
-    public function storeTransaction(Request $request)
+    public function receipt(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'safe_id' => 'required|uuid|exists:tenant.safes,id',
-            'type' => 'required|in:deposit,withdrawal',
             'amount' => 'required|numeric|min:0.01',
+            'account_id' => 'required|uuid|exists:tenant.accounts,id',
+            'transaction_date' => 'nullable|date',
             'description' => 'nullable|string',
-            'transaction_date' => 'nullable|date'
+            'cost_center_id' => 'nullable|uuid|exists:tenant.cost_centers,id',
+            'currency_id' => 'nullable|uuid|exists:tenant.currencies,id',
+            'exchange_rate' => 'nullable|numeric|min:0.000001',
         ]);
 
-        return DB::transaction(function () use ($validated) {
-            $safe = SafeModel::lockForUpdate()->findOrFail($validated['safe_id']);
-
-            if ($validated['type'] === 'withdrawal' && (float)$safe->balance < (float)$validated['amount']) {
-                abort(400, 'Insufficient balance in safe.');
-            }
-
-            // Update safe balance
-            $safe->balance = $validated['type'] === 'deposit' 
-                             ? $safe->balance + $validated['amount'] 
-                             : $safe->balance - $validated['amount'];
-            $safe->save();
-
-            $transaction = SafeTransactionModel::create([
-            'tenant_id' => $this->getTenantId($request),
-                'safe_id' => $safe->id,
-                'type' => $validated['type'],
-                'amount' => $validated['amount'],
-                'description' => $validated['description'] ?? '',
-                'transaction_date' => $validated['transaction_date'] ?? now(),
-                // 'created_by' => auth()->id() // Mocked for test
-            ]);
-
-            return response()->json(['status' => 'success', 'data' => $transaction], 201);
-        });
+        try {
+            $transaction = $this->receiptUseCase->execute($this->getTenantId($request), $validated, auth()->id() ?? '');
+            return $this->success($transaction->toArray(), 'Treasury receipt recorded successfully.', 201);
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            \Log::error('Treasury receipt failed: ' . $e->getMessage());
+            return $this->error('Failed to record treasury receipt.', 500);
+        }
     }
 
-    // POST /api/treasury/transfer
-    public function transfer(TransferRequest $request)
+    public function payment(Request $request): JsonResponse
     {
-        $validated = $request->validated();
+        $validated = $request->validate([
+            'safe_id' => 'required|uuid|exists:tenant.safes,id',
+            'amount' => 'required|numeric|min:0.01',
+            'account_id' => 'required|uuid|exists:tenant.accounts,id',
+            'transaction_date' => 'nullable|date',
+            'description' => 'nullable|string',
+            'cost_center_id' => 'nullable|uuid|exists:tenant.cost_centers,id',
+            'currency_id' => 'nullable|uuid|exists:tenant.currencies,id',
+            'exchange_rate' => 'nullable|numeric|min:0.000001',
+        ]);
 
-        return DB::transaction(function () use ($validated, $request) {
-            $fromSafe = SafeModel::lockForUpdate()->findOrFail($validated['from_safe_id']);
-            $toSafe = SafeModel::lockForUpdate()->findOrFail($validated['to_safe_id']);
-            $this->assertBelongsToTenant($fromSafe, $request);
-            $this->assertBelongsToTenant($toSafe, $request);
+        try {
+            $transaction = $this->paymentUseCase->execute($this->getTenantId($request), $validated, auth()->id() ?? '');
+            return $this->success($transaction->toArray(), 'Treasury payment recorded successfully.', 201);
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            \Log::error('Treasury payment failed: ' . $e->getMessage());
+            return $this->error('Failed to record treasury payment.', 500);
+        }
+    }
 
-            if ((float)$fromSafe->balance < (float)$validated['amount']) {
-                abort(400, 'Insufficient balance in source safe.');
-            }
+    public function transfer(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'from_safe_id' => 'required|uuid|exists:tenant.safes,id',
+            'to_safe_id' => 'required|uuid|exists:tenant.safes,id|different:from_safe_id',
+            'amount' => 'required|numeric|min:0.01',
+            'transaction_date' => 'nullable|date',
+            'description' => 'nullable|string',
+            'cost_center_id' => 'nullable|uuid|exists:tenant.cost_centers,id',
+            'currency_id' => 'nullable|uuid|exists:tenant.currencies,id',
+            'exchange_rate' => 'nullable|numeric|min:0.000001',
+        ]);
 
-            // Deduct
-            $fromSafe->balance -= $validated['amount'];
-            $fromSafe->save();
-
-            // Add
-            $toSafe->balance += $validated['amount'];
-            $toSafe->save();
-
-            // Record Transfer Out
-            SafeTransactionModel::create([
-            'tenant_id' => $this->getTenantId($request),
-                'safe_id' => $fromSafe->id,
-                'type' => 'transfer_out',
-                'amount' => $validated['amount'],
-                'description' => "Transfer to {$toSafe->name}. " . ($validated['description'] ?? ''),
-                'reference_type' => 'transfer',
-                'reference_id' => $toSafe->id,
-                'transaction_date' => now()
-            ]);
-
-            // Record Transfer In
-            SafeTransactionModel::create([
-            'tenant_id' => $this->getTenantId($request),
-                'safe_id' => $toSafe->id,
-                'type' => 'transfer_in',
-                'amount' => $validated['amount'],
-                'description' => "Transfer from {$fromSafe->name}. " . ($validated['description'] ?? ''),
-                'reference_type' => 'transfer',
-                'reference_id' => $fromSafe->id,
-                'transaction_date' => now()
-            ]);
-
-            return response()->json(['status' => 'success', 'message' => 'Transfer completed']);
-        });
+        try {
+            $this->transferUseCase->execute(
+                $this->getTenantId($request),
+                $validated['from_safe_id'],
+                $validated['to_safe_id'],
+                (float) $validated['amount'],
+                auth()->id() ?? '',
+                $validated['transaction_date'] ?? date('Y-m-d'),
+                $validated['description'] ?? ''
+            );
+            return $this->success([], 'Transfer completed successfully.');
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            \Log::error('Transfer failed: ' . $e->getMessage());
+            return $this->error('Failed to process transfer.', 500);
+        }
     }
 }
-

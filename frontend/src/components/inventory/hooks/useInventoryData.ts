@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { inventoryApi } from '@/lib/api';
 import type { MainGroup, Unit } from '../InventoryModals';
 
 export interface Product {
@@ -9,67 +11,84 @@ export interface Product {
     imageUrl?: string;
 }
 
-const defaultGroups: MainGroup[] = [
-    { id: 'MG-1', name: 'Electronics', nameAr: 'إلكترونيات', subGroups: [{ id: 'SG-1', name: 'Phones', nameAr: 'هواتف' }, { id: 'SG-2', name: 'TVs', nameAr: 'شاشات' }, { id: 'SG-3', name: 'Accessories', nameAr: 'إكسسوارات' }] },
-    { id: 'MG-2', name: 'Furniture', nameAr: 'أثاث', subGroups: [{ id: 'SG-4', name: 'Chairs', nameAr: 'كراسي' }, { id: 'SG-5', name: 'Desks', nameAr: 'مكاتب' }] },
-    { id: 'MG-3', name: 'Office Supplies', nameAr: 'مستلزمات مكتبية', subGroups: [{ id: 'SG-6', name: 'Printers', nameAr: 'طابعات' }, { id: 'SG-7', name: 'Paper', nameAr: 'ورق' }] },
-    { id: 'MG-4', name: 'Food & Beverages', nameAr: 'أغذية ومشروبات', subGroups: [{ id: 'SG-8', name: 'Drinks', nameAr: 'مشروبات' }, { id: 'SG-9', name: 'Snacks', nameAr: 'وجبات خفيفة' }] },
-];
-
-const defaultUnits: Unit[] = [
-    { id: 'U-1', name: 'Piece', nameAr: 'قطعة', symbol: 'PCS' },
-    { id: 'U-2', name: 'Box', nameAr: 'صندوق', symbol: 'BOX' },
-    { id: 'U-3', name: 'Kilogram', nameAr: 'كيلوغرام', symbol: 'KG' },
-    { id: 'U-4', name: 'Meter', nameAr: 'متر', symbol: 'M' },
-    { id: 'U-5', name: 'Liter', nameAr: 'لتر', symbol: 'L' },
-    { id: 'U-6', name: 'Dozen', nameAr: 'درزن', symbol: 'DZ' },
-];
-
 export function useInventoryData() {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [groups, setGroups] = useState<MainGroup[]>(defaultGroups);
-    const [units, setUnits] = useState<Unit[]>(defaultUnits);
-    const [isLoading, setIsLoading] = useState(true);
+    // We keep these empty states for backward compatibility of the hook return type, 
+    // but the real data is fetched via react-query
+    const [localGroups, setLocalGroups] = useState<MainGroup[]>([]);
+    const [localUnits, setLocalUnits] = useState<Unit[]>([]);
 
-    const fetchProducts = useCallback(async () => {
-        try {
-            const { inventoryApi } = await import('@/lib/api');
-            const res = await inventoryApi.getProducts({ limit: 100 });
-            if (res.data?.data) {
-                const mapped = res.data.data.map((p: any) => ({
-                    id: p.id,
-                    code: p.sku || p.id.substring(0,6),
-                    name: p.name,
-                    nameAr: p.name_ar || p.name,
-                    barcode: p.barcode || '',
-                    mainGroupId: p.category_id || 'MG-1',
-                    subGroupId: '',
-                    unitId: p.unit_of_measure || 'U-1',
-                    costPrice: parseFloat(p.cost_price || 0),
-                    sellPrice: parseFloat(p.sell_price || 0),
-                    wholesalePrice: parseFloat(p.sell_price || 0) * 0.9,
-                    semiWholesalePrice: parseFloat(p.sell_price || 0) * 0.95,
-                    profitPercent: 0,
-                    discount: 0,
-                    stock: p.warehouseStocks?.reduce((acc: number, ws: any) => acc + parseFloat(ws.quantity), 0) || 0,
-                    minStock: p.stock_alert_level || 5,
-                    description: p.description || '',
-                    imageUrl: p.image_url || ''
-                }));
-                setProducts(mapped);
-            }
-        } catch (err) {
-            console.error("Failed to load products", err);
-        } finally {
-            setIsLoading(false);
+    const { data: groups = [], isLoading: isLoadingGroups } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+            const res = await inventoryApi.getCategories();
+            if (!res.data?.data) return [];
+            return res.data.data.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                nameAr: c.name_ar,
+                imageUrl: c.image_url,
+                discount: c.discount ? parseFloat(c.discount) : undefined,
+                subGroups: (c.children || []).map((child: any) => ({
+                    id: child.id,
+                    name: child.name,
+                    nameAr: child.name_ar,
+                    imageUrl: child.image_url,
+                    discount: child.discount ? parseFloat(child.discount) : undefined
+                }))
+            })) as MainGroup[];
         }
-    }, []);
+    });
 
-    useEffect(() => {
-        fetchProducts();
-    }, [fetchProducts]);
+    const { data: units = [], isLoading: isLoadingUnits } = useQuery({
+        queryKey: ['units'],
+        queryFn: async () => {
+            const res = await inventoryApi.getUnits();
+            if (!res.data?.data) return [];
+            return res.data.data.map((u: any) => ({
+                id: u.id,
+                name: u.name,
+                nameAr: u.name_ar,
+                symbol: u.symbol || ''
+            })) as Unit[];
+        }
+    });
+
+    const { data: products = [], isLoading: isLoadingProducts, error } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+            const res = await inventoryApi.getProducts({ limit: 100 });
+            if (!res.data?.data) return [];
+            
+            return res.data.data.map((p: any) => ({
+                id: p.id,
+                code: p.sku || p.id.substring(0,6),
+                name: p.name,
+                nameAr: p.name_ar || p.name,
+                barcode: p.barcode || '',
+                mainGroupId: p.category_id || '',
+                subGroupId: '',
+                unitId: p.unit_of_measure || '',
+                costPrice: parseFloat(p.cost_price || 0),
+                sellPrice: parseFloat(p.sell_price || 0),
+                wholesalePrice: parseFloat(p.sell_price || 0) * 0.9,
+                semiWholesalePrice: parseFloat(p.sell_price || 0) * 0.95,
+                profitPercent: 0,
+                discount: 0,
+                stock: p.warehouseStocks?.reduce((acc: number, ws: any) => acc + parseFloat(ws.quantity), 0) || 0,
+                minStock: p.stock_alert_level || 5,
+                description: p.description || '',
+                imageUrl: p.image_url || ''
+            })) as Product[];
+        }
+    });
+
+    const isLoading = isLoadingProducts || isLoadingGroups || isLoadingUnits;
 
     return {
-        products, setProducts, groups, setGroups, units, setUnits, isLoading
+        products, 
+        setProducts: () => {}, // Deprecated, will be removed later
+        groups, setGroups: setLocalGroups, 
+        units, setUnits: setLocalUnits, 
+        isLoading
     };
 }

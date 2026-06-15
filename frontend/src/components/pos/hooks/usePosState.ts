@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { inventoryApi, crmApi, settingsApi } from '@/lib/api';
 
 export interface CartItem {
@@ -40,10 +41,6 @@ export function usePosState(isRTL: boolean) {
     const [activeIdx, setActiveIdx] = useState(0);
     const activeSession = sessions[activeIdx];
 
-    const [products, setProducts] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([{ key: 'all', ar: 'الكل', en: 'All' }]);
-    const [allCustomers, setAllCustomers] = useState<any[]>([]);
-    const [sellerInfo, setSellerInfo] = useState<any>(null);
     const [lastInvoiceNum, setLastInvoiceNum] = useState(1);
 
     // Filter states
@@ -58,7 +55,6 @@ export function usePosState(isRTL: boolean) {
                 if (parsed.length > 0) setSessions(parsed);
             } catch (e) {}
         }
-        loadData();
     }, []);
 
     useEffect(() => {
@@ -67,43 +63,63 @@ export function usePosState(isRTL: boolean) {
         }
     }, [sessions]);
 
-    const loadData = async () => {
-        try {
-            const [prodRes, custRes] = await Promise.all([
-                inventoryApi.getProducts({ limit: 1000 }),
-                crmApi.getCustomers({ limit: 1000 })
-            ]);
+    // Use React Query for Products
+    const { data: productsData } = useQuery({
+        queryKey: ['pos-products'],
+        queryFn: async () => {
+            const res = await inventoryApi.getProducts({ limit: 1000 });
+            return res.data?.data?.data || res.data?.data || [];
+        }
+    });
+    const products = productsData || [];
 
-            const fetchedProducts = prodRes.data?.data?.data || prodRes.data?.data;
-            if (fetchedProducts && Array.isArray(fetchedProducts)) {
-                setProducts(fetchedProducts);
-                const cats = Array.from(new Set(fetchedProducts.map((p: any) => p.category).filter(Boolean)));
-                const newCats = [{ key: 'all', ar: 'الكل', en: 'All' }];
-                cats.forEach((c: any) => newCats.push({ key: c, ar: c, en: c }));
-                setCategories(newCats);
+    const categories = useMemo(() => {
+        const cats = Array.from(new Set(products.map((p: any) => p.category).filter(Boolean)));
+        const newCats = [{ key: 'all', ar: 'الكل', en: 'All' }];
+        cats.forEach((c: any) => newCats.push({ key: c, ar: c, en: c }));
+        return newCats;
+    }, [products]);
+
+    // Use React Query for Customers
+    const { data: customersData } = useQuery({
+        queryKey: ['pos-customers'],
+        queryFn: async () => {
+            const res = await crmApi.getCustomers({ limit: 1000 });
+            return res.data?.data?.data || res.data?.data || [];
+        }
+    });
+    const allCustomers = customersData || [];
+
+    // Use React Query for Seller Info
+    const { data: sellerInfoData } = useQuery({
+        queryKey: ['pos-settings'],
+        queryFn: async () => {
+            const res = await settingsApi.getSettings();
+            const s = res.data?.data || res.data;
+            if (s) {
+                return {
+                    name: s.company_name || s.store_name || (isRTL ? 'اسم الشركة' : 'My Company'),
+                    vatNumber: s.vat_number || s.tax_number || '',
+                    crNumber: s.commercial_register || s.cr_number || '',
+                    address: s.address || '',
+                    city: s.city || '',
+                    phone: s.phone || s.mobile || '',
+                };
             }
+            return null;
+        }
+    });
+    const sellerInfo = sellerInfoData || null;
 
-            const fetchedCustomers = custRes.data?.data?.data || custRes.data?.data;
-            if (fetchedCustomers && Array.isArray(fetchedCustomers)) {
-                setAllCustomers(fetchedCustomers);
-            }
-
-            try {
-                const settingsRes = await settingsApi.getSettings();
-                const s = settingsRes.data?.data || settingsRes.data;
-                if (s) {
-                    setSellerInfo({
-                        name: s.company_name || s.store_name || (isRTL ? 'اسم الشركة' : 'My Company'),
-                        vatNumber: s.vat_number || s.tax_number || '',
-                        crNumber: s.commercial_register || s.cr_number || '',
-                        address: s.address || '',
-                        city: s.city || '',
-                        phone: s.phone || s.mobile || '',
-                    });
-                }
-            } catch (e) {}
-        } catch (e) {}
-    };
+    // Use React Query for Warehouses
+    const { data: warehousesData } = useQuery({
+        queryKey: ['pos-warehouses'],
+        queryFn: async () => {
+            const res = await inventoryApi.getWarehouses();
+            return res.data?.data || [];
+        }
+    });
+    const warehouses = warehousesData || [];
 
     const updateActiveSession = useCallback((updates: Partial<PosSession>) => {
         setSessions(prev => {
@@ -142,7 +158,7 @@ export function usePosState(isRTL: boolean) {
 
     return {
         sessions, setSessions, activeIdx, setActiveIdx, activeSession, updateActiveSession,
-        products, setProducts, categories, allCustomers, setAllCustomers, sellerInfo,
+        products, categories, allCustomers, sellerInfo, warehouses,
         lastInvoiceNum, setLastInvoiceNum, handleNewTab, handleCloseTab,
         category, setCategory, search, setSearch, createEmptySession
     };

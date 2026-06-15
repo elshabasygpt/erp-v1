@@ -76,7 +76,8 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     {
         $query = ProductModel::select([
             'id', 'name', 'name_ar', 'sku', 'barcode', 'cost_price', 
-            'sell_price', 'is_active', 'unit_of_measure', 'category_id'
+            'sell_price', 'is_active', 'unit_of_measure', 'category_id',
+            'description', 'image_url', 'stock_alert_level', 'tenant_id'
         ])->with(['warehouseStocks', 'units']);
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {

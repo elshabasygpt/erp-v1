@@ -18,8 +18,14 @@ use App\Infrastructure\Eloquent\Models\Accounting\ChartOfAccountModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+use App\Domain\Sales\Services\SalesReturnService;
+
 class ConfirmSalesReturnUseCase
 {
+    public function __construct(
+        private readonly SalesReturnService $salesReturnService
+    ) {}
+
     public function execute(string $salesReturnId, string $userId): void
     {
         DB::transaction(function () use ($salesReturnId, $userId) {
@@ -38,52 +44,8 @@ class ConfirmSalesReturnUseCase
             $salesReturn->save();
 
             // 2. Process Items and Inventory Reversal
-            foreach ($salesReturn->items as $item) {
-                // Inventory Reversal
-                if ($item->condition === 'good') {
-                    $wp = WarehouseProductModel::firstOrCreate(
-                        ['warehouse_id' => $salesReturn->warehouse_id, 'product_id' => $item->product_id],
-                        ['id' => Str::uuid()->toString(), 'quantity' => 0]
-                    );
-
-                    $wp->quantity += $item->quantity;
-                    $wp->save();
-
-                    StockMovementModel::create([
-                        'id' => Str::uuid()->toString(),
-                        'product_id' => $item->product_id,
-                        'warehouse_id' => $salesReturn->warehouse_id,
-                        'type' => 'in',
-                        'quantity' => $item->quantity,
-                        'reference_id' => $salesReturn->id,
-                        'reference_type' => 'sales_return',
-                        'date' => now(),
-                    ]);
-                } else {
-                    StockMovementModel::create([
-                        'id' => Str::uuid()->toString(),
-                        'product_id' => $item->product_id,
-                        'warehouse_id' => $salesReturn->warehouse_id,
-                        'type' => 'in',
-                        'quantity' => $item->quantity,
-                        'reference_id' => $salesReturn->id,
-                        'reference_type' => 'sales_return',
-                        'date' => now(),
-                    ]);
-
-                    StockMovementModel::create([
-                        'id' => Str::uuid()->toString(),
-                        'product_id' => $item->product_id,
-                        'warehouse_id' => $salesReturn->warehouse_id,
-                        'type' => 'out',
-                        'quantity' => $item->quantity,
-                        'reference_id' => $salesReturn->id,
-                        'reference_type' => 'damaged_goods',
-                        'notes' => 'Auto-quarantine of damaged return',
-                        'date' => now(),
-                    ]);
-                }
-            }
+            // 2. Process Items and Inventory Reversal using SalesReturnService
+            $this->salesReturnService->processInventoryReturn($salesReturn->tenant_id, $salesReturn, $userId);
 
             // 3. Accounting Reversal (Double Entry)
             $salesReturnsAccount = ChartOfAccountModel::where('code', '4102')->first();

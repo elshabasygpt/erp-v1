@@ -6,6 +6,7 @@ namespace App\Application\Sales\UseCases\Deliveries;
 
 use App\Application\Sales\DTOs\Deliveries\CreateDeliveryDTO;
 use App\Infrastructure\Eloquent\Models\DeliveryModel;
+use App\Infrastructure\Eloquent\Models\DeliveryItemModel;
 use App\Infrastructure\Eloquent\Models\DeliveryStatusLogModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -47,7 +48,18 @@ final class CreateDeliveryUseCase
                 'created_by' => $userId,
             ]);
 
-            return $delivery;
+            foreach ($dto->items as $item) {
+                DeliveryItemModel::create([
+                    'id' => Str::uuid()->toString(),
+                    'tenant_id' => $delivery->tenant_id,
+                    'delivery_id' => $delivery->id,
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'notes' => $item['notes'] ?? null,
+                ]);
+            }
+
+            return $delivery->load('items');
         });
     }
 }

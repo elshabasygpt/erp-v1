@@ -23,7 +23,7 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
 
     const {
         sessions, setSessions, activeIdx, setActiveIdx, activeSession, updateActiveSession,
-        products, setProducts, categories, allCustomers, setAllCustomers, sellerInfo,
+        products, categories, allCustomers, sellerInfo, warehouses,
         lastInvoiceNum, setLastInvoiceNum, handleNewTab, handleCloseTab,
         category, setCategory, search, setSearch, createEmptySession
     } = usePosState(isRTL);
@@ -48,11 +48,11 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
         activeSession, sessions, setSessions, setActiveIdx, activeIdx, createEmptySession,
         cartTotal, change, totalPaidCNum, totalPaidCardNum, sellerInfo, isRTL,
         lastInvoiceNum, setLastInvoiceNum, handleSaveInvoice, setShowPayment,
-        setPrintInvoiceData, setShowPrint
+        setPrintInvoiceData, setShowPrint, allCustomers, warehouses
     );
 
     useBarcodeScanner((barcode) => {
-        const localProd = products.find(p => p.barcode === barcode || p.code === barcode);
+        const localProd = products.find((p: any) => p.barcode === barcode || p.code === barcode);
         if (localProd) {
             addToCart(localProd);
             setSearch('');
@@ -60,7 +60,7 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
         }
         inventoryApi.scanBarcode(barcode).then(res => {
             if (res.data?.data) {
-                setProducts(prev => [...prev, res.data.data]);
+                // Instead of setProducts, we just add it to the cart directly since we have the product data.
                 addToCart(res.data.data);
                 setSearch('');
             }
@@ -168,7 +168,7 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
 
             <PosCartSidebar 
                 isRTL={isRTL} activeSession={activeSession} updateActiveSession={updateActiveSession}
-                allCustomers={allCustomers} setAllCustomers={setAllCustomers}
+                allCustomers={allCustomers}
                 clearCart={clearCart} removeFromCart={removeFromCart} updateQty={updateQty}
                 cartSubtotalExcl={cartSubtotalExcl} discountedExcl={discountedExcl} cartVat={cartVat}
                 cartTotal={cartTotal} setShowHoldModal={setShowHoldModal} setShowPayment={setShowPayment}

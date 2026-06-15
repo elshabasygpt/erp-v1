@@ -14,7 +14,11 @@ final class JournalEntryLine extends Entity
         private string $accountId,
         private float $debit,
         private float $credit,
+        private float $transactionDebit = 0.0,
+        private float $transactionCredit = 0.0,
         private ?string $description = null,
+        private ?string $costCenterId = null,
+        private ?string $projectId = null,
     ) {
         parent::__construct($id);
         $this->validate();
@@ -24,7 +28,11 @@ final class JournalEntryLine extends Entity
     public function getAccountId(): string { return $this->accountId; }
     public function getDebit(): float { return $this->debit; }
     public function getCredit(): float { return $this->credit; }
+    public function getTransactionDebit(): float { return $this->transactionDebit; }
+    public function getTransactionCredit(): float { return $this->transactionCredit; }
     public function getDescription(): ?string { return $this->description; }
+    public function getCostCenterId(): ?string { return $this->costCenterId; }
+    public function getProjectId(): ?string { return $this->projectId; }
 
     private function validate(): void
     {
@@ -49,7 +57,11 @@ final class JournalEntryLine extends Entity
             'account_id' => $this->accountId,
             'debit' => $this->debit,
             'credit' => $this->credit,
+            'transaction_debit' => $this->transactionDebit,
+            'transaction_credit' => $this->transactionCredit,
             'description' => $this->description,
+            'cost_center_id' => $this->costCenterId,
+            'project_id' => $this->projectId,
         ];
     }
 }

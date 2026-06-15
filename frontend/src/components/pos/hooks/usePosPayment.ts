@@ -19,7 +19,9 @@ export function usePosPayment(
     handleSaveInvoice: any,
     setShowPayment: any,
     setPrintInvoiceData: any,
-    setShowPrint: any
+    setShowPrint: any,
+    allCustomers: any[],
+    warehouses: any[]
 ) {
     const [successMsg, setSuccessMsg] = useState('');
 
@@ -28,29 +30,24 @@ export function usePosPayment(
         return {
             id: `INV-2024-${String(lastInvoiceNum).padStart(4, '0')}`,
             uuid,
-            type: activeSession.invoiceType as any,
-            date: new Date().toISOString().slice(0, 10),
-            time: new Date().toTimeString().slice(0, 8),
-            seller: sellerInfo || { 
-                name: isRTL ? 'شركتي التجارية' : 'My Trading Company', 
-                vatNumber: '300000000000003', crNumber: '1010000000', 
-                address: '1234 شارع الملك فهد، حي العليا', city: isRTL ? 'الرياض' : 'Riyadh', phone: '+966 11 000 0000' 
-            },
-            buyer: activeSession.customerName ? { name: activeSession.customerName, vatNumber: activeSession.customerVat || undefined } : undefined,
+            customer_id: activeSession.customerName ? allCustomers?.find(c => c.name === activeSession.customerName)?.id : undefined,
+            warehouse_id: warehouses?.[0]?.id, // Require the first warehouse for now
+            type: activeSession.paymentType === 'credit' ? 'credit' : 'cash',
+            status: 'confirmed',
+            due_date: new Date().toISOString().slice(0, 10),
             items: activeSession.cart.map((i) => ({
-                code: i.product.code,
-                name: isRTL ? (i.product.nameAr || i.product.name) : i.product.name,
-                qty: i.qty,
-                unit: i.product.unit || 'PC',
-                price: i.product.price * (1 - i.discount / 100),
-                vatRate: 0.15,
+                product_id: i.product.id,
+                quantity: i.qty,
+                unit_price: i.product.price,
+                vat_rate: 15,
+                discount_percent: i.discount,
             })),
-            discount: activeSession.invoiceDiscount,
-            paymentType: activeSession.paymentType === 'card' ? 'visa' : activeSession.paymentType as any,
-            total: cartTotal,
-            change: change,
+            paid_amount: cartTotal, // Fully paid if cash
+            payment_method: activeSession.paymentType === 'card' ? 'visa' : activeSession.paymentType,
+            sales_channel_id: undefined, // Optional
+            internal_notes: `POS Invoice. Total: ${cartTotal}, Change: ${change}`,
         };
-    }, [activeSession, cartTotal, change, lastInvoiceNum, sellerInfo, isRTL]);
+    }, [activeSession, cartTotal, change, lastInvoiceNum, sellerInfo, isRTL, allCustomers, warehouses]);
 
     const handleCompletePurchase = useCallback(async (print: boolean) => {
         if ((activeSession.paymentType === 'cash' || activeSession.paymentType === 'split') && (totalPaidCNum + totalPaidCardNum) < cartTotal) {

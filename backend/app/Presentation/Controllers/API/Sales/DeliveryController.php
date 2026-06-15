@@ -20,12 +20,13 @@ class DeliveryController extends BaseTenantController
     public function __construct(
         private readonly CreateDeliveryUseCase $createDeliveryUseCase,
         private readonly UpdateDeliveryStatusUseCase $updateDeliveryStatusUseCase,
-        private readonly AssignDeliveryUseCase $assignDeliveryUseCase
+        private readonly AssignDeliveryUseCase $assignDeliveryUseCase,
+        private readonly \App\Domain\Sales\Services\DeliveryService $deliveryService
     ) {}
 
     public function index(Request $request): JsonResponse
     {
-        $limit = $request->query('limit', 15);
+        $limit = $request->query('limit', '15');
         $status = $request->query('status');
         
         $query = DeliveryModel::where('tenant_id', $this->getTenantId($request))->with(['salesOrder.customer', 'driver'])->orderBy('delivery_date', 'desc');
@@ -54,6 +55,10 @@ class DeliveryController extends BaseTenantController
             'delivery_fee' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'status' => 'nullable|string|in:pending,assigned,dispatched,out_for_delivery,delivered,failed,returned',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|uuid|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.notes' => 'nullable|string',
         ]);
 
         try {
@@ -120,6 +125,19 @@ class DeliveryController extends BaseTenantController
         } catch (\Exception $e) {
             \Log::error('Delivery status update failed: ' . $e->getMessage());
             return $this->error('Failed to update delivery status: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function cancel(Request $request, string $id): JsonResponse
+    {
+        try {
+            $delivery = $this->deliveryService->cancelDelivery($this->getTenantId($request), $id, auth()->id() ?? '');
+            return $this->success($delivery->toArray(), 'Delivery cancelled successfully');
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            \Log::error('Delivery cancellation failed: ' . $e->getMessage());
+            return $this->error('Failed to cancel delivery: ' . $e->getMessage(), 500);
         }
     }
 }

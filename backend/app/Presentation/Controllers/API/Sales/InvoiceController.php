@@ -188,22 +188,26 @@ class InvoiceController extends BaseTenantController
                 $invoice->refresh();
 
                 \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
-                    tenantId: (string) $this->getTenantId($request),
-                    event: 'invoice.confirmed',
-                    payload: [
-                        'invoice_id'     => $invoice->id,
-                        'invoice_number' => $invoice->invoice_number,
-                        'total'          => $invoice->total,
-                        'customer_id'    => $invoice->customer_id,
-                        'status'         => 'confirmed',
-                    ]
+                    $this->getTenantId($request),
+                    'invoice.confirmed',
+                    ['invoice_id' => $invoice->id, 'status' => 'confirmed']
                 );
+
+                return $this->success($invoice->toArray(), 'Sales invoice confirmed successfully');
             } catch (\Exception $e) {
                 \Log::error('Confirmation failed: ' . $e->getMessage());
                 return $this->error('Failed to confirm invoice: ' . $e->getMessage(), 500);
             }
         } else {
             $invoice->update(['status' => $validated['status']]);
+        }
+
+        if ($validated['status'] === 'cancelled') {
+            \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
+                $this->getTenantId($request),
+                'invoice.cancelled',
+                ['invoice_id' => $invoice->id, 'status' => 'cancelled']
+            );
         }
 
         return $this->success($invoice, 'Sales invoice status updated successfully');

@@ -16,9 +16,31 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
     public function create(JournalEntry $entry): JournalEntry
     {
         return DB::connection('tenant')->transaction(function () use ($entry) {
-            JournalEntryModel::create(['id'=>$entry->getId(),'entry_number'=>$entry->getEntryNumber(),'date'=>$entry->getDate(),'description'=>$entry->getDescription(),'is_posted'=>$entry->isPosted(),'reference_type'=>$entry->getReferenceType(),'reference_id'=>$entry->getReferenceId(),'created_by'=>$entry->getLines()[0]->getDescription() ?? null]);
+            JournalEntryModel::create([
+                'id' => $entry->getId(),
+                'entry_number' => $entry->getEntryNumber(),
+                'date' => $entry->getDate(),
+                'description' => $entry->getDescription(),
+                'transaction_currency_id' => $entry->getTransactionCurrencyId(),
+                'exchange_rate' => $entry->getExchangeRate(),
+                'is_posted' => $entry->isPosted(),
+                'reference_type' => $entry->getReferenceType(),
+                'reference_id' => $entry->getReferenceId(),
+                'created_by' => $entry->getCreatedBy()
+            ]);
             foreach ($entry->getLines() as $line) {
-                JournalEntryLineModel::create(['id'=>$line->getId(),'journal_entry_id'=>$entry->getId(),'account_id'=>$line->getAccountId(),'debit'=>$line->getDebit(),'credit'=>$line->getCredit(),'description'=>$line->getDescription()]);
+                JournalEntryLineModel::create([
+                    'id' => $line->getId(),
+                    'journal_entry_id' => $entry->getId(),
+                    'account_id' => $line->getAccountId(),
+                    'debit' => $line->getDebit(),
+                    'credit' => $line->getCredit(),
+                    'transaction_debit' => $line->getTransactionDebit(),
+                    'transaction_credit' => $line->getTransactionCredit(),
+                    'description' => $line->getDescription(),
+                    'cost_center_id' => $line->getCostCenterId(),
+                    'project_id' => $line->getProjectId()
+                ]);
             }
             return $this->findById($entry->getId());
         });
@@ -45,35 +67,72 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
         return $q->get()->toArray();
     }
 
-    public function getGeneralLedger(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    public function getGeneralLedger(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $costCenterId = null): array
     {
-        return DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
+        $tenantId = app('currentTenant')->id ?? 'tenant_context';
+        $q = DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
             ->join('journal_entries','journal_entry_lines.journal_entry_id','=','journal_entries.id')
             ->where('journal_entries.is_posted', true)
             ->whereBetween('journal_entries.date', [$from->format('Y-m-d'), $to->format('Y-m-d')])
-            ->select('journal_entry_lines.account_id','journal_entry_lines.debit','journal_entry_lines.credit','journal_entries.date','journal_entries.description')
-            ->orderBy('journal_entries.date')
-            ->get()->toArray();
+            ->select('journal_entry_lines.account_id','journal_entry_lines.debit','journal_entry_lines.credit','journal_entries.date','journal_entries.description','journal_entry_lines.cost_center_id')
+            ->orderBy('journal_entries.date');
+            
+        if ($costCenterId) {
+            $q->where('journal_entry_lines.cost_center_id', $costCenterId);
+        }
+        
+        return $q->get()->toArray();
     }
 
-    public function getTrialBalance(\DateTimeImmutable $asOf): array
+    public function getTrialBalance(\DateTimeImmutable $asOf, ?string $costCenterId = null): array
     {
-        return DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
+        $tenantId = app('currentTenant')->id ?? 'tenant_context';
+        $q = DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
             ->join('journal_entries','journal_entry_lines.journal_entry_id','=','journal_entries.id')
             ->join('accounts','journal_entry_lines.account_id','=','accounts.id')
             ->where('journal_entries.is_posted', true)
             ->where('journal_entries.date','<=',$asOf->format('Y-m-d'))
             ->groupBy('accounts.id','accounts.code','accounts.name','accounts.name_ar','accounts.type')
             ->selectRaw('accounts.id, accounts.code, accounts.name, accounts.name_ar, accounts.type, SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit')
-            ->orderBy('accounts.code')
-            ->get()->toArray();
+            ->orderBy('accounts.code');
+            
+        if ($costCenterId) {
+            $q->where('journal_entry_lines.cost_center_id', $costCenterId);
+        }
+
+        return $q->get()->map(function($r){
+            $r->total_debit = (float)$r->total_debit;
+            $r->total_credit = (float)$r->total_credit;
+            return (array)$r;
+        })->toArray();
     }
 
     private function toDomain(JournalEntryModel $m): JournalEntry
     {
-        $entry = new JournalEntry($m->id, $m->entry_number, new \DateTimeImmutable($m->date), $m->description, $m->is_posted, $m->reference_type, $m->reference_id, $m->created_by);
+        $entry = new JournalEntry(
+            $m->id, 
+            $m->entry_number, 
+            new \DateTimeImmutable($m->date), 
+            $m->description, 
+            $m->transaction_currency_id,
+            (float) $m->exchange_rate,
+            $m->is_posted, 
+            $m->reference_type, 
+            $m->reference_id, 
+            $m->created_by
+        );
         foreach ($m->lines as $l) {
-            $entry->addLine(new JournalEntryLine($l->id, $l->journal_entry_id, $l->account_id, (float)$l->debit, (float)$l->credit, $l->description));
+            $line = new JournalEntryLine(
+                $l->id, 
+                $l->journal_entry_id, 
+                $l->account_id, 
+                (float)$l->debit, 
+                (float)$l->credit, 
+                (float)$l->transaction_debit,
+                (float)$l->transaction_credit,
+                $l->description
+            );
+            $entry->addLine($line);
         }
         return $entry;
     }

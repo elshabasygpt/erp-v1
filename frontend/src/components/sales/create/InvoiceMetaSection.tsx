@@ -5,7 +5,7 @@ import { useInvoiceForm } from './InvoiceFormContext';
 import { FileText } from 'lucide-react';
 
 export function InvoiceMetaSection() {
-  const { isRTL, form, setForm, branches, warehouses, salesChannels } = useInvoiceForm();
+  const { isRTL, form, setForm, branches, warehouses, salesChannels, costCenters, currencies } = useInvoiceForm();
 
   return (
     <div className="bg-white dark:bg-[#1a1a2e] p-6 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm space-y-5">
@@ -95,6 +95,56 @@ export function InvoiceMetaSection() {
             placeholder="PO-12345" 
           />
         </div>
+
+        <div className="space-y-1">
+          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400">
+            {isRTL ? 'مركز التكلفة' : 'Cost Center'}
+          </label>
+          <select 
+            value={form.cost_center_id} 
+            onChange={e => setForm({...form, cost_center_id: e.target.value})} 
+            className="w-full px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 dark:text-white"
+          >
+            <option value="">{isRTL ? 'بدون مركز تكلفة' : 'No Cost Center'}</option>
+            {costCenters.map((cc:any) => <option key={cc.id} value={cc.id}>{cc.name}</option>)}
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400">
+            {isRTL ? 'العملة' : 'Currency'}
+          </label>
+          <select 
+            value={form.currency_id} 
+            onChange={e => {
+              const selectedCurrency = currencies.find((c:any) => c.id === e.target.value);
+              setForm({
+                ...form, 
+                currency_id: e.target.value,
+                exchange_rate: selectedCurrency ? selectedCurrency.exchange_rate : 1.0
+              });
+            }} 
+            className="w-full px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 dark:text-white"
+          >
+            <option value="">{isRTL ? 'العملة الافتراضية' : 'Default Currency'}</option>
+            {currencies.map((c:any) => <option key={c.id} value={c.id}>{c.code} - {c.name}</option>)}
+          </select>
+        </div>
+
+        {form.currency_id && (
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400">
+              {isRTL ? 'سعر الصرف' : 'Exchange Rate'}
+            </label>
+            <input 
+              type="number" 
+              step="0.000001"
+              value={form.exchange_rate} 
+              onChange={e => setForm({...form, exchange_rate: parseFloat(e.target.value) || 1.0})} 
+              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 dark:text-white" 
+            />
+          </div>
+        )}
       </div>
     </div>
   );

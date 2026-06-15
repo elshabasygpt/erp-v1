@@ -23,6 +23,9 @@ final class PurchaseInvoice extends Entity
         private ?string $createdBy = null,
         private ?string $updatedBy = null,
         private ?\DateTimeImmutable $invoiceDate = null,
+        private ?string $costCenterId = null,
+        private ?string $currencyId = null,
+        private ?float $exchangeRate = null,
     ) {
         parent::__construct($id);
         $this->invoiceDate = $invoiceDate ?? new \DateTimeImmutable();
@@ -38,6 +41,9 @@ final class PurchaseInvoice extends Entity
     public function getWarehouseId(): ?string { return $this->warehouseId; }
     public function getInvoiceDate(): \DateTimeImmutable { return $this->invoiceDate; }
     public function getItems(): array { return $this->items; }
+    public function getCostCenterId(): ?string { return $this->costCenterId; }
+    public function getCurrencyId(): ?string { return $this->currencyId; }
+    public function getExchangeRate(): ?float { return $this->exchangeRate; }
 
     public function setItems(array $items): void
     {
@@ -88,6 +94,9 @@ final class PurchaseInvoice extends Entity
             'notes' => $this->notes,
             'warehouse_id' => $this->warehouseId,
             'invoice_date' => $this->invoiceDate->format('Y-m-d H:i:s'),
+            'cost_center_id' => $this->costCenterId,
+            'currency_id' => $this->currencyId,
+            'exchange_rate' => $this->exchangeRate,
         ];
     }
 }

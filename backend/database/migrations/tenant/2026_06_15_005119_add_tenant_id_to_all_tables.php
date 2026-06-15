@@ -10,7 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         $connection = Schema::connection('tenant');
-        $tables = array_map(function ($t) { return $t->name; }, DB::connection('tenant')->select("SELECT name FROM sqlite_master WHERE type='table'"));
+        $tables = array_map(function($table) {
+            return $table['name'];
+        }, $connection->getTables());
 
         foreach ($tables as $table) {
             if ($table === 'migrations' || $table === 'sqlite_sequence') {
@@ -19,7 +21,7 @@ return new class extends Migration
 
             if (!$connection->hasColumn($table, 'tenant_id')) {
                 $connection->table($table, function (Blueprint $blueprint) {
-                    $blueprint->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->after('id');
+                    $blueprint->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->nullable();
                 });
             }
         }
@@ -28,7 +30,9 @@ return new class extends Migration
     public function down(): void
     {
         $connection = Schema::connection('tenant');
-        $tables = array_map(function ($t) { return $t->name; }, DB::connection('tenant')->select("SELECT name FROM sqlite_master WHERE type='table'"));
+        $tables = array_map(function($table) {
+            return $table['name'];
+        }, $connection->getTables());
 
         foreach ($tables as $table) {
             if ($table === 'migrations' || $table === 'sqlite_sequence') {

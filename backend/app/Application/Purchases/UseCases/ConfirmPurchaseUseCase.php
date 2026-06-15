@@ -13,6 +13,7 @@ use App\Domain\Accounting\Services\FiscalPeriodService;
 use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Application\Accounting\Services\ExchangeRateService;
 use App\Domain\Inventory\Services\StockLotService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -32,7 +33,9 @@ final class ConfirmPurchaseUseCase
         private AccountMappingService $accountMapping,
         private FiscalPeriodService $fiscalPeriodService,
         private JournalEntryRepositoryInterface $journalEntryRepository,
+        private ExchangeRateService $exchangeRateService,
         private StockLotService $stockLotService,
+        private \App\Domain\Inventory\Services\InventoryValuationService $inventoryValuationService,
     ) {}
 
     public function execute(string $purchaseId, string $paymentType, string $userId): void
@@ -48,30 +51,15 @@ final class ConfirmPurchaseUseCase
 
             // ── Stock addition with row locks ──
             foreach ($purchase->items as $item) {
-                $wp = WarehouseProductModel::lockForUpdate()->firstOrCreate(
-                    ['warehouse_id' => $purchase->warehouse_id, 'product_id' => $item->product_id],
-                    ['id' => Str::uuid()->toString(), 'quantity' => 0, 'average_cost' => 0]
+                $this->inventoryValuationService->recordMovement(
+                    $item->product_id,
+                    $purchase->warehouse_id,
+                    (float) $item->quantity,
+                    (float) $item->unit_price,
+                    'purchase_invoice',
+                    $purchase->id,
+                    $userId
                 );
-
-                // Calculate weighted average cost
-                $totalOldValue = $wp->quantity * $wp->average_cost;
-                $totalNewValue = $item->quantity * $item->unit_price;
-                $newTotalQty = $wp->quantity + $item->quantity;
-                $wp->average_cost = $newTotalQty > 0 ? round(($totalOldValue + $totalNewValue) / $newTotalQty, 4) : 0;
-                $wp->quantity += $item->quantity;
-                $wp->save();
-
-                StockMovementModel::create([
-                    'id' => Str::uuid()->toString(),
-                    'product_id' => $item->product_id,
-                    'warehouse_id' => $purchase->warehouse_id,
-                    'type' => 'in',
-                    'quantity' => $item->quantity,
-                    'cost_per_unit' => $item->unit_price,
-                    'reference_id' => $purchase->id,
-                    'reference_type' => 'purchase_invoice',
-                    'created_by' => $userId,
-                ]);
 
                 if ($item->lot_number || $item->serial_number) {
                     $lot = $this->stockLotService->addLot([
@@ -116,13 +104,25 @@ final class ConfirmPurchaseUseCase
         float $owedAmount,
         string $userId
     ): void {
+        $tenantId = app('currentTenant')->id ?? 'tenant_context';
         $entryNumber = $this->journalEntryRepository->getNextEntryNumber();
+
+        $currencyId = $purchase->currency_id;
+        $exchangeRate = (float) $purchase->exchange_rate;
+        $costCenterId = $purchase->cost_center_id;
+        if (!$currencyId) {
+            $baseCurrency = $this->exchangeRateService->getBaseCurrency($tenantId);
+            $currencyId = $baseCurrency->id;
+            $exchangeRate = 1.0;
+        }
 
         $journalEntry = new JournalEntry(
             id: null,
             entryNumber: $entryNumber,
             date: new \DateTimeImmutable(),
             description: "Purchase Invoice: {$purchase->invoice_number}",
+            transactionCurrencyId: $currencyId,
+            exchangeRate: $exchangeRate,
             isPosted: false,
             referenceType: 'purchase_invoice',
             referenceId: $purchase->id,
@@ -134,9 +134,12 @@ final class ConfirmPurchaseUseCase
             id: null,
             journalEntryId: '',
             accountId: $this->accountMapping->resolve('inventory'),
-            debit: round($purchase->subtotal, 2),
+            debit: round($purchase->subtotal * $exchangeRate, 2),
             credit: 0,
+            transactionDebit: round($purchase->subtotal, 2),
+            transactionCredit: 0.0,
             description: 'Inventory from purchase',
+            costCenterId: $costCenterId,
         ));
 
         // Debit: Input VAT
@@ -145,8 +148,10 @@ final class ConfirmPurchaseUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('vat_input'),
-                debit: round($purchase->vat_amount, 2),
+                debit: round($purchase->vat_amount * $exchangeRate, 2),
                 credit: 0,
+                transactionDebit: round($purchase->vat_amount, 2),
+                transactionCredit: 0.0,
                 description: 'Input VAT on purchase',
             ));
         }
@@ -158,7 +163,9 @@ final class ConfirmPurchaseUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('cash'),
                 debit: 0,
-                credit: round($paidAmount, 2),
+                credit: round($paidAmount * $exchangeRate, 2),
+                transactionDebit: 0.0,
+                transactionCredit: round($paidAmount, 2),
                 description: 'Cash payment for purchase',
             ));
         }
@@ -170,7 +177,9 @@ final class ConfirmPurchaseUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('ap'),
                 debit: 0,
-                credit: round($owedAmount, 2),
+                credit: round($owedAmount * $exchangeRate, 2),
+                transactionDebit: 0.0,
+                transactionCredit: round($owedAmount, 2),
                 description: 'Accounts Payable - Supplier credit',
             ));
         }

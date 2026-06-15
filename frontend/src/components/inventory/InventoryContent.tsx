@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import { inventoryApi } from '@/lib/api';
 import { ManageGroupsModal, ManageUnitsModal, PrintBarcodeModal, StockMovementsModal, InventoryAdjustmentModal, AssembleProductModal } from './InventoryModals';
 import type { Product } from './hooks/useInventoryData';
 import { useInventoryData } from './hooks/useInventoryData';
@@ -20,6 +22,36 @@ export default function InventoryContent({ dict, locale }: Props) {
     const {
         products, setProducts, groups, setGroups, units, setUnits, isLoading
     } = useInventoryData();
+
+    const queryClient = useQueryClient();
+
+    const { data: warehousesResponse } = useQuery({
+        queryKey: ['warehouses'],
+        queryFn: () => inventoryApi.getWarehouses()
+    });
+    const warehouses = warehousesResponse?.data?.data || [];
+
+    const handleSaveAdjustment = async (data: any) => {
+        try {
+            await inventoryApi.createAdjustment(data);
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            setShowAdjustment(false);
+        } catch (error) {
+            console.error("Adjustment failed", error);
+            alert("Failed to save adjustment.");
+        }
+    };
+
+    const handleSaveAssembly = async (data: any) => {
+        try {
+            await inventoryApi.assemble(data);
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            setShowAssembly(false);
+        } catch (error) {
+            console.error("Assembly failed", error);
+            alert("Failed to assemble product.");
+        }
+    };
 
     const {
         form, setForm, editingProduct, showAddEdit, setShowAddEdit,
@@ -58,7 +90,8 @@ export default function InventoryContent({ dict, locale }: Props) {
             try {
                 const { inventoryApi } = await import('@/lib/api');
                 await inventoryApi.deleteProduct(showDelete.id);
-                setProducts(prev => prev.filter(p => p.id !== showDelete.id));
+                // setProducts is deprecated; invalidate the query to refetch from backend
+                queryClient.invalidateQueries({ queryKey: ['products'] });
                 setShowDelete(null);
             } catch (err) {
                 console.error("Failed to delete product", err);
@@ -209,8 +242,8 @@ export default function InventoryContent({ dict, locale }: Props) {
             {showUnits && <ManageUnitsModal dict={dict} locale={locale} units={units} setUnits={setUnits} onClose={() => setShowUnits(false)} />}
             {showBarcode && <PrintBarcodeModal dict={dict} locale={locale} product={showBarcode} onClose={() => setShowBarcode(null)} />}
             {showMovements && <StockMovementsModal dict={dict} locale={locale} product={showMovements} onClose={() => setShowMovements(null)} />}
-            {showAdjustment && <InventoryAdjustmentModal dict={dict} locale={locale} products={products} warehouses={[]} onClose={() => setShowAdjustment(false)} onSave={async () => {}} />}
-            {showAssembly && <AssembleProductModal dict={dict} locale={locale} products={products} warehouses={[]} onClose={() => setShowAssembly(false)} onSave={async () => {}} />}
+            {showAdjustment && <InventoryAdjustmentModal dict={dict} locale={locale} products={products} warehouses={warehouses} onClose={() => setShowAdjustment(false)} onSave={handleSaveAdjustment} />}
+            {showAssembly && <AssembleProductModal dict={dict} locale={locale} products={products} warehouses={warehouses} onClose={() => setShowAssembly(false)} onSave={handleSaveAssembly} />}
 
             {showDelete && (
                 <div className="modal-overlay">

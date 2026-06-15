@@ -250,6 +250,13 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::post('/distributions', [ProfitDistributionController::class, 'store']);
     });
 
+    // Treasury (Receipts, Payments, Transfers)
+    Route::prefix('treasury')->group(function () {
+        Route::post('/receipts', [\App\Presentation\Controllers\API\Treasury\TreasuryController::class, 'receipt']);
+        Route::post('/payments', [\App\Presentation\Controllers\API\Treasury\TreasuryController::class, 'payment']);
+        Route::post('/transfers', [\App\Presentation\Controllers\API\Treasury\TreasuryController::class, 'transfer']);
+    });
+
     // Accounting & Reports
     Route::prefix('accounting')->group(function () {
         Route::get('/chart-of-accounts', [ReportsController::class, 'chartOfAccounts']);

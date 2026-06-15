@@ -32,6 +32,9 @@ class InvoiceResource extends JsonResource
             'profit_margin' => $this->when($canViewProfit, $this->profit_margin),
             
             'branch_id' => $this->branch_id,
+            'cost_center_id' => $this->cost_center_id,
+            'currency_id' => $this->currency_id,
+            'exchange_rate' => $this->exchange_rate,
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

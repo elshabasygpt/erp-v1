@@ -22,7 +22,7 @@ class InvoiceModel extends BaseModel
         'commission_amount',
         'sales_channel_id', 'sales_channel_name', 
         'pricing_adjustment_type', 'pricing_adjustment_value',
-        'due_date', 'internal_notes', 'reference_no', 'paid_amount', 'salesperson_id'
+        'due_date', 'internal_notes', 'reference_no', 'paid_amount', 'salesperson_id', 'cost_center_id', 'currency_id', 'exchange_rate'
     ];
 
     protected $casts = [
@@ -34,6 +34,7 @@ class InvoiceModel extends BaseModel
         'paid_amount' => 'decimal:2',
         'invoice_date' => 'datetime',
         'due_date' => 'datetime',
+        'exchange_rate' => 'decimal:6',
     ];
 
     public function items()

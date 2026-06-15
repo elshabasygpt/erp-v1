@@ -19,9 +19,10 @@ class SupplierController extends BaseTenantController
         $limit = $request->query('limit', '15');
         $search = $request->query('search');
 
-        $query = SupplierModel::where('tenant_id', $this->getTenantId($request))->select([
-            'id', 'name', 'email', 'phone', 'balance', 'is_active', 'created_at'
-        ])->with(['purchaseInvoices' => fn($q) => $q->select('id', 'supplier_id', 'total', 'status')]);
+        $query = SupplierModel::where('tenant_id', $this->getTenantId($request))
+            ->withCount('purchaseInvoices as orders_count')
+            ->withSum('purchaseInvoices as total_purchases', 'total')
+            ->withMax('purchaseInvoices as last_order', 'invoice_date');
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -32,6 +33,15 @@ class SupplierController extends BaseTenantController
         }
 
         $suppliers = $query->orderBy('created_at', 'desc')->paginate((int) $limit);
+
+        $suppliers->getCollection()->transform(function ($s) {
+            $s->status = $s->is_active ? 'active' : 'inactive';
+            $s->category = $s->category ?? 'local';
+            $s->payment_type = 'cash'; // Default if credit_limit not in DB
+            $s->credit_limit = 0;
+            $s->total_purchases = $s->total_purchases ?: 0;
+            return $s;
+        });
 
         return $this->paginated($suppliers->toArray(), 'Suppliers retrieved successfully');
     }

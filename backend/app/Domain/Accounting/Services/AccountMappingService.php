@@ -32,6 +32,9 @@ final class AccountMappingService
         'vat_input'    => 'account.vat_input',
         'discount'     => 'account.discount',
         'bank'         => 'account.bank',
+        'opening_balance_equity' => 'account.opening_balance_equity',
+        'inventory_shrinkage'    => 'account.inventory_shrinkage',
+        'fx_gain_loss'         => 'account.fx_gain_loss',
     ];
 
     private ?array $resolved = null;
@@ -99,6 +102,7 @@ final class AccountMappingService
             throw new \DomainException("Account '{$accountId}' not found or is inactive.");
         }
 
+        $tenantId = app('currentTenant')->id ?? 'tenant_context';
         DB::connection('tenant')->table('tenant_settings')->updateOrInsert(
             ['key' => $settingKey, 'tenant_id' => $tenantId],
             ['value' => $accountId, 'updated_at' => now()]

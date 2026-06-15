@@ -1,5 +1,7 @@
 'use client';
 import { useState, memo } from 'react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { inventoryApi } from '@/lib/api';
 
 // ── Types ──
 export interface MainGroup { id: string; name: string; nameAr: string; subGroups: SubGroup[]; imageUrl?: string; discount?: number; }
@@ -38,6 +40,9 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
     const [editSubImage, setEditSubImage] = useState('');
     const [editSubDiscount, setEditSubDiscount] = useState<number | ''>('');
 
+    const [isSaving, setIsSaving] = useState(false);
+    const queryClient = useQueryClient();
+
     const [uploading, setUploading] = useState(false);
 
     const handleImageUpload = async (file: File) => {
@@ -75,73 +80,93 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
         </label>
     );
 
-    const addMainGroup = () => {
+    const addMainGroup = async () => {
         if (!newMain && !newMainAr) return;
-        setGroups([...groups, { 
-            id: `MG-${Date.now()}`, 
-            name: newMain || newMainAr, 
-            nameAr: newMainAr || newMain, 
-            subGroups: [],
-            imageUrl: newMainImage || undefined,
-            discount: newMainDiscount === '' ? undefined : Number(newMainDiscount)
-        }]);
-        setNewMain(''); setNewMainAr(''); setNewMainImage(''); setNewMainDiscount('');
+        setIsSaving(true);
+        try {
+            await inventoryApi.createCategory({
+                name: newMain || newMainAr,
+                name_ar: newMainAr || newMain,
+                image_url: newMainImage || undefined,
+                discount: newMainDiscount === '' ? undefined : Number(newMainDiscount)
+            });
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            setNewMain(''); setNewMainAr(''); setNewMainImage(''); setNewMainDiscount('');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
-    const deleteMainGroup = (id: string) => setGroups(groups.filter(g => g.id !== id));
+    const deleteMainGroup = async (id: string) => {
+        await inventoryApi.deleteCategory(id);
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+    };
     
     const startEditMain = (g: MainGroup) => { 
         setEditingMain(g.id); setEditMainName(g.name); setEditMainNameAr(g.nameAr); 
         setEditMainImage(g.imageUrl || ''); setEditMainDiscount(g.discount !== undefined ? g.discount : '');
     };
 
-    const saveEditMain = () => {
+    const saveEditMain = async () => {
         if (!editingMain) return;
-        setGroups(groups.map(g => g.id === editingMain ? { 
-            ...g, 
-            name: editMainName || g.name, 
-            nameAr: editMainNameAr || g.nameAr,
-            imageUrl: editMainImage || undefined,
-            discount: editMainDiscount === '' ? undefined : Number(editMainDiscount)
-        } : g));
-        setEditingMain(null);
+        setIsSaving(true);
+        try {
+            await inventoryApi.updateCategory(editingMain, {
+                name: editMainName || undefined,
+                name_ar: editMainNameAr || undefined,
+                image_url: editMainImage || undefined,
+                discount: editMainDiscount === '' ? undefined : Number(editMainDiscount)
+            });
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            setEditingMain(null);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
-    const addSubGroup = () => {
+    const addSubGroup = async () => {
         if (!selectedMain || (!newSub && !newSubAr)) return;
-        setGroups(groups.map(g => g.id === selectedMain ? { 
-            ...g, 
-            subGroups: [...g.subGroups, { 
-                id: `SG-${Date.now()}`, 
-                name: newSub || newSubAr, 
-                nameAr: newSubAr || newSub,
-                imageUrl: newSubImage || undefined,
+        setIsSaving(true);
+        try {
+            await inventoryApi.createCategory({
+                name: newSub || newSubAr,
+                name_ar: newSubAr || newSub,
+                parent_id: selectedMain,
+                image_url: newSubImage || undefined,
                 discount: newSubDiscount === '' ? undefined : Number(newSubDiscount)
-            }] 
-        } : g));
-        setNewSub(''); setNewSubAr(''); setNewSubImage(''); setNewSubDiscount('');
+            });
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            setNewSub(''); setNewSubAr(''); setNewSubImage(''); setNewSubDiscount('');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
-    const deleteSubGroup = (mainId: string, subId: string) => setGroups(groups.map(g => g.id === mainId ? { ...g, subGroups: g.subGroups.filter(s => s.id !== subId) } : g));
+    const deleteSubGroup = async (mainId: string, subId: string) => {
+        await inventoryApi.deleteCategory(subId);
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+    };
     
     const startEditSub = (mainId: string, sub: SubGroup) => { 
         setEditingSub({ mainId, subId: sub.id }); setEditSubName(sub.name); setEditSubNameAr(sub.nameAr); 
         setEditSubImage(sub.imageUrl || ''); setEditSubDiscount(sub.discount !== undefined ? sub.discount : '');
     };
 
-    const saveEditSub = () => {
+    const saveEditSub = async () => {
         if (!editingSub) return;
-        setGroups(groups.map(g => g.id === editingSub.mainId ? { 
-            ...g, 
-            subGroups: g.subGroups.map(s => s.id === editingSub.subId ? { 
-                ...s, 
-                name: editSubName || s.name, 
-                nameAr: editSubNameAr || s.nameAr,
-                imageUrl: editSubImage || undefined,
+        setIsSaving(true);
+        try {
+            await inventoryApi.updateCategory(editingSub.subId, {
+                name: editSubName || undefined,
+                name_ar: editSubNameAr || undefined,
+                image_url: editSubImage || undefined,
                 discount: editSubDiscount === '' ? undefined : Number(editSubDiscount)
-            } : s) 
-        } : g));
-        setEditingSub(null);
+            });
+            queryClient.invalidateQueries({ queryKey: ['categories'] });
+            setEditingSub(null);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -160,7 +185,7 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
                             <div className="flex-1 flex gap-2">
                                 <input className="input-field py-2 text-sm flex-1" placeholder={isRTL ? 'الاسم (عربي)' : 'Name (EN)'} value={isRTL ? newMainAr : newMain} onChange={e => isRTL ? setNewMainAr(e.target.value) : setNewMain(e.target.value)} />
                                 <input type="number" min="0" max="100" className="input-field py-2 text-sm w-16" placeholder="% خصم" value={newMainDiscount} onChange={e => setNewMainDiscount(e.target.value ? Number(e.target.value) : "")} />
-                                <button onClick={addMainGroup} className="btn-primary text-xs px-3 whitespace-nowrap">+ {inv.addGroup}</button>
+                                <button onClick={addMainGroup} disabled={isSaving} className="btn-primary text-xs px-3 whitespace-nowrap disabled:opacity-50">+ {inv.addGroup}</button>
                             </div>
                         </div>
                         <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
@@ -172,8 +197,8 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
                                             <div className="flex-1 flex items-center gap-1.5">
                                                 <input className="input-field py-1 text-sm flex-1" value={isRTL ? editMainNameAr : editMainName} onChange={e => isRTL ? setEditMainNameAr(e.target.value) : setEditMainName(e.target.value)} />
                                                 <input type="number" min="0" max="100" className="input-field py-1 text-sm w-14" placeholder="%" value={editMainDiscount} onChange={e => setEditMainDiscount(e.target.value ? Number(e.target.value) : "")} />
-                                                <button onClick={saveEditMain} className="btn-icon w-6 h-6 text-green-500">✓</button>
-                                                <button onClick={() => setEditingMain(null)} className="btn-icon w-6 h-6 text-red-400">✗</button>
+                                                <button onClick={saveEditMain} disabled={isSaving} className="btn-icon w-6 h-6 text-green-500 disabled:opacity-50">✓</button>
+                                                <button onClick={() => setEditingMain(null)} disabled={isSaving} className="btn-icon w-6 h-6 text-red-400 disabled:opacity-50">✗</button>
                                             </div>
                                         </div>
                                     ) : (
@@ -216,7 +241,7 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
                                     <div className="flex-1 flex gap-2">
                                         <input className="input-field py-2 text-sm flex-1" placeholder={isRTL ? 'الاسم (عربي)' : 'Name (EN)'} value={isRTL ? newSubAr : newSub} onChange={e => isRTL ? setNewSubAr(e.target.value) : setNewSub(e.target.value)} />
                                         <input type="number" min="0" max="100" className="input-field py-2 text-sm w-16" placeholder="% خصم" value={newSubDiscount} onChange={e => setNewSubDiscount(e.target.value ? Number(e.target.value) : "")} />
-                                        <button onClick={addSubGroup} className="btn-primary text-xs px-3 whitespace-nowrap">+ {inv.addSubGroup}</button>
+                                        <button onClick={addSubGroup} disabled={isSaving} className="btn-primary text-xs px-3 whitespace-nowrap disabled:opacity-50">+ {inv.addSubGroup}</button>
                                     </div>
                                 </div>
                                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -228,8 +253,8 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
                                                     <div className="flex-1 flex items-center gap-1.5">
                                                         <input className="input-field py-1 text-sm flex-1" value={isRTL ? editSubNameAr : editSubName} onChange={e => isRTL ? setEditSubNameAr(e.target.value) : setEditSubName(e.target.value)} />
                                                         <input type="number" min="0" max="100" className="input-field py-1 text-sm w-14" placeholder="%" value={editSubDiscount} onChange={e => setEditSubDiscount(e.target.value ? Number(e.target.value) : "")} />
-                                                        <button onClick={saveEditSub} className="btn-icon w-6 h-6 text-green-500">✓</button>
-                                                        <button onClick={() => setEditingSub(null)} className="btn-icon w-6 h-6 text-red-400">✗</button>
+                                                        <button onClick={saveEditSub} disabled={isSaving} className="btn-icon w-6 h-6 text-green-500 disabled:opacity-50">✓</button>
+                                                        <button onClick={() => setEditingSub(null)} disabled={isSaving} className="btn-icon w-6 h-6 text-red-400 disabled:opacity-50">✗</button>
                                                     </div>
                                                 </div>
                                             ) : (
@@ -276,18 +301,47 @@ export const ManageUnitsModal = memo(function ManageUnitsModal({ dict, locale, u
     const [editName, setEditName] = useState('');
     const [editNameAr, setEditNameAr] = useState('');
     const [editSymbol, setEditSymbol] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
-    const addUnit = () => {
+    const queryClient = useQueryClient();
+
+    const addUnit = async () => {
         if (!name && !nameAr) return;
-        setUnits([...units, { id: `U-${Date.now()}`, name: name || nameAr, nameAr: nameAr || name, symbol }]);
-        setName(''); setNameAr(''); setSymbol('');
+        setIsSaving(true);
+        try {
+            await inventoryApi.createUnit({
+                name: name || nameAr,
+                name_ar: nameAr || name,
+                symbol: symbol || undefined
+            });
+            queryClient.invalidateQueries({ queryKey: ['units'] });
+            setName(''); setNameAr(''); setSymbol('');
+        } finally {
+            setIsSaving(false);
+        }
     };
-    const deleteUnit = (id: string) => setUnits(units.filter(u => u.id !== id));
+    
+    const deleteUnit = async (id: string) => {
+        await inventoryApi.deleteUnit(id);
+        queryClient.invalidateQueries({ queryKey: ['units'] });
+    };
+    
     const startEdit = (u: Unit) => { setEditing(u.id); setEditName(u.name); setEditNameAr(u.nameAr); setEditSymbol(u.symbol); };
-    const saveEdit = () => {
+    
+    const saveEdit = async () => {
         if (!editing) return;
-        setUnits(units.map(u => u.id === editing ? { ...u, name: editName || u.name, nameAr: editNameAr || u.nameAr, symbol: editSymbol } : u));
-        setEditing(null);
+        setIsSaving(true);
+        try {
+            await inventoryApi.updateUnit(editing, {
+                name: editName || undefined,
+                name_ar: editNameAr || undefined,
+                symbol: editSymbol || undefined
+            });
+            queryClient.invalidateQueries({ queryKey: ['units'] });
+            setEditing(null);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -301,7 +355,7 @@ export const ManageUnitsModal = memo(function ManageUnitsModal({ dict, locale, u
                     <div className="flex gap-2 mb-4">
                         <input className="input-field py-2 text-sm flex-1" placeholder={isRTL ? 'اسم الوحدة' : 'Unit Name'} value={isRTL ? nameAr : name} onChange={e => isRTL ? setNameAr(e.target.value) : setName(e.target.value)} />
                         <input className="input-field py-2 text-sm w-20" placeholder={inv.unitSymbol} value={symbol} onChange={e => setSymbol(e.target.value)} />
-                        <button onClick={addUnit} className="btn-primary text-xs px-3 whitespace-nowrap">+ {inv.addUnit}</button>
+                        <button onClick={addUnit} disabled={isSaving} className="btn-primary text-xs px-3 whitespace-nowrap disabled:opacity-50">+ {inv.addUnit}</button>
                     </div>
                     <div className="space-y-2 max-h-72 overflow-y-auto">
                         {units.map(u => (
@@ -310,8 +364,8 @@ export const ManageUnitsModal = memo(function ManageUnitsModal({ dict, locale, u
                                     <div className="flex items-center gap-2 flex-1">
                                         <input className="input-field py-1 text-sm flex-1" value={isRTL ? editNameAr : editName} onChange={e => isRTL ? setEditNameAr(e.target.value) : setEditName(e.target.value)} />
                                         <input className="input-field py-1 text-sm w-16" value={editSymbol} onChange={e => setEditSymbol(e.target.value)} />
-                                        <button onClick={saveEdit} className="text-green-500">✓</button>
-                                        <button onClick={() => setEditing(null)} className="text-red-400">✗</button>
+                                        <button onClick={saveEdit} disabled={isSaving} className="text-green-500 disabled:opacity-50">✓</button>
+                                        <button onClick={() => setEditing(null)} disabled={isSaving} className="text-red-400 disabled:opacity-50">✗</button>
                                     </div>
                                 ) : (
                                     <>
@@ -341,16 +395,20 @@ export const StockMovementsModal = memo(function StockMovementsModal({ dict, loc
     const isRTL = locale === 'ar';
     const inv = dict.inventory;
 
-    const movements: StockMovement[] = [
-        { id: 'M1', type: 'incoming', qty: 50, date: '2026-02-23', note: isRTL ? 'فاتورة شراء PO-101' : 'Purchase Order PO-101' },
-        { id: 'M2', type: 'outgoing', qty: -8, date: '2026-02-22', note: isRTL ? 'فاتورة بيع INV-445' : 'Sales Invoice INV-445' },
-        { id: 'M3', type: 'outgoing', qty: -3, date: '2026-02-21', note: isRTL ? 'فاتورة بيع INV-442' : 'Sales Invoice INV-442' },
-        { id: 'M4', type: 'return', qty: 2, date: '2026-02-20', note: isRTL ? 'مرتجع مبيعات RET-12' : 'Sales Return RET-12' },
-        { id: 'M5', type: 'adjustment', qty: -1, date: '2026-02-18', note: isRTL ? 'تعديل جرد' : 'Stock count adjustment' },
-        { id: 'M6', type: 'incoming', qty: 30, date: '2026-02-15', note: isRTL ? 'فاتورة شراء PO-098' : 'Purchase Order PO-098' },
-        { id: 'M7', type: 'outgoing', qty: -12, date: '2026-02-14', note: isRTL ? 'فاتورة بيع INV-430' : 'Sales Invoice INV-430' },
-        { id: 'M8', type: 'incoming', qty: 25, date: '2026-02-10', note: isRTL ? 'فاتورة شراء PO-092' : 'Purchase Order PO-092' },
-    ];
+    const { data: movements = [] as StockMovement[], isLoading } = useQuery<StockMovement[]>({
+        queryKey: ['stock-movements', product.id],
+        queryFn: async () => {
+            const res = await inventoryApi.getMovements({ product_id: product.id });
+            if (!res.data?.data?.data) return [];
+            return res.data.data.data.map((m: any) => ({
+                id: m.id,
+                type: m.type === 'in' ? 'incoming' : m.type === 'out' ? 'outgoing' : m.type,
+                qty: parseFloat(m.quantity),
+                date: new Date(m.created_at).toISOString().split('T')[0],
+                note: m.notes || (m.reference_type ? `${m.reference_type} ${m.reference_id}` : '')
+            })) as StockMovement[];
+        }
+    });
 
     const typeLabel = (t: string) => ({ incoming: inv.incoming, outgoing: inv.outgoing, adjustment: inv.adjustment, return: inv.returnMov }[t] || t);
     const typeBadge = (t: string) => ({ incoming: 'badge-success', outgoing: 'badge-danger', adjustment: 'badge-warning', return: 'badge-info' }[t] || 'badge-info');

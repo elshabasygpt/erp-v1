@@ -21,6 +21,9 @@ final class UpdateInvoiceDTO
         public readonly float $paidAmount = 0,
         public readonly ?string $salespersonId = null,
         public readonly string $status = 'draft',
+        public readonly ?string $costCenterId = null,
+        public readonly ?string $currencyId = null,
+        public readonly ?float $exchangeRate = null,
     ) {}
 
     public static function fromRequest(string $id, array $data): self
@@ -45,6 +48,9 @@ final class UpdateInvoiceDTO
             paidAmount: (float) ($data['paid_amount'] ?? 0),
             salespersonId: $data['salesperson_id'] ?? null,
             status: $data['status'] ?? 'draft',
+            costCenterId: $data['cost_center_id'] ?? null,
+            currencyId: $data['currency_id'] ?? null,
+            exchangeRate: isset($data['exchange_rate']) ? (float) $data['exchange_rate'] : null,
         );
     }
 }

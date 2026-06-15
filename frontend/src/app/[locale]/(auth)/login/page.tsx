@@ -35,40 +35,26 @@ export default function LoginPage({ params }: LoginPageProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('handleSubmit STARTING for', email, password);
         setLoading(true);
         setError('');
 
-        // Force fallback immediately if we are in Demo mode to bypass everything
-        if (email === 'admin@company.com' || email.includes('@')) {
-            setTimeout(() => {
-                window.location.href = `/${locale}/dashboard`;
-            }, 1500);
-        }
-
         try {
-            console.log('Calling login()...');
             const result = await login(email, password);
-            console.log('Login result:', result);
 
             if (result.success) {
-                console.log('Login success! Pushing to', `/${locale}/dashboard`);
-                // Use window.location as an emergency fallback if router fails
+                // Next.js router.push sometimes fails silently in interceptors
+                router.push(`/${locale}/dashboard`);
                 setTimeout(() => {
-                    if (window.location.pathname.includes('/login')) {
-                        console.warn('Router push failed to navigate within 1s. Forcing window.location!');
+                    if (window.location.pathname.includes('login')) {
                         window.location.href = `/${locale}/dashboard`;
                     }
-                }, 1000);
-                router.push(`/${locale}/dashboard`);
+                }, 500);
             } else {
-                console.log('Login failed', result.error);
                 setError(result.error || dict.invalidCredentials);
-                setLoading(false);
             }
         } catch (err: any) {
-            console.error('Unhandled error in handleSubmit:', err);
-            setError('An unexpected error occurred during login.');
+            setError(dict.invalidCredentials);
+        } finally {
             setLoading(false);
         }
     };

@@ -21,6 +21,9 @@ final class CreatePurchaseDTO
         public readonly string $paymentType,
         public readonly ?string $notes,
         public readonly array $items,
+        public readonly ?string $costCenterId = null,
+        public readonly ?string $currencyId = null,
+        public readonly ?float $exchangeRate = null,
     ) {}
 
     public static function fromRequest(array $validated): self
@@ -33,6 +36,9 @@ final class CreatePurchaseDTO
             paymentType: $validated['payment_type'],
             notes: $validated['notes'] ?? null,
             items: $validated['items'],
+            costCenterId: $validated['cost_center_id'] ?? null,
+            currencyId: $validated['currency_id'] ?? null,
+            exchangeRate: isset($validated['exchange_rate']) ? (float) $validated['exchange_rate'] : null,
         );
     }
 }

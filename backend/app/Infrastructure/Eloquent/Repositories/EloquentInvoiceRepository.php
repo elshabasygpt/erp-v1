@@ -59,6 +59,9 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
                 'reference_no' => $invoice->getReferenceNo(),
                 'paid_amount' => $invoice->getPaidAmount(),
                 'salesperson_id' => $invoice->getSalespersonId(),
+                'cost_center_id' => $invoice->getCostCenterId(),
+                'currency_id' => $invoice->getCurrencyId(),
+                'exchange_rate' => $invoice->getExchangeRate(),
             ]);
 
             foreach ($invoice->getItems() as $item) {
@@ -198,6 +201,9 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             referenceNo: $model->reference_no,
             paidAmount: (float) $model->paid_amount,
             salespersonId: $model->salesperson_id,
+            costCenterId: $model->cost_center_id,
+            currencyId: $model->currency_id,
+            exchangeRate: $model->exchange_rate ? (float) $model->exchange_rate : null,
         );
 
         $items = $model->items->map(function ($itemModel) {

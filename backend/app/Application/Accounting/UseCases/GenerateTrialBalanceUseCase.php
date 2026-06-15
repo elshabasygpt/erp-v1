@@ -16,8 +16,8 @@ final class GenerateTrialBalanceUseCase
      * Generate trial balance as of a given date.
      * Returns array of accounts with their debit/credit balances.
      */
-    public function execute(\DateTimeImmutable $asOf): array
+    public function execute(\DateTimeImmutable $asOf, ?string $costCenterId = null): array
     {
-        return $this->journalEntryRepository->getTrialBalance($asOf);
+        return $this->journalEntryRepository->getTrialBalance($asOf, $costCenterId);
     }
 }

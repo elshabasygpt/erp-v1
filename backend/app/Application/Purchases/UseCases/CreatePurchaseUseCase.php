@@ -54,6 +54,9 @@ final class CreatePurchaseUseCase
                 'status' => $dto->status === 'confirmed' ? 'draft' : $dto->status,
                 'notes' => $dto->notes,
                 'created_by' => $userId,
+                'cost_center_id' => $dto->costCenterId,
+                'currency_id' => $dto->currencyId,
+                'exchange_rate' => $dto->exchangeRate,
             ]);
 
             foreach ($dto->items as $item) {

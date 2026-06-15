@@ -22,6 +22,9 @@ final class CreateInvoiceDTO
         public readonly string $status = 'draft',
         public readonly bool $creditLimitOverride = false,
         public readonly array $installments = [],
+        public readonly ?string $costCenterId = null,
+        public readonly ?string $currencyId = null,
+        public readonly ?float $exchangeRate = null,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -47,6 +50,9 @@ final class CreateInvoiceDTO
             status: $data['status'] ?? 'draft',
             creditLimitOverride: (bool) ($data['credit_limit_override'] ?? false),
             installments: $data['installments'] ?? [],
+            costCenterId: $data['cost_center_id'] ?? null,
+            currencyId: $data['currency_id'] ?? null,
+            exchangeRate: isset($data['exchange_rate']) ? (float) $data['exchange_rate'] : null,
         );
     }
 }

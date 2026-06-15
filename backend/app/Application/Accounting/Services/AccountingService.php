@@ -14,11 +14,11 @@ final class AccountingService
         private JournalEntryRepositoryInterface $journalEntryRepository,
     ) {}
 
-    public function generateIncomeStatement(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId): array
+    public function generateIncomeStatement(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId, ?string $costCenterId = null): array
     {
         // Instead of fetching all ledger lines, we fetch aggregated balances.
         // We can use a modified trial balance query that accepts date ranges.
-        $balances = $this->getAggregatedBalances($from, $to);
+        $balances = $this->getAggregatedBalances($from, $to, $tenantId, $costCenterId);
 
         $revenues = [];
         $expenses = [];
@@ -49,9 +49,9 @@ final class AccountingService
         ];
     }
 
-    public function generateBalanceSheet(\DateTimeImmutable $asOf): array
+    public function generateBalanceSheet(\DateTimeImmutable $asOf, string $tenantId, ?string $costCenterId = null): array
     {
-        $balances = $this->getAggregatedBalances(new \DateTimeImmutable('1970-01-01'), $asOf);
+        $balances = $this->getAggregatedBalances(new \DateTimeImmutable('1970-01-01'), $asOf, $tenantId, $costCenterId);
 
         $assetItems = [];
         $liabilityItems = [];
@@ -97,16 +97,21 @@ final class AccountingService
         ];
     }
 
-    private function getAggregatedBalances(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    private function getAggregatedBalances(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId, ?string $costCenterId = null): array
     {
-        return \Illuminate\Support\Facades\DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
+        $query = \Illuminate\Support\Facades\DB::connection('tenant')->table('journal_entry_lines')
+            ->where('journal_entries.tenant_id', $tenantId)
             ->join('journal_entries','journal_entry_lines.journal_entry_id','=','journal_entries.id')
             ->join('accounts','journal_entry_lines.account_id','=','accounts.id')
             ->where('journal_entries.is_posted', true)
             ->whereBetween('journal_entries.date', [$from->format('Y-m-d'), $to->format('Y-m-d')])
             ->groupBy('accounts.id','accounts.code','accounts.name','accounts.name_ar','accounts.type')
-            ->selectRaw('accounts.id, accounts.code, accounts.name, accounts.name_ar, accounts.type, SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit')
-            ->orderBy('accounts.code')
-            ->get()->toArray();
+            ->selectRaw('accounts.id, accounts.code, accounts.name, accounts.name_ar, accounts.type, SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit');
+            
+        if ($costCenterId) {
+            $query->where('journal_entry_lines.cost_center_id', $costCenterId);
+        }
+
+        return $query->orderBy('accounts.code')->get()->toArray();
     }
 }

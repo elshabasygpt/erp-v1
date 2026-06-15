@@ -1,4 +1,5 @@
 import React, { memo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePosCustomer } from './hooks/usePosCustomer';
 
 interface PosCartSidebarProps {
@@ -6,7 +7,6 @@ interface PosCartSidebarProps {
     activeSession: any;
     updateActiveSession: (updates: any) => void;
     allCustomers: any[];
-    setAllCustomers: React.Dispatch<React.SetStateAction<any[]>>;
     clearCart: () => void;
     removeFromCart: (id: number) => void;
     updateQty: (id: number, qty: number) => void;
@@ -19,7 +19,7 @@ interface PosCartSidebarProps {
 }
 
 const PosCartSidebar = memo(function PosCartSidebar({
-    isRTL, activeSession, updateActiveSession, allCustomers, setAllCustomers,
+    isRTL, activeSession, updateActiveSession, allCustomers,
     clearCart, removeFromCart, updateQty, cartSubtotalExcl, discountedExcl, cartVat, cartTotal,
     setShowHoldModal, setShowPayment
 }: PosCartSidebarProps) {
@@ -28,6 +28,7 @@ const PosCartSidebar = memo(function PosCartSidebar({
     const [quickAddName, setQuickAddName] = useState('');
     const [quickAddPhone, setQuickAddPhone] = useState('');
     const { createCustomer, loading: customerLoading } = usePosCustomer();
+    const queryClient = useQueryClient();
 
     return (
         <div className="w-full md:w-[380px] xl:w-[420px] shrink-0 flex flex-col h-full bg-white dark:bg-surface-900 shadow-xl z-20">
@@ -118,7 +119,7 @@ const PosCartSidebar = memo(function PosCartSidebar({
                                             const newCust = await createCustomer({ name: quickAddName, name_ar: quickAddName, phone: quickAddPhone, group: 'retail', payment_type: 'cash' });
                                             if (newCust) {
                                                 updateActiveSession({ customerName: quickAddName });
-                                                setAllCustomers(prev => [...prev, newCust]);
+                                                queryClient.invalidateQueries({ queryKey: ['pos-customers'] });
                                             }
                                         } catch {
                                             updateActiveSession({ customerName: quickAddName });

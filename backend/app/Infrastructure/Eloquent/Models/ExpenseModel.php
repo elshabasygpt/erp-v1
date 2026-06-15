@@ -6,19 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
-class ExpenseModel extends Model
+class ExpenseModel extends BaseModel
 {
-    use HasUuids, SoftDeletes;
+    use SoftDeletes;
 
     protected $table = 'expenses';
 
     protected $fillable = [
+        'tenant_id',
+        'voucher_number',
         'category_id',
         'safe_id',
         'amount',
         'description',
         'expense_date',
-        'created_by'
+        'status',
+        'created_by',
+        'approved_by'
     ];
 
     public function category()

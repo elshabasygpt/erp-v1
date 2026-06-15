@@ -15,6 +15,7 @@ final class CreateDeliveryDTO
         public readonly float $deliveryFee = 0,
         public readonly ?string $notes = null,
         public readonly string $status = 'pending',
+        public readonly array $items = [],
     ) {}
 
     public static function fromRequest(array $data): self
@@ -27,7 +28,8 @@ final class CreateDeliveryDTO
             deliveryPlatformId: $data['delivery_platform_id'] ?? null,
             deliveryFee: (float) ($data['delivery_fee'] ?? 0),
             notes: $data['notes'] ?? null,
-            status: $data['status'] ?? 'pending'
+            status: $data['status'] ?? 'pending',
+            items: $data['items'] ?? []
         );
     }
 }

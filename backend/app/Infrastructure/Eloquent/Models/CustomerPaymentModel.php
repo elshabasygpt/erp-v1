@@ -20,10 +20,14 @@ class CustomerPaymentModel extends BaseModel
         'created_by',
         'branch_id',
         'status',
+        'cost_center_id',
+        'currency_id',
+        'exchange_rate',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'exchange_rate' => 'decimal:6',
         'payment_date' => 'date',
     ];
 

@@ -15,6 +15,8 @@ final class JournalEntry extends Entity
         private string $entryNumber,
         private \DateTimeImmutable $date,
         private string $description,
+        private ?string $transactionCurrencyId = null,
+        private float $exchangeRate = 1.0,
         private bool $isPosted = false,
         private ?string $referenceType = null, // invoice, purchase, payment
         private ?string $referenceId = null,
@@ -26,9 +28,12 @@ final class JournalEntry extends Entity
     public function getEntryNumber(): string { return $this->entryNumber; }
     public function getDate(): \DateTimeImmutable { return $this->date; }
     public function getDescription(): string { return $this->description; }
+    public function getTransactionCurrencyId(): ?string { return $this->transactionCurrencyId; }
+    public function getExchangeRate(): float { return $this->exchangeRate; }
     public function isPosted(): bool { return $this->isPosted; }
     public function getReferenceType(): ?string { return $this->referenceType; }
     public function getReferenceId(): ?string { return $this->referenceId; }
+    public function getCreatedBy(): ?string { return $this->createdBy; }
     public function getLines(): array { return $this->lines; }
 
     public function addLine(JournalEntryLine $line): void
@@ -88,6 +93,8 @@ final class JournalEntry extends Entity
             'entry_number' => $this->entryNumber,
             'date' => $this->date->format('Y-m-d'),
             'description' => $this->description,
+            'transaction_currency_id' => $this->transactionCurrencyId,
+            'exchange_rate' => $this->exchangeRate,
             'is_posted' => $this->isPosted,
             'reference_type' => $this->referenceType,
             'reference_id' => $this->referenceId,

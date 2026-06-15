@@ -11,7 +11,8 @@
     "dependencies": {
         "@ducanh2912/next-pwa": "^10.2.9",
         "@radix-ui/react-slot": "^1.0.2",
-        "@tanstack/react-query": "^5.20.0",
+        "@tanstack/react-query": "^5.101.0",
+        "@tanstack/react-query-devtools": "^5.101.0",
         "axios": "^1.6.0",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.0",
@@ -32,6 +33,7 @@
         "@types/react": "^18.2.0",
         "@types/react-dom": "^18.2.0",
         "autoprefixer": "^10.4.17",
+        "axios-mock-adapter": "^2.1.0",
         "eslint": "^8.56.0",
         "eslint-config-next": "14.2.0",
         "postcss": "^8.4.33",

@@ -32,7 +32,9 @@ class QuotationController extends BaseTenantController
     }
 
     public function __construct(
-        private readonly \App\Application\Sales\UseCases\Quotations\CreateQuotationUseCase $createQuotationUseCase
+        private readonly \App\Application\Sales\UseCases\Quotations\CreateQuotationUseCase $createQuotationUseCase,
+        private readonly \App\Domain\Sales\Services\QuotationService $quotationService,
+        private readonly \App\Domain\Sales\Services\SalesWorkflowService $salesWorkflowService
     ) {}
 
     public function store(Request $request): JsonResponse
@@ -88,52 +90,11 @@ class QuotationController extends BaseTenantController
         ]);
 
         try {
-            DB::beginTransaction();
-            QuotationItemModel::where('quotation_id', $quotation->id)->delete();
-
-            $subtotalAmount = 0;
-            $taxAmount = 0;
-
-            foreach ($validated['items'] as $item) {
-                $gross = $item['quantity'] * $item['unit_price'];
-                $itemTax = $gross * ($item['vat_rate'] / 100);
-                $subtotalAmount += $gross;
-                $taxAmount += $itemTax;
-            }
-            $totalAmount = $subtotalAmount + $taxAmount;
-
-            $quotation->update([
-                'customer_id' => $validated['customer_id'],
-                'issue_date' => $validated['issue_date'] ?? $quotation->issue_date,
-                'expiry_date' => $validated['expiry_date'] ?? null,
-                'subtotal' => $subtotalAmount,
-                'vat_amount' => $taxAmount,
-                'total' => $totalAmount,
-                'status' => $validated['status'],
-                'notes' => $validated['notes'] ?? null,
-            ]);
-
-            foreach ($validated['items'] as $item) {
-                $gross = $item['quantity'] * $item['unit_price'];
-                $itemTax = $gross * ($item['vat_rate'] / 100);
-
-                QuotationItemModel::create([
-            'tenant_id' => $this->getTenantId($request),
-                    'id' => Str::uuid()->toString(),
-                    'quotation_id' => $quotation->id,
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'vat_rate' => $item['vat_rate'],
-                    'total' => $gross + $itemTax,
-                ]);
-            }
-
-            DB::commit();
-            return $this->success($quotation->load('items'), 'Quotation updated successfully', 200);
-            
+            $quotation = $this->quotationService->updateQuotation($this->getTenantId($request), $id, $validated);
+            return $this->success($quotation, 'Quotation updated successfully', 200);
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            DB::rollBack();
             return $this->error('Failed to update quotation: ' . $e->getMessage(), 500);
         }
     }
@@ -164,6 +125,23 @@ class QuotationController extends BaseTenantController
         $quotation->update(['status' => $validated['status']]);
         
         return $this->success($quotation, 'Quotation status updated successfully');
+    }
+
+    public function convert(Request $request, string $id): JsonResponse
+    {
+        try {
+            $salesOrder = $this->salesWorkflowService->convertQuotationToSalesOrder(
+                $this->getTenantId($request),
+                $id,
+                auth()->id() ?? ''
+            );
+            return $this->success($salesOrder->toArray(), 'Quotation converted to Sales Order successfully', 201);
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to convert quotation: ' . $e->getMessage());
+            return $this->error('Failed to convert quotation: ' . $e->getMessage(), 500);
+        }
     }
 }
 

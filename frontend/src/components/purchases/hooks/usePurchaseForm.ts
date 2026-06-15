@@ -24,6 +24,9 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
         issue_date: new Date().toISOString().split('T')[0],
         due_date: new Date().toISOString().split('T')[0],
         notes: '',
+        cost_center_id: '',
+        currency_id: '',
+        exchange_rate: 1.0,
         items: [{ product_id: '', qty: 1, unit_price: 0, tax_rate: 15 }],
     }), []);
 
@@ -41,6 +44,9 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
         try {
             const payload = {
                 ...newOrder,
+                cost_center_id: newOrder.cost_center_id || undefined,
+                currency_id: newOrder.currency_id || undefined,
+                exchange_rate: newOrder.exchange_rate,
                 status,
                 items: newOrder.items.map((i: any) => ({
                     product_id: i.product_id,

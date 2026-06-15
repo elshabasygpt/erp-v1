@@ -142,6 +142,20 @@ export const treasuryApi = {
 };
 
 export const inventoryApi = {
+    // Categories (Groups)
+    getCategories: (params?: Record<string, any>) => api.get('/inventory/categories', { params }),
+    getCategory: (id: string) => api.get(`/inventory/categories/${id}`),
+    createCategory: (data: any) => api.post('/inventory/categories', data),
+    updateCategory: (id: string, data: any) => api.put(`/inventory/categories/${id}`, data),
+    deleteCategory: (id: string) => api.delete(`/inventory/categories/${id}`),
+
+    // Units
+    getUnits: (params?: Record<string, any>) => api.get('/inventory/units', { params }),
+    getUnit: (id: string) => api.get(`/inventory/units/${id}`),
+    createUnit: (data: any) => api.post('/inventory/units', data),
+    updateUnit: (id: string, data: any) => api.put(`/inventory/units/${id}`, data),
+    deleteUnit: (id: string) => api.delete(`/inventory/units/${id}`),
+
     // Branches
     getBranches: (params?: Record<string, any>) => api.get('/inventory/branches', { params }),
     getBranch: (id: string) => api.get(`/inventory/branches/${id}`),
@@ -186,6 +200,8 @@ export const inventoryApi = {
     // Adjustments
     getAdjustments: (params?: Record<string, any>) => api.get('/inventory/adjustments', { params }),
     createAdjustment: (data: any) => api.post('/inventory/adjustments', data),
+
+    // Assembly
     getAdjustment: (id: string) => api.get(`/inventory/adjustments/${id}`),
 
     // Assembly (BOM)

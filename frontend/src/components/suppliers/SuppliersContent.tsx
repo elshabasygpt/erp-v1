@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DeleteConfirmModal, ViewAccountModal, SupplierCategoriesModal, ImportSuppliersModal } from './SupplierModals';
 import { crmApi } from '@/lib/api';
@@ -29,8 +30,8 @@ export default function SuppliersContent({ dict, locale }: Props) {
     const isRTL = locale === 'ar';
     const s = dict.suppliers;
 
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+
     const [search, setSearch] = useState('');
     const [catFilter, setCatFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -43,20 +44,19 @@ export default function SuppliersContent({ dict, locale }: Props) {
     const [showImport, setShowImport] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
-    const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
     const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 3500);
     };
 
-    // Fetch data
-    const fetchSuppliers = useCallback(async () => {
-        setLoading(true);
-        try {
+    // Fetch data using React Query
+    const { data: suppliers = [], isLoading: loading } = useQuery({
+        queryKey: ['suppliers'],
+        queryFn: async () => {
             const res = await crmApi.getSuppliers();
             const apiSuppliers = res.data?.data?.data || res.data?.data || [];
-            const formatted = apiSuppliers.map((s: any) => ({
+            return apiSuppliers.map((s: any) => ({
                 id: s.id?.toString() || s.supplier_code,
                 name: s.name || '',
                 nameAr: s.name_ar || s.name || '',
@@ -75,15 +75,8 @@ export default function SuppliersContent({ dict, locale }: Props) {
                 taxNumber: s.tax_number || '',
                 commercialRegister: s.commercial_register || ''
             }));
-            setSuppliers(formatted);
-        } catch (error) {
-            console.error('Failed fetching suppliers:', error);
-            showToast(isRTL ? 'فشل تحميل بيانات الموردين' : 'Failed to load suppliers', 'error');
         }
-        setLoading(false);
-    }, [isRTL]);
-
-    useEffect(() => { fetchSuppliers(); }, [fetchSuppliers]);
+    });
 
     const emptyForm = { name: '', nameAr: '', phone: '', email: '', address: '', category: 'local', paymentType: 'cash' as 'cash' | 'credit', creditLimit: 0, paymentTerms: 0, taxNumber: '', commercialRegister: '' };
     const [form, setForm] = useState(emptyForm);
@@ -92,7 +85,7 @@ export default function SuppliersContent({ dict, locale }: Props) {
     const catLabel = (c: string) => ({ local: s.catLocal, importer: s.catImporter, manufacturer: s.catManufacturer, distributor: s.catDistributor }[c] || c);
     const catBadge = (c: string) => ({ local: 'badge-success', importer: 'badge-info', manufacturer: 'badge-warning', distributor: 'badge bg-surface-200/10 text-surface-200/60' }[c] || 'badge-info');
 
-    const filtered = useMemo(() => suppliers.filter(su => {
+    const filtered = useMemo(() => suppliers.filter((su: Supplier) => {
         const name = isRTL ? su.nameAr : su.name;
         return (!search || name.toLowerCase().includes(search.toLowerCase()) || su.id.toLowerCase().includes(search.toLowerCase()) || su.phone.includes(search))
             && (catFilter === 'all' || su.category === catFilter)
@@ -107,9 +100,38 @@ export default function SuppliersContent({ dict, locale }: Props) {
         setShowAddEdit(true);
     };
 
-    const saveSupplier = useCallback(async () => {
+    const saveMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            if (editingSupplier) {
+                return crmApi.updateSupplier(editingSupplier.id, payload);
+            }
+            return crmApi.createSupplier(payload);
+        },
+        onSuccess: () => {
+            showToast(isRTL ? 'تم حفظ بيانات المورد بنجاح ✓' : 'Supplier saved successfully ✓');
+            setShowAddEdit(false);
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+        },
+        onError: (err: any) => {
+            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحفظ' : 'Save failed'), 'error');
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => crmApi.deleteSupplier(id),
+        onSuccess: () => {
+            showToast(isRTL ? 'تم حذف المورد بنجاح' : 'Supplier deleted', 'success');
+            setShowDelete(null);
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+        },
+        onError: (err: any) => {
+            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحذف' : 'Delete failed'), 'error');
+            setShowDelete(null);
+        }
+    });
+
+    const saveSupplier = () => {
         if (!form.name && !form.nameAr) return;
-        setSaving(true);
         const payload = {
             name: form.name || form.nameAr,
             name_ar: form.nameAr || form.name,
@@ -123,35 +145,12 @@ export default function SuppliersContent({ dict, locale }: Props) {
             tax_number: form.taxNumber,
             commercial_register: form.commercialRegister,
         };
-        try {
-            if (editingSupplier) {
-                await crmApi.updateSupplier(editingSupplier.id, payload);
-                showToast(isRTL ? 'تم تحديث بيانات المورد بنجاح ✓' : 'Supplier updated successfully ✓');
-            } else {
-                await crmApi.createSupplier(payload);
-                showToast(isRTL ? 'تم إضافة المورد بنجاح ✓' : 'Supplier added successfully ✓');
-            }
-            setShowAddEdit(false);
-            fetchSuppliers();
-        } catch (err: any) {
-            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحفظ' : 'Save failed'), 'error');
-        } finally {
-            setSaving(false);
-        }
-    }, [form, editingSupplier, isRTL, fetchSuppliers]);
+        saveMutation.mutate(payload);
+    };
 
-    const deleteSupplier = useCallback(async () => {
-        if (!showDelete) return;
-        try {
-            await crmApi.deleteSupplier(showDelete.id);
-            showToast(isRTL ? 'تم حذف المورد بنجاح' : 'Supplier deleted', 'success');
-            setShowDelete(null);
-            fetchSuppliers();
-        } catch (err: any) {
-            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحذف' : 'Delete failed'), 'error');
-            setShowDelete(null);
-        }
-    }, [showDelete, isRTL, fetchSuppliers]);
+    const deleteSupplier = () => {
+        if (showDelete) deleteMutation.mutate(showDelete.id);
+    };
 
     const exportCSV = useCallback(async () => {
         try {
@@ -168,8 +167,8 @@ export default function SuppliersContent({ dict, locale }: Props) {
 
     const handleAction = (key: string) => { switch (key) { case 'add': openAdd(); break; case 'import': setShowImport(true); break; case 'export': exportCSV(); break; case 'categories': setShowCategories(true); break; } };
 
-    const totalPurchases = suppliers.reduce((a, b) => a + b.totalPurchases, 0);
-    const outstanding = suppliers.reduce((a, b) => a + b.balance, 0);
+    const totalPurchases = suppliers.reduce((a: any, b: any) => a + b.totalPurchases, 0);
+    const outstanding = suppliers.reduce((a: any, b: any) => a + b.balance, 0);
     const stats = [
         { label: s.totalSuppliers, value: suppliers.length.toString(), change: '+8%', positive: true, icon: '🏭', gradient: 'from-blue-500/20 to-blue-600/5' },
         { label: s.newThisMonth, value: '2', change: '+20%', positive: true, icon: '🆕', gradient: 'from-green-500/20 to-green-600/5' },
@@ -185,7 +184,7 @@ export default function SuppliersContent({ dict, locale }: Props) {
         { key: 'categories', label: s.supplierCategories, icon: '🏷️', gradient: 'from-orange-500/15 to-red-600/5', border: 'border-orange-500/20 hover:border-orange-400/40' },
     ];
 
-    const chartData = [...suppliers].sort((a, b) => b.totalPurchases - a.totalPurchases).slice(0, 5).map(su => ({ name: isRTL ? su.nameAr : su.name, value: su.totalPurchases }));
+    const chartData = [...suppliers].sort((a: any, b: any) => b.totalPurchases - a.totalPurchases).slice(0, 5).map((su: Supplier) => ({ name: isRTL ? su.nameAr : su.name, value: su.totalPurchases }));
     const lblCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
 
     return (
@@ -270,7 +269,7 @@ export default function SuppliersContent({ dict, locale }: Props) {
                             <table className="data-table text-sm">
                                 <thead><tr><th>{s.code}</th><th>{s.supplierName}</th><th>{s.phone}</th><th>{s.category}</th><th>{s.paymentType}</th><th>{s.totalPurchases}</th><th>{s.balance}</th><th>{s.status}</th><th>{dict.common.actions}</th></tr></thead>
                                 <tbody>
-                                    {filtered.map(su => {
+                                    {filtered.map((su: Supplier) => {
                                         const pct = su.creditLimit > 0 ? Math.round((su.balance / su.creditLimit) * 100) : 0;
                                         return (
                                             <tr key={su.id}>
@@ -336,7 +335,10 @@ export default function SuppliersContent({ dict, locale }: Props) {
                         </div>
                         <div className="flex items-center justify-end gap-3 p-5 border-t" style={{ borderColor: 'var(--border-default)' }}>
                             <button onClick={() => setShowAddEdit(false)} className="btn-secondary">{dict.common.cancel}</button>
-                            <button onClick={saveSupplier} className="btn-primary">{dict.common.save}</button>
+                            <button onClick={saveSupplier} disabled={saveMutation.isPending} className="btn-primary flex items-center gap-2 disabled:opacity-70">
+                                {saveMutation.isPending ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/> : null}
+                                {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : dict.common.save}
+                            </button>
                         </div>
                     </div>
                 </div>

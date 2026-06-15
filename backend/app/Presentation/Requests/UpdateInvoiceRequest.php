@@ -35,6 +35,9 @@ class UpdateInvoiceRequest extends FormRequest
         $rules = [
             'status' => 'sometimes|string|in:draft,paid,cancelled',
             'notes' => 'nullable|string',
+            'cost_center_id' => 'nullable|uuid|exists:tenant.cost_centers,id',
+            'currency_id' => 'nullable|uuid|exists:tenant.currencies,id',
+            'exchange_rate' => 'nullable|numeric|min:0.000001',
         ];
 
         // Field-Level Mutability Security

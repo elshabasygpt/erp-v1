@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DeliveryModel extends BaseModel
 {
@@ -46,13 +47,18 @@ class DeliveryModel extends BaseModel
         return $this->belongsTo(SalesChannelModel::class, 'delivery_platform_id');
     }
 
-    public function statusLogs()
+    public function statusLogs(): HasMany
     {
         return $this->hasMany(DeliveryStatusLogModel::class, 'delivery_id')->orderBy('created_at', 'desc');
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(DeliveryItemModel::class, 'delivery_id');
+    }
+
     public function creator()
     {
-        return $this->belongsTo(\App\Models\User::class, 'created_by');
+        return $this->belongsTo(UserModel::class, 'created_by');
     }
 }

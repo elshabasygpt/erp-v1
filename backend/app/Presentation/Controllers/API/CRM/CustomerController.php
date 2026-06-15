@@ -20,9 +20,10 @@ class CustomerController extends BaseTenantController
         $limit = $request->query('limit', '15');
         $search = $request->query('search');
 
-        $query = CustomerModel::where('tenant_id', $this->getTenantId($request))->select([
-            'id', 'name', 'email', 'phone', 'balance', 'credit_limit', 'is_active', 'created_at'
-        ])->with(['invoices' => fn($q) => $q->select('id', 'customer_id', 'total', 'status')]);
+        $query = CustomerModel::where('tenant_id', $this->getTenantId($request))
+            ->withCount('invoices as orders_count')
+            ->withSum('invoices as total_purchases', 'total')
+            ->withMax('invoices as last_order', 'invoice_date');
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -33,6 +34,15 @@ class CustomerController extends BaseTenantController
         }
 
         $customers = $query->orderBy('created_at', 'desc')->paginate((int) $limit);
+
+        // Map status and other frontend expected fields
+        $customers->getCollection()->transform(function ($c) {
+            $c->status = $c->is_active ? 'active' : 'inactive';
+            $c->group = $c->segment ?: 'retail';
+            $c->payment_type = $c->credit_limit > 0 ? 'credit' : 'cash';
+            $c->total_purchases = $c->total_purchases ?: 0;
+            return $c;
+        });
 
         return $this->paginated($customers->toArray(), 'Customers retrieved successfully');
     }

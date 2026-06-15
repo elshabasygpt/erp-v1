@@ -49,6 +49,9 @@ class PurchaseController extends BaseTenantController
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.tax_rate' => 'required|numeric|min:0|max:100',
+            'cost_center_id' => 'nullable|uuid|exists:tenant.cost_centers,id',
+            'currency_id' => 'nullable|uuid|exists:tenant.currencies,id',
+            'exchange_rate' => 'nullable|numeric|min:0.000001',
         ]);
 
         try {
@@ -84,6 +87,9 @@ class PurchaseController extends BaseTenantController
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.tax_rate' => 'required|numeric|min:0|max:100',
+            'cost_center_id' => 'nullable|uuid|exists:tenant.cost_centers,id',
+            'currency_id' => 'nullable|uuid|exists:tenant.currencies,id',
+            'exchange_rate' => 'nullable|numeric|min:0.000001',
         ]);
 
         try {

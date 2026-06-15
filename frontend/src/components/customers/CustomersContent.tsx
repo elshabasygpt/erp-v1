@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DeleteConfirmModal, ViewAccountModal, CustomerGroupsModal, ImportCustomersModal } from './CustomerModals';
 import { exportTableToPDF } from '@/lib/pdf-export';
@@ -34,15 +35,13 @@ export default function CustomersContent({ dict, locale }: Props) {
     const isRTL = locale === 'ar';
     const c = dict.customers;
 
-    // ── State ──
-    const [customers, setCustomers] = useState<Customer[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+
     const [search, setSearch] = useState('');
     const [groupFilter, setGroupFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [paymentFilter, setPaymentFilter] = useState('all');
 
-    // Modal states
     const [showAddEdit, setShowAddEdit] = useState(false);
     const [showDelete, setShowDelete] = useState<Customer | null>(null);
     const [showAccount, setShowAccount] = useState<Customer | null>(null);
@@ -50,20 +49,19 @@ export default function CustomersContent({ dict, locale }: Props) {
     const [showImport, setShowImport] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
-    // ── Fetch data ──
-    const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
     const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 3500);
     };
 
-    const fetchCustomers = useCallback(async () => {
-        setLoading(true);
-        try {
+    // ── Fetch data with React Query ──
+    const { data: customers = [], isLoading: loading } = useQuery({
+        queryKey: ['customers'],
+        queryFn: async () => {
             const res = await crmApi.getCustomers();
             const apiCustomers = res.data?.data?.data || res.data?.data || [];
-            const formatted = apiCustomers.map((c: any) => ({
+            return apiCustomers.map((c: any) => ({
                 id: c.id?.toString() || c.customer_code,
                 name: c.name || '',
                 nameAr: c.name_ar || c.name || '',
@@ -82,15 +80,8 @@ export default function CustomersContent({ dict, locale }: Props) {
                 taxNumber: c.tax_number || '',
                 commercialRegister: c.commercial_register || ''
             }));
-            setCustomers(formatted);
-        } catch (error) {
-            console.error('Failed fetching customers:', error);
-            showToast(isRTL ? 'فشل تحميل بيانات العملاء' : 'Failed to load customers', 'error');
         }
-        setLoading(false);
-    }, [isRTL]);
-
-    useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+    });
 
     // Form
     const emptyForm = { name: '', nameAr: '', phone: '', email: '', address: '', group: 'retail', paymentType: 'cash' as 'cash' | 'credit', creditLimit: 0, paymentTerms: 0, taxNumber: '', commercialRegister: '' };
@@ -101,7 +92,7 @@ export default function CustomersContent({ dict, locale }: Props) {
     const groupBadge = (g: string) => ({ vip: 'badge-warning', wholesale: 'badge-info', retail: 'badge-success', individual: 'badge bg-surface-200/10 text-surface-200/60' }[g] || 'badge-info');
 
     // ── Filters ──
-    const filtered = useMemo(() => customers.filter(cu => {
+    const filtered = useMemo(() => customers.filter((cu: Customer) => {
         const name = isRTL ? cu.nameAr : cu.name;
         return (!search || name.toLowerCase().includes(search.toLowerCase()) || cu.id.toLowerCase().includes(search.toLowerCase()) || cu.phone.includes(search))
             && (groupFilter === 'all' || cu.group === groupFilter)
@@ -117,9 +108,38 @@ export default function CustomersContent({ dict, locale }: Props) {
         setShowAddEdit(true);
     };
 
-    const saveCustomer = useCallback(async () => {
+    const saveMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            if (editingCustomer) {
+                return crmApi.updateCustomer(editingCustomer.id, payload);
+            }
+            return crmApi.createCustomer(payload);
+        },
+        onSuccess: () => {
+            showToast(isRTL ? 'تم حفظ بيانات العميل بنجاح ✓' : 'Customer saved successfully ✓');
+            setShowAddEdit(false);
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+        },
+        onError: (err: any) => {
+            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحفظ، تحقق من البيانات' : 'Save failed, check inputs'), 'error');
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => crmApi.deleteCustomer(id),
+        onSuccess: () => {
+            showToast(isRTL ? 'تم حذف العميل بنجاح' : 'Customer deleted', 'success');
+            setShowDelete(null);
+            queryClient.invalidateQueries({ queryKey: ['customers'] });
+        },
+        onError: (err: any) => {
+            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحذف' : 'Delete failed'), 'error');
+            setShowDelete(null);
+        }
+    });
+
+    const saveCustomer = () => {
         if (!form.name && !form.nameAr) return;
-        setSaving(true);
         const payload = {
             name: form.name || form.nameAr,
             name_ar: form.nameAr || form.name,
@@ -133,35 +153,12 @@ export default function CustomersContent({ dict, locale }: Props) {
             tax_number: form.taxNumber,
             commercial_register: form.commercialRegister,
         };
-        try {
-            if (editingCustomer) {
-                await crmApi.updateCustomer(editingCustomer.id, payload);
-                showToast(isRTL ? 'تم تحديث بيانات العميل بنجاح ✓' : 'Customer updated successfully ✓');
-            } else {
-                await crmApi.createCustomer(payload);
-                showToast(isRTL ? 'تم إضافة العميل بنجاح ✓' : 'Customer added successfully ✓');
-            }
-            setShowAddEdit(false);
-            fetchCustomers();
-        } catch (err: any) {
-            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحفظ، تحقق من البيانات' : 'Save failed, check inputs'), 'error');
-        } finally {
-            setSaving(false);
-        }
-    }, [form, editingCustomer, isRTL, fetchCustomers]);
+        saveMutation.mutate(payload);
+    };
 
-    const deleteCustomer = useCallback(async () => {
-        if (!showDelete) return;
-        try {
-            await crmApi.deleteCustomer(showDelete.id);
-            showToast(isRTL ? 'تم حذف العميل بنجاح' : 'Customer deleted', 'success');
-            setShowDelete(null);
-            fetchCustomers();
-        } catch (err: any) {
-            showToast(err?.response?.data?.message || (isRTL ? 'فشل الحذف' : 'Delete failed'), 'error');
-            setShowDelete(null);
-        }
-    }, [showDelete, isRTL, fetchCustomers]);
+    const deleteCustomer = () => {
+        if (showDelete) deleteMutation.mutate(showDelete.id);
+    };
 
     // ── Export CSV ──
     const exportCSV = useCallback(async () => {
@@ -194,7 +191,7 @@ export default function CustomersContent({ dict, locale }: Props) {
                     isRTL ? 'الرصيد' : 'Balance',
                     isRTL ? 'الحالة' : 'Status',
                 ];
-                const rows = customers.map(cu => [
+                const rows = customers.map((cu: Customer) => [
                     cu.id,
                     isRTL ? cu.nameAr : cu.name,
                     cu.phone,
@@ -208,7 +205,7 @@ export default function CustomersContent({ dict, locale }: Props) {
                     { label: isRTL ? 'إجمالي العملاء' : 'Total Customers', value: String(customers.length) },
                     { label: isRTL ? 'إجمالي المبيعات' : 'Total Revenue', value: formatCurrency(totalRevenue) },
                     { label: isRTL ? 'الرصيد المستحق' : 'Outstanding', value: formatCurrency(outstanding) },
-                    { label: isRTL ? 'عملاء نشطون' : 'Active', value: String(customers.filter(c => c.status === 'active').length) },
+                    { label: isRTL ? 'عملاء نشطون' : 'Active', value: String(customers.filter((c: Customer) => c.status === 'active').length) },
                 ];
                 exportTableToPDF(
                     isRTL ? 'تقرير العملاء' : 'Customers Report',
@@ -225,8 +222,8 @@ export default function CustomersContent({ dict, locale }: Props) {
     };
 
     // ── Stats ──
-    const totalRevenue = customers.reduce((s, cu) => s + cu.totalPurchases, 0);
-    const outstanding = customers.reduce((s, cu) => s + cu.balance, 0);
+    const totalRevenue = customers.reduce((s: number, cu: Customer) => s + cu.totalPurchases, 0);
+    const outstanding = customers.reduce((s: number, cu: Customer) => s + cu.balance, 0);
     const stats = [
         { label: c.totalCustomers, value: customers.length.toString(), change: '+12%', positive: true, icon: '👥', gradient: 'from-blue-500/20 to-blue-600/5' },
         { label: c.newThisMonth, value: '4', change: '+33%', positive: true, icon: '🆕', gradient: 'from-green-500/20 to-green-600/5' },
@@ -241,7 +238,7 @@ export default function CustomersContent({ dict, locale }: Props) {
         { key: 'groups', label: c.customerGroups, icon: '🏷️' },
     ];
 
-    const chartData = [...customers].sort((a, b) => b.totalPurchases - a.totalPurchases).slice(0, 5).map(cu => ({ name: isRTL ? cu.nameAr : cu.name, value: cu.totalPurchases }));
+    const chartData = [...customers].sort((a, b) => b.totalPurchases - a.totalPurchases).slice(0, 5).map((cu: Customer) => ({ name: isRTL ? cu.nameAr : cu.name, value: cu.totalPurchases }));
     const lblCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
 
     return (
@@ -332,7 +329,7 @@ export default function CustomersContent({ dict, locale }: Props) {
                             <table className="data-table text-sm">
                                 <thead><tr><th>{c.code}</th><th>{c.customerName}</th><th>{c.phone}</th><th>{c.group}</th><th>{c.paymentType}</th><th>{c.totalPurchases}</th><th>{c.balance}</th><th>{c.status}</th><th>{dict.common.actions}</th></tr></thead>
                                 <tbody>
-                                    {filtered.map(cu => {
+                                    {filtered.map((cu: Customer) => {
                                         const pct = cu.creditLimit > 0 ? Math.round((cu.balance / cu.creditLimit) * 100) : 0;
                                         return (
                                             <tr key={cu.id}>
@@ -403,9 +400,9 @@ export default function CustomersContent({ dict, locale }: Props) {
                         </div>
                         <div className="flex items-center justify-end gap-3 p-5 border-t sticky bottom-0 bg-white/80 dark:bg-surface-900/80 backdrop-blur-md" style={{ borderColor: 'var(--border-default)' }}>
                             <button onClick={() => setShowAddEdit(false)} className="btn-secondary">{dict.common.cancel}</button>
-                            <button onClick={saveCustomer} disabled={saving} className="btn-primary shadow-lg shadow-primary-500/30 flex items-center gap-2 disabled:opacity-70">
-                                {saving ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/> : null}
-                                {saving ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : dict.common.save}
+                            <button onClick={saveCustomer} disabled={saveMutation.isPending} className="btn-primary shadow-lg shadow-primary-500/30 flex items-center gap-2 disabled:opacity-70">
+                                {saveMutation.isPending ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"/> : null}
+                                {saveMutation.isPending ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : dict.common.save}
                             </button>
                         </div>
                     </div>

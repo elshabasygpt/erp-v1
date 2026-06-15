@@ -6,13 +6,18 @@ namespace App\Presentation\Controllers\API\Inventory;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\Rule;
 use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Infrastructure\Eloquent\Models\WarehouseModel;
+use App\Application\Services\InventoryService;
 
 class StockMovementController extends BaseTenantController
 {
+    public function __construct(private InventoryService $inventoryService)
+    {
+    }
     /**
      * GET /api/inventory/movements
      * List stock movements with optional filters.
@@ -48,7 +53,7 @@ class StockMovementController extends BaseTenantController
     /**
      * GET /api/inventory/movements/{id}
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $movement = StockMovementModel::where('tenant_id', $this->getTenantId($request))->with(['product', 'warehouse', 'creator'])
             ->findOrFail($id);
@@ -63,13 +68,21 @@ class StockMovementController extends BaseTenantController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'product_id'    => 'required|integer|exists:products,id',
-            'warehouse_id'  => 'nullable|integer|exists:warehouses,id',
+            'product_id'    => [
+                'required',
+                'uuid',
+                Rule::exists('tenant.products', 'id')->where('tenant_id', $this->getTenantId($request))
+            ],
+            'warehouse_id'  => [
+                'nullable',
+                'uuid',
+                Rule::exists('tenant.warehouses', 'id')->where('tenant_id', $this->getTenantId($request))
+            ],
             'type'          => 'required|in:incoming,outgoing,adjustment,return,transfer',
             'quantity'      => 'required|numeric|min:0.01',
             'cost_per_unit' => 'nullable|numeric|min:0',
             'reference_type'=> 'nullable|string|max:50',
-            'reference_id'  => 'nullable|integer',
+            'reference_id'  => 'nullable|uuid',
             'notes'         => 'nullable|string|max:500',
         ]);
 
@@ -80,14 +93,14 @@ class StockMovementController extends BaseTenantController
 
         // Update product stock (for manual adjustments)
         if (in_array($validated['type'], ['incoming', 'return'])) {
-            $this->adjustProductStock($validated['product_id'], $validated['quantity'], 'add');
+            $this->inventoryService->adjustProductStock($this->getTenantId($request), $validated['product_id'], (float) $validated['quantity'], 'add');
         } elseif ($validated['type'] === 'outgoing') {
-            $this->adjustProductStock($validated['product_id'], $validated['quantity'], 'subtract');
+            $this->inventoryService->adjustProductStock($this->getTenantId($request), $validated['product_id'], (float) $validated['quantity'], 'subtract');
         } elseif ($validated['type'] === 'adjustment') {
             // Adjustment: quantity can be positive (add) or negative (reduce)
             // We store absolute value and handle sign from request
             $delta = $request->boolean('subtract') ? -abs($validated['quantity']) : abs($validated['quantity']);
-            $this->adjustProductStock($validated['product_id'], $delta, 'delta');
+            $this->inventoryService->adjustProductStock($this->getTenantId($request), $validated['product_id'], (float) $delta, 'delta');
         }
 
         return $this->success(
@@ -103,7 +116,7 @@ class StockMovementController extends BaseTenantController
      */
     public function summary(Request $request): JsonResponse
     {
-        $query = StockMovementModel::query();
+        $query = StockMovementModel::where('tenant_id', $this->getTenantId($request));
 
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
@@ -123,20 +136,6 @@ class StockMovementController extends BaseTenantController
         return $this->success($summary, 'Summary retrieved');
     }
 
-    // ── Private helpers ────────────────────────────────────────────
-
-    private function adjustProductStock(int $productId, float $quantity, string $mode): void
-    {
-        $product = ProductModel::where('tenant_id', $this->getTenantId($request))->find($productId);
-        if (!$product) return;
-
-        match ($mode) {
-            'add'      => $product->increment('stock_quantity', $quantity),
-            'subtract' => $product->decrement('stock_quantity', $quantity),
-            'delta'    => $product->increment('stock_quantity', $quantity), // handles negatives
-            default    => null,
-        };
-    }
 }
 
 

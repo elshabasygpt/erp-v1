@@ -12,6 +12,7 @@ use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
 use App\Domain\Accounting\Services\AccountMappingService;
 use App\Domain\Accounting\Services\FiscalPeriodService;
+use App\Application\Accounting\Services\ExchangeRateService;
 use App\Domain\Inventory\Services\InventoryValuationService;
 use App\Domain\Inventory\Services\StockLotService;
 use App\Jobs\SubmitZatcaInvoiceJob;
@@ -37,6 +38,7 @@ class ConfirmInvoiceUseCase
         private JournalEntryRepositoryInterface $journalEntryRepository,
         private AccountMappingService $accountMapping,
         private FiscalPeriodService $fiscalPeriodService,
+        private ExchangeRateService $exchangeRateService,
         private InventoryValuationService $inventoryValuationService,
         private StockLotService $stockLotService,
     ) {}
@@ -69,7 +71,7 @@ class ConfirmInvoiceUseCase
                     throw new \DomainException("Insufficient stock for product: {$item->getProductId()}");
                 }
 
-                $costUsed = $this->inventoryValuationService->recordMovement(
+                $totalCost = $this->inventoryValuationService->recordMovement(
                     $item->getProductId(),
                     $invoice->getWarehouseId(),
                     -$item->getQuantity(),
@@ -79,7 +81,7 @@ class ConfirmInvoiceUseCase
                     $userId
                 );
 
-                $totalCogs += ($item->getQuantity() * $costUsed);
+                $totalCogs += $totalCost;
 
                 if ($item->getStockLotId()) {
                     $this->stockLotService->deductLot(
@@ -175,13 +177,27 @@ class ConfirmInvoiceUseCase
 
     private function createJournalEntry(Invoice $invoice, float $totalCogs, string $userId): void
     {
+        $tenantId = app('currentTenant')->id ?? 'tenant_context';
         $entryNumber = $this->journalEntryRepository->getNextEntryNumber();
+        
+        // Fetch Invoice Currency
+        $invoiceModel = \App\Infrastructure\Eloquent\Models\InvoiceModel::find($invoice->getId());
+        $currencyId = $invoiceModel->currency_id;
+        $exchangeRate = (float) $invoiceModel->exchange_rate;
+        $costCenterId = $invoiceModel->cost_center_id;
+        if (!$currencyId) {
+            $baseCurrency = $this->exchangeRateService->getBaseCurrency($tenantId);
+            $currencyId = $baseCurrency->id;
+            $exchangeRate = 1.0;
+        }
 
         $journalEntry = new JournalEntry(
             id: null,
             entryNumber: $entryNumber,
             date: new \DateTimeImmutable(),
             description: "Sales Invoice: {$invoice->getInvoiceNumber()}",
+            transactionCurrencyId: $currencyId,
+            exchangeRate: $exchangeRate,
             isPosted: false,
             referenceType: 'invoice',
             referenceId: $invoice->getId(),
@@ -197,8 +213,10 @@ class ConfirmInvoiceUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('cash'),
-                debit: round($paidAmount, 2),
+                debit: round($paidAmount * $exchangeRate, 2),
                 credit: 0,
+                transactionDebit: round($paidAmount, 2),
+                transactionCredit: 0.0,
                 description: 'Cash payment for sales',
             ));
         }
@@ -209,8 +227,10 @@ class ConfirmInvoiceUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('ar'),
-                debit: round($dueAmount, 2),
+                debit: round($dueAmount * $exchangeRate, 2),
                 credit: 0,
+                transactionDebit: round($dueAmount, 2),
+                transactionCredit: 0.0,
                 description: 'Credit sales - Accounts Receivable',
             ));
         }
@@ -222,8 +242,11 @@ class ConfirmInvoiceUseCase
             journalEntryId: '',
             accountId: $this->accountMapping->resolve('revenue'),
             debit: 0,
-            credit: $netRevenue,
+            credit: round($netRevenue * $exchangeRate, 2),
+            transactionDebit: 0.0,
+            transactionCredit: round($netRevenue, 2),
             description: 'Sales revenue',
+            costCenterId: $costCenterId,
         ));
 
         // Credit: VAT Payable
@@ -233,12 +256,14 @@ class ConfirmInvoiceUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('vat_payable'),
                 debit: 0,
-                credit: round($invoice->getVatAmount(), 2),
+                credit: round($invoice->getVatAmount() * $exchangeRate, 2),
+                transactionDebit: 0.0,
+                transactionCredit: round($invoice->getVatAmount(), 2),
                 description: 'VAT payable',
             ));
         }
 
-        // Debit: Cost of Goods Sold (COGS)
+        // COGS and Inventory are always in Base Currency (Local Valuation)
         if ($totalCogs > 0) {
             $journalEntry->addLine(new JournalEntryLine(
                 id: null,
@@ -246,16 +271,20 @@ class ConfirmInvoiceUseCase
                 accountId: $this->accountMapping->resolve('cogs'),
                 debit: round($totalCogs, 2),
                 credit: 0,
-                description: 'Cost of Goods Sold',
+                transactionDebit: round($totalCogs, 2),
+                transactionCredit: 0.0,
+                description: 'Cost of goods sold',
+                costCenterId: $costCenterId,
             ));
 
-            // Credit: Inventory
             $journalEntry->addLine(new JournalEntryLine(
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('inventory'),
                 debit: 0,
                 credit: round($totalCogs, 2),
+                transactionDebit: 0.0,
+                transactionCredit: round($totalCogs, 2),
                 description: 'Inventory deduction',
             ));
         }

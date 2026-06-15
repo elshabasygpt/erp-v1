@@ -10,8 +10,13 @@ use App\Infrastructure\Eloquent\Models\DeliveryStatusLogModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+use App\Domain\Sales\Services\DeliveryService;
+
 final class UpdateDeliveryStatusUseCase
 {
+    public function __construct(
+        private readonly DeliveryService $deliveryService
+    ) {}
     public function execute(string $deliveryId, UpdateDeliveryStatusDTO $dto, string $userId): DeliveryModel
     {
         return DB::transaction(function () use ($deliveryId, $dto, $userId) {
@@ -37,9 +42,15 @@ final class UpdateDeliveryStatusUseCase
                 throw new \DomainException("Invalid state transition from {$delivery->status} to {$dto->status}. Allowed transitions: " . implode(', ', $allowedStates));
             }
 
-            $delivery->status = $dto->status;
             $delivery->updated_by = $userId;
-            $delivery->save();
+            
+            if ($dto->status === 'dispatched') {
+                // Let DeliveryService handle the dispatch logic (stock movement, reserved stock reduction)
+                $delivery = $this->deliveryService->dispatchDelivery($delivery->tenant_id, $delivery->id, $userId);
+            } else {
+                $delivery->status = $dto->status;
+                $delivery->save();
+            }
 
             DeliveryStatusLogModel::create([
                 'id' => Str::uuid()->toString(),

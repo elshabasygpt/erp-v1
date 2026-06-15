@@ -102,6 +102,9 @@ final class CreateInvoiceUseCase
             referenceNo: $dto->referenceNo,
             paidAmount: $dto->type === 'cash' ? 0 : $dto->paidAmount, // Will calculate later
             salespersonId: $dto->salespersonId ?? $userId,
+            costCenterId: $dto->costCenterId,
+            currencyId: $dto->currencyId,
+            exchangeRate: $dto->exchangeRate,
         );
 
         $invoice->setItems($items);
