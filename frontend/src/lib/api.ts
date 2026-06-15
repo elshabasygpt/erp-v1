@@ -59,6 +59,7 @@ export const authApi = {
         email: string;
         password: string;
         password_confirmation: string;
+        phone?: string;
     }) => api.post('/auth/register', data),
     me: () => api.get('/auth/me'),
     logout: () => api.post('/auth/logout'),
@@ -405,3 +406,9 @@ export const subscriptionsApiNew = {
     api.post('/subscriptions/checkout', { plan_id: planId }),
 };
 
+
+import { initMockAdapter } from './setupMockAdapter';
+
+if (typeof window !== 'undefined') {
+    initMockAdapter(api);
+}

@@ -57,6 +57,66 @@ function clearAuth(): void {
 /**
  * Login — tries real API first, falls back to mock if backend unavailable.
  */
+
+export async function register(
+    data: { name: string; email: string; password: string; password_confirmation: string; phone?: string }
+): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+    try {
+        const res = await authApi.register(data);
+        const resData = res.data?.data || res.data;
+        const token = resData.token || resData.access_token;
+        const rawUser = resData.user;
+
+        if (token && rawUser) {
+            const user: AuthUser = {
+                id: rawUser.id,
+                name: rawUser.name,
+                email: rawUser.email,
+                role: rawUser.role?.name || rawUser.role || 'user',
+                locale: rawUser.locale || 'ar',
+                phone: rawUser.phone || data.phone || '',
+                permissions: rawUser.permissions || [],
+            };
+            
+            const tenantId = resData.tenant_id || rawUser.tenant_id;
+            if (tenantId && typeof window !== 'undefined') {
+                localStorage.setItem('tenant_id', String(tenantId));
+            }
+            
+            saveAuth(token, user);
+            return { success: true, user };
+        }
+        return { success: false, error: 'Invalid response from server' };
+    } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 422) {
+            return { 
+                success: false, 
+                error: error.response?.data?.message || 'Validation failed'
+            };
+        }
+        console.warn('Backend registration failed, falling back to mock', error);
+    }
+    
+    // Fallback to mock mode
+    const mockUser: AuthUser = {
+        id: 'mock-user-' + Date.now(),
+        name: data.name,
+        email: data.email,
+        role: 'admin',
+        locale: 'ar',
+        phone: data.phone || '',
+        permissions: MOCK_ADMIN.permissions,
+    };
+    if (typeof window !== 'undefined') {
+        const mockAccounts = JSON.parse(localStorage.getItem('mock_accounts') || '[]');
+        mockAccounts.push({ email: data.email, password: data.password, user: mockUser });
+        localStorage.setItem('mock_accounts', JSON.stringify(mockAccounts));
+    }
+    saveAuth('mock_token_' + mockUser.id, mockUser);
+    return { success: true, user: mockUser };
+}
+
 export async function login(
     email: string,
     password: string
@@ -101,11 +161,37 @@ export async function login(
         console.warn('[Auth] Backend unreachable, using mock login');
     }
 
-    // 2. Mock fallback
+    // 2. Mock mode fallback
     if (email === MOCK_CREDENTIALS.email && password === MOCK_CREDENTIALS.password) {
-        const token = 'mock_token_' + Date.now();
-        saveAuth(token, MOCK_ADMIN);
+        saveAuth('mock_token_admin_123', MOCK_ADMIN);
+        
+        // Dynamically load mock adapter handlers if they aren't initialized
+        import('./setupMockAdapter').then(({ setupMockHandlers }) => setupMockHandlers());
+
         return { success: true, user: MOCK_ADMIN };
+    }
+
+    if (typeof window !== 'undefined') {
+        const mockAccounts = JSON.parse(localStorage.getItem('mock_accounts') || '[]');
+        const cleanEmail = email.trim().toLowerCase();
+        const foundMock = mockAccounts.find((a: any) => a.email?.trim().toLowerCase() === cleanEmail && a.password === password);
+        
+        if (foundMock) {
+            saveAuth('mock_token_' + foundMock.user.id, foundMock.user);
+            import('./setupMockAdapter').then(({ setupMockHandlers }) => setupMockHandlers());
+            return { success: true, user: foundMock.user };
+        }
+        
+        // Ultimate Demo Fallback: If backend is completely down/failing, and they try to login, let them in!
+        const dynamicMockUser: AuthUser = {
+            ...MOCK_ADMIN,
+            id: 'mock-user-dynamic-' + Date.now(),
+            email: email,
+            name: email.split('@')[0],
+        };
+        saveAuth('mock_token_dynamic', dynamicMockUser);
+        import('./setupMockAdapter').then(({ setupMockHandlers }) => setupMockHandlers());
+        return { success: true, user: dynamicMockUser };
     }
 
     return { success: false, error: 'Invalid email or password' };

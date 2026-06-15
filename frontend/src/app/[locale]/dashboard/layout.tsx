@@ -8,6 +8,9 @@ import SmartSearchModal from '@/components/layout/SmartSearchModal';
 import { SidebarProvider, useSidebar } from '@/providers/SidebarProvider';
 import { getStoredUser, isMockMode } from '@/lib/auth';
 import { LanguageProvider } from '@/i18n/LanguageContext';
+import MobileHeader from '@/components/layout/MobileHeader';
+import BottomNav from '@/components/layout/BottomNav';
+
 
 // ── Breadcrumb helper ─────────────────────────────────────────────
 const ROUTE_LABELS: Record<string, { ar: string; en: string }> = {
@@ -54,10 +57,9 @@ function DashboardLayoutInner({
 }) {
     const isRTL = locale === 'ar';
     const [dict, setDict] = useState<any>(null);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const pathname = usePathname();
+        const pathname = usePathname();
     const user = typeof window !== 'undefined' ? getStoredUser() : null;
-    const { collapsed, mode } = useSidebar();
+    const { collapsed, mode, toggleCollapsed } = useSidebar();
 
     const isPosMode = pathname?.includes('/pos');
     const [isMock, setIsMock] = useState(false);
@@ -82,9 +84,6 @@ function DashboardLayoutInner({
         import(`@/i18n/dictionaries/${locale}.json`).then(m => setDict(m.default));
     }, [locale]);
 
-    useEffect(() => {
-        setMobileMenuOpen(false);
-    }, [pathname]);
 
     if (!dict) {
         return (
@@ -113,17 +112,12 @@ function DashboardLayoutInner({
         <AuthGuard locale={locale}>
             <LanguageProvider initialDict={dict}>
                 <div className="min-h-screen transition-colors duration-300" style={{ background: 'var(--bg-body)' }}>
-                    {/* Mobile Overlay */}
-                    {mobileMenuOpen && (
-                        <div
-                            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
-                            onClick={() => setMobileMenuOpen(false)}
-                        />
-                    )}
+                    {/* Mobile Header — يظهر على الموبايل فقط */}
+                    <MobileHeader isRTL={isRTL} title={dict.common?.appName || 'ERP'} />
 
                     {/* Mock Mode Banner */}
                     {isMock && (
-                        <div className="sticky top-0 z-30 flex items-center justify-center gap-2 py-2 px-4 text-xs font-semibold"
+                        <div className="sticky top-0 z-30 flex items-center justify-center gap-2 py-2 px-4 text-xs font-semibold mt-14 md:mt-0"
                             style={{ background: 'rgba(245,158,11,0.15)', borderBottom: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}>
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -134,27 +128,21 @@ function DashboardLayoutInner({
                         </div>
                     )}
 
-                    {/* Sidebar */}
-                    <div className={`
-                        fixed inset-y-0 start-0 z-50
-                        transition-all duration-300 ease-in-out
-                        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                        ${isRTL && !mobileMenuOpen ? 'translate-x-full lg:translate-x-0' : ''}
-                    `}>
+                    <div className="flex">
+                        {/* Sidebar */}
                         <Sidebar locale={locale as any} dict={dict} />
-                    </div>
 
-                    {/* Main Content */}
-                    <main className={`min-h-screen transition-all duration-300 ms-0 ${sidebarW}`}>
+                        {/* Main Content */}
+                        <main className={`flex-1 min-w-0 overflow-x-hidden pt-14 pb-20 md:pt-0 md:pb-0 min-h-screen transition-all duration-300 ms-0 ${sidebarW}`}>
                         {/* ── Top Bar ── */}
                         <header
-                            className="sticky top-0 z-20 h-16 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 transition-colors duration-300"
+                            className="sticky top-0 z-20 h-16 backdrop-blur-xl hidden md:flex items-center justify-between px-4 sm:px-6 transition-colors duration-300"
                             style={{ background: 'var(--bg-header)', borderBottom: '1px solid var(--border-default)' }}
                         >
                             {/* Left: Mobile toggle + Breadcrumb */}
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                                 <button
-                                    onClick={() => setMobileMenuOpen(true)}
+                                    onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))}
                                     className="lg:hidden btn-icon flex-shrink-0"
                                 >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -253,6 +241,9 @@ function DashboardLayoutInner({
                             dict={dict} 
                         />
                     </main>
+                    </div>
+                    {/* Bottom Navigation — يظهر على الموبايل فقط */}
+                    <BottomNav locale={locale} />
                 </div>
             </LanguageProvider>
         </AuthGuard>

@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-
-import api from '@/lib/api';
+import React from 'react';
+import { useSalesDashboard } from './hooks/useSalesDashboard';
 import { Card } from '@/components/ui/card';
 import { 
   BarChart, Bar, PieChart, Pie, Cell,
@@ -14,50 +13,12 @@ import { inventoryApi } from '@/lib/api';
 
 export default function SalesDashboard() {
   const isRTL = true;
-  const [loading, setLoading] = useState(true);
-  const [kpis, setKpis] = useState<any>({});
-  const [charts, setCharts] = useState<any>({});
-  const [dateRange, setDateRange] = useState({
-      from: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'),
-      to: format(new Date(), 'yyyy-MM-dd')
-  });
-  const [filters, setFilters] = useState({ branch_id: '', warehouse_id: '' });
-  const [branches, setBranches] = useState<any[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    inventoryApi.getBranches().then(res => {
-        const data = res.data?.data?.data || res.data?.data || res.data || [];
-        setBranches(Array.isArray(data) ? data : []);
-    }).catch(() => setBranches([]));
-    inventoryApi.getWarehouses().then(res => {
-        const data = res.data?.data?.data || res.data?.data || res.data || [];
-        setWarehouses(Array.isArray(data) ? data : []);
-    }).catch(() => setWarehouses([]));
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [dateRange, filters]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [kpiRes, chartRes] = await Promise.all([
-        api.get('/sales/advanced-reports/kpis', { params: { date_from: dateRange.from, date_to: dateRange.to, ...filters } }),
-        api.get('/sales/advanced-reports/charts', { params: { date_from: dateRange.from, date_to: dateRange.to, ...filters } })
-      ]);
-      setKpis(kpiRes.data.data);
-      setCharts(chartRes.data.data);
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching dashboard data', error);
-      setError(isRTL ? 'فشل تحميل بيانات لوحة القياس' : 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { 
+    loading, kpis, charts, 
+    dateRange, setDateRange, 
+    filters, setFilters, 
+    branches, warehouses, error 
+  } = useSalesDashboard(isRTL);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -65,12 +26,14 @@ export default function SalesDashboard() {
     return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-blue-500"/></div>;
   }
 
-  if (error) {
-    return <div className="flex justify-center items-center h-64 text-rose-500 gap-2"><AlertCircle className="w-6 h-6"/> {error}</div>;
-  }
-
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-500/20 mb-4">
+          <AlertCircle className="w-5 h-5"/>
+          <span className="text-sm font-bold">{error}</span>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#1a1a2e] p-4 rounded-2xl border border-slate-200 dark:border-white/10">
         <div>
           <h2 className="text-xl font-black text-slate-800 dark:text-white">

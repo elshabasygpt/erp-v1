@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import clsx from 'clsx';
 import { Package, Plus } from 'lucide-react';
 
@@ -17,7 +17,7 @@ function getProductPrice(product: any, level: string): number {
     return retail;
 }
 
-export function PosProductGrid({ pagedProducts, cartQtyMap, addToCart, activePriceLevel, isRTL }: PosProductGridProps) {
+export const PosProductGrid = memo(function PosProductGrid({ pagedProducts, cartQtyMap, addToCart, activePriceLevel, isRTL }: PosProductGridProps) {
     return (
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 dark:bg-transparent">
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
@@ -49,4 +49,4 @@ export function PosProductGrid({ pagedProducts, cartQtyMap, addToCart, activePri
             {pagedProducts.length === 0 && <div className="h-full flex flex-col items-center justify-center opacity-40 dark:opacity-20 text-slate-500 dark:text-white"><Package className="w-20 h-20 mb-6 stroke-[1]"/><p className="text-xl font-black uppercase tracking-[0.2em]">{isRTL ? 'لا توجد منتجات' : 'No Products'}</p></div>}
         </div>
     );
-}
+});

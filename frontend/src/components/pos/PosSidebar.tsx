@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
 import clsx from 'clsx';
 import { 
@@ -25,7 +25,7 @@ const SIDEBAR_LINKS = [
     { icon: Settings, path: '/settings', label: 'Settings', labelAr: 'الإعدادات' }
 ];
 
-export function PosSidebar({ locale, isRTL }: { locale: string, isRTL: boolean }) {
+export const PosSidebar = memo(function PosSidebar({ locale, isRTL }: { locale: string, isRTL: boolean }) {
     return (
         <div className="w-16 shrink-0 bg-slate-900 dark:bg-black border-e border-slate-800 flex flex-col items-center py-4 gap-2 relative z-[60] overflow-y-auto custom-scrollbar">
             {SIDEBAR_LINKS.map(link => {
@@ -46,4 +46,4 @@ export function PosSidebar({ locale, isRTL }: { locale: string, isRTL: boolean }
             })}
         </div>
     );
-}
+});

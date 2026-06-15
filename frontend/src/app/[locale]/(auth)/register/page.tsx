@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { register } from '@/lib/auth';
 
 interface RegisterPageProps {
     params: { locale: string };
@@ -28,10 +30,26 @@ export default function RegisterPage({ params }: RegisterPageProps) {
         appName: isRTL ? 'نظام المحاسبة السحابي' : 'SaaS Accounting',
     };
 
+    const router = useRouter();
+    const [error, setError] = useState<string | null>(null);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setTimeout(() => setLoading(false), 1500);
+        setError(null);
+        
+        try {
+            const res = await register(formData);
+            if (res.success) {
+                router.push(`/${locale}/dashboard`);
+            } else {
+                setError(res.error || 'Registration failed. Please check your inputs.');
+            }
+        } catch (err: any) {
+            setError(err.message || 'An error occurred during registration.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const update = (field: string, value: string) =>
@@ -56,6 +74,11 @@ export default function RegisterPage({ params }: RegisterPageProps) {
                     <h2 className="text-xl font-semibold text-white mb-6">{dict.title}</h2>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
+                                {error}
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-surface-200/60 mb-1.5">{dict.name}</label>
                             <input type="text" value={formData.name} onChange={(e) => update('name', e.target.value)} className="input-field" required />

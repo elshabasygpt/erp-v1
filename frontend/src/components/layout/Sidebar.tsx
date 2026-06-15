@@ -228,6 +228,16 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
         setOpenGroups(getInitialOpenGroups());
     }, [pathname]);
 
+    useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !collapsed) {
+                toggleCollapsed();
+            }
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [collapsed, toggleCollapsed]);
+
     const toggleGroup = (key: string) => {
         if (isMini && mode !== 'hover') return;
         setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
@@ -244,8 +254,17 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
     const getLabel = (labelAr: string, labelEn: string) => isRTL ? labelAr : labelEn;
 
     return (
+        <>
+            {/* Overlay — موبايل فقط، لما الـ Sidebar مفتوح */}
+            {!collapsed && (
+                <div
+                    className="fixed inset-0 bg-black/40 z-40 md:hidden"
+                    onClick={toggleCollapsed}
+                    aria-hidden="true"
+                />
+            )}
         <aside
-            className={`${sidebarWidth} h-full flex flex-col transition-all duration-300 ease-in-out overflow-hidden`}
+            className={`${sidebarWidth} h-full flex flex-col overflow-hidden fixed top-0 bottom-0 z-50 transition-transform duration-300 ease-in-out ${!collapsed ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'} md:translate-x-0 md:static md:z-auto md:h-screen`}
             style={{ background: 'var(--bg-sidebar)', borderInlineEnd: '1px solid var(--border-default)' }}
             onMouseEnter={() => mode === 'hover' && setIsHovering(true)}
             onMouseLeave={() => mode === 'hover' && setIsHovering(false)}
@@ -492,5 +511,6 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
                 </Tooltip>
             </div>
         </aside>
+        </>
     );
 }

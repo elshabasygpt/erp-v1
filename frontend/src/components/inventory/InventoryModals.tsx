@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 
 // ── Types ──
 export interface MainGroup { id: string; name: string; nameAr: string; subGroups: SubGroup[]; imageUrl?: string; discount?: number; }
@@ -10,7 +10,7 @@ export interface StockMovement { id: string; type: 'incoming' | 'outgoing' | 'ad
 // ── Manage Groups Modal ──
 interface GroupsProps { dict: any; locale: string; groups: MainGroup[]; setGroups: (g: MainGroup[]) => void; onClose: () => void; }
 
-export function ManageGroupsModal({ dict, locale, groups, setGroups, onClose }: GroupsProps) {
+export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale, groups, setGroups, onClose }: GroupsProps) {
     const isRTL = locale === 'ar';
     const inv = dict.inventory;
     
@@ -261,12 +261,12 @@ export function ManageGroupsModal({ dict, locale, groups, setGroups, onClose }: 
             </div>
         </div>
     );
-}
+});
 
 // ── Manage Units Modal ──
 interface UnitsProps { dict: any; locale: string; units: Unit[]; setUnits: (u: Unit[]) => void; onClose: () => void; }
 
-export function ManageUnitsModal({ dict, locale, units, setUnits, onClose }: UnitsProps) {
+export const ManageUnitsModal = memo(function ManageUnitsModal({ dict, locale, units, setUnits, onClose }: UnitsProps) {
     const isRTL = locale === 'ar';
     const inv = dict.inventory;
     const [name, setName] = useState('');
@@ -332,12 +332,12 @@ export function ManageUnitsModal({ dict, locale, units, setUnits, onClose }: Uni
             </div>
         </div>
     );
-}
+});
 
 // ── Stock Movements Modal ──
 interface MovementsProps { dict: any; locale: string; product: any; onClose: () => void; }
 
-export function StockMovementsModal({ dict, locale, product, onClose }: MovementsProps) {
+export const StockMovementsModal = memo(function StockMovementsModal({ dict, locale, product, onClose }: MovementsProps) {
     const isRTL = locale === 'ar';
     const inv = dict.inventory;
 
@@ -413,12 +413,12 @@ export function StockMovementsModal({ dict, locale, product, onClose }: Movement
             </div>
         </div>
     );
-}
+});
 
 // ── Barcode Print Modal ──
 interface BarcodeProps { dict: any; locale: string; product: any; onClose: () => void; }
 
-export function PrintBarcodeModal({ dict, locale, product, onClose }: BarcodeProps) {
+export const PrintBarcodeModal = memo(function PrintBarcodeModal({ dict, locale, product, onClose }: BarcodeProps) {
     const isRTL = locale === 'ar';
     const inv = dict.inventory;
     const [count, setCount] = useState(1);
@@ -473,12 +473,12 @@ export function PrintBarcodeModal({ dict, locale, product, onClose }: BarcodePro
             </div>
         </div>
     );
-}
+});
 
 // ── Inventory Adjustment & Spoilage Modal ──
 export interface AdjustmentProps { dict: any; locale: string; products: any[]; warehouses: any[]; onClose: () => void; onSave: (data: any) => Promise<void>; }
 
-export function InventoryAdjustmentModal({ dict, locale, products, warehouses, onClose, onSave }: AdjustmentProps) {
+export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({ dict, locale, products, warehouses, onClose, onSave }: AdjustmentProps) {
     const isRTL = locale === 'ar';
     const [warehouseId, setWarehouseId] = useState('');
     const [type, setType] = useState('reconciliation');
@@ -567,12 +567,12 @@ export function InventoryAdjustmentModal({ dict, locale, products, warehouses, o
             </div>
         </div>
     );
-}
+});
 
 // ── Product Assembly Modal ──
 export interface AssemblyProps { dict: any; locale: string; products: any[]; warehouses: any[]; onClose: () => void; onSave: (data: any) => Promise<void>; }
 
-export function AssembleProductModal({ dict, locale, products, warehouses, onClose, onSave }: AssemblyProps) {
+export const AssembleProductModal = memo(function AssembleProductModal({ dict, locale, products, warehouses, onClose, onSave }: AssemblyProps) {
     const isRTL = locale === 'ar';
     const [warehouseId, setWarehouseId] = useState('');
     const [productId, setProductId] = useState('');
@@ -635,4 +635,4 @@ export function AssembleProductModal({ dict, locale, products, warehouses, onClo
             </div>
         </div>
     );
-}
+});
