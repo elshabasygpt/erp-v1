@@ -83,7 +83,7 @@ class CollectPaymentUseCase
             $customer->save();
 
             // 4. Deposit into Safe (Treasury)
-            $this->depositToSafe($payment, $userId);
+            $this->depositToSafe($tenantId, $payment, $userId);
 
             // 5. Create Accounting Journal Entry
             $this->createAccountingEntry($payment, $userId);
@@ -92,7 +92,7 @@ class CollectPaymentUseCase
         });
     }
 
-    private function depositToSafe(CustomerPaymentModel $payment, string $userId): void
+    private function depositToSafe(string $tenantId, CustomerPaymentModel $payment, string $userId): void
     {
         // Try getting the primary safe for current user
         $safeId = DB::table('safe_users')
@@ -167,6 +167,6 @@ class CollectPaymentUseCase
             description: "Decrease in Accounts Receivable for customer",
         ));
 
-        $this->journalEntryRepository->save($journalEntry);
+        $this->journalEntryRepository->create($journalEntry);
     }
 }

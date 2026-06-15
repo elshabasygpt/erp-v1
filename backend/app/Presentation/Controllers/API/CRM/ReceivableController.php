@@ -35,7 +35,7 @@ class ReceivableController extends BaseTenantController
         ]);
 
         try {
-            $payment = $this->collectPaymentUseCase->execute($this->getTenantId($request), $validated, $request->user()->id);
+            $payment = $this->collectPaymentUseCase->execute((string) $this->getTenantId($request), $validated, $request->user()->id);
             return response()->json([
                 'status' => 'success',
                 'message' => 'Payment collected successfully',
@@ -51,7 +51,7 @@ class ReceivableController extends BaseTenantController
 
     public function agingReport(Request $request): JsonResponse
     {
-        $report = $this->getAgingReportUseCase->execute($this->getTenantId($request));
+        $report = $this->getAgingReportUseCase->execute((string) $this->getTenantId($request));
         return response()->json([
             'status' => 'success',
             'data' => $report
@@ -63,7 +63,7 @@ class ReceivableController extends BaseTenantController
         $fromDate = $request->query('from_date');
         $toDate = $request->query('to_date');
 
-        $statement = $this->getCustomerStatementUseCase->execute($this->getTenantId($request), $customerId, $fromDate, $toDate);
+        $statement = $this->getCustomerStatementUseCase->execute((string) $this->getTenantId($request), $customerId, $fromDate, $toDate);
         return response()->json([
             'status' => 'success',
             'data' => $statement
