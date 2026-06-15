@@ -6,12 +6,12 @@ namespace App\Presentation\Controllers\API\Inventory;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Infrastructure\Eloquent\Models\WarehouseModel;
 
-class StockMovementController extends BaseController
+class StockMovementController extends BaseTenantController
 {
     /**
      * GET /api/inventory/movements
@@ -19,7 +19,7 @@ class StockMovementController extends BaseController
      */
     public function index(Request $request): JsonResponse
     {
-        $query = StockMovementModel::with(['product', 'warehouse', 'creator'])
+        $query = StockMovementModel::where('tenant_id', $this->getTenantId($request))->with(['product', 'warehouse', 'creator'])
             ->orderBy('created_at', 'desc');
 
         // Filters
@@ -50,7 +50,7 @@ class StockMovementController extends BaseController
      */
     public function show(int $id): JsonResponse
     {
-        $movement = StockMovementModel::with(['product', 'warehouse', 'creator'])
+        $movement = StockMovementModel::where('tenant_id', $this->getTenantId($request))->with(['product', 'warehouse', 'creator'])
             ->findOrFail($id);
 
         return $this->success($movement, 'Movement retrieved');
@@ -75,6 +75,7 @@ class StockMovementController extends BaseController
 
         $validated['created_by'] = auth()->id();
 
+        $validated['tenant_id'] = $this->getTenantId($request);
         $movement = StockMovementModel::create($validated);
 
         // Update product stock (for manual adjustments)
@@ -126,7 +127,7 @@ class StockMovementController extends BaseController
 
     private function adjustProductStock(int $productId, float $quantity, string $mode): void
     {
-        $product = ProductModel::find($productId);
+        $product = ProductModel::where('tenant_id', $this->getTenantId($request))->find($productId);
         if (!$product) return;
 
         match ($mode) {
@@ -137,3 +138,5 @@ class StockMovementController extends BaseController
         };
     }
 }
+
+

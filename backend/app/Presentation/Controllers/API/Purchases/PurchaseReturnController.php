@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Purchases;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\PurchaseReturnModel;
 use App\Infrastructure\Eloquent\Models\PurchaseReturnItemModel;
 use App\Infrastructure\Eloquent\Models\SupplierModel;
@@ -15,14 +15,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class PurchaseReturnController extends BaseController
+class PurchaseReturnController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
 
-        $query = PurchaseReturnModel::with(['supplier', 'purchaseInvoice'])->orderBy('issue_date', 'desc');
+        $query = PurchaseReturnModel::where('tenant_id', $this->getTenantId($request))->with(['supplier', 'purchaseInvoice'])->orderBy('issue_date', 'desc');
 
         if ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -68,6 +68,7 @@ class PurchaseReturnController extends BaseController
             $returnNumber = 'PR-' . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
 
             $purchaseReturn = PurchaseReturnModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'id' => $returnId,
                 'number' => $returnNumber,
                 'purchase_invoice_id' => $validated['purchase_invoice_id'] ?? null,
@@ -84,6 +85,7 @@ class PurchaseReturnController extends BaseController
                 $itemTax = $subtotal * ($item['tax_rate'] / 100);
 
                 PurchaseReturnItemModel::create([
+            'tenant_id' => $this->getTenantId($request),
                     'id' => Str::uuid()->toString(),
                     'purchase_return_id' => $purchaseReturn->id,
                     'product_id' => $item['product_id'],
@@ -96,7 +98,7 @@ class PurchaseReturnController extends BaseController
 
                 // Update stock if completed immediately
                 if ($validated['status'] === 'completed') {
-                    $wp = WarehouseProductModel::where([
+                    $wp = WarehouseProductModel::where('tenant_id', $this->getTenantId($request))->where([
                         'warehouse_id' => $validated['warehouse_id'],
                         'product_id' => $item['product_id']
                     ])->first();
@@ -107,6 +109,7 @@ class PurchaseReturnController extends BaseController
                     }
 
                     StockMovementModel::create([
+            'tenant_id' => $this->getTenantId($request),
                         'id' => Str::uuid()->toString(),
                         'product_id' => $item['product_id'],
                         'warehouse_id' => $validated['warehouse_id'],
@@ -121,7 +124,7 @@ class PurchaseReturnController extends BaseController
 
             // Update Supplier Balance (Subtract the total since they owe us back or we owe them less)
             if ($validated['status'] === 'completed') {
-                $supplier = SupplierModel::find($validated['supplier_id']);
+                $supplier = SupplierModel::where('tenant_id', $this->getTenantId($request))->find($validated['supplier_id']);
                 $supplier->balance -= $totalAmount;
                 $supplier->save();
             }
@@ -136,9 +139,9 @@ class PurchaseReturnController extends BaseController
         }
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $purchaseReturn = PurchaseReturnModel::with(['items.product', 'supplier', 'purchaseInvoice'])->find($id);
+        $purchaseReturn = PurchaseReturnModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'supplier', 'purchaseInvoice'])->find($id);
 
         if (!$purchaseReturn) {
             return $this->error('Purchase return not found', 404);
@@ -149,7 +152,7 @@ class PurchaseReturnController extends BaseController
 
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $purchaseReturn = PurchaseReturnModel::with('items')->find($id);
+        $purchaseReturn = PurchaseReturnModel::where('tenant_id', $this->getTenantId($request))->with('items')->find($id);
 
         if (!$purchaseReturn) {
             return $this->error('Purchase return not found', 404);
@@ -165,7 +168,7 @@ class PurchaseReturnController extends BaseController
             try {
                 // Deduct from stock
                 foreach ($purchaseReturn->items as $item) {
-                    $wp = WarehouseProductModel::where([
+                    $wp = WarehouseProductModel::where('tenant_id', $this->getTenantId($request))->where([
                         'warehouse_id' => $validated['warehouse_id'],
                         'product_id' => $item->product_id
                     ])->first();
@@ -176,6 +179,7 @@ class PurchaseReturnController extends BaseController
                     }
 
                     StockMovementModel::create([
+            'tenant_id' => $this->getTenantId($request),
                         'id' => Str::uuid()->toString(),
                         'product_id' => $item->product_id,
                         'warehouse_id' => $validated['warehouse_id'],
@@ -188,7 +192,7 @@ class PurchaseReturnController extends BaseController
                 }
 
                 // Balance adjustment
-                $supplier = SupplierModel::find($purchaseReturn->supplier_id);
+                $supplier = SupplierModel::where('tenant_id', $this->getTenantId($request))->find($purchaseReturn->supplier_id);
                 $supplier->balance -= $purchaseReturn->total_amount;
                 $supplier->save();
 
@@ -206,3 +210,5 @@ class PurchaseReturnController extends BaseController
         return $this->success($purchaseReturn, 'Purchase return status updated');
     }
 }
+
+

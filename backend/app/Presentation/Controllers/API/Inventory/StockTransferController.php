@@ -6,11 +6,11 @@ namespace App\Presentation\Controllers\API\Inventory;
 
 use App\Infrastructure\Eloquent\Models\StockTransferModel;
 use App\Domain\Inventory\Services\StockTransferService;
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class StockTransferController extends BaseController
+class StockTransferController extends BaseTenantController
 {
     public function __construct(
         private StockTransferService $service
@@ -18,7 +18,7 @@ class StockTransferController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        $query = StockTransferModel::with(['fromWarehouse', 'toWarehouse', 'items.product']);
+        $query = StockTransferModel::where('tenant_id', $this->getTenantId($request))->with(['fromWarehouse', 'toWarehouse', 'items.product']);
 
         if ($request->status) {
             $query->where('status', $request->status);
@@ -29,9 +29,9 @@ class StockTransferController extends BaseController
         return $this->success(['transfers' => $transfers]);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $transfer = StockTransferModel::with(['fromWarehouse', 'toWarehouse', 'items.product'])->findOrFail($id);
+        $transfer = StockTransferModel::where('tenant_id', $this->getTenantId($request))->with(['fromWarehouse', 'toWarehouse', 'items.product'])->findOrFail($id);
         return $this->success(['transfer' => $transfer]);
     }
 
@@ -94,9 +94,9 @@ class StockTransferController extends BaseController
         }
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $transfer = StockTransferModel::findOrFail($id);
+        $transfer = StockTransferModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
 
         if ($transfer->status !== 'draft') {
             return $this->error('Only draft transfers can be deleted. Cancel it instead.', 400);
@@ -107,3 +107,5 @@ class StockTransferController extends BaseController
         return $this->success(null, 'Transfer deleted completely.');
     }
 }
+
+

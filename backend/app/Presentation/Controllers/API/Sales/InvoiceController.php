@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
@@ -24,7 +24,7 @@ use App\Application\Sales\UseCases\CreateInvoiceUseCase;
 use App\Application\Sales\DTOs\UpdateInvoiceDTO;
 use App\Application\Sales\UseCases\UpdateInvoiceUseCase;
 
-class InvoiceController extends BaseController
+class InvoiceController extends BaseTenantController
 {
     public function __construct(
         private readonly CreateInvoiceUseCase $createInvoiceUseCase,
@@ -45,7 +45,7 @@ class InvoiceController extends BaseController
         $sortBy = $request->query('sort_by', 'invoice_date');
         $sortDesc = $request->query('sort_desc', 'true') === 'true';
 
-        $query = InvoiceModel::select([
+        $query = InvoiceModel::where('tenant_id', $this->getTenantId($request))->select([
             'id',
             'invoice_number',
             'customer_id',
@@ -111,6 +111,7 @@ class InvoiceController extends BaseController
         ]);
 
         try {
+            $validated['tenant_id'] = $this->getTenantId($request);
             $dto = CreateInvoiceDTO::fromRequest($validated);
             $invoice = $this->createInvoiceUseCase->execute($dto, auth()->id() ?? '');
 
@@ -147,6 +148,7 @@ class InvoiceController extends BaseController
         ]);
 
         try {
+            $validated['tenant_id'] = $this->getTenantId($request);
             $dto = UpdateInvoiceDTO::fromRequest($id, $validated);
             $invoice = $this->updateInvoiceUseCase->execute($dto, auth()->id() ?? '');
 
@@ -161,7 +163,7 @@ class InvoiceController extends BaseController
 
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $invoice = InvoiceModel::find($id);
+        $invoice = InvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
         if (!$invoice) {
             return $this->error('Sales invoice not found', 404);
         }
@@ -195,9 +197,9 @@ class InvoiceController extends BaseController
         return $this->success($invoice, 'Sales invoice status updated successfully');
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $invoice = InvoiceModel::with(['customer', 'items.product', 'shippingInvoices'])->find($id);
+        $invoice = InvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'items.product', 'shippingInvoices'])->find($id);
         if (!$invoice) {
             return $this->error('Sales invoice not found', 404);
         }
@@ -238,7 +240,8 @@ class InvoiceController extends BaseController
         $from = $request->query('from', now()->startOfMonth()->toDateString());
         $to = $request->query('to', now()->endOfMonth()->toDateString());
 
-        $query = InvoiceModel::whereBetween('invoice_date', [$from, $to])
+        $query = InvoiceModel::where('tenant_id', $this->getTenantId($request))
+            ->whereBetween('invoice_date', [$from, $to])
             ->where('status', '!=', 'cancelled');
 
         $report = [
@@ -257,3 +260,4 @@ class InvoiceController extends BaseController
     }
 
 }
+

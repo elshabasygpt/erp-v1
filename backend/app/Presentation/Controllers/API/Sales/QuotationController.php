@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\QuotationModel;
 use App\Infrastructure\Eloquent\Models\QuotationItemModel;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
@@ -13,14 +13,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class QuotationController extends BaseController
+class QuotationController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
         
-        $query = QuotationModel::with(['customer', 'items.product', 'creator'])->orderBy('issue_date', 'desc');
+        $query = QuotationModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'items.product', 'creator'])->orderBy('issue_date', 'desc');
         
         if ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -70,7 +70,7 @@ class QuotationController extends BaseController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $quotation = QuotationModel::find($id);
+        $quotation = QuotationModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$quotation) { return $this->error('Quotation not found', 404); }
 
@@ -118,6 +118,7 @@ class QuotationController extends BaseController
                 $itemTax = $gross * ($item['vat_rate'] / 100);
 
                 QuotationItemModel::create([
+            'tenant_id' => $this->getTenantId($request),
                     'id' => Str::uuid()->toString(),
                     'quotation_id' => $quotation->id,
                     'product_id' => $item['product_id'],
@@ -137,9 +138,9 @@ class QuotationController extends BaseController
         }
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $quotation = QuotationModel::with(['items.product', 'customer'])->find($id);
+        $quotation = QuotationModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer'])->find($id);
 
         if (!$quotation) {
             return $this->error('Quotation not found', 404);
@@ -150,7 +151,7 @@ class QuotationController extends BaseController
     
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $quotation = QuotationModel::find($id);
+        $quotation = QuotationModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$quotation) {
             return $this->error('Quotation not found', 404);
@@ -165,3 +166,5 @@ class QuotationController extends BaseController
         return $this->success($quotation, 'Quotation status updated successfully');
     }
 }
+
+

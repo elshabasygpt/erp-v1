@@ -6,7 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class SettingsController extends BaseController
+class SettingsController extends BaseTenantController
 {
     /**
      * GET /api/settings — Retrieve tenant settings.
@@ -67,3 +67,5 @@ class SettingsController extends BaseController
         return $this->success(null, 'Settings updated successfully');
     }
 }
+
+

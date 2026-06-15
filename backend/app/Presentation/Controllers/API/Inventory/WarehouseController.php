@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace App\Presentation\Controllers\API\Inventory;
 
 use App\Infrastructure\Eloquent\Models\WarehouseModel;
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class WarehouseController extends BaseController
+class WarehouseController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
-        $warehouses = WarehouseModel::with('branch')->get();
+        $warehouses = WarehouseModel::where('tenant_id', $this->getTenantId($request))->with('branch')->get();
         return $this->success(['warehouses' => $warehouses]);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $warehouse = WarehouseModel::with('branch')->findOrFail($id);
+        $warehouse = WarehouseModel::where('tenant_id', $this->getTenantId($request))->with('branch')->findOrFail($id);
         return $this->success(['warehouse' => $warehouse]);
     }
 
@@ -35,6 +35,7 @@ class WarehouseController extends BaseController
 
         $data['created_by'] = $request->user()?->id;
 
+        $data['tenant_id'] = $this->getTenantId($request);
         $warehouse = WarehouseModel::create($data);
 
         return $this->success(['warehouse' => $warehouse], 'Warehouse created successfully.', 201);
@@ -42,7 +43,7 @@ class WarehouseController extends BaseController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $warehouse = WarehouseModel::findOrFail($id);
+        $warehouse = WarehouseModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
 
         $data = $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -59,9 +60,9 @@ class WarehouseController extends BaseController
         return $this->success(['warehouse' => $warehouse], 'Warehouse updated successfully.');
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $warehouse = WarehouseModel::findOrFail($id);
+        $warehouse = WarehouseModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         
         if ($warehouse->is_default) {
             return $this->error('Cannot delete the default warehouse.', 403);
@@ -72,3 +73,5 @@ class WarehouseController extends BaseController
         return $this->success(null, 'Warehouse deleted successfully.');
     }
 }
+
+

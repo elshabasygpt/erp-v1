@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Sales\DTOs\Deliveries\CreateDeliveryDTO;
 use App\Application\Sales\DTOs\Deliveries\UpdateDeliveryStatusDTO;
 use App\Application\Sales\DTOs\Deliveries\AssignDeliveryDTO;
@@ -15,7 +15,7 @@ use App\Infrastructure\Eloquent\Models\DeliveryModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class DeliveryController extends BaseController
+class DeliveryController extends BaseTenantController
 {
     public function __construct(
         private readonly CreateDeliveryUseCase $createDeliveryUseCase,
@@ -28,7 +28,7 @@ class DeliveryController extends BaseController
         $limit = $request->query('limit', 15);
         $status = $request->query('status');
         
-        $query = DeliveryModel::with(['customer', 'driver', 'deliveryPlatform'])->orderBy('created_at', 'desc');
+        $query = DeliveryModel::where('tenant_id', $this->getTenantId($request))->with(['salesOrder.customer', 'driver'])->orderBy('delivery_date', 'desc');
         
         if ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -57,6 +57,7 @@ class DeliveryController extends BaseController
         ]);
 
         try {
+            $validated['tenant_id'] = $this->getTenantId($request);
             $dto = CreateDeliveryDTO::fromRequest($validated);
             $delivery = $this->createDeliveryUseCase->execute($dto, auth()->id() ?? '');
 
@@ -69,9 +70,9 @@ class DeliveryController extends BaseController
         }
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $delivery = DeliveryModel::with(['customer', 'driver', 'deliveryPlatform', 'statusLogs.creator'])->find($id);
+        $delivery = DeliveryModel::where('tenant_id', $this->getTenantId($request))->with(['salesOrder.items', 'driver'])->find($id);
         
         if (!$delivery) {
             return $this->error('Delivery not found', 404);
@@ -111,6 +112,7 @@ class DeliveryController extends BaseController
         ]);
 
         try {
+            $validated['tenant_id'] = $this->getTenantId($request);
             $dto = UpdateDeliveryStatusDTO::fromRequest($validated);
             $delivery = $this->updateDeliveryStatusUseCase->execute($id, $dto, auth()->id() ?? '');
 
@@ -121,3 +123,4 @@ class DeliveryController extends BaseController
         }
     }
 }
+

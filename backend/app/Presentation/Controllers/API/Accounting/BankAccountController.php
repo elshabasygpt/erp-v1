@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\BankReconciliationService;
 use App\Infrastructure\Eloquent\Models\Accounting\BankAccountModel;
 use App\Infrastructure\Eloquent\Models\Accounting\ReconciliationModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class BankAccountController extends BaseController
+class BankAccountController extends BaseTenantController
 {
     public function __construct(
         private BankReconciliationService $bankReconciliationService
@@ -19,7 +19,7 @@ class BankAccountController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
-        $accounts = BankAccountModel::with('ledgerAccount')->get();
+        $accounts = BankAccountModel::where('tenant_id', $this->getTenantId($request))->with('ledgerAccount')->get();
         return $this->success($accounts, 'Bank accounts retrieved successfully');
     }
 
@@ -82,7 +82,7 @@ class BankAccountController extends BaseController
 
     public function getReconciliations(string $id): JsonResponse
     {
-        $reconciliations = ReconciliationModel::where('bank_account_id', $id)
+        $reconciliations = ReconciliationModel::where('tenant_id', $this->getTenantId($request))->where('bank_account_id', $id)
             ->orderBy('statement_date', 'desc')
             ->get();
         return $this->success($reconciliations, 'Reconciliations retrieved successfully');
@@ -117,3 +117,5 @@ class BankAccountController extends BaseController
         }
     }
 }
+
+

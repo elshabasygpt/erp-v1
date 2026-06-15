@@ -20,7 +20,7 @@ class PartnerController extends BaseTenantController
         $limit = $request->query('limit', '15');
         $tenantId = $this->getTenantId($request);
         
-        $partners = PartnerModel::where('tenant_id', $tenantId)
+        $partners = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)
             ->select([
                 'id', 'name', 'phone', 'email', 'capital_amount',
                 'profit_share_percentage', 'is_active', 'created_at', 'total_pending', 'total_withdrawn'
@@ -48,12 +48,13 @@ class PartnerController extends BaseTenantController
         ]);
 
         // Check if total profit share exceeds 100%
-        $currentTotalPercentage = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('is_active', true)->sum('profit_share_percentage');
+        $currentTotalPercentage = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $this->getTenantId($request))->where('is_active', true)->sum('profit_share_percentage');
         if (($currentTotalPercentage + $validated['profit_share_percentage']) > 100) {
             return $this->error('Total profit share percentage cannot exceed 100%. Current total: ' . $currentTotalPercentage . '%', 422);
         }
 
         $partner = PartnerModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'tenant_id' => $this->getTenantId($request),
             'name' => $validated['name'],
@@ -75,7 +76,7 @@ class PartnerController extends BaseTenantController
      */
     public function show(Request $request, string $id): JsonResponse
     {
-        $partner = PartnerModel::with(['profitShares.distribution', 'withdrawals'])->find($id);
+        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->with(['profitShares.distribution', 'withdrawals'])->find($id);
         $this->assertBelongsToTenant($partner, $request);
 
         if (!$partner) {
@@ -90,7 +91,7 @@ class PartnerController extends BaseTenantController
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $partner = PartnerModel::find($id);
+        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->find($id);
         $this->assertBelongsToTenant($partner, $request);
 
         if (!$partner) {
@@ -108,7 +109,7 @@ class PartnerController extends BaseTenantController
         ]);
 
         if (isset($validated['profit_share_percentage'])) {
-            $otherPercentages = PartnerModel::where('is_active', true)
+            $otherPercentages = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('is_active', true)
                 ->where('id', '!=', $id)
                 ->sum('profit_share_percentage');
                 
@@ -127,7 +128,7 @@ class PartnerController extends BaseTenantController
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $partner = PartnerModel::find($id);
+        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->find($id);
         $this->assertBelongsToTenant($partner, $request);
 
         if (!$partner) {
@@ -148,7 +149,7 @@ class PartnerController extends BaseTenantController
      */
     public function withdrawProfits(Request $request, string $id): JsonResponse
     {
-        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$partner) {
             return $this->error('Partner not found', 404);
@@ -180,7 +181,7 @@ class PartnerController extends BaseTenantController
      */
     public function enablePortal(Request $request, string $id): JsonResponse
     {
-        $partner = PartnerModel::find($id);
+        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->find($id);
         if (!$partner) return $this->error('Partner not found', 404);
 
         $validated = $request->validate([
@@ -211,7 +212,7 @@ class PartnerController extends BaseTenantController
      */
     public function sendMagicLink(Request $request, string $id): JsonResponse
     {
-        $partner = PartnerModel::find($id);
+        $partner = PartnerModel::where('tenant_id', $this->getTenantId($request))->find($id);
         if (!$partner) return $this->error('Partner not found', 404);
         if (!$partner->email) return $this->error('لا يوجد بريد إلكتروني مسجّل لهذا الشريك.', 422);
 
@@ -227,4 +228,5 @@ class PartnerController extends BaseTenantController
         );
     }
 }
+
 

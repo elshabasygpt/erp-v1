@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\SalesReturnModel;
 use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
@@ -13,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class AdvancedSalesReportController extends BaseController
+class AdvancedSalesReportController extends BaseTenantController
 {
     private function applyFilters($query, Request $request)
     {
@@ -34,13 +34,13 @@ class AdvancedSalesReportController extends BaseController
 
     public function getDashboardKPIs(Request $request): JsonResponse
     {
-        $query = InvoiceModel::where('status', '!=', 'cancelled');
+        $query = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('status', '!=', 'cancelled');
         $query = $this->applyFilters($query, $request);
             
         $todayQuery = InvoiceModel::whereDate('invoice_date', now()->toDateString())
             ->where('status', '!=', 'cancelled');
 
-        $returnsQuery = SalesReturnModel::whereBetween('return_date', [
+        $returnsQuery = SalesReturnModel::where('tenant_id', $this->getTenantId($request))->whereBetween('return_date', [
             $request->query('date_from', now()->startOfMonth()->toDateString()),
             $request->query('date_to', now()->endOfMonth()->toDateString())
         ]);
@@ -68,7 +68,7 @@ class AdvancedSalesReportController extends BaseController
 
     public function getDashboardCharts(Request $request): JsonResponse
     {
-        $query = InvoiceModel::where('status', '!=', 'cancelled');
+        $query = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('status', '!=', 'cancelled');
         $query = $this->applyFilters($query, $request);
 
         $salesTrend = (clone $query)
@@ -97,3 +97,5 @@ class AdvancedSalesReportController extends BaseController
         return $this->success($charts, 'Dashboard charts retrieved successfully');
     }
 }
+
+

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\InventoryAdjustmentModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
@@ -14,11 +14,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class AdjustmentController extends BaseController
+class AdjustmentController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
-        $query = InventoryAdjustmentModel::with([
+        $query = InventoryAdjustmentModel::where('tenant_id', $this->getTenantId($request))->with([
             'warehouse',
             'items.product'
         ]);
@@ -55,6 +55,7 @@ class AdjustmentController extends BaseController
             $ref = 'ADJ-' . date('Ymd') . '-' . strtoupper(Str::random(4));
 
             $adjustment = InventoryAdjustmentModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'reference_number' => $ref,
                 'warehouse_id' => $validated['warehouse_id'],
                 'date' => $validated['date'],
@@ -81,7 +82,7 @@ class AdjustmentController extends BaseController
                 $actual   = (float) $item['actual_quantity'];
                 $diff     = $actual - $expected;
 
-                $product = ProductModel::find($item['product_id']);
+                $product = ProductModel::where('tenant_id', $this->getTenantId($request))->find($item['product_id']);
                 $unitCost = $product->cost_price;
 
                 $adjustment->items()->create([
@@ -101,6 +102,7 @@ class AdjustmentController extends BaseController
                     // We can use 'adjustment' and just log the numeric change (+ / -) wait, the migration allows quantity
                     
                     StockMovementModel::create([
+            'tenant_id' => $this->getTenantId($request),
                         'product_id' => $item['product_id'],
                         'warehouse_id' => $validated['warehouse_id'],
                         'type' => 'adjustment',
@@ -129,8 +131,10 @@ class AdjustmentController extends BaseController
 
     public function show($id): JsonResponse
     {
-        $adj = InventoryAdjustmentModel::with(['warehouse', 'items.product'])->find($id);
+        $adj = InventoryAdjustmentModel::where('tenant_id', $this->getTenantId($request))->with(['warehouse', 'items.product'])->find($id);
         if (!$adj) return $this->error('Not Found', 404);
         return $this->success($adj->toArray());
     }
 }
+
+

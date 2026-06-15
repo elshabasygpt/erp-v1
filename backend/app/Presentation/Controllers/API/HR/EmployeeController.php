@@ -17,7 +17,7 @@ class EmployeeController extends BaseTenantController
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
-        $query = EmployeeModel::select([
+        $query = EmployeeModel::where('tenant_id', $this->getTenantId($request))->select([
             'id', 'user_id', 'name', 'position', 'phone', 'base_salary', 'is_active', 'created_at'
         ])->with('user:id,name,email')->where('tenant_id', $this->getTenantId($request));
 
@@ -42,6 +42,7 @@ class EmployeeController extends BaseTenantController
         $validated = $request->validated();
 
         $employee = EmployeeModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'tenant_id' => $this->getTenantId($request),
             'user_id' => $validated['user_id'] ?? null,
@@ -59,7 +60,7 @@ class EmployeeController extends BaseTenantController
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $employee = EmployeeModel::with('user')->find($id);
+        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->with('user')->find($id);
         $this->assertBelongsToTenant($employee, $request);
 
         if (!$employee) {
@@ -71,7 +72,7 @@ class EmployeeController extends BaseTenantController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $employee = EmployeeModel::find($id);
+        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->find($id);
         $this->assertBelongsToTenant($employee, $request);
 
         if (!$employee) {
@@ -104,7 +105,7 @@ class EmployeeController extends BaseTenantController
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $employee = EmployeeModel::find($id);
+        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->find($id);
         $this->assertBelongsToTenant($employee, $request);
 
         if (!$employee) {
@@ -117,3 +118,4 @@ class EmployeeController extends BaseTenantController
         return $this->success(null, 'Employee deleted successfully');
     }
 }
+

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Sales\DTOs\Returns\ProcessSalesReturnDTO;
 use App\Application\Sales\UseCases\Returns\ProcessSalesReturnUseCase;
 use App\Infrastructure\Eloquent\Models\SalesReturnModel;
@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class SalesReturnController extends BaseController
+class SalesReturnController extends BaseTenantController
 {
     public function __construct(
         private readonly ProcessSalesReturnUseCase $processSalesReturnUseCase
@@ -23,7 +23,7 @@ class SalesReturnController extends BaseController
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
 
-        $query = SalesReturnModel::with(['customer', 'invoice', 'items.product', 'creator'])->orderBy('return_date', 'desc');
+        $query = SalesReturnModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'invoice', 'items.product', 'creator'])->orderBy('return_date', 'desc');
         
         if ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -63,9 +63,9 @@ class SalesReturnController extends BaseController
         }
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $salesReturn = SalesReturnModel::with(['items.product', 'customer', 'invoice', 'creator'])->find($id);
+        $salesReturn = SalesReturnModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer', 'invoice', 'creator'])->find($id);
 
         if (!$salesReturn) {
             return $this->error('Sales return not found', 404);
@@ -76,7 +76,7 @@ class SalesReturnController extends BaseController
     
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $salesReturn = SalesReturnModel::find($id);
+        $salesReturn = SalesReturnModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$salesReturn) {
             return $this->error('Sales return not found', 404);
@@ -95,3 +95,5 @@ class SalesReturnController extends BaseController
         return $this->success($salesReturn->toArray(), 'Sales return status updated successfully');
     }
 }
+
+

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\CreditNoteService;
 use App\Infrastructure\Eloquent\Models\Accounting\CreditNoteModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class CreditNoteController extends BaseController
+class CreditNoteController extends BaseTenantController
 {
     public function __construct(
         private CreditNoteService $creditNoteService
@@ -20,7 +20,7 @@ class CreditNoteController extends BaseController
     public function index(Request $request): JsonResponse
     {
         $type = $request->query('type');
-        $query = CreditNoteModel::with(['customer', 'supplier', 'salesInvoice', 'purchaseInvoice']);
+        $query = CreditNoteModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'supplier', 'salesInvoice', 'purchaseInvoice']);
 
         if ($type) {
             $query->where('type', $type);
@@ -63,3 +63,5 @@ class CreditNoteController extends BaseController
         }
     }
 }
+
+

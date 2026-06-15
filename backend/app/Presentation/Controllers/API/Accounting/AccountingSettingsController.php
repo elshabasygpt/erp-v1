@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\AccountMappingService;
 use App\Domain\Accounting\Services\FiscalPeriodService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class AccountingSettingsController extends BaseController
+class AccountingSettingsController extends BaseTenantController
 {
     public function __construct(
         private AccountMappingService $accountMapping,
@@ -99,3 +99,5 @@ class AccountingSettingsController extends BaseController
         }
     }
 }
+
+

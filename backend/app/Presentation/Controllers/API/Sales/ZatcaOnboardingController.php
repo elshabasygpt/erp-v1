@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Infrastructure\Zatca\ZatcaOnboardingService;
 
-class ZatcaOnboardingController extends BaseController
+class ZatcaOnboardingController extends BaseTenantController
 {
     public function __construct(
         private ZatcaOnboardingService $onboardingService
@@ -44,3 +44,5 @@ class ZatcaOnboardingController extends BaseController
         ]);
     }
 }
+
+

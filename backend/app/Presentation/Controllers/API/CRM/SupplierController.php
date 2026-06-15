@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\SupplierModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class SupplierController extends BaseController
+class SupplierController extends BaseTenantController
 {
     /**
      * Display a listing of suppliers.
@@ -19,7 +19,7 @@ class SupplierController extends BaseController
         $limit = $request->query('limit', '15');
         $search = $request->query('search');
 
-        $query = SupplierModel::select([
+        $query = SupplierModel::where('tenant_id', $this->getTenantId($request))->select([
             'id', 'name', 'email', 'phone', 'balance', 'is_active', 'created_at'
         ])->with(['purchaseInvoices' => fn($q) => $q->select('id', 'supplier_id', 'total', 'status')]);
 
@@ -41,16 +41,9 @@ class SupplierController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255|unique:suppliers,email',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'tax_number' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
         $supplier = SupplierModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => \Illuminate\Support\Str::uuid()->toString(),
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
@@ -67,9 +60,9 @@ class SupplierController extends BaseController
     /**
      * Display the specified supplier.
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $supplier = SupplierModel::find($id);
+        $supplier = SupplierModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$supplier) {
             return $this->error('Supplier not found', 404);
@@ -83,7 +76,7 @@ class SupplierController extends BaseController
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $supplier = SupplierModel::find($id);
+        $supplier = SupplierModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$supplier) {
             return $this->error('Supplier not found', 404);
@@ -106,9 +99,9 @@ class SupplierController extends BaseController
     /**
      * Remove the specified supplier from storage.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $supplier = SupplierModel::find($id);
+        $supplier = SupplierModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$supplier) {
             return $this->error('Supplier not found', 404);
@@ -196,7 +189,7 @@ class SupplierController extends BaseController
      */
     public function statement(string $id): JsonResponse
     {
-        $supplier = SupplierModel::with(['purchaseInvoices', 'vouchers'])->find($id);
+        $supplier = SupplierModel::where('tenant_id', $this->getTenantId($request))->with(['purchaseInvoices', 'vouchers'])->find($id);
 
         if (!$supplier) {
             return $this->error('Supplier not found', 404);
@@ -271,3 +264,5 @@ class SupplierController extends BaseController
         ], 'Supplier statement generated successfully.');
     }
 }
+
+

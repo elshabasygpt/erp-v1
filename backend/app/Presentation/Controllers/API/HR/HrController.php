@@ -2,7 +2,7 @@
 
 namespace App\Presentation\Controllers\API\HR;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use App\Infrastructure\Eloquent\Models\AttendanceModel;
 use App\Infrastructure\Eloquent\Models\LeaveModel;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 
-class HrController extends BaseController
+class HrController extends BaseTenantController
 {
     // --- EMPLOYEES ---
     public function getEmployees()
@@ -27,15 +27,8 @@ class HrController extends BaseController
 
     public function storeEmployee(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'position' => 'nullable|string',
-            'phone' => 'nullable|string',
-            'base_salary' => 'required|numeric|min:0',
-            'shift_start' => 'nullable', // "09:00"
-            'shift_end' => 'nullable',   // "17:00"
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
+        $validated['tenant_id'] = $this->getTenantId($request);
         $employee = EmployeeModel::create($validated);
         return $this->success($employee, 'Employee created', 201);
     }
@@ -43,7 +36,7 @@ class HrController extends BaseController
     // --- ATTENDANCE ---
     public function getAttendances(Request $request)
     {
-        $query = AttendanceModel::with('employee')->orderBy('date', 'desc');
+        $query = AttendanceModel::where('tenant_id', $this->getTenantId($request))->with('employee')->orderBy('date', 'desc');
         if ($request->employee_id) {
             $query->where('employee_id', $request->employee_id);
         }
@@ -52,73 +45,8 @@ class HrController extends BaseController
 
     public function checkIn(Request $request)
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:tenant.employees,id',
-            'time' => 'nullable|date_format:H:i'
-        ]);
-
-        $employee = EmployeeModel::find($validated['employee_id']);
-        $timeStr = $validated['time'] ?? now()->format('H:i');
-        
-        $lateMins = 0;
-        if ($employee->shift_start) {
-            $shiftStart = Carbon::createFromFormat('H:i:s', $employee->shift_start);
-            $actualIn = Carbon::createFromFormat('H:i', $timeStr);
-            if ($actualIn > $shiftStart) {
-                $lateMins = abs($actualIn->diffInMinutes($shiftStart));
-            }
-        }
-
-        $att = AttendanceModel::updateOrCreate(
-            ['employee_id' => $employee->id, 'date' => now()->toDateString()],
-            [
-                'check_in' => $timeStr,
-                'late_minutes' => $lateMins,
-                'status' => $lateMins > 0 ? 'late' : 'present'
-            ]
-        );
-
-        return $this->success($att, 'Check-in recorded');
-    }
-
-    public function checkOut(Request $request)
-    {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:tenant.employees,id',
-            'time' => 'nullable|date_format:H:i'
-        ]);
-
-        $timeStr = $validated['time'] ?? now()->format('H:i');
-        
-        $att = AttendanceModel::where('employee_id', $validated['employee_id'])
-            ->where('date', now()->toDateString())
-            ->first();
-
-        if (!$att) {
-            return $this->error('No check-in found today', 400);
-        }
-
-        $att->update(['check_out' => $timeStr]);
-        return $this->success($att, 'Check-out recorded');
-    }
-
-    // --- LEAVES ---
-    public function getLeaves(Request $request)
-    {
-        $query = LeaveModel::with('employee')->orderBy('start_date', 'desc');
-        return $this->success($query->get());
-    }
-
-    public function applyLeave(Request $request)
-    {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:tenant.employees,id',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'type' => 'required|in:annual,sick,unpaid,other',
-            'reason' => 'required|string'
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
+        $validated['tenant_id'] = $this->getTenantId($request);
         $leave = LeaveModel::create($validated);
         return $this->success($leave, 'Leave applied successfully', 201);
     }
@@ -126,7 +54,7 @@ class HrController extends BaseController
     // --- PAYROLL ---
     public function getPayrolls(Request $request)
     {
-        $payrolls = PayrollModel::with(['employee', 'expense'])->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+        $payrolls = PayrollModel::where('tenant_id', $this->getTenantId($request))->with(['employee', 'expense'])->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
         return $this->success($payrolls);
     }
 
@@ -138,10 +66,10 @@ class HrController extends BaseController
             'year' => 'required|integer|min:2000',
         ]);
 
-        $employee = EmployeeModel::find($validated['employee_id']);
+        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->find($validated['employee_id']);
         
         // Calculate late minutes in this month
-        $lateMinutes = AttendanceModel::where('employee_id', $employee->id)
+        $lateMinutes = AttendanceModel::where('tenant_id', $this->getTenantId($request))->where('employee_id', $employee->id)
             ->whereMonth('date', $validated['month'])
             ->whereYear('date', $validated['year'])
             ->sum('late_minutes');
@@ -151,7 +79,7 @@ class HrController extends BaseController
         $deductions = round($minuteRate * $lateMinutes, 2);
         
         // Unpaid leaves
-        $unpaidDays = LeaveModel::where('employee_id', $employee->id)
+        $unpaidDays = LeaveModel::where('tenant_id', $this->getTenantId($request))->where('employee_id', $employee->id)
             ->where('type', 'unpaid')
             ->where('status', 'approved')
             ->whereMonth('start_date', $validated['month'])
@@ -182,7 +110,7 @@ class HrController extends BaseController
         ]);
 
         return DB::transaction(function () use ($id, $validated) {
-            $payroll = PayrollModel::findOrFail($id);
+            $payroll = PayrollModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
             if ($payroll->status === 'paid') {
                 return $this->error('Payroll already paid', 400);
             }
@@ -204,6 +132,7 @@ class HrController extends BaseController
 
             // Record Expense
             $expense = ExpenseModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'category_id' => $cat->id,
                 'safe_id' => $safe->id,
                 'amount' => $payroll->net_salary,
@@ -213,6 +142,7 @@ class HrController extends BaseController
 
             // Transaction
             SafeTransactionModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'safe_id' => $safe->id,
                 'type' => 'withdrawal',
@@ -232,3 +162,5 @@ class HrController extends BaseController
         });
     }
 }
+
+

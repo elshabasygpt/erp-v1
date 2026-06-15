@@ -2,15 +2,15 @@
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\FixedAssetModel;
 use Illuminate\Http\Request;
 
-class FixedAssetController extends BaseController
+class FixedAssetController extends BaseTenantController
 {
     public function index()
     {
-        $assets = FixedAssetModel::with('account')->orderBy('created_at', 'desc')->get();
+        $assets = FixedAssetModel::where('tenant_id', $this->getTenantId($request))->with('account')->orderBy('created_at', 'desc')->get();
         return $this->success($assets);
     }
 
@@ -32,19 +32,20 @@ class FixedAssetController extends BaseController
         $validated['current_value'] = $validated['purchase_cost'];
         $validated['accumulated_depreciation'] = 0;
 
+        $validated['tenant_id'] = $this->getTenantId($request);
         $asset = FixedAssetModel::create($validated);
         return $this->success($asset, 'Fixed asset created successfully', 201);
     }
 
     public function show($id)
     {
-        $asset = FixedAssetModel::with('account')->findOrFail($id);
+        $asset = FixedAssetModel::where('tenant_id', $this->getTenantId($request))->with('account')->findOrFail($id);
         return $this->success($asset);
     }
 
     public function update(Request $request, $id)
     {
-        $asset = FixedAssetModel::findOrFail($id);
+        $asset = FixedAssetModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
@@ -61,14 +62,14 @@ class FixedAssetController extends BaseController
 
     public function destroy($id)
     {
-        $asset = FixedAssetModel::findOrFail($id);
+        $asset = FixedAssetModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         $asset->delete();
         return $this->success(null, 'Fixed asset deleted successfully');
     }
 
     public function calculateDepreciation($id)
     {
-        $asset = FixedAssetModel::findOrFail($id);
+        $asset = FixedAssetModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         
         if ($asset->status !== 'active') {
             return $this->error('Asset is not active', 400);
@@ -96,3 +97,5 @@ class FixedAssetController extends BaseController
         return $this->success($asset, 'Depreciation calculated successfully');
     }
 }
+
+

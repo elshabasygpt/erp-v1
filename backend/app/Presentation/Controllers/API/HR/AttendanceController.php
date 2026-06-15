@@ -19,7 +19,7 @@ class AttendanceController extends BaseTenantController
         $limit = $request->query('limit', '30');
         $date = $request->query('date', now()->toDateString());
         
-        $query = AttendanceModel::with(['employee:id,name,position'])
+        $query = AttendanceModel::where('tenant_id', $this->getTenantId($request))->with(['employee:id,name,position'])
             ->where('tenant_id', $this->getTenantId($request))
             ->whereDate('date', $date)
             ->orderBy('created_at', 'desc');
@@ -38,7 +38,7 @@ class AttendanceController extends BaseTenantController
             'notes' => 'nullable|string'
         ]);
 
-        $employee = EmployeeModel::findOrFail($validated['employee_id']);
+        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->findOrFail($validated['employee_id']);
         $date = $validated['date'] ?? now()->toDateString();
         $timeStr = $validated['time'] ?? now()->toTimeString();
         
@@ -87,13 +87,14 @@ class AttendanceController extends BaseTenantController
             $timeStr .= ':00';
         }
 
-        $attendance = AttendanceModel::where('employee_id', $validated['employee_id'])
+        $attendance = AttendanceModel::where('tenant_id', $this->getTenantId($request))->where('employee_id', $validated['employee_id'])
             ->whereDate('date', $date)
             ->first();
 
         if (!$attendance) {
             // Create record if didn't check in
             $attendance = AttendanceModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'employee_id' => $validated['employee_id'],
                 'date' => $date,
@@ -116,7 +117,7 @@ class AttendanceController extends BaseTenantController
 
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $attendance = AttendanceModel::find($id);
+        $attendance = AttendanceModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$attendance) {
             return $this->error('Attendance record not found', 404);
@@ -132,3 +133,4 @@ class AttendanceController extends BaseTenantController
         return $this->success($attendance->load('employee'), 'Attendance status updated successfully');
     }
 }
+

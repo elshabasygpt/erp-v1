@@ -7,13 +7,13 @@ use App\Application\Sales\UseCases\CreateSalesChannelUseCase;
 use App\Application\Sales\UseCases\DeleteSalesChannelUseCase;
 use App\Application\Sales\UseCases\ListSalesChannelsUseCase;
 use App\Application\Sales\UseCases\UpdateSalesChannelUseCase;
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Presentation\Requests\Sales\SaveSalesChannelRequest;
 use App\Presentation\Resources\Sales\SalesChannelResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class SalesChannelController extends BaseController
+class SalesChannelController extends BaseTenantController
 {
     public function __construct(
         private readonly ListSalesChannelsUseCase $listUseCase,
@@ -57,7 +57,7 @@ class SalesChannelController extends BaseController
         ]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $this->deleteUseCase->execute($id);
 
@@ -99,3 +99,5 @@ class SalesChannelController extends BaseController
         ], 400);
     }
 }
+
+

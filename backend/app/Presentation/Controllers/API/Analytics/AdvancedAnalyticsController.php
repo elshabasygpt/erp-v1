@@ -115,3 +115,4 @@ class AdvancedAnalyticsController extends BaseTenantController
         return $this->success($data, 'Conversion funnel metrics retrieved successfully');
     }
 }
+

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Purchases;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
 use App\Application\Purchases\DTOs\CreatePurchaseDTO;
 use App\Application\Purchases\UseCases\CreatePurchaseUseCase;
@@ -12,7 +12,7 @@ use App\Application\Purchases\UseCases\ConfirmPurchaseUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class PurchaseController extends BaseController
+class PurchaseController extends BaseTenantController
 {
     public function __construct(
         private readonly CreatePurchaseUseCase $createPurchaseUseCase,
@@ -24,7 +24,7 @@ class PurchaseController extends BaseController
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
         
-        $query = PurchaseInvoiceModel::with(['supplier', 'items.product'])->orderBy('invoice_date', 'desc');
+        $query = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['supplier', 'items.product'])->orderBy('invoice_date', 'desc');
         
         if ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -52,6 +52,7 @@ class PurchaseController extends BaseController
         ]);
 
         try {
+            $validated['tenant_id'] = $this->getTenantId($request);
             $dto = CreatePurchaseDTO::fromRequest($validated);
             $purchase = $this->createPurchaseUseCase->execute($dto, auth()->id() ?? '');
             return $this->created($purchase, 'Purchase invoice created successfully');
@@ -65,7 +66,7 @@ class PurchaseController extends BaseController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $purchase = PurchaseInvoiceModel::find($id);
+        $purchase = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
         if (!$purchase) { return $this->error('Purchase invoice not found', 404); }
         if ($purchase->status !== 'draft') {
             return $this->error('Cannot modify a confirmed invoice. Please use adjustments or returns.', 422);
@@ -140,16 +141,16 @@ class PurchaseController extends BaseController
         }
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $purchase = PurchaseInvoiceModel::with(['items.product', 'supplier'])->find($id);
+        $purchase = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'supplier'])->find($id);
         if (!$purchase) { return $this->error('Purchase invoice not found', 404); }
         return $this->success($purchase, 'Purchase invoice retrieved successfully');
     }
     
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $purchase = PurchaseInvoiceModel::find($id);
+        $purchase = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
         if (!$purchase) { return $this->error('Purchase invoice not found', 404); }
         
         $validated = $request->validate([
@@ -177,3 +178,4 @@ class PurchaseController extends BaseController
         return $this->success($purchase, 'Purchase invoice status updated successfully');
     }
 }
+

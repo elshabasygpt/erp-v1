@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Auth;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\UserModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-class UserController extends BaseController
+class UserController extends BaseTenantController
 {
     /**
      * Display a listing of the users.
@@ -21,7 +21,7 @@ class UserController extends BaseController
         $limit = $request->query('limit', 15);
         $search = $request->query('search');
 
-        $query = UserModel::with('role');
+        $query = UserModel::where('tenant_id', $this->getTenantId($request))->with('role');
 
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -41,17 +41,9 @@ class UserController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email',
-            'phone' => 'nullable|string|max:20',
-            'password' => 'required|string|min:8',
-            'role_id' => 'nullable|uuid|exists:roles,id',
-            'is_active' => 'boolean',
-            'locale' => 'nullable|string|in:ar,en',
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
         $user = UserModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -68,9 +60,9 @@ class UserController extends BaseController
     /**
      * Display the specified user.
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $user = UserModel::with('role')->find($id);
+        $user = UserModel::where('tenant_id', $this->getTenantId($request))->with('role')->find($id);
 
         if (!$user) {
             return $this->error('User not found', 404);
@@ -84,7 +76,7 @@ class UserController extends BaseController
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $user = UserModel::find($id);
+        $user = UserModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$user) {
             return $this->error('User not found', 404);
@@ -112,9 +104,9 @@ class UserController extends BaseController
     /**
      * Remove the specified user from storage.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $user = UserModel::find($id);
+        $user = UserModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$user) {
             return $this->error('User not found', 404);
@@ -130,3 +122,5 @@ class UserController extends BaseController
         return $this->success(null, 'User deleted successfully');
     }
 }
+
+

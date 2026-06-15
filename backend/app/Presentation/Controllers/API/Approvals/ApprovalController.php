@@ -25,7 +25,7 @@ class ApprovalController extends BaseTenantController
     {
         $user = auth()->user();
         
-        $query = ApprovalRequestModel::with(['requester', 'resolver', 'rule'])->where('tenant_id', $this->getTenantId($request))->orderBy('created_at', 'desc');
+        $query = ApprovalRequestModel::where('tenant_id', $this->getTenantId($request))->with(['requester', 'resolver', 'rule'])->where('tenant_id', $this->getTenantId($request))->orderBy('created_at', 'desc');
         
         if ($request->has('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
@@ -47,7 +47,7 @@ class ApprovalController extends BaseTenantController
     public function approve(ApprovalDecisionRequest $request, string $id): JsonResponse
     {
         $validated = $request->validated();
-        $approval = ApprovalRequestModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+        $approval = ApprovalRequestModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
 
         try {
             $this->approveUseCase->execute($id, auth()->id() ?? '', $validated['notes'] ?? '');
@@ -60,7 +60,7 @@ class ApprovalController extends BaseTenantController
     public function reject(ApprovalDecisionRequest $request, string $id): JsonResponse
     {
         $validated = $request->validated();
-        $approval = ApprovalRequestModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+        $approval = ApprovalRequestModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
 
         try {
             $this->rejectUseCase->execute($id, auth()->id() ?? '', $validated['notes'] ?? '');
@@ -77,7 +77,7 @@ class ApprovalController extends BaseTenantController
             return $this->error('Unauthorized to manage approval rules.', 403);
         }
 
-        $rules = ApprovalRuleModel::where('tenant_id', $this->getTenantId($request))->get();
+        $rules = ApprovalRuleModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $this->getTenantId($request))->get();
         return $this->success($rules->toArray(), 'Rules retrieved');
     }
 
@@ -107,3 +107,4 @@ class ApprovalController extends BaseTenantController
         return $this->success($rule->toArray(), 'Rule saved successfully');
     }
 }
+

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class CustomerController extends BaseController
+class CustomerController extends BaseTenantController
 {
     /**
      * Display a listing of customers.
@@ -20,7 +20,7 @@ class CustomerController extends BaseController
         $limit = $request->query('limit', '15');
         $search = $request->query('search');
 
-        $query = CustomerModel::select([
+        $query = CustomerModel::where('tenant_id', $this->getTenantId($request))->select([
             'id', 'name', 'email', 'phone', 'balance', 'credit_limit', 'is_active', 'created_at'
         ])->with(['invoices' => fn($q) => $q->select('id', 'customer_id', 'total', 'status')]);
 
@@ -42,16 +42,9 @@ class CustomerController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255|unique:customers,email',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string',
-            'tax_number' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
         $customer = CustomerModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => \Illuminate\Support\Str::uuid()->toString(),
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
@@ -68,9 +61,9 @@ class CustomerController extends BaseController
     /**
      * Display the specified customer.
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $customer = CustomerModel::find($id);
+        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$customer) {
             return $this->error('Customer not found', 404);
@@ -84,7 +77,7 @@ class CustomerController extends BaseController
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $customer = CustomerModel::find($id);
+        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$customer) {
             return $this->error('Customer not found', 404);
@@ -107,9 +100,9 @@ class CustomerController extends BaseController
     /**
      * Remove the specified customer from storage.
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $customer = CustomerModel::find($id);
+        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$customer) {
             return $this->error('Customer not found', 404);
@@ -223,7 +216,7 @@ class CustomerController extends BaseController
      */
     public function statement(string $id): JsonResponse
     {
-        $customer = CustomerModel::with(['invoices', 'vouchers'])->find($id);
+        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->with(['invoices', 'vouchers'])->find($id);
 
         if (!$customer) {
             return $this->error('Customer not found', 404);
@@ -297,3 +290,5 @@ class CustomerController extends BaseController
         ], 'Customer statement generated successfully.');
     }
 }
+
+

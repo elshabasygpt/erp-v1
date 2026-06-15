@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\CRM\CustomerNoteModel;
 use App\Infrastructure\Eloquent\Models\CRM\CustomerInteractionModel;
@@ -12,20 +12,18 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class CustomerInteractionController extends BaseController
+class CustomerInteractionController extends BaseTenantController
 {
     public function addNote(Request $request, string $customerId): JsonResponse
     {
-        $customer = CustomerModel::find($customerId);
+        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($customerId);
         if (!$customer) {
             return $this->error('Customer not found', 404);
         }
 
-        $validated = $request->validate([
-            'content' => 'required|string',
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
         $note = CustomerNoteModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'customer_id' => $customerId,
             'user_id' => auth()->id() ?? '', // fallback for testing
@@ -37,18 +35,14 @@ class CustomerInteractionController extends BaseController
 
     public function addInteraction(Request $request, string $customerId): JsonResponse
     {
-        $customer = CustomerModel::find($customerId);
+        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($customerId);
         if (!$customer) {
             return $this->error('Customer not found', 404);
         }
 
-        $validated = $request->validate([
-            'type' => 'required|string|in:call,email,meeting,whatsapp',
-            'description' => 'nullable|string',
-            'interaction_date' => 'required|date',
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
         $interaction = CustomerInteractionModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'customer_id' => $customerId,
             'user_id' => auth()->id() ?? '',
@@ -60,3 +54,5 @@ class CustomerInteractionController extends BaseController
         return $this->created($interaction->toArray(), 'Customer interaction recorded successfully');
     }
 }
+
+

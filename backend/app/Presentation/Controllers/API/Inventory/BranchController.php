@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Presentation\Controllers\API\Inventory;
 
 use App\Infrastructure\Eloquent\Models\BranchModel;
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class BranchController extends BaseController
+class BranchController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
@@ -21,9 +21,9 @@ class BranchController extends BaseController
         return $this->success(['branches' => $branches]);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $branch = BranchModel::findOrFail($id);
+        $branch = BranchModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         return $this->success(['branch' => $branch]);
     }
 
@@ -38,6 +38,7 @@ class BranchController extends BaseController
 
         $data['created_by'] = $request->user()?->id;
 
+        $data['tenant_id'] = $this->getTenantId($request);
         $branch = BranchModel::create($data);
 
         return $this->success(['branch' => $branch], 'Branch created successfully.', 201);
@@ -45,7 +46,7 @@ class BranchController extends BaseController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $branch = BranchModel::findOrFail($id);
+        $branch = BranchModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
 
         $data = $request->validate([
             'name' => 'sometimes|string|max:255',
@@ -61,9 +62,9 @@ class BranchController extends BaseController
         return $this->success(['branch' => $branch], 'Branch updated successfully.');
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $branch = BranchModel::findOrFail($id);
+        $branch = BranchModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         
         if ($branch->is_default) {
             return $this->error('Cannot delete the default branch.', 403);
@@ -74,3 +75,5 @@ class BranchController extends BaseController
         return $this->success(null, 'Branch deleted successfully.');
     }
 }
+
+

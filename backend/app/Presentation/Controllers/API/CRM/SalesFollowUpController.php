@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\CRM\SalesFollowUpModel;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class SalesFollowUpController extends BaseController
+class SalesFollowUpController extends BaseTenantController
 {
     /**
      * Get follow-up tasks for the authenticated salesperson
@@ -21,7 +21,7 @@ class SalesFollowUpController extends BaseController
         $userId = auth()->id() ?? ''; // fallback
         $status = $request->query('status', 'pending');
 
-        $query = SalesFollowUpModel::with('customer')
+        $query = SalesFollowUpModel::where('tenant_id', $this->getTenantId($request))->with('customer')
             ->where('assigned_to', $userId)
             ->orderBy('due_date', 'asc');
 
@@ -39,15 +39,9 @@ class SalesFollowUpController extends BaseController
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'customer_id' => 'required|uuid|exists:customers,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'reminder_at' => 'nullable|date|before_or_equal:due_date',
-        ]);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
         $task = SalesFollowUpModel::create([
+            'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'customer_id' => $validated['customer_id'],
             'assigned_to' => auth()->id() ?? '',
@@ -66,7 +60,7 @@ class SalesFollowUpController extends BaseController
      */
     public function markCompleted(Request $request, string $id): JsonResponse
     {
-        $task = SalesFollowUpModel::find($id);
+        $task = SalesFollowUpModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$task) {
             return $this->error('Follow-up task not found', 404);
@@ -82,3 +76,5 @@ class SalesFollowUpController extends BaseController
         return $this->success($task->toArray(), 'Task marked as completed');
     }
 }
+
+

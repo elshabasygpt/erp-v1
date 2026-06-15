@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Accounting\Services\AccountingService;
 use App\Application\Accounting\UseCases\GenerateTrialBalanceUseCase;
 use App\Domain\Accounting\Repositories\AccountRepositoryInterface;
@@ -12,7 +12,7 @@ use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ReportsController extends BaseController
+class ReportsController extends BaseTenantController
 {
     public function __construct(
         private AccountingService $accountingService,
@@ -58,3 +58,5 @@ class ReportsController extends BaseController
         return $this->paginated($this->journalEntryRepository->paginate((int)$request->get('per_page', 15), $filters));
     }
 }
+
+

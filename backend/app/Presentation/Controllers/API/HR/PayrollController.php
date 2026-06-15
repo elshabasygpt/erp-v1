@@ -24,7 +24,7 @@ class PayrollController extends BaseTenantController
         $year = $request->query('year', date('Y'));
 
         $tenantId = $this->getTenantId($request);
-        $query = PayrollModel::with('employee')
+        $query = PayrollModel::where('tenant_id', $this->getTenantId($request))->with('employee')
             ->whereHas('employee', fn($q) => $q->where('tenant_id', $tenantId))
             ->where('month', $month)
             ->where('year', $year)
@@ -79,6 +79,7 @@ class PayrollController extends BaseTenantController
             // 2. Create the Expense
             $expenseDate = now()->toDateString();
             $expense = ExpenseModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'category_id' => $category->id,
                 'amount' => $payroll->net_salary,
@@ -103,4 +104,5 @@ class PayrollController extends BaseTenantController
         }
     }
 }
+
 

@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Inventory\Repositories\ProductRepositoryInterface;
 use App\Infrastructure\Eloquent\Models\ProductModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class ProductController extends BaseController
+class ProductController extends BaseTenantController
 {
     public function __construct(private ProductRepositoryInterface $productRepository) {}
 
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['search', 'is_active']);
+        $filters['tenant_id'] = $this->getTenantId($request);
         return $this->paginated($this->productRepository->paginate((int)$request->get('per_page', 15), $filters));
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $product = ProductModel::with(['warehouseStocks', 'units'])->find($id);
+        $product = ProductModel::where('tenant_id', $this->getTenantId($request))->with(['warehouseStocks', 'units'])->find($id);
         return $product ? $this->success($product->toArray()) : $this->error('Product not found.', 404);
     }
 
@@ -76,6 +77,7 @@ class ProductController extends BaseController
         if (isset($validated['purchase_price'])) $validated['cost_price'] = $validated['purchase_price'];
         if (isset($validated['tax_rate'])) $validated['vat_rate'] = $validated['tax_rate'];
         
+        $validated['tenant_id'] = $this->getTenantId($request);
         $product = ProductModel::create($validated);
         
         if (!empty($validated['units'])) {
@@ -90,7 +92,7 @@ class ProductController extends BaseController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $product = ProductModel::find($id);
+        $product = ProductModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$product) {
             return $this->error('Product not found', 404);
@@ -135,9 +137,9 @@ class ProductController extends BaseController
         return $this->success($product, 'Product updated successfully');
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
-        $product = ProductModel::find($id);
+        $product = ProductModel::where('tenant_id', $this->getTenantId($request))->find($id);
 
         if (!$product) {
             return $this->error('Product not found', 404);
@@ -176,3 +178,5 @@ class ProductController extends BaseController
         return $this->error('Failed to upload image', 400);
     }
 }
+
+

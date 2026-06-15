@@ -37,12 +37,12 @@ class PartnerDashboardController extends BaseTenantController
         $yesterday = Carbon::yesterday();
 
         // Today's total sales
-        $todaySales = InvoiceModel::where('tenant_id', $tenantId)
+        $todaySales = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)
             ->where('status', 'confirmed')
             ->whereDate('invoice_date', $today)
             ->sum('total');
 
-        $yesterdaySales = InvoiceModel::where('tenant_id', $tenantId)
+        $yesterdaySales = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)
             ->where('status', 'confirmed')
             ->whereDate('invoice_date', $yesterday)
             ->sum('total');
@@ -159,7 +159,7 @@ class PartnerDashboardController extends BaseTenantController
         $tenantId = $this->getPartnerTenantId($request);
 
         // Profit shares (credits)
-        $profitShares = PartnerProfitShareModel::with('distribution')
+        $profitShares = PartnerProfitShareModel::where('tenant_id', $this->getTenantId($request))->with('distribution')
             ->where('tenant_id', $tenantId)
             ->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
@@ -172,7 +172,7 @@ class PartnerDashboardController extends BaseTenantController
             ]);
 
         // Withdrawals (debits)
-        $withdrawals = PartnerWithdrawalModel::where('partner_id', $partner->id)
+        $withdrawals = PartnerWithdrawalModel::where('tenant_id', $this->getTenantId($request))->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(fn($w) => [
@@ -274,13 +274,13 @@ class PartnerDashboardController extends BaseTenantController
         $tenantId = $this->getPartnerTenantId($request);
 
         // Get statement data
-        $sharesQuery = PartnerProfitShareModel::with('distribution')
+        $sharesQuery = PartnerProfitShareModel::where('tenant_id', $this->getTenantId($request))->with('distribution')
             ->where('tenant_id', $tenantId)
             ->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $withdrawalsQuery = PartnerWithdrawalModel::where('partner_id', $partner->id)
+        $withdrawalsQuery = PartnerWithdrawalModel::where('tenant_id', $this->getTenantId($request))->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -292,3 +292,4 @@ class PartnerDashboardController extends BaseTenantController
         return response($html, 200)->header('Content-Type', 'text/html');
     }
 }
+

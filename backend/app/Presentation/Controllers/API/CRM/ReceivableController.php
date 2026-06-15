@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Application\Sales\UseCases\CollectPaymentUseCase;
 use App\Application\Sales\UseCases\GetAgingReportUseCase;
 use App\Application\Sales\UseCases\GetCustomerStatementUseCase;
 
-class ReceivableController extends BaseController
+class ReceivableController extends BaseTenantController
 {
     public function __construct(
         private readonly CollectPaymentUseCase $collectPaymentUseCase,
@@ -70,3 +70,5 @@ class ReceivableController extends BaseController
         ]);
     }
 }
+
+

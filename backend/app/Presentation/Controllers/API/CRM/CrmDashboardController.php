@@ -4,38 +4,38 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
-class CrmDashboardController extends BaseController
+class CrmDashboardController extends BaseTenantController
 {
     /**
      * Get comprehensive CRM insights for a specific customer
      */
     public function getCustomerInsights(string $id): JsonResponse
     {
-        $customer = CustomerModel::with(['notes.user', 'interactions.user', 'followUps.assignee'])->find($id);
+        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->with(['notes.user', 'interactions.user', 'followUps.assignee'])->find($id);
 
         if (!$customer) {
             return $this->error('Customer not found', 404);
         }
 
         // Purchase History (last 10 invoices)
-        $purchaseHistory = InvoiceModel::where('customer_id', $id)
+        $purchaseHistory = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
             ->where('status', '!=', 'cancelled')
             ->orderBy('invoice_date', 'desc')
             ->take(10)
             ->get(['id', 'invoice_number', 'total', 'invoice_date', 'status']);
 
         // Aggregate Metrics
-        $totalSpend = InvoiceModel::where('customer_id', $id)
+        $totalSpend = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
             ->where('status', '!=', 'cancelled')
             ->sum('total');
 
-        $totalInvoices = InvoiceModel::where('customer_id', $id)
+        $totalInvoices = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
             ->where('status', '!=', 'cancelled')
             ->count();
 
@@ -76,3 +76,5 @@ class CrmDashboardController extends BaseController
         ], 'Customer CRM insights retrieved successfully');
     }
 }
+
+

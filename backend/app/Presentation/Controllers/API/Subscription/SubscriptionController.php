@@ -2,11 +2,11 @@
 
 namespace App\Presentation\Controllers\API\Subscription;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class SubscriptionController extends BaseController
+class SubscriptionController extends BaseTenantController
 {
     /**
      * Get current subscription and available plans
@@ -66,3 +66,5 @@ class SubscriptionController extends BaseController
         return $this->success(null, 'Subscription upgraded successfully via simulated payment.');
     }
 }
+
+

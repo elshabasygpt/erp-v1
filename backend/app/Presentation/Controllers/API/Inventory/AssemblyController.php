@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\ProductComponentModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
@@ -13,12 +13,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
-class AssemblyController extends BaseController
+class AssemblyController extends BaseTenantController
 {
     // BOM Management
     public function getComponents($productId): JsonResponse
     {
-        $components = ProductComponentModel::with('component')
+        $components = ProductComponentModel::where('tenant_id', $this->getTenantId($request))->with('component')
             ->where('parent_product_id', $productId)
             ->get();
         return $this->success($components->toArray());
@@ -32,7 +32,7 @@ class AssemblyController extends BaseController
             'components.*.quantity_required' => 'required|numeric|min:0.001',
         ]);
 
-        ProductModel::findOrFail($productId);
+        ProductModel::where('tenant_id', $this->getTenantId($request))->findOrFail($productId);
 
         DB::connection('tenant')->beginTransaction();
         try {
@@ -45,6 +45,7 @@ class AssemblyController extends BaseController
                 if ($comp['child_product_id'] === $productId) continue;
 
                 $inserted[] = ProductComponentModel::create([
+            'tenant_id' => $this->getTenantId($request),
                     'parent_product_id' => $productId,
                     'child_product_id' => $comp['child_product_id'],
                     'quantity_required' => $comp['quantity_required']
@@ -76,7 +77,7 @@ class AssemblyController extends BaseController
 
         DB::connection('tenant')->beginTransaction();
         try {
-            $components = ProductComponentModel::where('parent_product_id', $productId)->get();
+            $components = ProductComponentModel::where('tenant_id', $this->getTenantId($request))->where('parent_product_id', $productId)->get();
             if ($components->isEmpty()) {
                 throw new \Exception('This product has no components defined (BOM is empty).');
             }
@@ -96,7 +97,7 @@ class AssemblyController extends BaseController
                     ['quantity' => 0, 'average_cost' => 0]
                 );
 
-                $productInfo = ProductModel::find($component->child_product_id);
+                $productInfo = ProductModel::where('tenant_id', $this->getTenantId($request))->find($component->child_product_id);
                 $unitCost = $productInfo->cost_price;
                 $componentTotalCost = $unitCost * $rawQtyNeeded;
 
@@ -118,6 +119,7 @@ class AssemblyController extends BaseController
 
                 // Log raw movement
                 StockMovementModel::create([
+            'tenant_id' => $this->getTenantId($request),
                     'product_id' => $component->child_product_id,
                     'warehouse_id' => $warehouseId,
                     'type' => 'adjustment', // Assembly
@@ -154,6 +156,7 @@ class AssemblyController extends BaseController
 
             // Log Finished good movement
             StockMovementModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'product_id' => $productId,
                 'warehouse_id' => $warehouseId,
                 'type' => 'adjustment', // Assembly
@@ -173,3 +176,5 @@ class AssemblyController extends BaseController
         }
     }
 }
+
+

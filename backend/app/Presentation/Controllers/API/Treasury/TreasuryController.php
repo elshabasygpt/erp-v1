@@ -16,7 +16,7 @@ class TreasuryController extends BaseTenantController
     // GET /api/treasury/safes
     public function getSafes(Request $request)
     {
-        $safes = SafeModel::with('users')->where('tenant_id', $this->getTenantId($request))->get();
+        $safes = SafeModel::where('tenant_id', $this->getTenantId($request))->with('users')->where('tenant_id', $this->getTenantId($request))->get();
         return response()->json(['status' => 'success', 'data' => $safes]);
     }
 
@@ -44,7 +44,7 @@ class TreasuryController extends BaseTenantController
             'is_primary' => 'boolean'
         ]);
 
-        $safe = SafeModel::findOrFail($safe_id);
+        $safe = SafeModel::where('tenant_id', $this->getTenantId($request))->findOrFail($safe_id);
         $safe->users()->syncWithoutDetaching([
             $validated['user_id'] => ['is_primary' => $validated['is_primary'] ?? false]
         ]);
@@ -77,6 +77,7 @@ class TreasuryController extends BaseTenantController
             $safe->save();
 
             $transaction = SafeTransactionModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'safe_id' => $safe->id,
                 'type' => $validated['type'],
                 'amount' => $validated['amount'],
@@ -114,6 +115,7 @@ class TreasuryController extends BaseTenantController
 
             // Record Transfer Out
             SafeTransactionModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'safe_id' => $fromSafe->id,
                 'type' => 'transfer_out',
                 'amount' => $validated['amount'],
@@ -125,6 +127,7 @@ class TreasuryController extends BaseTenantController
 
             // Record Transfer In
             SafeTransactionModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'safe_id' => $toSafe->id,
                 'type' => 'transfer_in',
                 'amount' => $validated['amount'],
@@ -138,3 +141,4 @@ class TreasuryController extends BaseTenantController
         });
     }
 }
+

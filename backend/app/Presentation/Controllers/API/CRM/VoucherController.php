@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\VoucherModel;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use Illuminate\Http\JsonResponse;
@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class VoucherController extends BaseController
+class VoucherController extends BaseTenantController
 {
     /**
      * Issues a new financial voucher and triggers automatic accounting journals.
@@ -37,6 +37,7 @@ class VoucherController extends BaseController
         try {
             // 1. Create the Voucher
             $voucher = VoucherModel::create([
+            'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'reference_number' => 'VCH-' . time() . '-' . rand(100, 999), // Generator logic
                 'type' => $validated['type'],
@@ -132,3 +133,5 @@ class VoucherController extends BaseController
         return $acc->id;
     }
 }
+
+

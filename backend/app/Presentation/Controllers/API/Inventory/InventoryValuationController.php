@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Inventory\Services\InventoryValuationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class InventoryValuationController extends BaseController
+class InventoryValuationController extends BaseTenantController
 {
     public function __construct(
         private InventoryValuationService $inventoryValuationService
@@ -25,3 +25,5 @@ class InventoryValuationController extends BaseController
         }
     }
 }
+
+

@@ -2,13 +2,13 @@
 
 namespace App\Presentation\Controllers\API\Settings;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\WebhookEndpointModel;
 use App\Infrastructure\Eloquent\Models\WebhookLogModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class WebhookController extends BaseController
+class WebhookController extends BaseTenantController
 {
     public function index()
     {
@@ -27,6 +27,7 @@ class WebhookController extends BaseController
 
         $validated['secret'] = 'whsec_' . Str::random(32);
 
+        $validated['tenant_id'] = $this->getTenantId($request);
         $endpoint = WebhookEndpointModel::create($validated);
 
         return $this->created($endpoint, 'Webhook created successfully');
@@ -34,13 +35,13 @@ class WebhookController extends BaseController
 
     public function show($id)
     {
-        $endpoint = WebhookEndpointModel::findOrFail($id);
+        $endpoint = WebhookEndpointModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         return $this->success($endpoint);
     }
 
     public function update(Request $request, $id)
     {
-        $endpoint = WebhookEndpointModel::findOrFail($id);
+        $endpoint = WebhookEndpointModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
 
         $validated = $request->validate([
             'url' => 'required|url',
@@ -56,7 +57,7 @@ class WebhookController extends BaseController
 
     public function destroy($id)
     {
-        $endpoint = WebhookEndpointModel::findOrFail($id);
+        $endpoint = WebhookEndpointModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
         $endpoint->delete();
 
         return $this->success(null, 'Webhook deleted successfully');
@@ -64,7 +65,7 @@ class WebhookController extends BaseController
 
     public function getLogs($id)
     {
-        $logs = WebhookLogModel::where('endpoint_id', $id)
+        $logs = WebhookLogModel::where('tenant_id', $this->getTenantId($request))->where('endpoint_id', $id)
             ->orderBy('created_at', 'desc')
             ->limit(100)
             ->get();
@@ -72,3 +73,5 @@ class WebhookController extends BaseController
         return $this->success($logs);
     }
 }
+
+

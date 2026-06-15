@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Sales\DTOs\CreateSalesOrderDTO;
 use App\Application\Sales\UseCases\SalesOrders\CreateSalesOrderUseCase;
 use App\Application\Sales\UseCases\SalesOrders\FulfillSalesOrderUseCase;
@@ -12,7 +12,7 @@ use App\Infrastructure\Eloquent\Models\SalesOrderModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class SalesOrderController extends BaseController
+class SalesOrderController extends BaseTenantController
 {
     public function __construct(
         private readonly CreateSalesOrderUseCase $createSalesOrderUseCase,
@@ -24,7 +24,7 @@ class SalesOrderController extends BaseController
         $limit = $request->query('limit', 15);
         $status = $request->query('status');
         
-        $query = SalesOrderModel::with(['customer', 'warehouse', 'creator'])->orderBy('issue_date', 'desc');
+        $query = SalesOrderModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'warehouse', 'creator'])->orderBy('issue_date', 'desc');
         
         if ($status && $status !== 'all') {
             $query->where('status', $status);
@@ -56,6 +56,7 @@ class SalesOrderController extends BaseController
         ]);
 
         try {
+            $validated['tenant_id'] = $this->getTenantId($request);
             $dto = CreateSalesOrderDTO::fromRequest($validated);
             $salesOrder = $this->createSalesOrderUseCase->execute($dto, auth()->id() ?? '');
 
@@ -68,9 +69,9 @@ class SalesOrderController extends BaseController
         }
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $salesOrder = SalesOrderModel::with(['items.product', 'customer', 'warehouse', 'quotation'])->find($id);
+        $salesOrder = SalesOrderModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer', 'warehouse', 'quotation'])->find($id);
         
         if (!$salesOrder) {
             return $this->error('Sales Order not found', 404);
@@ -100,7 +101,7 @@ class SalesOrderController extends BaseController
     public function cancel(Request $request, string $id): JsonResponse
     {
         // Cancel logic can be moved to a UseCase if it gets complex.
-        $salesOrder = SalesOrderModel::with('items')->find($id);
+        $salesOrder = SalesOrderModel::where('tenant_id', $this->getTenantId($request))->with('items')->find($id);
 
         if (!$salesOrder) {
             return $this->error('Sales Order not found', 404);
@@ -141,3 +142,4 @@ class SalesOrderController extends BaseController
         }
     }
 }
+

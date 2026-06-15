@@ -11,7 +11,7 @@ class LeaveController extends BaseTenantController
     public function index(Request $request)
     {
         $tenantId = $this->getTenantId($request);
-        $query = LeaveModel::with('employee')
+        $query = LeaveModel::where('tenant_id', $this->getTenantId($request))->with('employee')
             ->whereHas('employee', fn($q) => $q->where('tenant_id', $tenantId))
             ->orderBy('start_date', 'desc');
         return $this->paginated($query->paginate($request->get('per_page', 25))->toArray());
@@ -19,17 +19,8 @@ class LeaveController extends BaseTenantController
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'employee_id' => 'required|exists:tenant.employees,id',
-            'start_date'  => 'required|date',
-            'end_date'    => 'required|date|after_or_equal:start_date',
-            'type'        => 'required|in:annual,sick,unpaid,other',
-            'reason'      => 'required|string'
-        ]);
-
-        $employee = \App\Infrastructure\Eloquent\Models\EmployeeModel::where('tenant_id', $this->getTenantId($request))
-            ->findOrFail($validated['employee_id']);
-
+        $validated['tenant_id'] = $this->getTenantId($request);
+        $validated['tenant_id'] = $this->getTenantId($request);
         $leave = LeaveModel::create($validated);
         return $this->success($leave, 'Leave applied successfully', 201);
     }
@@ -49,4 +40,5 @@ class LeaveController extends BaseTenantController
         return $this->success($leave, 'Leave status updated successfully');
     }
 }
+
 

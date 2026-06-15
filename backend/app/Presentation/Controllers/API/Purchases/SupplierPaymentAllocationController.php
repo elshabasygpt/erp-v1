@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Purchases;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\SupplierPaymentAllocationService;
 use App\Infrastructure\Eloquent\Models\Accounting\SupplierPaymentAllocationModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class SupplierPaymentAllocationController extends BaseController
+class SupplierPaymentAllocationController extends BaseTenantController
 {
     public function __construct(
         private SupplierPaymentAllocationService $allocationService
@@ -18,7 +18,7 @@ class SupplierPaymentAllocationController extends BaseController
 
     public function index(string $paymentId): JsonResponse
     {
-        $allocations = SupplierPaymentAllocationModel::where('supplier_payment_id', $paymentId)
+        $allocations = SupplierPaymentAllocationModel::where('tenant_id', $this->getTenantId($request))->where('supplier_payment_id', $paymentId)
             ->with('purchaseInvoice')
             ->get();
             
@@ -41,3 +41,5 @@ class SupplierPaymentAllocationController extends BaseController
         }
     }
 }
+
+

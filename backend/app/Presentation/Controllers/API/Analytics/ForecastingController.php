@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Analytics;
 
-use App\Presentation\Controllers\API\BaseController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Inventory\Services\InventoryForecastingService;
 use App\Domain\Partnerships\Services\PartnerForecastingService;
 use App\Domain\Purchases\Services\SmartPurchaseDrafter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-class ForecastingController extends BaseController
+class ForecastingController extends BaseTenantController
 {
     public function __construct(
         private InventoryForecastingService $inventoryForecaster,
@@ -58,3 +58,5 @@ class ForecastingController extends BaseController
         }
     }
 }
+
+

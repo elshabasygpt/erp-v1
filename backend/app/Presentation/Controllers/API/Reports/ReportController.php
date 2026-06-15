@@ -91,3 +91,4 @@ class ReportController extends BaseTenantController
         return $this->success($data);
     }
 }
+
