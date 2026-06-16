@@ -11,7 +11,7 @@ return new class extends Migration
         // 1. Vehicle Makes (ماركات السيارات)
         Schema::connection('tenant')->create('vehicle_makes', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('tenant_id');
+            $table->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->nullable();
             $table->string('name');
             $table->string('name_ar');
             $table->string('logo_url')->nullable();
@@ -24,7 +24,7 @@ return new class extends Migration
         // 2. Vehicle Models (موديلات السيارات)
         Schema::connection('tenant')->create('vehicle_models', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('tenant_id');
+            $table->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->nullable();
             $table->uuid('make_id');
             $table->string('name');
             $table->string('name_ar');
@@ -41,7 +41,7 @@ return new class extends Migration
         // 3. Vehicle Years (سنوات الصنع)
         Schema::connection('tenant')->create('vehicle_years', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('tenant_id');
+            $table->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->nullable();
             $table->uuid('model_id');
             $table->smallInteger('year_from');
             $table->smallInteger('year_to')->nullable();
@@ -60,7 +60,7 @@ return new class extends Migration
         // 4. Product Vehicle Compatibility (جدول التوافق)
         Schema::connection('tenant')->create('product_vehicle_compatibility', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('tenant_id');
+            $table->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->nullable();
             $table->uuid('product_id');
             $table->uuid('vehicle_year_id');
             $table->string('notes')->nullable();

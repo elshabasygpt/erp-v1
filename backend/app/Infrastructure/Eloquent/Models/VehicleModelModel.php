@@ -12,13 +12,13 @@ class VehicleModelModel extends BaseModel
     protected $table = 'vehicle_models';
 
     protected $fillable = [
-        'tenant_id',
         'make_id',
         'name',
         'name_ar',
         'body_type',
         'is_active',
         'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

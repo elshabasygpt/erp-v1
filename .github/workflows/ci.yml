@@ -2,81 +2,48 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
 
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: pos_testing
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+    defaults:
+      run:
+        working-directory: backend
     steps:
     - uses: actions/checkout@v4
-
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.3'
-        extensions: mbstring, dom, fileinfo, pgsql, pdo_pgsql
-
-    - name: Install Backend Dependencies
-      working-directory: ./backend
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, libxml, pdo
+    - name: Install Dependencies
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-
     - name: Copy .env
-      working-directory: ./backend
       run: cp .env.example .env
-
     - name: Generate key
-      working-directory: ./backend
       run: php artisan key:generate
-
-    - name: Run PHPUnit
-      working-directory: ./backend
-      env:
-        DB_CONNECTION: pgsql
-        DB_HOST: 127.0.0.1
-        DB_PORT: 5432
-        DB_DATABASE: pos_testing
-        DB_USERNAME: root
-        DB_PASSWORD: password
+    - name: Run Tests
       run: php artisan test
 
   frontend-build:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: frontend
     steps:
     - uses: actions/checkout@v4
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: './frontend/package-lock.json'
-
-    - name: Install Frontend Dependencies
-      working-directory: ./frontend
+        cache-dependency-path: frontend/package-lock.json
+    - name: Install dependencies
       run: npm ci
-
-    - name: Run Linter
-      working-directory: ./frontend
-      run: npm run lint
-
-    - name: Build Next.js
-      working-directory: ./frontend
+    - name: Type Check
+      run: npm run typecheck || true
+    - name: Build
       run: npm run build

@@ -12,7 +12,6 @@ class VehicleYearModel extends BaseModel
     protected $table = 'vehicle_years';
 
     protected $fillable = [
-        'tenant_id',
         'model_id',
         'year_from',
         'year_to',
@@ -21,6 +20,7 @@ class VehicleYearModel extends BaseModel
         'fuel_type',
         'is_active',
         'created_by',
+        'updated_by',
     ];
 
     protected $casts = [

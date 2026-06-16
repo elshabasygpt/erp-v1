@@ -77,18 +77,14 @@ class VehicleDataSeeder extends Seeder
             ]
         ];
 
-        $tenantId = '00000000-0000-0000-0000-000000000001';
-
         foreach ($makes as $makeData) {
             $make = VehicleMakeModel::create([
-                'tenant_id' => $tenantId,
                 'name' => $makeData['name'],
                 'name_ar' => $makeData['name_ar'],
             ]);
 
             foreach ($makeData['models'] as $modelData) {
                 $model = VehicleModelModel::create([
-                    'tenant_id' => $tenantId,
                     'make_id' => $make->id,
                     'name' => $modelData['name'],
                     'name_ar' => $modelData['name_ar'],
@@ -96,7 +92,6 @@ class VehicleDataSeeder extends Seeder
 
                 foreach ($modelData['years'] as $yearData) {
                     VehicleYearModel::create([
-                        'tenant_id' => $tenantId,
                         'model_id' => $model->id,
                         'year_from' => $yearData['year_from'],
                         'year_to' => $yearData['year_to'],
