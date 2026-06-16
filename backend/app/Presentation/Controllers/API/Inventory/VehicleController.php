@@ -264,13 +264,13 @@ class VehicleController extends BaseTenantController
             ->select([
                 'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
                 'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
-                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url',
+                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url', 'products.warranty_months',
                 DB::raw('COALESCE(SUM(warehouse_products.quantity), 0) as stock_quantity')
             ])
             ->groupBy([
                 'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
                 'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
-                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url'
+                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url', 'products.warranty_months'
             ]);
 
         $products = $productsQuery->get();

@@ -79,10 +79,10 @@ class ProductController extends BaseTenantController
         if (isset($validated['purchase_price'])) $validated['cost_price'] = $validated['purchase_price'];
         if (isset($validated['tax_rate'])) $validated['vat_rate'] = $validated['tax_rate'];
 
-        if (!isset($validated['wholesale_price']) && isset($validated['sell_price'])) {
+        if (!array_key_exists('wholesale_price', $validated) && isset($validated['sell_price'])) {
             $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 2);
         }
-        if (!isset($validated['semi_wholesale_price']) && isset($validated['sell_price'])) {
+        if (!array_key_exists('semi_wholesale_price', $validated) && isset($validated['sell_price'])) {
             $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 2);
         }
         
@@ -135,10 +135,10 @@ class ProductController extends BaseTenantController
         if (isset($validated['purchase_price'])) $validated['cost_price'] = $validated['purchase_price'];
         if (isset($validated['tax_rate'])) $validated['vat_rate'] = $validated['tax_rate'];
 
-        if (!isset($validated['wholesale_price']) && isset($validated['sell_price'])) {
+        if (!array_key_exists('wholesale_price', $validated) && isset($validated['sell_price'])) {
             $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 2);
         }
-        if (!isset($validated['semi_wholesale_price']) && isset($validated['sell_price'])) {
+        if (!array_key_exists('semi_wholesale_price', $validated) && isset($validated['sell_price'])) {
             $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 2);
         }
 
