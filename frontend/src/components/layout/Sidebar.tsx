@@ -33,6 +33,7 @@ const ICONS = {
     branches: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
     users: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
     settings: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
+    car: 'M5 10l1.2-3.6A2 2 0 018.1 5h7.8a2 2 0 011.9 1.4L19 10m-14 0h14m-14 0v6a2 2 0 002 2h10a2 2 0 002-2v-6m-9-2h2',
     chevron: 'M19 9l-7 7-7-7',
     collapse: 'M11 19l-7-7 7-7m8 14l-7-7 7-7',
     expand: 'M13 5l7 7-7 7M5 5l7 7-7 7',
@@ -98,6 +99,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'stockMovements', path: '/inventory/movements', iconKey: 'movements', labelAr: 'حركات المخزون', labelEn: 'Stock Movements' },
             { key: 'transfers', path: '/inventory/transfers', iconKey: 'transfers', labelAr: 'تحويلات المخازن', labelEn: 'Transfers' },
             { key: 'manufacturing', path: '/manufacturing', iconKey: 'inventory', labelAr: 'التصنيع والتجميع', labelEn: 'Manufacturing' },
+            { key: 'vehicles', path: '/inventory/vehicles', iconKey: 'car', labelAr: 'إدارة توافق السيارات', labelEn: 'Vehicle Compatibility' },
         ],
     },
     {

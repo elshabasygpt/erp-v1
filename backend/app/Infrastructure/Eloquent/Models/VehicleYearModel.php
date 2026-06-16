@@ -18,6 +18,7 @@ class VehicleYearModel extends BaseModel
         'engine_size',
         'engine_code',
         'fuel_type',
+        'engine_image_url',
         'is_active',
         'created_by',
         'updated_by',

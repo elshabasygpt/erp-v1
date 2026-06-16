@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Search, Car, Package, Plus, Loader2 } from 'lucide-react';
 import { inventoryApi } from '@/lib/api';
 
@@ -31,10 +33,16 @@ export function VehicleSearchPanel({
   
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMakes, setLoadingMakes] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
 
   // Load makes on mount
   useEffect(() => {
-    inventoryApi.vehicleMakes().then((res) => setMakes(res.data?.data || res.data)).catch(console.error);
+    setLoadingMakes(true);
+    inventoryApi.getVehicleMakes()
+      .then((res: any) => setMakes(res.data?.data || res.data))
+      .catch(console.error)
+      .finally(() => setLoadingMakes(false));
   }, []);
 
   // Load models when make changes
@@ -43,8 +51,13 @@ export function VehicleSearchPanel({
     setSelectedYear('');
     setModels([]);
     setYears([]);
+    setProducts([]);
     if (selectedMake) {
-      inventoryApi.vehicleModels(selectedMake).then((res) => setModels(res.data?.data || res.data)).catch(console.error);
+      setLoadingModels(true);
+      inventoryApi.getVehicleModels(selectedMake)
+        .then((res: any) => setModels(res.data?.data || res.data))
+        .catch(console.error)
+        .finally(() => setLoadingModels(false));
     }
   }, [selectedMake]);
 
@@ -52,6 +65,7 @@ export function VehicleSearchPanel({
   useEffect(() => {
     setSelectedYear('');
     setYears([]);
+    setProducts([]);
     if (selectedModel) {
       const model = models.find(m => m.id === selectedModel);
       if (model && model.years) {
@@ -115,8 +129,8 @@ export function VehicleSearchPanel({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/50 transition-opacity">
-      <div className={`w-full max-w-md bg-white h-full shadow-2xl flex flex-col ${isAr ? 'border-r' : 'border-l'}`}>
+    <div className="fixed inset-0 z-50 bg-black/50 transition-opacity" dir={isAr ? 'rtl' : 'ltr'}>
+      <div className={`absolute top-0 bottom-0 ${isAr ? 'left-0 border-r' : 'right-0 border-l'} w-full max-w-md bg-white shadow-2xl flex flex-col`}>
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -167,9 +181,10 @@ export function VehicleSearchPanel({
               <select
                 value={selectedMake}
                 onChange={(e) => setSelectedMake(e.target.value)}
-                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                disabled={loadingMakes}
+                className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
               >
-                <option value="">{isAr ? 'اختر الماركة...' : 'Select Make...'}</option>
+                <option value="">{loadingMakes ? (isAr ? 'جاري التحميل...' : 'Loading...') : (isAr ? 'اختر الماركة...' : 'Select Make...')}</option>
                 {makes.map(m => (
                   <option key={m.id} value={m.id}>{isAr ? m.name_ar : m.name}</option>
                 ))}
@@ -183,10 +198,10 @@ export function VehicleSearchPanel({
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                disabled={!selectedMake}
+                disabled={!selectedMake || loadingModels}
                 className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
               >
-                <option value="">{isAr ? 'اختر الموديل...' : 'Select Model...'}</option>
+                <option value="">{loadingModels ? (isAr ? 'جاري التحميل...' : 'Loading...') : (isAr ? 'اختر الموديل...' : 'Select Model...')}</option>
                 {models.map(m => (
                   <option key={m.id} value={m.id}>{isAr ? m.name_ar : m.name}</option>
                 ))}

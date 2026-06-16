@@ -32,9 +32,19 @@ class VehicleController extends BaseTenantController
                 $q->where('is_active', true)
                   ->orderBy('year_from', 'desc');
             }])
-            ->get(['id', 'name', 'name_ar', 'body_type']);
+            ->get(['id', 'name', 'name_ar', 'body_type', 'image_url']);
 
         return $this->success($models, 'Vehicle models retrieved successfully');
+    }
+
+    public function getYears(Request $request, string $modelId): JsonResponse
+    {
+        $years = VehicleYearModel::where('model_id', $modelId)
+            ->where('is_active', true)
+            ->orderBy('year_from', 'desc')
+            ->get(['id', 'year_from', 'year_to', 'engine_size', 'engine_code', 'fuel_type', 'engine_image_url']);
+
+        return $this->success($years, 'Vehicle years retrieved successfully');
     }
 
     public function storeMake(Request $request): JsonResponse
@@ -42,8 +52,18 @@ class VehicleController extends BaseTenantController
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'name_ar' => 'required|string|max:255',
+            'logo' => 'nullable|file|max:2048',
             'logo_url' => 'nullable|string|url',
         ]);
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/vehicles/makes');
+            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $file->move($destinationPath, $filename);
+            $validated['logo_url'] = '/uploads/vehicles/makes/' . $filename;
+        }
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
             $make = new VehicleMakeModel($validated);
@@ -63,11 +83,21 @@ class VehicleController extends BaseTenantController
             'name' => 'required|string|max:255',
             'name_ar' => 'required|string|max:255',
             'body_type' => 'nullable|string|max:50',
+            'image' => 'nullable|file|max:2048',
         ]);
 
         $make = VehicleMakeModel::find($validated['make_id']);
         if (!$make) {
             return $this->error('Make not found', 404);
+        }
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/vehicles/models');
+            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $file->move($destinationPath, $filename);
+            $validated['image_url'] = '/uploads/vehicles/models/' . $filename;
         }
 
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -90,11 +120,21 @@ class VehicleController extends BaseTenantController
             'engine_size' => 'nullable|string|max:50',
             'engine_code' => 'nullable|string|max:100',
             'fuel_type' => 'nullable|in:petrol,diesel,hybrid,electric',
+            'engine_image' => 'nullable|file|max:2048',
         ]);
 
         $modelRec = VehicleModelModel::find($validated['model_id']);
         if (!$modelRec) {
             return $this->error('Model not found', 404);
+        }
+
+        if ($request->hasFile('engine_image')) {
+            $file = $request->file('engine_image');
+            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/vehicles/years');
+            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $file->move($destinationPath, $filename);
+            $validated['engine_image_url'] = '/uploads/vehicles/years/' . $filename;
         }
 
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -108,6 +148,82 @@ class VehicleController extends BaseTenantController
         return $this->success($year, 'Vehicle year created successfully', 201);
     }
 
+    public function updateMake(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'name_ar' => 'required|string|max:255',
+            'logo' => 'nullable|file|max:2048',
+        ]);
+
+        $make = VehicleMakeModel::find($id);
+        if (!$make) return $this->error('Make not found', 404);
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/vehicles/makes');
+            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $file->move($destinationPath, $filename);
+            $validated['logo_url'] = '/uploads/vehicles/makes/' . $filename;
+        }
+
+        $make->update($validated);
+        return $this->success($make, 'Vehicle make updated successfully', 200);
+    }
+
+    public function updateModel(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'name_ar' => 'required|string|max:255',
+            'body_type' => 'nullable|string|max:50',
+            'image' => 'nullable|file|max:2048',
+        ]);
+
+        $modelRec = VehicleModelModel::find($id);
+        if (!$modelRec) return $this->error('Model not found', 404);
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/vehicles/models');
+            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $file->move($destinationPath, $filename);
+            $validated['image_url'] = '/uploads/vehicles/models/' . $filename;
+        }
+
+        $modelRec->update($validated);
+        return $this->success($modelRec, 'Vehicle model updated successfully', 200);
+    }
+
+    public function updateYear(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'year_from' => 'required|integer|min:1900|max:2030',
+            'year_to' => 'nullable|integer|gte:year_from',
+            'engine_size' => 'nullable|string|max:50',
+            'engine_code' => 'nullable|string|max:100',
+            'fuel_type' => 'nullable|in:petrol,diesel,hybrid,electric',
+            'engine_image' => 'nullable|file|max:2048',
+        ]);
+
+        $yearRec = VehicleYearModel::find($id);
+        if (!$yearRec) return $this->error('Year not found', 404);
+
+        if ($request->hasFile('engine_image')) {
+            $file = $request->file('engine_image');
+            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/vehicles/years');
+            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $file->move($destinationPath, $filename);
+            $validated['engine_image_url'] = '/uploads/vehicles/years/' . $filename;
+        }
+
+        $yearRec->update($validated);
+        return $this->success($yearRec, 'Vehicle year updated successfully', 200);
+    }
+
     public function searchByVehicle(Request $request): JsonResponse
     {
         $makeId = $request->query('make_id');
@@ -115,8 +231,13 @@ class VehicleController extends BaseTenantController
         $year = $request->query('year');
         $warehouseId = $request->query('warehouse_id');
 
+        $tenantId = $this->getTenantId($request);
+
         $productsQuery = ProductModel::where('products.is_active', true)
-            ->whereHas('compatibleVehicles', function ($q) use ($makeId, $modelId, $year) {
+            ->whereHas('compatibleVehicles', function ($q) use ($makeId, $modelId, $year, $tenantId) {
+                // Ensure the pivot table is isolated by tenant
+                $q->where('product_vehicle_compatibility.tenant_id', $tenantId);
+
                 if ($modelId) {
                     $q->where('vehicle_years.model_id', $modelId);
                 } elseif ($makeId) {
@@ -208,6 +329,7 @@ class VehicleController extends BaseTenantController
         }
 
         $existing = DB::connection('tenant')->table('product_vehicle_compatibility')
+            ->where('tenant_id', $this->getTenantId($request))
             ->where('product_id', $productId)
             ->where('vehicle_year_id', $validated['vehicle_year_id'])
             ->first();
@@ -215,6 +337,7 @@ class VehicleController extends BaseTenantController
         if ($existing) {
             DB::connection('tenant')->table('product_vehicle_compatibility')
                 ->where('id', $existing->id)
+                ->where('tenant_id', $this->getTenantId($request))
                 ->update([
                     'notes' => $validated['notes'] ?? null,
                     'updated_at' => now()
@@ -294,5 +417,26 @@ class VehicleController extends BaseTenantController
         });
 
         return $this->success($results);
+    }
+
+    public function destroyMake($id): JsonResponse
+    {
+        $make = VehicleMakeModel::findOrFail($id);
+        $make->delete();
+        return $this->success(null, 'Make deleted successfully');
+    }
+
+    public function destroyModel($id): JsonResponse
+    {
+        $model = VehicleModelModel::findOrFail($id);
+        $model->delete();
+        return $this->success(null, 'Model deleted successfully');
+    }
+
+    public function destroyYear($id): JsonResponse
+    {
+        $year = VehicleYearModel::findOrFail($id);
+        $year->delete();
+        return $this->success(null, 'Year deleted successfully');
     }
 }

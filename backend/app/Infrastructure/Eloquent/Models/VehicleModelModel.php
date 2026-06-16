@@ -16,6 +16,7 @@ class VehicleModelModel extends BaseModel
         'name',
         'name_ar',
         'body_type',
+        'image_url',
         'is_active',
         'created_by',
         'updated_by',

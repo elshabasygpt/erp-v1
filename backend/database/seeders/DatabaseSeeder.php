@@ -39,6 +39,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Running DemoDataSeeder...');
         $this->call(DemoDataSeeder::class);
 
+        // Run Vehicle Data Seeder
+        $this->command->info('Running VehicleDataSeeder...');
+        $this->call(VehicleDataSeeder::class);
+
         // Link Admin User to Default Tenant
         $this->command->info('Linking Admin User to Default Tenant...');
         $adminEmail = 'admin@company.com';

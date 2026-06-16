@@ -80,7 +80,7 @@ return new class extends Migration
             $table->string('oem_number')->nullable()->after('sku');
             $table->string('part_number')->nullable()->after('oem_number');
             $table->string('brand')->nullable()->after('part_number');
-            $table->enum('quality_grade', ['original', 'oem', 'aftermarket', 'used'])->nullable()->after('brand');
+            $table->string('quality_grade')->nullable()->comment('original, oem, aftermarket, used')->after('brand');
             $table->string('country_of_origin')->nullable()->after('quality_grade');
 
             $table->index(['tenant_id', 'oem_number']);

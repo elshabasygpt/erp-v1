@@ -10,7 +10,7 @@ import {
     Settings, MoreHorizontal, CheckCircle2, ArrowRight,
     Trash2, FileText, Ban, Warehouse, Gift, RefreshCw,
     Building2, ArrowRightLeft, Activity, Undo2, ShoppingBag,
-    Calculator, UserCheck, Briefcase, Store
+    Calculator, UserCheck, Briefcase, Store, Car
 } from 'lucide-react';
 import { inventoryApi, salesApi, crmApi } from '@/lib/api';
 import clsx from 'clsx';

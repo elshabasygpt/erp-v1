@@ -189,11 +189,20 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
 
         // Vehicle Compatibility
         Route::prefix('vehicles')->group(function () {
-            Route::get('/makes/{makeId}/models', [VehicleController::class, 'getModels']);
             Route::get('/makes', [VehicleController::class, 'getMakes']);
             Route::post('/makes', [VehicleController::class, 'storeMake']);
+            Route::post('/makes/{id}', [VehicleController::class, 'updateMake']);
+            Route::get('/makes/{makeId}/models', [VehicleController::class, 'getModels']);
+            Route::get('/models/{modelId}/years', [VehicleController::class, 'getYears']);
             Route::post('/models', [VehicleController::class, 'storeModel']);
+            Route::post('/models/{id}', [VehicleController::class, 'updateModel']);
             Route::post('/years', [VehicleController::class, 'storeYear']);
+            Route::post('/years/{id}', [VehicleController::class, 'updateYear']);
+            
+            Route::delete('/makes/{id}', [VehicleController::class, 'destroyMake']);
+            Route::delete('/models/{id}', [VehicleController::class, 'destroyModel']);
+            Route::delete('/years/{id}', [VehicleController::class, 'destroyYear']);
+
             Route::get('/search-by-vehicle', [VehicleController::class, 'searchByVehicle']);
             Route::get('/quick-lookup', [VehicleController::class, 'quickLookup']);
             Route::get('/product/{productId}/compatibility', [VehicleController::class, 'getProductCompatibility']);

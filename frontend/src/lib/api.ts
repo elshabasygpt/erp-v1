@@ -216,8 +216,9 @@ export const inventoryApi = {
     getMovementsSummary: (params?: Record<string, any>) => api.get('/inventory/movements/summary', { params }),
 
     // Vehicle Compatibility
-    vehicleMakes: () => api.get('/inventory/vehicles/makes'),
-    vehicleModels: (makeId: string) => api.get(`/inventory/vehicles/makes/${makeId}/models`),
+    getVehicleMakes: () => api.get('/inventory/vehicles/makes'),
+    getVehicleModels: (makeId: string) => api.get(`/inventory/vehicles/makes/${makeId}/models`),
+    getVehicleYears: (modelId: string) => api.get(`/inventory/vehicles/models/${modelId}/years`),
     vehicleQuickLookup: (q: string) => api.get('/inventory/vehicles/quick-lookup', { params: { q } }),
     searchByVehicle: (params: { make_id?: string; model_id?: string; year?: number; warehouse_id?: string }) =>
       api.get('/inventory/vehicles/search-by-vehicle', { params }),
@@ -226,12 +227,33 @@ export const inventoryApi = {
       api.post(`/inventory/vehicles/product/${productId}/compatibility`, data),
     detachVehicle: (productId: string, vehicleYearId: string) =>
       api.delete(`/inventory/vehicles/product/${productId}/compatibility/${vehicleYearId}`),
-    createMake: (data: { name: string; name_ar: string; logo_url?: string }) =>
-      api.post('/inventory/vehicles/makes', data),
-    createModel: (data: { make_id: string; name: string; name_ar: string; body_type?: string }) =>
-      api.post('/inventory/vehicles/models', data),
-    createYear: (data: { model_id: string; year_from: number; year_to?: number; engine_size?: string; engine_code?: string; fuel_type?: string }) =>
-      api.post('/inventory/vehicles/years', data),
+    createVehicleMake: (data: any) =>
+      api.post('/inventory/vehicles/makes', data, data instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+    createVehicleModel: (makeId: string, data: any) => {
+        if (data instanceof FormData) {
+            data.append('make_id', makeId);
+            return api.post('/inventory/vehicles/models', data, { headers: { 'Content-Type': undefined } });
+        }
+        return api.post('/inventory/vehicles/models', { ...data, make_id: makeId });
+    },
+    createVehicleYear: (modelId: string, data: any) => {
+        if (data instanceof FormData) {
+            data.append('model_id', modelId);
+            return api.post('/inventory/vehicles/years', data, { headers: { 'Content-Type': undefined } });
+        }
+        return api.post('/inventory/vehicles/years', { ...data, model_id: modelId });
+    },
+    
+    updateVehicleMake: (id: string, data: any) =>
+        api.post(`/inventory/vehicles/makes/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+    updateVehicleModel: (id: string, data: any) =>
+        api.post(`/inventory/vehicles/models/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+    updateVehicleYear: (id: string, data: any) =>
+        api.post(`/inventory/vehicles/years/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+
+    deleteVehicleMake: (id: string) => api.delete(`/inventory/vehicles/makes/${id}`),
+    deleteVehicleModel: (id: string) => api.delete(`/inventory/vehicles/models/${id}`),
+    deleteVehicleYear: (id: string) => api.delete(`/inventory/vehicles/years/${id}`),
 };
 
 export const crmApi = {
