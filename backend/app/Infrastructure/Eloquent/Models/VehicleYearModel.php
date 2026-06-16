@@ -12,6 +12,7 @@ class VehicleYearModel extends BaseModel
     protected $table = 'vehicle_years';
 
     protected $fillable = [
+        'tenant_id',
         'model_id',
         'year_from',
         'year_to',
