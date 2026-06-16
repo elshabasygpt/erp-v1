@@ -204,6 +204,25 @@ const InventoryFormModal = memo(function InventoryFormModal({
                                     <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Country of Origin</label>
                                     <input className="input-field w-full" value={form.countryOfOrigin || ''} onChange={e => setForm((f:any) => ({ ...f, countryOfOrigin: e.target.value }))} placeholder="e.g. Japan, Germany..." />
                                 </div>
+                                <div>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>
+                                        {isRTL ? 'مدة الضمان (شهور)' : 'Warranty (Months)'}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="120"
+                                        className="input-field w-full"
+                                        value={form.warrantyMonths || 0}
+                                        onChange={e => setForm((f: any) => ({ ...f, warrantyMonths: parseInt(e.target.value) || 0 }))}
+                                        placeholder="0 = بدون ضمان"
+                                    />
+                                    {form.warrantyMonths > 0 && (
+                                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                                            {isRTL ? `الضمان يُنشأ تلقائياً عند البيع لمدة ${form.warrantyMonths} شهر` : `Warranty auto-created on sale for ${form.warrantyMonths} months`}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

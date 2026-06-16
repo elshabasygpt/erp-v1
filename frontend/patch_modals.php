@@ -1,3 +1,7 @@
+<?php
+$dir = __DIR__ . '/src/components/sales';
+
+$SalesModals = <<<EOT
 import React, { memo } from 'react';
 import POSInvoiceModal from './POSInvoiceModal';
 import SalesReturnModal from './SalesReturnModal';
@@ -5,7 +9,6 @@ import QuotationModal from './QuotationModal';
 import SalesOrderModal from './SalesOrderModal';
 import ShippingModal from './ShippingModal';
 import InvoicePrintTemplate from './InvoicePrintTemplate';
-import WarrantyInvoiceSection from '../warranty/WarrantyInvoiceSection';
 
 interface SalesModalsProps {
     isRTL: boolean;
@@ -24,7 +27,6 @@ interface SalesModalsProps {
     quotationToConvert: any;
     setQuotationToConvert: (v: any) => void;
     refetch: () => void;
-    warehouses: any[];
     activeTab: string;
     formatCurrency: (v: number) => string;
 }
@@ -147,9 +149,6 @@ const SalesModals = memo(function SalesModals({
                                             </div>
                                         </div>
                                     </div>
-                                    {detailedData?.status === 'confirmed' && (
-                                        <WarrantyInvoiceSection invoiceId={detailedData.id} locale={locale} />
-                                    )}
                                 </div>
                             ) : (
                                 <div className="text-center py-10 text-red-400">{isRTL ? 'فشل تحميل التفاصيل' : 'Failed to load details'}</div>
@@ -169,8 +168,6 @@ const SalesModals = memo(function SalesModals({
                         </div>
                         <InvoicePrintTemplate 
                             invoice={printingInvoice}
-                            locale={locale}
-                            onClose={() => setPrintingInvoice(null)}
                         />
                     </div>
                 </div>
@@ -201,18 +198,49 @@ const SalesModals = memo(function SalesModals({
             )}
 
             {showModal && activeTab === 'quotations' && (
-                <QuotationModal dict={dict} locale={locale} onClose={() => { setShowModal(false); refetch(); }} />
+                <QuotationModal
+                    dict={dict}
+                    locale={locale}
+                    onClose={() => setShowModal(false)}
+                    onSuccess={() => {
+                        setShowModal(false);
+                        refetch();
+                    }}
+                />
             )}
 
             {showSalesOrderModal && (
-                <SalesOrderModal dict={dict} locale={locale} onClose={() => { setShowSalesOrderModal(false); setQuotationToConvert(null); refetch(); }} quotation={quotationToConvert} />
+                <SalesOrderModal
+                    dict={dict}
+                    locale={locale}
+                    onClose={() => {
+                        setShowSalesOrderModal(false);
+                        setQuotationToConvert(null);
+                    }}
+                    onSuccess={() => {
+                        setShowSalesOrderModal(false);
+                        refetch();
+                    }}
+                    quotation={quotationToConvert}
+                />
             )}
 
             {showModal && activeTab === 'shipping' && (
-                <ShippingModal dict={dict} locale={locale} onClose={() => { setShowModal(false); refetch(); }} />
+                <ShippingModal
+                    dict={dict}
+                    locale={locale}
+                    onClose={() => setShowModal(false)}
+                    onSuccess={() => {
+                        setShowModal(false);
+                        refetch();
+                    }}
+                />
             )}
         </>
     );
 });
 
 export default SalesModals;
+EOT;
+file_put_contents("$dir/SalesModals.tsx", $SalesModals);
+?>

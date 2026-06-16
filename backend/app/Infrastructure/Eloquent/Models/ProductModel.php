@@ -16,7 +16,7 @@ class ProductModel extends BaseModel
         'name', 'name_ar', 'sku', 'barcode', 'cost_price',
         'sell_price', 'wholesale_price', 'semi_wholesale_price', 'vat_rate', 'stock_alert_level', 'is_active',
         'category_id', 'unit_of_measure', 'description', 'image_url', 'is_favorite',
-        'oem_number', 'part_number', 'brand', 'quality_grade', 'country_of_origin',
+        'oem_number', 'part_number', 'brand', 'quality_grade', 'warranty_months', 'country_of_origin',
         'created_by', 'updated_by',
     ];
 
@@ -29,6 +29,7 @@ class ProductModel extends BaseModel
         'stock_alert_level' => 'integer',
         'is_active' => 'boolean',
         'is_favorite' => 'boolean',
+        'warranty_months' => 'integer',
     ];
 
     public function warehouseStocks()
@@ -54,5 +55,10 @@ class ProductModel extends BaseModel
             'product_id',
             'vehicle_year_id'
         )->with(['vehicleModel.make'])->withPivot('notes')->withTimestamps();
+    }
+
+    public function warranties()
+    {
+        return $this->hasMany(WarrantyModel::class, 'product_id');
     }
 }

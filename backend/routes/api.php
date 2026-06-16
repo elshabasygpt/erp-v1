@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Presentation\Controllers\API\Auth\AuthController;
 use App\Presentation\Controllers\API\Auth\UserController;
 use App\Presentation\Controllers\API\Sales\InvoiceController;
+use App\Presentation\Controllers\API\Sales\WarrantyController;
 use App\Presentation\Controllers\API\Inventory\ProductController;
 use App\Presentation\Controllers\API\Accounting\ReportsController;
 use App\Presentation\Controllers\API\CRM\CustomerController;
@@ -66,6 +67,18 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/returns/{id}', [\App\Presentation\Controllers\API\Sales\SalesReturnController::class, 'show']);
         Route::put('/returns/{id}/status', [\App\Presentation\Controllers\API\Sales\SalesReturnController::class, 'updateStatus']);
         
+        // Warranties
+        Route::prefix('warranties')->group(function () {
+            Route::get('/', [WarrantyController::class, 'index']);
+            Route::post('/', [WarrantyController::class, 'store']);
+            Route::get('/report', [WarrantyController::class, 'report']);
+            Route::get('/invoice/{invoiceId}', [WarrantyController::class, 'checkByInvoice']);
+            Route::get('/{id}', [WarrantyController::class, 'show']);
+            Route::put('/{id}/status', [WarrantyController::class, 'updateStatus']);
+            Route::post('/{warrantyId}/claims', [WarrantyController::class, 'storeClaim']);
+            Route::put('/{warrantyId}/claims/{claimId}', [WarrantyController::class, 'updateClaim']);
+        });
+
         // Quotations
         Route::get('/quotations', [\App\Presentation\Controllers\API\Sales\QuotationController::class, 'index']);
         Route::post('/quotations', [\App\Presentation\Controllers\API\Sales\QuotationController::class, 'store']);

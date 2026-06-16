@@ -84,6 +84,46 @@ export const salesApi = {
     createReturn: (data: any) => api.post('/sales/returns', data),
     updateReturnStatus: (id: string, status: string) => api.put(`/sales/returns/${id}/status`, { status }),
 
+    // Warranties
+    getWarranties: (params?: {
+        status?: 'active' | 'expired' | 'claimed' | 'void' | 'all';
+        customer_id?: string;
+        product_id?: string;
+        expiring_in_days?: number;
+        search?: string;
+        per_page?: number;
+    }) => api.get('/sales/warranties', { params }),
+
+    getWarranty: (id: string) => api.get(`/sales/warranties/${id}`),
+    getWarrantiesReport: () => api.get('/sales/warranties/report'),
+    getInvoiceWarranties: (invoiceId: string) => api.get(`/sales/warranties/invoice/${invoiceId}`),
+
+    createWarranty: (data: {
+        invoice_id: string;
+        invoice_item_id: string;
+        product_id: string;
+        customer_id: string;
+        quantity: number;
+        sale_date: string;
+        warranty_months: number;
+        notes?: string;
+    }) => api.post('/sales/warranties', data),
+
+    updateWarrantyStatus: (id: string, status: 'active' | 'void', notes?: string) =>
+        api.put(`/sales/warranties/${id}/status`, { status, notes }),
+
+    createWarrantyClaim: (warrantyId: string, data: {
+        claim_type: 'replacement' | 'repair' | 'refund';
+        complaint: string;
+        claim_date: string;
+    }) => api.post(`/sales/warranties/${warrantyId}/claims`, data),
+
+    updateWarrantyClaim: (warrantyId: string, claimId: string, data: {
+        status?: 'open' | 'in_progress' | 'resolved' | 'rejected';
+        resolution?: string;
+        replacement_invoice_id?: string;
+    }) => api.put(`/sales/warranties/${warrantyId}/claims/${claimId}`, data),
+
     // Quotations
     getQuotations: (params?: Record<string, any>) => api.get('/sales/quotations', { params }),
     getQuotation: (id: string) => api.get(`/sales/quotations/${id}`),

@@ -115,6 +115,10 @@ class InvoiceController extends BaseTenantController
             $dto = CreateInvoiceDTO::fromRequest($validated);
             $invoice = $this->createInvoiceUseCase->execute($dto, auth()->id() ?? '');
 
+            if ($validated['status'] === 'confirmed') {
+                $this->_createWarrantiesForInvoice($invoice->getId());
+            }
+
             return $this->created(['id' => $invoice->getId()], 'Sales Invoice created successfully');
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
@@ -186,6 +190,8 @@ class InvoiceController extends BaseTenantController
                 $confirmUseCase->execute($invoice->id, auth()->id() ?? '');
                 // The use case changes status to confirmed and persists.
                 $invoice->refresh();
+
+                $this->_createWarrantiesForInvoice($invoice->id);
 
                 \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
                     $this->getTenantId($request),

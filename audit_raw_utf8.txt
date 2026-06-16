@@ -1,0 +1,744 @@
+﻿--- API ROUTES ---
+{
+    "uri":  null,
+    "method":  null,
+    "action":  null
+}
+--- FRONTEND API CALLS ---
+
+Path                                                                                                             LineNu
+                                                                                                                   mber
+----                                                                                                             ------
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\analytics\page.tsx               19
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\analytics\page.tsx               31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\analytics\page.tsx               39
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\analytics\page.tsx               49
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\approvals\page.tsx               29
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\approvals\page.tsx               44
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\approvals\page.tsx               46
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\branches\page.tsx                17
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\branches\page.tsx                35
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\branches\page.tsx                37
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\branches\page.tsx                54
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\deliveries\page.tsx              33
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\deliveries\page.tsx              46
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\expenses\page.tsx                35
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\expenses\page.tsx                36
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\expenses\page.tsx                53
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\fixed-assets\page.tsx            21
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\fixed-assets\page.tsx            41
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\fixed-assets\page.tsx            63
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\attendance\page.tsx           22
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\attendance\page.tsx           33
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\attendance\page.tsx           42
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\attendance\page.tsx           51
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\employees\page.tsx            28
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\employees\page.tsx            39
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\employees\page.tsx            56
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\employees\page.tsx            59
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\employees\page.tsx            72
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\leaves\page.tsx               37
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\leaves\page.tsx               44
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\leaves\page.tsx               50
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\leaves\page.tsx               59
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\payroll\page.tsx              26
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\payroll\page.tsx              38
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\hr\payroll\page.tsx              51
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\inventory\transfers\page.tsx     29
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\inventory\transfers\page.tsx     30
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\inventory\transfers\page.tsx     31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\inventory\transfers\page.tsx     51
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\inventory\transfers\page.tsx     65
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\inventory\transfers\page.tsx     76
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\manufacturing\page.tsx           23
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\manufacturing\page.tsx           31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\manufacturing\page.tsx           50
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\manufacturing\page.tsx           61
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\partnerships\[id]\page.tsx       17
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\partnerships\page.tsx            53
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\partnerships\page.tsx            54
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\partnerships\page.tsx            69
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\partnerships\page.tsx            82
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\partnerships\page.tsx            97
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\partnerships\page.tsx           120
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              39
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              47
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              48
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              68
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              69
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              76
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              82
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\quotations\page.tsx              91
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\advanced\page.tsx        28
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\advanced\page.tsx        34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\advanced\page.tsx        57
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\advanced\page.tsx        67
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\financial\page.tsx       25
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\financial\page.tsx       28
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\financial\page.tsx       31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\reports\financial\page.tsx       34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\settings\webhooks\page.tsx       23
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\settings\webhooks\page.tsx       45
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\settings\webhooks\page.tsx       47
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\settings\webhooks\page.tsx       67
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\settings\page.tsx                31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\settings\page.tsx                56
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\shipping\page.tsx                35
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\shipping\page.tsx                42
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\shipping\page.tsx                50
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\shipping\page.tsx                62
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\subscription\page.tsx            15
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\subscription\page.tsx            32
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\subscriptions\page.tsx           24
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\subscriptions\page.tsx           62
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\treasury\page.tsx                31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\treasury\page.tsx                38
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\treasury\page.tsx                39
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\treasury\page.tsx                45
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\treasury\page.tsx                54
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\treasury\page.tsx                73
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\webhooks\page.tsx                39
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\webhooks\page.tsx                63
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\webhooks\page.tsx                77
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\portal\login\page.tsx                       5
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\portal\login\page.tsx                      30
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\portal\login\page.tsx                      50
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\portal\login\page.tsx                      68
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\portal\layout.tsx                           5
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\portal\layout.tsx                          38
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\portal\page.tsx                           118
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\accounting\AccountingContent.tsx             29
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\accounting\AccountingContent.tsx             33
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\accounting\AccountingContent.tsx             34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\accounting\AccountingContent.tsx             35
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\accounting\AccountingContent.tsx             56
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\accounting\AccountingContent.tsx             67
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\accounting\AccountingContent.tsx             83
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\approvals\ApprovalInbox.tsx                  21
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\approvals\ApprovalInbox.tsx                  38
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\approvals\ApprovalInbox.tsx                  40
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomerModals.tsx                 71
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomerModals.tsx                 95
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomerModals.tsx                446
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomersContent.tsx               64
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomersContent.tsx              138
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomersContent.tsx              141
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomersContent.tsx              156
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomersContent.tsx              170
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx               99
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx              100
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx              101
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx              102
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx              103
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx              104
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx              190
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\dashboard\DashboardContent.tsx              195
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             38
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             58
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             69
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             71
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             83
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\hr\HrContent.tsx                             95
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\hooks\useInventoryData.ts          37
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\hooks\useProductForm.ts            48
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\hooks\useProductForm.ts            70
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\InventoryContent.tsx               60
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\InventoryModals.tsx                47
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\StockMovementsContent.tsx          46
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\StockMovementsContent.tsx          47
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\StockMovementsContent.tsx          48
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\inventory\StockMovementsContent.tsx          82
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\layout\SmartSearchModal.tsx                  53
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\hooks\usePosCustomer.ts                  19
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\hooks\usePosState.ts                     73
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\hooks\usePosState.ts                     74
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\hooks\usePosState.ts                     92
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\PosScreenContent.tsx                     61
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        139
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        140
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        141
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        142
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        167
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        194
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        195
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        196
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        258
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        382
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        501
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\pos\ProPosScreen.tsx                        503
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchaseForm.ts           54
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchaseForm.ts           56
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchaseForm.ts           72
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchaseForm.ts           80
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchaseForm.ts          100
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchaseForm.ts          112
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchasesData.ts          14
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchasesData.ts          23
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchasesData.ts          34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchasesData.ts          35
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\purchases\hooks\usePurchasesData.ts          36
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\receivables\CollectPaymentScreen.tsx         30
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\receivables\CollectPaymentScreen.tsx         36
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\receivables\CollectPaymentScreen.tsx         80
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\receivables\CollectPaymentScreen.tsx         89
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\receivables\CustomerStatement.tsx            24
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\receivables\CustomerStatement.tsx            31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\receivables\ReceivablesDashboard.tsx         12
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\reports\ReportsContent.tsx                   24
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\reports\ReportsContent.tsx                   25
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\reports\ReportsContent.tsx                   26
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\reports\ReportsContent.tsx                   27
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\create\InvoiceFormContext.tsx          97
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\create\InvoiceFormContext.tsx          98
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\create\InvoiceFormContext.tsx          99
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\create\InvoiceFormContext.tsx         100
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\create\InvoiceFormContext.tsx         101
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\create\InvoiceFormContext.tsx         102
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\create\InvoiceFormContext.tsx         198
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useDeliveryDashboard.ts          30
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useDeliveryDashboard.ts          40
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useDeliveryDashboard.ts          66
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useDeliveryDashboard.ts          85
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesActions.ts               19
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesActions.ts               20
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesActions.ts               21
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesActions.ts               22
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesActions.ts               23
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesActions.ts               34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesDashboard.ts             19
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesDashboard.ts             23
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesDashboard.ts             33
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesDashboard.ts             34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  36
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  37
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  38
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  39
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  40
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  46
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  97
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  98
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\hooks\useSalesData.ts                  99
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\POSInvoiceModal.tsx                    67
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\POSInvoiceModal.tsx                    68
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\POSInvoiceModal.tsx                   240
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\QuotationModal.tsx                     56
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\QuotationModal.tsx                     57
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\QuotationModal.tsx                    117
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesListScreen.tsx                    41
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesListScreen.tsx                    42
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesListScreen.tsx                    43
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesListScreen.tsx                    44
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesListScreen.tsx                    67
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesOrderModal.tsx                    61
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesOrderModal.tsx                    62
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesOrderModal.tsx                    63
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesOrderModal.tsx                   157
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesReturnModal.tsx                   41
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesReturnModal.tsx                   44
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\SalesReturnModal.tsx                  122
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\ShippingModal.tsx                      34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\ShippingModal.tsx                      63
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx           23
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx           26
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx           45
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx           47
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx           53
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx           67
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx          105
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\settings\SalesChannelsSettings.tsx          142
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SupplierModals.tsx                 52
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SupplierModals.tsx                 75
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SupplierModals.tsx                228
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SuppliersContent.tsx               57
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SuppliersContent.tsx              128
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SuppliersContent.tsx              131
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SuppliersContent.tsx              146
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SuppliersContent.tsx              159
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\zatca\VatReportContent.tsx                   57
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\hooks\useOfflineSync.ts                                 51
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\hooks\useOfflineSync.ts                                 80
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\hooks\usePartnerPolling.ts                              24
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\hooks\usePartnerPolling.ts                              25
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\hooks\usePartnerPolling.ts                              26
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\hooks\usePartnerPolling.ts                              27
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\hooks\usePartnerPolling.ts                              28
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              13
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              29
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              54
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              56
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              63
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              64
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              65
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              70
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              73
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              74
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              75
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              76
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              77
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              78
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              79
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              82
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              83
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              84
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              85
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              88
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              89
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              90
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              91
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              92
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              95
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              96
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              97
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              98
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                              99
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             102
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             103
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             104
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             105
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             106
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             109
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             110
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             111
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             112
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             113
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             117
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             118
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             119
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             120
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             121
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             126
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             127
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             128
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             131
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             132
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             135
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             138
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             139
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             140
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             141
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             146
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             147
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             148
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             149
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             150
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             153
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             156
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             157
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             158
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             159
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             160
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             161
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             165
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             166
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             167
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             168
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             169
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             173
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             178
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             180
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             182
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             187
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             188
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             189
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             192
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             193
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             194
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             197
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             198
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             199
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             200
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             204
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             205
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             206
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             207
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             208
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             209
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             210
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             211
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             214
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             216
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             217
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             218
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             219
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             220
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             221
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             222
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             223
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             227
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             228
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             230
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             231
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             237
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             238
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             239
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             240
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             241
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             245
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             246
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             247
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             248
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             252
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             253
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             254
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             255
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             256
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             260
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             261
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             262
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             263
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             264
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             265
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             267
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             268
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             269
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             273
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             275
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             277
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             279
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             281
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             283
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             287
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             288
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             289
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             290
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             291
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             292
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             298
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             300
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             302
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             306
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             307
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             308
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             309
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             311
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             313
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             317
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             318
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             319
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             320
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             324
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             325
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             326
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             327
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             328
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             329
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             333
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             334
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             338
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             339
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             340
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             341
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             342
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             344
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             345
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             346
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             347
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             349
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             350
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             351
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             353
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             354
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             355
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             366
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             368
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             370
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             371
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             372
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             377
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             378
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             380
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             382
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             387
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             388
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             389
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             390
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             395
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             396
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             397
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             398
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             399
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             404
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                             406
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                              6
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                             65
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                            126
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                            205
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                            218
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       14
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       24
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       38
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       40
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       42
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       44
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       45
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       46
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       50
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       52
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       53
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       55
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       56
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\portal-api.ts                                       58
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\zatca-qr.ts                                         66
+
+
+--- CODE QUALITY ---
+
+Path                                                                                                                   
+----                                                                                                                   
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Domain\Accounting\Services\CreditNoteService.php           
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Domain\Shared\Money.php                                    
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentAccountRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentAccountRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentAccountRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentAccountRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentCustomerRep...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentCustomerRep...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentInvoiceRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentInvoiceRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentInvoiceRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentJournalEntr...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentJournalEntr...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentPlanReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentPlanReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentPlanReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentPlanReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentPlanReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentProductRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentProductRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentProductRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentProductRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentProductRepo...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentPurchaseRep...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentPurchaseRep...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentSalesChanne...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentSalesChanne...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentSalesChanne...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentSalesChanne...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentSupplierRep...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentSupplierRep...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentUserReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentUserReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentUserReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\backend\app\Infrastructure\Eloquent\Repositories\EloquentUserReposit...
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\onboarding\page.tsx                          
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomersContent.tsx                 
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SuppliersContent.tsx                 
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\db.ts                                                 
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                                   
+
+
+--- DB MODELS ---
+
+Name                              
+----                              
+AccountModel.php                  
+ActivityLogModel.php              
+AttendanceModel.php               
+BaseModel.php                     
+BranchModel.php                   
+CentralModel.php                  
+CustomerModel.php                 
+CustomerPaymentModel.php          
+DeliveryModel.php                 
+DeliveryStatusLogModel.php        
+EmployeeModel.php                 
+ExpenseCategoryModel.php          
+ExpenseModel.php                  
+FixedAssetModel.php               
+InventoryAdjustmentItemModel.php  
+InventoryAdjustmentModel.php      
+InvoiceInstallmentModel.php       
+InvoiceItemModel.php              
+InvoiceModel.php                  
+JournalEntryLineModel.php         
+JournalEntryModel.php             
+LeaveModel.php                    
+PartnerAuditLogModel.php          
+PartnerModel.php                  
+PartnerProfitShareModel.php       
+PartnerWithdrawalModel.php        
+PaymentAllocationModel.php        
+PayrollModel.php                  
+PermissionModel.php               
+PlanModel.php                     
+ProductComponentModel.php         
+ProductModel.php                  
+ProductUnitModel.php              
+ProfitDistributionModel.php       
+PurchaseInvoiceItemModel.php      
+PurchaseInvoiceModel.php          
+PurchaseReturnItemModel.php       
+PurchaseReturnModel.php           
+QuotationItemModel.php            
+QuotationModel.php                
+RoleModel.php                     
+SafeModel.php                     
+SafeTransactionModel.php          
+SafeUserModel.php                 
+SalesChannelModel.php             
+SalesOrderItemModel.php           
+SalesOrderModel.php               
+SalesReturnItemModel.php          
+SalesReturnModel.php              
+ShippingInvoiceModel.php          
+StockMovementModel.php            
+StockTransferItemModel.php        
+StockTransferModel.php            
+SubscriptionModel.php             
+SupplierModel.php                 
+SupplierPaymentModel.php          
+TenantModel.php                   
+UserModel.php                     
+VoucherModel.php                  
+WarehouseModel.php                
+WarehouseProductModel.php         
+WebhookEndpointModel.php          
+WebhookLogModel.php               
+BankAccountModel.php              
+BankTransactionModel.php          
+CreditNoteModel.php               
+ReconciliationLineModel.php       
+ReconciliationModel.php           
+SupplierPaymentAllocationModel.php
+ApprovalAuditLogModel.php         
+ApprovalRequestModel.php          
+ApprovalRuleModel.php             
+CustomerInteractionModel.php      
+CustomerNoteModel.php             
+SalesFollowUpModel.php            
+StockLedgerModel.php              
+StockLotModel.php                 
+TenantScope.php                   
+
+
+--- MOCK DATA USAGE ---
+
+Path                                                                                                   LineNumber
+----                                                                                                   ----------
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\layout.tsx                  9
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\layout.tsx                 65
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\layout.tsx                 69
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\layout.tsx                118
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\layout.tsx                119
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\app\[locale]\dashboard\layout.tsx                127
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\auth\AuthGuard.tsx                     23
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\auth\AuthGuard.tsx                     31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomerModals.tsx           43
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomerModals.tsx           84
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\customers\CustomerModals.tsx           89
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\returns\ReturnsContent.tsx              9
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\sales\InvoicePrintTemplate.tsx        300
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SupplierModals.tsx           25
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\components\suppliers\SupplierModals.tsx           69
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                       410
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\api.ts                                       413
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                        3
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                       18
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                       19
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                       39
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                       58
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                       98
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      101
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      102
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      103
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      109
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      112
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      113
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      114
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      116
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      117
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      160
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      161
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      164
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      165
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      166
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      168
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      169
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      171
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      175
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      177
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      179
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      180
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      181
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      182
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      186
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      187
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      188
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      192
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      193
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      194
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      237
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      240
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      266
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      268
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\auth.ts                                      271
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                   2
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                   6
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                  17
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                  37
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                  42
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                  43
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                  44
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                  55
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mock-auth.ts                                  62
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\mockData.ts                                    1
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                            1
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                            3
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                            4
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                            6
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                            8
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           10
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           12
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           14
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           15
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           16
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           17
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           21
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           22
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           24
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           27
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           28
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           31
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           32
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           34
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           37
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           42
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           43
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           44
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           47
+D:\mohamed projects\erp\erp-v1-main\erp-v1-main\frontend\src\lib\setupMockAdapter.ts                           50
+
+
+--- TESTS ---
+
+Path
+----
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+

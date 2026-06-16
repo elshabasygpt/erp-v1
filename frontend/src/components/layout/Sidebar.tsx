@@ -19,6 +19,7 @@ const ICONS = {
     dashboard: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
     sales: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z',
     returns: 'M9 14l-4-4m0 0l4-4m-4 4h11.586a2 2 0 012 2v2a2 2 0 01-2 2H5',
+    warranty: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
     inventory: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
     movements: 'M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4',
     transfers: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
@@ -86,6 +87,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'shipping', path: '/shipping', iconKey: 'transfers', labelAr: 'الشحن السريع', labelEn: 'Shipping' },
             { key: 'deliveries', path: '/deliveries', iconKey: 'transfers', labelAr: 'إدارة التوصيل والمقادير', labelEn: 'Delivery Management' },
             { key: 'returns', path: '/returns', iconKey: 'returns', labelAr: 'المرتجعات والتلفيات', labelEn: 'Returns' },
+            { key: 'warranty', path: '/returns/warranty', iconKey: 'warranty', labelAr: 'إدارة الضمانات', labelEn: 'Warranty Management' },
         ],
     },
     {
