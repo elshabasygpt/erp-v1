@@ -204,9 +204,14 @@ class VehicleController extends BaseTenantController
     public function attachVehicle(Request $request, string $productId): JsonResponse
     {
         $validated = $request->validate([
-            'vehicle_year_id' => 'required|uuid|exists:tenant.vehicle_years,id',
+            'vehicle_year_id' => 'required|uuid',
             'notes' => 'nullable|string|max:255',
         ]);
+
+        $year = VehicleYearModel::find($validated['vehicle_year_id']);
+        if (!$year) {
+            return $this->error('Vehicle year not found', 404);
+        }
 
         $product = ProductModel::find($productId);
         if (!$product) {
