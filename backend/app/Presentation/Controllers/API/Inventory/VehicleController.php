@@ -150,13 +150,17 @@ class VehicleController extends BaseTenantController
             $productsQuery->with(['warehouseStocks' => function ($q) use ($warehouseId) {
                 $q->where('warehouse_id', $warehouseId)->select(['id', 'product_id', 'quantity as stock_quantity']);
             }]);
+        } else {
+            $productsQuery->with(['warehouseStocks' => function ($q) {
+                $q->select(['id', 'product_id', 'quantity as stock_quantity']);
+            }]);
         }
 
         $products = $productsQuery->get()->map(function ($product) {
             $productArray = $product->toArray();
             
             if (isset($productArray['warehouse_stocks']) && count($productArray['warehouse_stocks']) > 0) {
-                $productArray['stock_quantity'] = $productArray['warehouse_stocks'][0]['stock_quantity'];
+                $productArray['stock_quantity'] = array_sum(array_column($productArray['warehouse_stocks'], 'stock_quantity'));
             } else {
                 $productArray['stock_quantity'] = 0;
             }
