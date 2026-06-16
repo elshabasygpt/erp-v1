@@ -112,33 +112,24 @@ class VehicleController extends BaseTenantController
         $year = $request->query('year');
         $warehouseId = $request->query('warehouse_id');
 
-        $yearQuery = VehicleYearModel::where('is_active', true);
-        
-        if ($modelId) {
-            $yearQuery->where('model_id', $modelId);
-        } elseif ($makeId) {
-            $yearQuery->whereHas('vehicleModel', function ($q) use ($makeId) {
-                $q->where('make_id', $makeId);
-            });
-        }
-
-        if ($year) {
-            $year = (int) $year;
-            $yearQuery->where('year_from', '<=', $year)
-                      ->where(function ($q) use ($year) {
-                          $q->whereNull('year_to')->orWhere('year_to', '>=', $year);
-                      });
-        }
-
-        $vehicleYearIds = $yearQuery->pluck('id');
-
-        if ($vehicleYearIds->isEmpty()) {
-            return $this->success([]);
-        }
-
         $productsQuery = ProductModel::where('products.is_active', true)
-            ->whereHas('compatibleVehicles', function ($q) use ($vehicleYearIds) {
-                $q->whereIn('product_vehicle_compatibility.vehicle_year_id', $vehicleYearIds);
+            ->whereHas('compatibleVehicles', function ($q) use ($makeId, $modelId, $year) {
+                if ($modelId) {
+                    $q->where('vehicle_years.model_id', $modelId);
+                } elseif ($makeId) {
+                    $q->whereHas('vehicleModel', function ($modelQ) use ($makeId) {
+                        $modelQ->where('make_id', $makeId);
+                    });
+                }
+                
+                if ($year) {
+                    $yearInt = (int) $year;
+                    $q->where('vehicle_years.year_from', '<=', $yearInt)
+                      ->where(function ($yearQ) use ($yearInt) {
+                          $yearQ->whereNull('vehicle_years.year_to')
+                                ->orWhere('vehicle_years.year_to', '>=', $yearInt);
+                      });
+                }
             })
             ->leftJoin('warehouse_products', function ($join) use ($warehouseId) {
                 $join->on('products.id', '=', 'warehouse_products.product_id');
