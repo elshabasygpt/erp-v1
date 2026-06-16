@@ -59,7 +59,7 @@ class VehicleController extends BaseTenantController
     public function storeModel(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'make_id' => 'required|uuid|exists:tenant.vehicle_makes,id',
+            'make_id' => 'required|uuid',
             'name' => 'required|string|max:255',
             'name_ar' => 'required|string|max:255',
             'body_type' => 'nullable|string|max:50',
@@ -84,7 +84,7 @@ class VehicleController extends BaseTenantController
     public function storeYear(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'model_id' => 'required|uuid|exists:tenant.vehicle_models,id',
+            'model_id' => 'required|uuid',
             'year_from' => 'required|integer|min:1900|max:2030',
             'year_to' => 'nullable|integer|gte:year_from',
             'engine_size' => 'nullable|string|max:50',
