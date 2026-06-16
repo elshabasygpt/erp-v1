@@ -8,7 +8,6 @@ use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use App\Infrastructure\Eloquent\Models\VehicleMakeModel;
 use App\Infrastructure\Eloquent\Models\VehicleModelModel;
 use App\Infrastructure\Eloquent\Models\VehicleYearModel;
@@ -22,7 +21,7 @@ class VehicleController extends BaseTenantController
             ->withCount('models')
             ->get(['id', 'name', 'name_ar', 'logo_url']);
 
-        return response()->json($makes);
+        return $this->success($makes, 'Vehicle makes retrieved successfully');
     }
 
     public function getModels(Request $request, string $makeId): JsonResponse
@@ -35,7 +34,7 @@ class VehicleController extends BaseTenantController
             }])
             ->get(['id', 'name', 'name_ar', 'body_type']);
 
-        return response()->json($models);
+        return $this->success($models, 'Vehicle models retrieved successfully');
     }
 
     public function storeMake(Request $request): JsonResponse
@@ -47,17 +46,13 @@ class VehicleController extends BaseTenantController
         ]);
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
-            return VehicleMakeModel::create([
-                'id' => Str::uuid()->toString(),
-                'tenant_id' => $this->getTenantId($request),
-                'name' => $validated['name'],
-                'name_ar' => $validated['name_ar'],
-                'logo_url' => $validated['logo_url'],
-                'created_by' => $request->user()->id,
-            ]);
+            $data = $validated;
+            $data['tenant_id'] = $this->getTenantId($request);
+            $data['created_by'] = $request->user()?->id;
+            return VehicleMakeModel::create($data);
         });
 
-        return response()->json($make, 201);
+        return $this->success($make, 'Vehicle make created successfully', 201);
     }
 
     public function storeModel(Request $request): JsonResponse
@@ -69,47 +64,45 @@ class VehicleController extends BaseTenantController
             'body_type' => 'nullable|string|max:50',
         ]);
 
+        $make = VehicleMakeModel::find($validated['make_id']);
+        if (!$make) {
+            return $this->error('Make not found', 404);
+        }
+
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
-            return VehicleModelModel::create([
-                'id' => Str::uuid()->toString(),
-                'tenant_id' => $this->getTenantId($request),
-                'make_id' => $validated['make_id'],
-                'name' => $validated['name'],
-                'name_ar' => $validated['name_ar'],
-                'body_type' => $validated['body_type'],
-                'created_by' => $request->user()->id,
-            ]);
+            $data = $validated;
+            $data['tenant_id'] = $this->getTenantId($request);
+            $data['created_by'] = $request->user()?->id;
+            return VehicleModelModel::create($data);
         });
 
-        return response()->json($model, 201);
+        return $this->success($model, 'Vehicle model created successfully', 201);
     }
 
     public function storeYear(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'model_id' => 'required|uuid|exists:tenant.vehicle_models,id',
-            'year_from' => 'required|integer|min:1900|max:2100',
-            'year_to' => 'nullable|integer|min:1900|max:2100|gte:year_from',
+            'year_from' => 'required|integer|min:1900|max:2030',
+            'year_to' => 'nullable|integer|gte:year_from',
             'engine_size' => 'nullable|string|max:50',
             'engine_code' => 'nullable|string|max:100',
             'fuel_type' => 'nullable|in:petrol,diesel,hybrid,electric',
         ]);
 
+        $modelRec = VehicleModelModel::find($validated['model_id']);
+        if (!$modelRec) {
+            return $this->error('Model not found', 404);
+        }
+
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
-            return VehicleYearModel::create([
-                'id' => Str::uuid()->toString(),
-                'tenant_id' => $this->getTenantId($request),
-                'model_id' => $validated['model_id'],
-                'year_from' => $validated['year_from'],
-                'year_to' => $validated['year_to'] ?? null,
-                'engine_size' => $validated['engine_size'] ?? null,
-                'engine_code' => $validated['engine_code'] ?? null,
-                'fuel_type' => $validated['fuel_type'] ?? 'petrol',
-                'created_by' => $request->user()->id,
-            ]);
+            $data = $validated;
+            $data['tenant_id'] = $this->getTenantId($request);
+            $data['created_by'] = $request->user()?->id;
+            return VehicleYearModel::create($data);
         });
 
-        return response()->json($year, 201);
+        return $this->success($year, 'Vehicle year created successfully', 201);
     }
 
     public function searchByVehicle(Request $request): JsonResponse
@@ -119,7 +112,6 @@ class VehicleController extends BaseTenantController
         $year = $request->query('year');
         $warehouseId = $request->query('warehouse_id');
 
-        // Find valid vehicle year records
         $yearQuery = VehicleYearModel::where('is_active', true);
         
         if ($modelId) {
@@ -131,23 +123,22 @@ class VehicleController extends BaseTenantController
         }
 
         if ($year) {
+            $year = (int) $year;
             $yearQuery->where('year_from', '<=', $year)
                       ->where(function ($q) use ($year) {
-                          $q->where('year_to', '>=', $year)
-                            ->orWhereNull('year_to');
+                          $q->whereNull('year_to')->orWhere('year_to', '>=', $year);
                       });
         }
 
         $vehicleYearIds = $yearQuery->pluck('id');
 
         if ($vehicleYearIds->isEmpty()) {
-            return response()->json([]);
+            return $this->success([]);
         }
 
-        // Fetch products that have a pivot entry for these vehicle_year_ids
         $productsQuery = ProductModel::where('is_active', true)
             ->whereHas('compatibleVehicles', function ($q) use ($vehicleYearIds) {
-                $q->whereIn('vehicle_year_id', $vehicleYearIds);
+                $q->whereIn('product_vehicle_compatibility.vehicle_year_id', $vehicleYearIds);
             })
             ->select([
                 'id', 'name', 'name_ar', 'sku', 'barcode',
@@ -155,21 +146,23 @@ class VehicleController extends BaseTenantController
                 'sell_price', 'cost_price', 'vat_rate', 'image_url'
             ]);
 
-        // Eager load stock for the requested warehouse
         if ($warehouseId) {
             $productsQuery->with(['warehouseStocks' => function ($q) use ($warehouseId) {
-                $q->where('warehouse_id', $warehouseId)->select(['id', 'product_id', 'quantity']);
+                $q->where('warehouse_id', $warehouseId)->select(['id', 'product_id', 'quantity as stock_quantity']);
             }]);
         }
 
         $products = $productsQuery->get();
 
-        return response()->json($products);
+        return $this->success($products);
     }
 
     public function getProductCompatibility(Request $request, string $productId): JsonResponse
     {
-        $product = ProductModel::findOrFail($productId);
+        $product = ProductModel::find($productId);
+        if (!$product) {
+            return $this->error('Product not found', 404);
+        }
         
         $compatibleVehicles = $product->compatibleVehicles()->get()->map(function ($year) {
             return [
@@ -194,7 +187,7 @@ class VehicleController extends BaseTenantController
             ];
         });
 
-        return response()->json($compatibleVehicles);
+        return $this->success($compatibleVehicles);
     }
 
     public function attachVehicle(Request $request, string $productId): JsonResponse
@@ -204,31 +197,35 @@ class VehicleController extends BaseTenantController
             'notes' => 'nullable|string|max:255',
         ]);
 
-        $product = ProductModel::findOrFail($productId);
+        $product = ProductModel::find($productId);
+        if (!$product) {
+            return $this->error('Product not found', 404);
+        }
 
-        DB::connection('tenant')->transaction(function () use ($product, $validated, $request) {
-            $product->compatibleVehicles()->syncWithoutDetaching([
-                $validated['vehicle_year_id'] => [
-                    'id' => Str::uuid()->toString(),
-                    'tenant_id' => $this->getTenantId($request),
-                    'notes' => $validated['notes'] ?? null,
-                    'created_by' => $request->user()->id,
-                ]
-            ]);
-        });
+        DB::connection('tenant')->table('product_vehicle_compatibility')->updateOrInsert(
+            ['product_id' => $productId, 'vehicle_year_id' => $validated['vehicle_year_id']],
+            [
+                'tenant_id' => $this->getTenantId($request),
+                'notes' => $validated['notes'] ?? null,
+                'created_by' => $request->user()?->id,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]
+        );
 
-        return response()->json(['success' => true]);
+        return $this->success(null, 'Vehicle attached successfully');
     }
 
     public function detachVehicle(Request $request, string $productId, string $vehicleYearId): JsonResponse
     {
-        $product = ProductModel::findOrFail($productId);
+        $product = ProductModel::find($productId);
+        if (!$product) {
+            return $this->error('Product not found', 404);
+        }
         
-        DB::connection('tenant')->transaction(function () use ($product, $vehicleYearId) {
-            $product->compatibleVehicles()->detach($vehicleYearId);
-        });
+        $product->compatibleVehicles()->detach($vehicleYearId);
 
-        return response()->json(['success' => true]);
+        return $this->success(null, 'Vehicle detached successfully');
     }
 
     public function quickLookup(Request $request): JsonResponse
@@ -236,7 +233,7 @@ class VehicleController extends BaseTenantController
         $q = strtolower(trim($request->query('q', '')));
 
         if (empty($q)) {
-            return response()->json([]);
+            return $this->success([]);
         }
 
         $years = VehicleYearModel::with(['vehicleModel.make'])
@@ -270,6 +267,6 @@ class VehicleController extends BaseTenantController
             ];
         });
 
-        return response()->json($results);
+        return $this->success($results);
     }
 }
