@@ -214,6 +214,24 @@ export const inventoryApi = {
     getMovement: (id: string) => api.get(`/inventory/movements/${id}`),
     createMovement: (data: any) => api.post('/inventory/movements', data),
     getMovementsSummary: (params?: Record<string, any>) => api.get('/inventory/movements/summary', { params }),
+
+    // Vehicle Compatibility
+    vehicleMakes: () => api.get('/inventory/vehicles/makes'),
+    vehicleModels: (makeId: string) => api.get(`/inventory/vehicles/makes/${makeId}/models`),
+    vehicleQuickLookup: (q: string) => api.get('/inventory/vehicles/quick-lookup', { params: { q } }),
+    searchByVehicle: (params: { make_id?: string; model_id?: string; year?: number; warehouse_id?: string }) =>
+      api.get('/inventory/vehicles/search-by-vehicle', { params }),
+    getProductCompatibility: (productId: string) => api.get(`/inventory/vehicles/product/${productId}/compatibility`),
+    attachVehicle: (productId: string, data: { vehicle_year_id: string; notes?: string }) =>
+      api.post(`/inventory/vehicles/product/${productId}/compatibility`, data),
+    detachVehicle: (productId: string, vehicleYearId: string) =>
+      api.delete(`/inventory/vehicles/product/${productId}/compatibility/${vehicleYearId}`),
+    createMake: (data: { name: string; name_ar: string; logo_url?: string }) =>
+      api.post('/inventory/vehicles/makes', data),
+    createModel: (data: { make_id: string; name: string; name_ar: string; body_type?: string }) =>
+      api.post('/inventory/vehicles/models', data),
+    createYear: (data: { model_id: string; year_from: number; year_to?: number; engine_size?: string; engine_code?: string; fuel_type?: string }) =>
+      api.post('/inventory/vehicles/years', data),
 };
 
 export const crmApi = {

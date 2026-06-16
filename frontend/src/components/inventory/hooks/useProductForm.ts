@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import type { Product } from './useInventoryData';
 
 export function useProductForm(products: Product[], setProducts: any, groups: any[], setGroups: any, units: any[], setUnits: any, isRTL: boolean) {
-    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '' };
+    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', qualityGrade: '', countryOfOrigin: '' };
     const [form, setForm] = useState(emptyForm);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -20,7 +20,7 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
 
     const openEdit = useCallback((p: Product) => {
         setEditingProduct(p);
-        setForm({ code: p.code, name: p.name, nameAr: p.nameAr, barcode: p.barcode, mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '' });
+        setForm({ code: p.code, name: p.name, nameAr: p.nameAr, barcode: p.barcode, mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '' });
         setShowAddEdit(true);
     }, []);
 
@@ -42,6 +42,11 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                 unit_of_measure: form.unitId || null,
                 stock_alert_level: form.minStock,
                 is_active: true,
+                oem_number: form.oemNumber || null,
+                part_number: form.partNumber || null,
+                brand: form.brand || null,
+                quality_grade: form.qualityGrade || null,
+                country_of_origin: form.countryOfOrigin || null,
             };
 
             if (editingProduct) {
@@ -64,6 +69,11 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                         minStock: updated.stock_alert_level || form.minStock,
                         description: updated.description || form.description,
                         imageUrl: updated.image_url || form.imageUrl,
+                        oemNumber: updated.oem_number || form.oemNumber,
+                        partNumber: updated.part_number || form.partNumber,
+                        brand: updated.brand || form.brand,
+                        qualityGrade: updated.quality_grade || form.qualityGrade,
+                        countryOfOrigin: updated.country_of_origin || form.countryOfOrigin,
                     } : p));
                 }
             } else {
@@ -89,6 +99,11 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                         minStock: created.stock_alert_level || form.minStock,
                         description: created.description || form.description,
                         imageUrl: created.image_url || form.imageUrl,
+                        oemNumber: created.oem_number || form.oemNumber,
+                        partNumber: created.part_number || form.partNumber,
+                        brand: created.brand || form.brand,
+                        qualityGrade: created.quality_grade || form.qualityGrade,
+                        countryOfOrigin: created.country_of_origin || form.countryOfOrigin,
                     }, ...prev]);
                 }
             }

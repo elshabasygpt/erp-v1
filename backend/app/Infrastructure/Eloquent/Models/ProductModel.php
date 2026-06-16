@@ -16,6 +16,7 @@ class ProductModel extends BaseModel
         'name', 'name_ar', 'sku', 'barcode', 'cost_price',
         'sell_price', 'vat_rate', 'stock_alert_level', 'is_active',
         'category_id', 'unit_of_measure', 'description', 'image_url', 'is_favorite',
+        'oem_number', 'part_number', 'brand', 'quality_grade', 'country_of_origin',
         'created_by', 'updated_by',
     ];
 
@@ -41,5 +42,15 @@ class ProductModel extends BaseModel
     public function units()
     {
         return $this->hasMany(ProductUnitModel::class, 'product_id');
+    }
+
+    public function compatibleVehicles()
+    {
+        return $this->belongsToMany(
+            VehicleYearModel::class,
+            'product_vehicle_compatibility',
+            'product_id',
+            'vehicle_year_id'
+        )->with(['vehicleModel.make'])->withPivot('notes')->withTimestamps();
     }
 }

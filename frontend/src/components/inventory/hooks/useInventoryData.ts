@@ -9,6 +9,11 @@ export interface Product {
     costPrice: number; sellPrice: number; wholesalePrice: number; semiWholesalePrice: number;
     profitPercent: number; discount: number; stock: number; minStock: number; description: string;
     imageUrl?: string;
+    oemNumber?: string;
+    partNumber?: string;
+    brand?: string;
+    qualityGrade?: string;
+    countryOfOrigin?: string;
 }
 
 export function useInventoryData() {
@@ -77,7 +82,12 @@ export function useInventoryData() {
                 stock: p.warehouseStocks?.reduce((acc: number, ws: any) => acc + parseFloat(ws.quantity), 0) || 0,
                 minStock: p.stock_alert_level || 5,
                 description: p.description || '',
-                imageUrl: p.image_url || ''
+                imageUrl: p.image_url || '',
+                oemNumber: p.oem_number || '',
+                partNumber: p.part_number || '',
+                brand: p.brand || '',
+                qualityGrade: p.quality_grade || '',
+                countryOfOrigin: p.country_of_origin || ''
             })) as Product[];
         }
     });

@@ -1,6 +1,9 @@
 import React, { memo } from 'react';
 import type { MainGroup, Unit } from './InventoryModals';
 import type { Product } from './hooks/useInventoryData';
+import { ProductCompatibilityTab } from './ProductCompatibilityTab';
+
+type TabType = 'basic' | 'compatibility';
 
 interface InventoryFormModalProps {
     isRTL: boolean;
@@ -24,9 +27,15 @@ const InventoryFormModal = memo(function InventoryFormModal({
     saveProduct, generateBarcode, groups, units, setPromptModal, updateCostAndProfit
 }: InventoryFormModalProps) {
     if (!showAddEdit) return null;
-    
     const availableSubs = form.mainGroupId ? groups.find(g => g.id === form.mainGroupId)?.subGroups || [] : [];
     const lblCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
+
+    const [activeTab, setActiveTab] = React.useState<TabType>('basic');
+
+    // Reset tab when modal opens/closes
+    React.useEffect(() => {
+        if (showAddEdit) setActiveTab('basic');
+    }, [showAddEdit]);
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddEdit(false)}>
@@ -35,7 +44,27 @@ const InventoryFormModal = memo(function InventoryFormModal({
                     <div className="flex items-center gap-2"><span className="text-xl">{editingProduct ? '✏️' : '➕'}</span><h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{editingProduct ? inv.editProduct : inv.addProduct}</h2></div>
                     <button onClick={() => setShowAddEdit(false)} className="btn-icon"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
+                
+                {editingProduct && (
+                    <div className="px-5 pt-3 flex gap-4 border-b" style={{ borderColor: 'var(--border-default)' }}>
+                        <button 
+                            className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'basic' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                            onClick={() => setActiveTab('basic')}
+                        >
+                            {isRTL ? 'البيانات الأساسية' : 'Basic Info'}
+                        </button>
+                        <button 
+                            className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'compatibility' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                            onClick={() => setActiveTab('compatibility')}
+                        >
+                            {isRTL ? 'التوافق مع السيارات' : 'Vehicle Compatibility'}
+                        </button>
+                    </div>
+                )}
+
                 <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+                    {activeTab === 'basic' ? (
+                        <>
                     {/* Product Image Section */}
                     <div>
                         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
@@ -144,6 +173,39 @@ const InventoryFormModal = memo(function InventoryFormModal({
                             <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>{inv.minStock}</label>
                             <input type="number" min="0" className="input-field w-full" value={form.minStock} onChange={e => setForm((f:any) => ({ ...f, minStock: parseInt(e.target.value) || 0 }))} />
                         </div>
+                        
+                        {/* Auto Parts Fields */}
+                        <div className="col-span-1 md:col-span-2 border-t pt-4 mt-2" style={{ borderColor: 'var(--border-default)' }}>
+                            <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'بيانات قطع الغيار' : 'Auto Parts Info'}</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>OEM Number</label>
+                                    <input className="input-field w-full font-mono" value={form.oemNumber || ''} onChange={e => setForm((f:any) => ({ ...f, oemNumber: e.target.value }))} placeholder="e.g. 1122334455" />
+                                </div>
+                                <div>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Part Number (PN)</label>
+                                    <input className="input-field w-full font-mono" value={form.partNumber || ''} onChange={e => setForm((f:any) => ({ ...f, partNumber: e.target.value }))} />
+                                </div>
+                                <div>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Brand</label>
+                                    <input className="input-field w-full" value={form.brand || ''} onChange={e => setForm((f:any) => ({ ...f, brand: e.target.value }))} placeholder="e.g. Bosch, Denso..." />
+                                </div>
+                                <div>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Quality Grade</label>
+                                    <select className="select-field w-full" value={form.qualityGrade || ''} onChange={e => setForm((f:any) => ({ ...f, qualityGrade: e.target.value }))}>
+                                        <option value="">{isRTL ? 'غير محدد' : 'Unspecified'}</option>
+                                        <option value="original">{isRTL ? 'أصلي' : 'Original'}</option>
+                                        <option value="oem">OEM</option>
+                                        <option value="aftermarket">{isRTL ? 'بديل' : 'Aftermarket'}</option>
+                                        <option value="used">{isRTL ? 'مستعمل' : 'Used'}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Country of Origin</label>
+                                    <input className="input-field w-full" value={form.countryOfOrigin || ''} onChange={e => setForm((f:any) => ({ ...f, countryOfOrigin: e.target.value }))} placeholder="e.g. Japan, Germany..." />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="p-4 rounded-xl border border-dashed" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-secondary)' }}>
@@ -183,10 +245,16 @@ const InventoryFormModal = memo(function InventoryFormModal({
                         <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>{inv.description}</label>
                         <textarea className="input-field w-full min-h-[80px] resize-y" value={form.description} onChange={e => setForm((f:any) => ({ ...f, description: e.target.value }))} />
                     </div>
+                        </>
+                    ) : (
+                        <ProductCompatibilityTab productId={editingProduct!.id} isRTL={isRTL} />
+                    )}
                 </div>
                 <div className="p-5 border-t flex justify-end gap-3" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-secondary)' }}>
                     <button onClick={() => setShowAddEdit(false)} className="btn-secondary px-6">{common.cancel}</button>
-                    <button onClick={saveProduct} disabled={!form.name && !form.nameAr} className="btn-primary px-8 disabled:opacity-50">{common.save}</button>
+                    {activeTab === 'basic' && (
+                        <button onClick={saveProduct} disabled={!form.name && !form.nameAr} className="btn-primary px-8 disabled:opacity-50">{common.save}</button>
+                    )}
                 </div>
             </div>
         </div>

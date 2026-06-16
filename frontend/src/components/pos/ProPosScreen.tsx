@@ -17,6 +17,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { PosSidebar } from './PosSidebar';
 import { PosProductGrid } from './PosProductGrid';
+import { VehicleSearchPanel } from './VehicleSearchPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CartItem {
@@ -127,6 +128,9 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     const [showReturnModal,   setShowReturnModal]   = useState(false);
     const [returnSearchQuery, setReturnSearchQuery] = useState('');
     const [isSearchingReturn, setIsSearchingReturn] = useState(false);
+    
+    // Vehicle Search Panel
+    const [showVehicleSearch, setShowVehicleSearch] = useState(false);
     
     const searchRef = useRef<HTMLInputElement>(null);
     const barcodeBuffer = useRef('');
@@ -738,11 +742,15 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 </header>
 
                 {/* SEARCH BAR */}
-                <div className="h-16 border-b border-slate-200 dark:border-white/5 px-8 flex items-center bg-slate-50/80 dark:bg-[#0d0d14] shrink-0 z-10 backdrop-blur-md">
+                <div className="h-16 border-b border-slate-200 dark:border-white/5 px-8 flex items-center gap-4 bg-slate-50/80 dark:bg-[#0d0d14] shrink-0 z-10 backdrop-blur-md">
                     <div className="flex-1 relative group w-full">
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-white/30 group-focus-within:text-blue-500 transition-colors" />
                         <input ref={searchRef} type="text" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder={isRTL ? "البحث بالاسم أو مسح الباركود (F5)..." : "Search or scan barcode (F5)..."} className="w-full h-12 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl text-sm font-bold pl-14 pr-6 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-800 dark:text-white shadow-sm placeholder:text-slate-400 dark:placeholder:text-white/30" />
                     </div>
+                    <button onClick={() => setShowVehicleSearch(true)} className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-2 font-bold transition-all shadow-lg shadow-blue-600/30 whitespace-nowrap active:scale-95">
+                        <Car className="w-5 h-5" />
+                        {isRTL ? 'بحث بالسيارة' : 'Search By Car'}
+                    </button>
                 </div>
 
                 <div className="flex-1 flex min-h-0 overflow-hidden">
@@ -876,6 +884,18 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     </div>
                 </div>
             )}
+
+            {/* Vehicle Search Panel */}
+            <VehicleSearchPanel
+                isOpen={showVehicleSearch}
+                onClose={() => setShowVehicleSearch(false)}
+                onAddToCart={(product) => {
+                    addToCart(product);
+                    setShowVehicleSearch(false);
+                }}
+                warehouseId={activeTab?.warehouseId || null}
+                locale={locale}
+            />
 
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar{display:none;}.no-scrollbar{-ms-overflow-style:none;scrollbar-width:none;}
