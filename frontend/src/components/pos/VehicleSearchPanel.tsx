@@ -34,7 +34,7 @@ export function VehicleSearchPanel({
 
   // Load makes on mount
   useEffect(() => {
-    inventoryApi.vehicleMakes().then((res) => setMakes(res.data)).catch(console.error);
+    inventoryApi.vehicleMakes().then((res) => setMakes(res.data?.data || res.data)).catch(console.error);
   }, []);
 
   // Load models when make changes
@@ -44,7 +44,7 @@ export function VehicleSearchPanel({
     setModels([]);
     setYears([]);
     if (selectedMake) {
-      inventoryApi.vehicleModels(selectedMake).then((res) => setModels(res.data)).catch(console.error);
+      inventoryApi.vehicleModels(selectedMake).then((res) => setModels(res.data?.data || res.data)).catch(console.error);
     }
   }, [selectedMake]);
 
@@ -79,7 +79,7 @@ export function VehicleSearchPanel({
     setLoading(true);
     try {
       const res = await inventoryApi.searchByVehicle(params);
-      setProducts(res.data);
+      setProducts(res.data?.data || res.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -94,7 +94,7 @@ export function VehicleSearchPanel({
     setLoading(true);
     try {
       const res = await inventoryApi.searchProducts(oemSearch);
-      setProducts(res.data);
+      setProducts(res.data?.data || res.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -230,7 +230,7 @@ export function VehicleSearchPanel({
             <div className="space-y-3">
               {products.map(p => {
                 const badge = getQualityBadge(p.quality_grade);
-                const stockQty = p.warehouseStocks?.reduce((sum: number, ws: any) => sum + Number(ws.quantity), 0) || 0;
+                const stockQty = p.stock_quantity !== undefined ? Number(p.stock_quantity) : (p.warehouseStocks?.reduce((sum: number, ws: any) => sum + Number(ws.quantity), 0) || 0);
                 
                 return (
                   <div key={p.id} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">

@@ -261,15 +261,22 @@ class VehicleController extends BaseTenantController
             return $this->success([]);
         }
 
+        $terms = explode(' ', strtolower(trim($q)));
+
         $years = VehicleYearModel::with(['vehicleModel.make'])
             ->where('is_active', true)
-            ->whereHas('vehicleModel', function ($modelQ) use ($q) {
-                $modelQ->where(DB::raw('LOWER(name)'), 'LIKE', "%{$q}%")
-                       ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$q}%")
-                       ->orWhereHas('make', function ($makeQ) use ($q) {
-                           $makeQ->where(DB::raw('LOWER(name)'), 'LIKE', "%{$q}%")
-                                 ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$q}%");
-                       });
+            ->whereHas('vehicleModel', function ($modelQ) use ($terms) {
+                foreach ($terms as $term) {
+                    if (empty(trim($term))) continue;
+                    $modelQ->where(function ($subQ) use ($term) {
+                        $subQ->where(DB::raw('LOWER(name)'), 'LIKE', "%{$term}%")
+                             ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$term}%")
+                             ->orWhereHas('make', function ($makeQ) use ($term) {
+                                 $makeQ->where(DB::raw('LOWER(name)'), 'LIKE', "%{$term}%")
+                                       ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$term}%");
+                             });
+                    });
+                }
             })
             ->limit(20)
             ->get();

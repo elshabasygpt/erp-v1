@@ -24,7 +24,7 @@ export function ProductCompatibilityTab({ productId, isRTL }: ProductCompatibili
     setLoading(true);
     try {
       const res = await inventoryApi.getProductCompatibility(productId);
-      setCompatibleVehicles(res.data);
+      setCompatibleVehicles(res.data?.data || res.data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -41,7 +41,7 @@ export function ProductCompatibilityTab({ productId, isRTL }: ProductCompatibili
     setSearching(true);
     try {
       const res = await inventoryApi.vehicleQuickLookup(val);
-      setSearchResults(res.data);
+      setSearchResults(res.data?.data || res.data);
     } catch (e) {
       console.error(e);
     } finally {
