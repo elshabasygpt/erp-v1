@@ -76,7 +76,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     {
         $query = ProductModel::select([
             'id', 'name', 'name_ar', 'sku', 'barcode', 'cost_price', 
-            'sell_price', 'is_active', 'unit_of_measure', 'category_id',
+            'sell_price', 'wholesale_price', 'semi_wholesale_price', 'is_active', 'unit_of_measure', 'category_id',
             'description', 'image_url', 'stock_alert_level', 'tenant_id'
         ])->with(['warehouseStocks', 'units']);
         if (!empty($filters['search'])) {
@@ -170,6 +170,8 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             barcode: $model->barcode,
             costPrice: (float) $model->cost_price,
             sellPrice: (float) $model->sell_price,
+            wholesalePrice: (float) $model->wholesale_price,
+            semiWholesalePrice: (float) $model->semi_wholesale_price,
             vatRate: (float) $model->vat_rate,
             stockAlertLevel: $model->stock_alert_level,
             isActive: $model->is_active,

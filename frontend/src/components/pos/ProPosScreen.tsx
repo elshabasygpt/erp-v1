@@ -46,9 +46,9 @@ const PRICE_LEVELS = [
 ];
 
 function getProductPrice(product: any, level: PriceLevel): number {
-    const retail = parseFloat(product.sell_price || product.price || 0);
-    if (level === 'wholesale')      return parseFloat(product.wholesale_price      || '') || retail * 0.80;
-    if (level === 'half_wholesale') return parseFloat(product.half_wholesale_price || '') || retail * 0.90;
+    const retail = parseFloat(product.sellPrice || product.sell_price || product.price || 0);
+    if (level === 'wholesale')      return parseFloat(product.wholesalePrice || product.wholesale_price || '') || retail * 0.80;
+    if (level === 'half_wholesale') return parseFloat(product.semiWholesalePrice || product.semi_wholesale_price || '') || retail * 0.90;
     return retail;
 }
 

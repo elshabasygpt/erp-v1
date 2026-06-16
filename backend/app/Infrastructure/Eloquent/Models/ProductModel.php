@@ -14,7 +14,7 @@ class ProductModel extends BaseModel
 
     protected $fillable = [
         'name', 'name_ar', 'sku', 'barcode', 'cost_price',
-        'sell_price', 'vat_rate', 'stock_alert_level', 'is_active',
+        'sell_price', 'wholesale_price', 'semi_wholesale_price', 'vat_rate', 'stock_alert_level', 'is_active',
         'category_id', 'unit_of_measure', 'description', 'image_url', 'is_favorite',
         'oem_number', 'part_number', 'brand', 'quality_grade', 'country_of_origin',
         'created_by', 'updated_by',
@@ -23,6 +23,8 @@ class ProductModel extends BaseModel
     protected $casts = [
         'cost_price' => 'decimal:2',
         'sell_price' => 'decimal:2',
+        'wholesale_price' => 'decimal:2',
+        'semi_wholesale_price' => 'decimal:2',
         'vat_rate' => 'decimal:2',
         'stock_alert_level' => 'integer',
         'is_active' => 'boolean',

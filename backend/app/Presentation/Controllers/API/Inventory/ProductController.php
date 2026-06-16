@@ -56,6 +56,8 @@ class ProductController extends BaseTenantController
             'name_ar' => 'nullable|string',
             'description' => 'nullable|string',
             'selling_price' => 'required|numeric|min:0',
+            'wholesale_price' => 'nullable|numeric|min:0',
+            'semi_wholesale_price' => 'nullable|numeric|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
             'tax_rate' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
@@ -76,6 +78,13 @@ class ProductController extends BaseTenantController
         if (isset($validated['selling_price'])) $validated['sell_price'] = $validated['selling_price'];
         if (isset($validated['purchase_price'])) $validated['cost_price'] = $validated['purchase_price'];
         if (isset($validated['tax_rate'])) $validated['vat_rate'] = $validated['tax_rate'];
+
+        if (!isset($validated['wholesale_price']) && isset($validated['sell_price'])) {
+            $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 2);
+        }
+        if (!isset($validated['semi_wholesale_price']) && isset($validated['sell_price'])) {
+            $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 2);
+        }
         
         $validated['tenant_id'] = $this->getTenantId($request);
         $product = ProductModel::create($validated);
@@ -105,6 +114,8 @@ class ProductController extends BaseTenantController
             'name_ar' => 'nullable|string',
             'description' => 'nullable|string',
             'selling_price' => 'sometimes|required|numeric|min:0',
+            'wholesale_price' => 'nullable|numeric|min:0',
+            'semi_wholesale_price' => 'nullable|numeric|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
             'tax_rate' => 'nullable|numeric|min:0',
             'is_active' => 'boolean',
@@ -123,6 +134,13 @@ class ProductController extends BaseTenantController
         if (isset($validated['selling_price'])) $validated['sell_price'] = $validated['selling_price'];
         if (isset($validated['purchase_price'])) $validated['cost_price'] = $validated['purchase_price'];
         if (isset($validated['tax_rate'])) $validated['vat_rate'] = $validated['tax_rate'];
+
+        if (!isset($validated['wholesale_price']) && isset($validated['sell_price'])) {
+            $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 2);
+        }
+        if (!isset($validated['semi_wholesale_price']) && isset($validated['sell_price'])) {
+            $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 2);
+        }
 
         $product->update($validated);
         
@@ -160,9 +178,10 @@ class ProductController extends BaseTenantController
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $tenantId = $this->getTenantId($request);
             
-            // Store in public/uploads/products/
-            $destinationPath = public_path('uploads/products');
+            // Store in public/uploads/tenant_{id}/products/
+            $destinationPath = public_path('uploads/tenant_' . $tenantId . '/products');
             if (!file_exists($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
             }
@@ -170,7 +189,7 @@ class ProductController extends BaseTenantController
             $file->move($destinationPath, $filename);
             
             // Build absolute URL
-            $url = $request->getSchemeAndHttpHost() . '/uploads/products/' . $filename;
+            $url = $request->getSchemeAndHttpHost() . '/uploads/tenant_' . $tenantId . '/products/' . $filename;
             
             return $this->success(['image_url' => $url], 'Image uploaded successfully');
         }

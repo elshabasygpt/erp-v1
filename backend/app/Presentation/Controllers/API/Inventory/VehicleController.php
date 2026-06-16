@@ -59,10 +59,10 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
             $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/vehicles/makes');
+            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes');
             if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
             $file->move($destinationPath, $filename);
-            $validated['logo_url'] = '/uploads/vehicles/makes/' . $filename;
+            $validated['logo_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes/' . $filename;
         }
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -94,10 +94,10 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/vehicles/models');
+            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models');
             if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
             $file->move($destinationPath, $filename);
-            $validated['image_url'] = '/uploads/vehicles/models/' . $filename;
+            $validated['image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models/' . $filename;
         }
 
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -131,10 +131,10 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('engine_image')) {
             $file = $request->file('engine_image');
             $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/vehicles/years');
+            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years');
             if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
             $file->move($destinationPath, $filename);
-            $validated['engine_image_url'] = '/uploads/vehicles/years/' . $filename;
+            $validated['engine_image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years/' . $filename;
         }
 
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -162,10 +162,10 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
             $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/vehicles/makes');
+            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes');
             if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
             $file->move($destinationPath, $filename);
-            $validated['logo_url'] = '/uploads/vehicles/makes/' . $filename;
+            $validated['logo_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes/' . $filename;
         }
 
         $make->update($validated);
@@ -187,10 +187,10 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/vehicles/models');
+            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models');
             if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
             $file->move($destinationPath, $filename);
-            $validated['image_url'] = '/uploads/vehicles/models/' . $filename;
+            $validated['image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models/' . $filename;
         }
 
         $modelRec->update($validated);
@@ -214,10 +214,10 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('engine_image')) {
             $file = $request->file('engine_image');
             $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/vehicles/years');
+            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years');
             if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
             $file->move($destinationPath, $filename);
-            $validated['engine_image_url'] = '/uploads/vehicles/years/' . $filename;
+            $validated['engine_image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years/' . $filename;
         }
 
         $yearRec->update($validated);
@@ -264,13 +264,13 @@ class VehicleController extends BaseTenantController
             ->select([
                 'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
                 'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
-                'products.sell_price', 'products.cost_price', 'products.vat_rate', 'products.image_url',
+                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url',
                 DB::raw('COALESCE(SUM(warehouse_products.quantity), 0) as stock_quantity')
             ])
             ->groupBy([
                 'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
                 'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
-                'products.sell_price', 'products.cost_price', 'products.vat_rate', 'products.image_url'
+                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url'
             ]);
 
         $products = $productsQuery->get();
