@@ -136,38 +136,29 @@ class VehicleController extends BaseTenantController
             return $this->success([]);
         }
 
-        $productsQuery = ProductModel::where('is_active', true)
+        $productsQuery = ProductModel::where('products.is_active', true)
             ->whereHas('compatibleVehicles', function ($q) use ($vehicleYearIds) {
                 $q->whereIn('product_vehicle_compatibility.vehicle_year_id', $vehicleYearIds);
             })
+            ->leftJoin('warehouse_products', function ($join) use ($warehouseId) {
+                $join->on('products.id', '=', 'warehouse_products.product_id');
+                if ($warehouseId) {
+                    $join->where('warehouse_products.warehouse_id', '=', $warehouseId);
+                }
+            })
             ->select([
-                'id', 'name', 'name_ar', 'sku', 'barcode',
-                'oem_number', 'part_number', 'brand', 'quality_grade',
-                'sell_price', 'cost_price', 'vat_rate', 'image_url'
+                'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
+                'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
+                'products.sell_price', 'products.cost_price', 'products.vat_rate', 'products.image_url',
+                DB::raw('COALESCE(SUM(warehouse_products.quantity), 0) as stock_quantity')
+            ])
+            ->groupBy([
+                'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
+                'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
+                'products.sell_price', 'products.cost_price', 'products.vat_rate', 'products.image_url'
             ]);
 
-        if ($warehouseId) {
-            $productsQuery->with(['warehouseStocks' => function ($q) use ($warehouseId) {
-                $q->where('warehouse_id', $warehouseId)->select(['id', 'product_id', 'quantity as stock_quantity']);
-            }]);
-        } else {
-            $productsQuery->with(['warehouseStocks' => function ($q) {
-                $q->select(['id', 'product_id', 'quantity as stock_quantity']);
-            }]);
-        }
-
-        $products = $productsQuery->get()->map(function ($product) {
-            $productArray = $product->toArray();
-            
-            if (isset($productArray['warehouse_stocks']) && count($productArray['warehouse_stocks']) > 0) {
-                $productArray['stock_quantity'] = array_sum(array_column($productArray['warehouse_stocks'], 'stock_quantity'));
-            } else {
-                $productArray['stock_quantity'] = 0;
-            }
-            
-            unset($productArray['warehouse_stocks']);
-            return $productArray;
-        });
+        $products = $productsQuery->get();
 
         return $this->success($products);
     }
