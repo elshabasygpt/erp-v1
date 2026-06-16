@@ -85,14 +85,14 @@ class VehicleDataSeeder extends Seeder
 
             foreach ($makeData['models'] as $modelData) {
                 $model = VehicleModelModel::create([
-                    'make_id' => $make->make_id,
+                    'make_id' => $make->id,
                     'name' => $modelData['name'],
                     'name_ar' => $modelData['name_ar'],
                 ]);
 
                 foreach ($modelData['years'] as $yearData) {
                     VehicleYearModel::create([
-                        'model_id' => $model->model_id,
+                        'model_id' => $model->id,
                         'year_from' => $yearData['year_from'],
                         'year_to' => $yearData['year_to'],
                         'engine_size' => $yearData['engine_size'],
