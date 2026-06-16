@@ -152,7 +152,18 @@ class VehicleController extends BaseTenantController
             }]);
         }
 
-        $products = $productsQuery->get();
+        $products = $productsQuery->get()->map(function ($product) {
+            $productArray = $product->toArray();
+            
+            if (isset($productArray['warehouse_stocks']) && count($productArray['warehouse_stocks']) > 0) {
+                $productArray['stock_quantity'] = $productArray['warehouse_stocks'][0]['stock_quantity'];
+            } else {
+                $productArray['stock_quantity'] = 0;
+            }
+            
+            unset($productArray['warehouse_stocks']);
+            return $productArray;
+        });
 
         return $this->success($products);
     }
@@ -202,16 +213,30 @@ class VehicleController extends BaseTenantController
             return $this->error('Product not found', 404);
         }
 
-        DB::connection('tenant')->table('product_vehicle_compatibility')->updateOrInsert(
-            ['product_id' => $productId, 'vehicle_year_id' => $validated['vehicle_year_id']],
-            [
+        $existing = DB::connection('tenant')->table('product_vehicle_compatibility')
+            ->where('product_id', $productId)
+            ->where('vehicle_year_id', $validated['vehicle_year_id'])
+            ->first();
+
+        if ($existing) {
+            DB::connection('tenant')->table('product_vehicle_compatibility')
+                ->where('id', $existing->id)
+                ->update([
+                    'notes' => $validated['notes'] ?? null,
+                    'updated_at' => now()
+                ]);
+        } else {
+            DB::connection('tenant')->table('product_vehicle_compatibility')->insert([
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
                 'tenant_id' => $this->getTenantId($request),
+                'product_id' => $productId,
+                'vehicle_year_id' => $validated['vehicle_year_id'],
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => $request->user()?->id,
                 'created_at' => now(),
                 'updated_at' => now()
-            ]
-        );
+            ]);
+        }
 
         return $this->success(null, 'Vehicle attached successfully');
     }
