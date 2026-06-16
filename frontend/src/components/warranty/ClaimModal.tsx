@@ -20,7 +20,7 @@ export default function ClaimModal({ warranty, isOpen, onClose, onSuccess, local
     });
     const [loading, setLoading] = useState(false);
 
-    if (!isOpen) return null;
+    if (!isOpen || !warranty) return null;
 
     const handleSubmit = async () => {
         if (!form.complaint) {

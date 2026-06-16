@@ -11,7 +11,7 @@ interface WarrantyDetailModalProps {
 }
 
 export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale, onOpenClaim }: WarrantyDetailModalProps) {
-    if (!isOpen) return null;
+    if (!isOpen || !warranty) return null;
     const isRTL = locale === 'ar';
 
     return (

@@ -38,7 +38,7 @@ function AnimatedNumber({ value, format }: { value: number; format: (v: number) 
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setDisplayValue(Math.round(value * eased));
+            setDisplayValue(Math.round((Number(value) || 0) * eased));
             if (progress < 1) requestAnimationFrame(animate);
         };
         requestAnimationFrame(animate);
@@ -347,7 +347,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                     axisLine={false} 
                                     tickLine={false} 
                                     tick={{fontSize: 10, fill: 'var(--text-muted)'}}
-                                    tickFormatter={(val) => val.split('-').slice(1).join('/')}
+                                    tickFormatter={(val) => val ? String(val).split('-').slice(1).join('/') : ''}
                                 />
                                 <YAxis 
                                     axisLine={false} 
@@ -447,7 +447,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                             <tbody>
                                 {invoices.length > 0 ? invoices.map((inv) => (
                                     <tr key={inv.id}>
-                                        <td className="font-medium text-sm" style={{ color: 'var(--color-primary)' }}>{inv.number || inv.id.substring(0,8)}</td>
+                                        <td className="font-medium text-sm" style={{ color: 'var(--color-primary)' }}>{inv.invoice_number || inv.number || inv.id?.substring(0,8) || '---'}</td>
                                         <td className="text-sm" style={{ color: 'var(--text-primary)' }}>{inv.customer?.name || (isRTL ? 'عميل نقدي' : 'Cash Customer')}</td>
                                         <td className="text-sm" style={{ color: 'var(--text-primary)' }}>{formatCurrency(Number(inv.total_amount || 0))}</td>
                                         <td>
@@ -492,7 +492,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                             <tbody>
                                 {purchases.length > 0 ? purchases.map((po) => (
                                     <tr key={po.id}>
-                                        <td className="font-medium text-sm" style={{ color: 'var(--color-primary)' }}>{po.number || po.id.substring(0,8)}</td>
+                                        <td className="font-medium text-sm" style={{ color: 'var(--color-primary)' }}>{po.invoice_number || po.number || po.id?.substring(0,8) || '---'}</td>
                                         <td className="text-sm" style={{ color: 'var(--text-primary)' }}>{po.supplier?.name || '---'}</td>
                                         <td className="text-sm" style={{ color: 'var(--text-primary)' }}>{formatCurrency(Number(po.total_amount || 0))}</td>
                                         <td>
@@ -641,8 +641,8 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                     <SectionHeader title={dict.dashboard.topProducts} href="/inventory" icon="🏷️" />
                     <div className="space-y-3 mt-2">
                         {topProducts.length > 0 ? topProducts.map((p: any, i: number) => {
-                            const maxSales = topProducts[0].total_sold || 1;
-                            const pctVal = Math.round((p.total_sold / maxSales) * 100);
+                            const maxSales = topProducts[0]?.total_sold || 1;
+                            const pctVal = Math.round((Number(p.total_sold || 0) / maxSales) * 100) || 0;
                             const colors = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
                             return (
                                 <div key={i} className="flex items-center gap-3">
