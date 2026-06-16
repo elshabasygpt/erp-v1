@@ -55,6 +55,7 @@ interface DashboardContentProps {
 
 export default function DashboardContent({ dict, locale }: DashboardContentProps) {
     const isRTL = locale === 'ar';
+    const [mounted, setMounted] = useState(false);
     const [currentTime, setCurrentTime] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -171,8 +172,19 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
         };
         tick();
         const id = setInterval(tick, 1000);
+        
+        setMounted(true);
+        
         return () => clearInterval(id);
     }, [isRTL]);
+
+    if (!mounted) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', {
