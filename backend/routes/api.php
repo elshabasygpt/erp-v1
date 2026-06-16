@@ -11,6 +11,7 @@ use App\Presentation\Controllers\API\CRM\SupplierController;
 use App\Presentation\Controllers\API\Purchases\PurchaseController;
 use App\Presentation\Controllers\API\Partnerships\PartnerController;
 use App\Presentation\Controllers\API\Partnerships\ProfitDistributionController;
+use App\Presentation\Controllers\API\Inventory\VehicleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -188,16 +189,16 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
 
         // Vehicle Compatibility
         Route::prefix('vehicles')->group(function () {
-            Route::get('/makes', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'getMakes']);
-            Route::post('/makes', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'storeMake']);
-            Route::get('/makes/{makeId}/models', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'getModels']);
-            Route::post('/models', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'storeModel']);
-            Route::post('/years', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'storeYear']);
-            Route::get('/search-by-vehicle', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'searchByVehicle']);
-            Route::get('/quick-lookup', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'quickLookup']);
-            Route::get('/product/{productId}/compatibility', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'getProductCompatibility']);
-            Route::post('/product/{productId}/compatibility', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'attachVehicle']);
-            Route::delete('/product/{productId}/compatibility/{vehicleYearId}', [\App\Presentation\Controllers\API\Inventory\VehicleController::class, 'detachVehicle']);
+            Route::get('/makes/{makeId}/models', [VehicleController::class, 'getModels']);
+            Route::get('/makes', [VehicleController::class, 'getMakes']);
+            Route::post('/makes', [VehicleController::class, 'storeMake']);
+            Route::post('/models', [VehicleController::class, 'storeModel']);
+            Route::post('/years', [VehicleController::class, 'storeYear']);
+            Route::get('/search-by-vehicle', [VehicleController::class, 'searchByVehicle']);
+            Route::get('/quick-lookup', [VehicleController::class, 'quickLookup']);
+            Route::get('/product/{productId}/compatibility', [VehicleController::class, 'getProductCompatibility']);
+            Route::post('/product/{productId}/compatibility', [VehicleController::class, 'attachVehicle']);
+            Route::delete('/product/{productId}/compatibility/{vehicleYearId}', [VehicleController::class, 'detachVehicle']);
         });
     });
 

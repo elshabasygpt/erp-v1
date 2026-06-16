@@ -46,10 +46,11 @@ class VehicleController extends BaseTenantController
         ]);
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
-            $data = $validated;
-            $data['tenant_id'] = $this->getTenantId($request);
-            $data['created_by'] = $request->user()?->id;
-            return VehicleMakeModel::create($data);
+            $make = new VehicleMakeModel($validated);
+            $make->tenant_id = $this->getTenantId($request);
+            $make->created_by = $request->user()?->id;
+            $make->save();
+            return $make;
         });
 
         return $this->success($make, 'Vehicle make created successfully', 201);
@@ -70,10 +71,11 @@ class VehicleController extends BaseTenantController
         }
 
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
-            $data = $validated;
-            $data['tenant_id'] = $this->getTenantId($request);
-            $data['created_by'] = $request->user()?->id;
-            return VehicleModelModel::create($data);
+            $modelRecord = new VehicleModelModel($validated);
+            $modelRecord->tenant_id = $this->getTenantId($request);
+            $modelRecord->created_by = $request->user()?->id;
+            $modelRecord->save();
+            return $modelRecord;
         });
 
         return $this->success($model, 'Vehicle model created successfully', 201);
@@ -96,10 +98,11 @@ class VehicleController extends BaseTenantController
         }
 
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
-            $data = $validated;
-            $data['tenant_id'] = $this->getTenantId($request);
-            $data['created_by'] = $request->user()?->id;
-            return VehicleYearModel::create($data);
+            $yearRecord = new VehicleYearModel($validated);
+            $yearRecord->tenant_id = $this->getTenantId($request);
+            $yearRecord->created_by = $request->user()?->id;
+            $yearRecord->save();
+            return $yearRecord;
         });
 
         return $this->success($year, 'Vehicle year created successfully', 201);
