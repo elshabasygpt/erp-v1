@@ -49,6 +49,7 @@ class VehicleController extends BaseTenantController
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
             return VehicleMakeModel::create([
                 'id' => Str::uuid()->toString(),
+                'tenant_id' => $this->getTenantId($request),
                 'name' => $validated['name'],
                 'name_ar' => $validated['name_ar'],
                 'logo_url' => $validated['logo_url'],
@@ -71,6 +72,7 @@ class VehicleController extends BaseTenantController
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
             return VehicleModelModel::create([
                 'id' => Str::uuid()->toString(),
+                'tenant_id' => $this->getTenantId($request),
                 'make_id' => $validated['make_id'],
                 'name' => $validated['name'],
                 'name_ar' => $validated['name_ar'],
@@ -96,6 +98,7 @@ class VehicleController extends BaseTenantController
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
             return VehicleYearModel::create([
                 'id' => Str::uuid()->toString(),
+                'tenant_id' => $this->getTenantId($request),
                 'model_id' => $validated['model_id'],
                 'year_from' => $validated['year_from'],
                 'year_to' => $validated['year_to'] ?? null,
