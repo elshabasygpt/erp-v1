@@ -13,11 +13,7 @@ use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryModel;
-use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryLineModel;
-use App\Infrastructure\Eloquent\Models\Treasury\TransactionModel;
-use App\Infrastructure\Eloquent\Models\Treasury\SafeModel;
-use App\Infrastructure\Eloquent\Models\Accounting\ChartOfAccountModel;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 

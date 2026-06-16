@@ -10,11 +10,11 @@ use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryModel;
-use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryLineModel;
-use App\Infrastructure\Eloquent\Models\Treasury\TransactionModel;
-use App\Infrastructure\Eloquent\Models\Treasury\SafeModel;
-use App\Infrastructure\Eloquent\Models\Accounting\ChartOfAccountModel;
+use App\Infrastructure\Eloquent\Models\JournalEntryModel;
+use App\Infrastructure\Eloquent\Models\JournalEntryLineModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\AccountModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -58,10 +58,10 @@ class ConfirmSalesReturnUseCase
             }
 
             // 3. Accounting Reversal (Double Entry)
-            $salesReturnsAccount = ChartOfAccountModel::where('code', '4102')->first();
-            $vatPayableAccount = ChartOfAccountModel::where('code', '2105')->first();
-            $receivablesAccount = ChartOfAccountModel::where('code', '1103')->first();
-            $cashAccount = ChartOfAccountModel::where('code', '1101')->first();
+            $salesReturnsAccount = AccountModel::where('code', '4102')->first();
+            $vatPayableAccount = AccountModel::where('code', '2105')->first();
+            $receivablesAccount = AccountModel::where('code', '1103')->first();
+            $cashAccount = AccountModel::where('code', '1101')->first();
 
             if ($salesReturnsAccount && $vatPayableAccount && ($receivablesAccount || $cashAccount)) {
                 $je = JournalEntryModel::create([
@@ -128,7 +128,7 @@ class ConfirmSalesReturnUseCase
             if (in_array($salesReturn->refund_method, ['cash', 'card', 'bank_transfer'])) {
                 $safe = SafeModel::where('is_active', true)->first();
                 if ($safe) {
-                    TransactionModel::create([
+                    SafeTransactionModel::create([
                         'id' => Str::uuid()->toString(),
                         'safe_id' => $safe->id,
                         'type' => 'expense',
@@ -136,7 +136,7 @@ class ConfirmSalesReturnUseCase
                         'reference_id' => $salesReturn->id,
                         'reference_type' => 'sales_return',
                         'description' => "Refund for Sales Return " . $salesReturn->return_number,
-                        'date' => now(),
+                        'transaction_date' => now(),
                         'created_by' => $userId,
                     ]);
                     $safe->balance -= $salesReturn->total;
