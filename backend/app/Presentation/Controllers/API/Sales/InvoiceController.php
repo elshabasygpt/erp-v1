@@ -283,5 +283,39 @@ class InvoiceController extends BaseTenantController
         return $this->success($report, 'Sales report generated');
     }
 
+    private function _createWarrantiesForInvoice(string $invoiceId): void
+    {
+        $invoice = InvoiceModel::with('items.product')->find($invoiceId);
+        if (!$invoice) return;
+
+        foreach ($invoice->items as $item) {
+            $product = $item->product;
+            if ($product && $product->warranty_months > 0) {
+                $exists = \App\Infrastructure\Eloquent\Models\WarrantyModel::where('invoice_id', $invoice->id)
+                            ->where('product_id', $product->id)
+                            ->exists();
+                
+                if (!$exists) {
+                    $lastWarranty = \App\Infrastructure\Eloquent\Models\WarrantyModel::latest('created_at')->first();
+                    $lastNum = $lastWarranty ? ((int) str_replace('WRN-', '', $lastWarranty->warranty_number)) : 0;
+                    $warrantyNumber = 'WRN-' . str_pad((string)($lastNum + 1), 6, '0', STR_PAD_LEFT);
+
+                    \App\Infrastructure\Eloquent\Models\WarrantyModel::create([
+                        'id' => Str::uuid()->toString(),
+                        'tenant_id' => $invoice->tenant_id,
+                        'warranty_number' => $warrantyNumber,
+                        'invoice_id' => $invoice->id,
+                        'customer_id' => $invoice->customer_id,
+                        'product_id' => $product->id,
+                        'sale_date' => $invoice->invoice_date,
+                        'warranty_months' => $product->warranty_months,
+                        'expiry_date' => \Carbon\Carbon::parse($invoice->invoice_date)->addMonths($product->warranty_months),
+                        'status' => 'active',
+                        'created_by' => auth()->id() ?? $invoice->created_by,
+                    ]);
+                }
+            }
+        }
+    }
 }
 

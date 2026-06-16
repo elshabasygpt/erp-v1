@@ -78,7 +78,8 @@ class WarrantyController extends BaseTenantController
         ]);
 
         $expiryDate = Carbon::parse($validated['sale_date'])->addMonths($validated['warranty_months']);
-        $lastNum = WarrantyModel::max(DB::raw("CAST(SUBSTRING(warranty_number, 5) AS INTEGER)")) ?? 0;
+        $lastWarranty = WarrantyModel::latest('created_at')->first();
+        $lastNum = $lastWarranty ? ((int) str_replace('WRN-', '', $lastWarranty->warranty_number)) : 0;
         $warrantyNumber = 'WRN-' . str_pad((string)($lastNum + 1), 6, '0', STR_PAD_LEFT);
 
         $warranty = new WarrantyModel($validated);
@@ -146,7 +147,8 @@ class WarrantyController extends BaseTenantController
             return $this->error('انتهت مدة الضمان في ' . $warranty->expiry_date->format('Y-m-d'), 422);
         }
 
-        $lastClaimNum = WarrantyClaimModel::max(DB::raw("CAST(SUBSTRING(claim_number, 5) AS INTEGER)")) ?? 0;
+        $lastClaim = WarrantyClaimModel::latest('created_at')->first();
+        $lastClaimNum = $lastClaim ? ((int) str_replace('CLM-', '', $lastClaim->claim_number)) : 0;
         $claimNumber = 'CLM-' . str_pad((string)($lastClaimNum + 1), 6, '0', STR_PAD_LEFT);
 
         $claim = DB::connection('tenant')->transaction(function () use ($validated, $warranty, $claimNumber, $request) {
