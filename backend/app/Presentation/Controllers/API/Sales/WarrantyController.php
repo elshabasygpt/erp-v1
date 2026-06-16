@@ -16,6 +16,14 @@ class WarrantyController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
+        $tenantId = $this->getTenantId($request);
+        
+        // Dynamically update expired warranties
+        WarrantyModel::where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->where('expiry_date', '<', Carbon::today())
+            ->update(['status' => 'expired']);
+
         $query = WarrantyModel::with([
             'product:id,name,name_ar,sku,brand', 
             'customer:id,name,phone', 
@@ -198,6 +206,12 @@ class WarrantyController extends BaseTenantController
     public function report(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
+        
+        // Dynamically update expired warranties
+        WarrantyModel::where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->where('expiry_date', '<', Carbon::today())
+            ->update(['status' => 'expired']);
         
         $totalActive = WarrantyModel::where('tenant_id', $tenantId)->where('status', 'active')->count();
         $expiringThisMonth = WarrantyModel::where('tenant_id', $tenantId)

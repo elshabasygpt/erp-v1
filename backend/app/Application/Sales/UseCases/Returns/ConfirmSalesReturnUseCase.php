@@ -43,9 +43,19 @@ class ConfirmSalesReturnUseCase
             $salesReturn->approval_status = 'approved';
             $salesReturn->save();
 
-            // 2. Process Items and Inventory Reversal
             // 2. Process Items and Inventory Reversal using SalesReturnService
             $this->salesReturnService->processInventoryReturn($salesReturn->tenant_id, $salesReturn, $userId);
+
+            // Void related warranties for the returned items
+            foreach ($salesReturn->items as $item) {
+                \App\Infrastructure\Eloquent\Models\WarrantyModel::where('invoice_id', $salesReturn->invoice_id)
+                    ->where('product_id', $item->product_id)
+                    ->whereIn('status', ['active', 'claimed'])
+                    ->update([
+                        'status' => 'void',
+                        'notes' => DB::raw("CONCAT(COALESCE(notes, ''), '\nVoided due to Sales Return: {$salesReturn->return_number}')")
+                    ]);
+            }
 
             // 3. Accounting Reversal (Double Entry)
             $salesReturnsAccount = ChartOfAccountModel::where('code', '4102')->first();
