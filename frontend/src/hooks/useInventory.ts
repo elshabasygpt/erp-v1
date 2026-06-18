@@ -27,3 +27,52 @@ export function useInventoryDashboard() {
         }
     });
 }
+export function useInventoryWarehouses(params?: any) {
+    return useQuery({
+        queryKey: ['inventoryWarehouses', params],
+        queryFn: async () => {
+            const res = await inventoryApi.getWarehouses(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
+
+export function useInventoryCategories(params?: any) {
+    return useQuery({
+        queryKey: ['inventoryCategories', params],
+        queryFn: async () => {
+            const res = await inventoryApi.getCategories(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
+
+export function useInventoryUnits(params?: any) {
+    return useQuery({
+        queryKey: ['inventoryUnits', params],
+        queryFn: async () => {
+            const res = await inventoryApi.getUnits(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
+
+export function useStockTransfers(params?: any) {
+    return useQuery({
+        queryKey: ['stockTransfers', params],
+        queryFn: async () => {
+            const res = await inventoryApi.getStockTransfers(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
+
+export function useInventoryMovements(params?: any) {
+    return useQuery({
+        queryKey: ['inventoryMovements', params],
+        queryFn: async () => {
+            const res = await inventoryApi.getMovements(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}

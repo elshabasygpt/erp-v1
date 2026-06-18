@@ -43,3 +43,43 @@ export function useExpenses() {
         }
     });
 }
+
+export function useJournalEntries(params?: any) {
+    return useQuery({
+        queryKey: ['journalEntries', params],
+        queryFn: async () => {
+            const res = await accountingApi.getJournalEntries(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
+
+export function useAccounts(params?: any) {
+    return useQuery({
+        queryKey: ['accounts', params],
+        queryFn: async () => {
+            const res = await accountingApi.getAccounts(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
+
+export function useCostCenters(params?: any) {
+    return useQuery({
+        queryKey: ['costCenters', params],
+        queryFn: async () => {
+            const res = await accountingApi.getCostCenters(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
+
+export function useCurrencies(params?: any) {
+    return useQuery({
+        queryKey: ['currencies', params],
+        queryFn: async () => {
+            const res = await accountingApi.getCurrencies(params);
+            return res.data?.data || res.data || [];
+        }
+    });
+}
