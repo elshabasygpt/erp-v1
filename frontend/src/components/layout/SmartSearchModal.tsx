@@ -60,7 +60,7 @@ export default function SmartSearchModal({ isOpen, onClose, locale, dict }: Smar
                     setProducts(res.data.data.data.slice(0, 5));
                 }
             } catch (error) {
-                console.error('Failed to search products', error);
+
             } finally {
                 setLoading(false);
             }

@@ -25,7 +25,7 @@ export function PosAlternativesModal({ product, isRTL, onClose, onAddAlternative
       const data = res.data?.data || res.data;
       setAlternatives(data);
     } catch (e) {
-      console.error(e);
+
     } finally {
       setLoading(false);
     }

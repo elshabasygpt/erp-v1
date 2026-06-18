@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { salesApi, crmApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface ShippingModalProps {
     dict: any;
@@ -34,7 +35,7 @@ export default function ShippingModal({ dict, locale, onClose }: ShippingModalPr
                 const res = await salesApi.getInvoices();
                 setInvoices(res.data?.data?.data || res.data?.data || []);
             } catch (error) {
-                console.error("Failed to load invoices", error);
+
             }
         };
         loadInvoices();
@@ -47,7 +48,7 @@ export default function ShippingModal({ dict, locale, onClose }: ShippingModalPr
     }, [invoiceQuery, invoices]);
 
     const handleSave = async () => {
-        if (!selectedInvoice) return alert(isRTL ? "يرجى اختيار فاتورة" : "Please select an invoice");
+        if (!selectedInvoice) return toast.error(isRTL ? "يرجى اختيار فاتورة" : "Please select an invoice");
         setSaving(true);
         try {
             const payload = {
@@ -63,7 +64,7 @@ export default function ShippingModal({ dict, locale, onClose }: ShippingModalPr
             await salesApi.createShippingInvoice(payload);
             onClose();
         } catch (error) {
-            console.error("Shipping save failed", error);
+
         }
         setSaving(false);
     };

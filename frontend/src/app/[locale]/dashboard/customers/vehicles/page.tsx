@@ -15,7 +15,7 @@ export default function CustomerVehiclesPage({ params: { locale } }: { params: {
             const res = await crmApi.searchVehicleByPlate(query);
             setVehicles(res.data?.data || []);
         } catch (error) {
-            console.error('Failed to load vehicles', error);
+
         } finally {
             setLoading(false);
         }

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { salesApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface ClaimModalProps {
     warranty: any;
@@ -24,7 +25,7 @@ export default function ClaimModal({ warranty, isOpen, onClose, onSuccess, local
 
     const handleSubmit = async () => {
         if (!form.complaint) {
-            alert(isRTL ? "يرجى كتابة وصف العطل" : "Please describe the complaint");
+            toast.error(isRTL ? "يرجى كتابة وصف العطل" : "Please describe the complaint");
             return;
         }
 
@@ -37,8 +38,8 @@ export default function ClaimModal({ warranty, isOpen, onClose, onSuccess, local
             });
             onSuccess();
         } catch (err) {
-            console.error(err);
-            alert(isRTL ? "حدث خطأ أثناء تسجيل المطالبة" : "Failed to log claim");
+
+            toast.error(isRTL ? "حدث خطأ أثناء تسجيل المطالبة" : "Failed to log claim");
         } finally {
             setLoading(false);
         }

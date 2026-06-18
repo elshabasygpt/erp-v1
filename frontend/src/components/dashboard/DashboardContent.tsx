@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import { salesApi, inventoryApi, purchasesApi, crmApi } from '@/lib/api';
 import { useDashboardData } from '@/hooks/useDashboard';
+import toast from 'react-hot-toast';
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -155,13 +156,13 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
             const res = await analyticsApi.autoDraftPurchaseOrder(defaultWarehouse);
             if (res.data.data.status === 'success') {
                 // We could invalidate queries here if we passed queryClient down
-                alert(isRTL ? 'تم إنشاء مسودة فاتورة مشتريات ذكية بنجاح!' : 'Smart Purchase Order Drafted Successfully!');
+                toast.success(isRTL ? 'تم إنشاء مسودة فاتورة مشتريات ذكية بنجاح!' : 'Smart Purchase Order Drafted Successfully!');
             } else {
-                alert(isRTL ? 'المخزون بوضع ممتاز، لا داعي للطلب.' : 'Inventory is healthy, no orders needed.');
+                toast.error(isRTL ? 'المخزون بوضع ممتاز، لا داعي للطلب.' : 'Inventory is healthy, no orders needed.');
             }
         } catch (err) {
-            console.error(err);
-            alert(isRTL ? 'حدث خطأ أثناء الإنشاء الذكي' : 'Error generating smart PO');
+
+            toast.error(isRTL ? 'حدث خطأ أثناء الإنشاء الذكي' : 'Error generating smart PO');
         } finally {
             setIsDraftingPO(false);
         }
@@ -177,7 +178,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
             const res = await inventoryApi.getProducts({ search: searchQuery, limit: 10 });
             setSearchResults(res.data?.data || []);
         } catch (err) {
-            console.error(err);
+
         } finally {
             setIsSearching(false);
         }

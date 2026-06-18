@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { salesApi, inventoryApi, crmApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface POSItem {
     id: number;
@@ -59,7 +60,7 @@ export default function QuotationModal({ dict, locale, onClose }: QuotationModal
                 setProducts(pRes.data?.data?.data || pRes.data?.data || []);
                 setCustomers(cRes.data?.data?.data || cRes.data?.data || []);
             } catch (error) {
-                console.error("Failed to load Quotation data", error);
+
             }
             setFetchingData(false);
         };
@@ -98,7 +99,7 @@ export default function QuotationModal({ dict, locale, onClose }: QuotationModal
     };
 
     const handleSave = async () => {
-        if (items.length === 0) return alert(isRTL ? "يرجى إضافة أصناف" : "Please add items");
+        if (items.length === 0) return toast.error(isRTL ? "يرجى إضافة أصناف" : "Please add items");
         setSaving(true);
         try {
             const payload = {
@@ -117,7 +118,7 @@ export default function QuotationModal({ dict, locale, onClose }: QuotationModal
             await salesApi.createQuotation(payload);
             onClose();
         } catch (error) {
-            console.error("Quotation save failed", error);
+
         }
         setSaving(false);
     };

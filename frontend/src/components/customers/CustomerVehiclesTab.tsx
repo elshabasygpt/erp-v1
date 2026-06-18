@@ -29,7 +29,7 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
         setLoading(true);
         crmApi.getCustomerVehicles(customerId)
             .then(res => setVehicles(res.data?.data || []))
-            .catch(err => console.error(err))
+            .catch(err => {})
             .finally(() => setLoading(false));
     };
 
@@ -53,7 +53,7 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
             await crmApi.deleteCustomerVehicle(customerId, id);
             loadVehicles();
         } catch (error) {
-            console.error('Failed to delete vehicle', error);
+
         }
     };
 
@@ -68,7 +68,7 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
             const res = await crmApi.getVehicleServiceHistory(customerId, vehicle.id);
             setHistoryData(res.data?.data || null);
         } catch (error) {
-            console.error('Failed to load history', error);
+
         } finally {
             setHistoryLoading(false);
         }

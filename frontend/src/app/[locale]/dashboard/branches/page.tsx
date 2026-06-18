@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { inventoryApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function BranchesPage() {
     const [branches, setBranches] = useState<any[]>([]);
@@ -17,7 +18,7 @@ export default function BranchesPage() {
             const res = await inventoryApi.getBranches();
             setBranches(res.data.data.branches || []);
         } catch (error) {
-            console.error('Failed to load branches', error);
+
         } finally {
             setIsLoading(false);
         }
@@ -41,8 +42,8 @@ export default function BranchesPage() {
             setEditingId(null);
             loadBranches();
         } catch (error) {
-            console.error('Failed to save branch', error);
-            alert('Error saving branch');
+
+            toast.error('Error saving branch');
         } finally {
             setIsSubmitting(false);
         }
@@ -54,8 +55,8 @@ export default function BranchesPage() {
             await inventoryApi.deleteBranch(id);
             loadBranches();
         } catch (error) {
-            console.error('Failed to delete branch', error);
-            alert('Cannot delete default branch or branch in use.');
+
+            toast.error('Cannot delete default branch or branch in use.');
         }
     };
 

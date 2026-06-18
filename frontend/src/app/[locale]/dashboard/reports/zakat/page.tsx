@@ -48,7 +48,7 @@ export default function ZakatReportPage() {
           setAccounts(res.data.data || []);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {});
 
     // Fetch saved settings
     settingsApi.getSettings()
@@ -65,10 +65,10 @@ export default function ZakatReportPage() {
             if (z.selectedFixedAssets) setSelectedFixedAssets(z.selectedFixedAssets);
             if (z.selectedProvisions) setSelectedProvisions(z.selectedProvisions);
         }
-      }).catch(err => console.error("Could not load settings", err));
+      }).catch(err => {});
       
     // Fetch safes for payment
-    treasuryApi.getSafes().then(res => setSafes(res.data?.data || [])).catch(e => console.error(e));
+    treasuryApi.getSafes().then(res => setSafes(res.data?.data || [])).catch(e => {});
   }, []);
 
   const saveSettings = async () => {

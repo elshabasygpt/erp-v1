@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { accountingApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function AccountingSettingsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -31,7 +32,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
             const res = await accountingApi.getAccountMappings();
             setMappings(res.data?.data || []);
         } catch (error) {
-            console.error('Error loading mappings', error);
+
         }
     };
 
@@ -40,7 +41,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
             const res = await accountingApi.getChartOfAccounts();
             setChartOfAccounts(res.data?.data || []);
         } catch (error) {
-            console.error('Error loading COA', error);
+
         }
     };
 
@@ -54,9 +55,9 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
                 }))
             };
             await accountingApi.updateAccountMappings(payload);
-            alert(isRTL ? 'تم حفظ الربط المحاسبي بنجاح' : 'Account mappings saved successfully');
+            toast.success(isRTL ? 'تم حفظ الربط المحاسبي بنجاح' : 'Account mappings saved successfully');
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error saving mappings');
+            toast.error(error?.response?.data?.message || 'Error saving mappings');
         } finally {
             setSavingMappings(false);
         }
@@ -72,7 +73,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
             const res = await accountingApi.listFiscalPeriods();
             setPeriods(res.data?.data || []);
         } catch (error) {
-            console.error('Error loading periods', error);
+
         } finally {
             setLoadingPeriods(false);
         }
@@ -85,7 +86,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
             setNewPeriod({ name: '', start_date: '', end_date: '' });
             loadPeriods();
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error creating period');
+            toast.error(error?.response?.data?.message || 'Error creating period');
         }
     };
 
@@ -99,7 +100,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
             }
             loadPeriods();
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error updating status');
+            toast.error(error?.response?.data?.message || 'Error updating status');
         }
     };
 

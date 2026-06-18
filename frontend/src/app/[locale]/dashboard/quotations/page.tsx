@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { salesApi, customersApi, productsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const STATUS_STYLES: Record<string, string> = {
     draft:    'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
@@ -69,7 +70,7 @@ export default function QuotationsPage() {
             else { await salesApi.createQuotation(form); }
             setIsModalOpen(false);
             fetch();
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error saving quotation'); }
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error saving quotation'); }
     };
 
     const handleStatusChange = async (id: string, status: string) => {
@@ -90,8 +91,8 @@ export default function QuotationsPage() {
             });
             await salesApi.updateQuotationStatus(q.id, 'accepted');
             fetch();
-            alert('Invoice created successfully!');
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error converting'); }
+            toast.success('Invoice created successfully!');
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error converting'); }
     };
 
     const addItem = () => setForm((f: any) => ({ ...f, items: [...f.items, { product_id: '', quantity: 1, unit_price: 0, vat_rate: 15 }] }));

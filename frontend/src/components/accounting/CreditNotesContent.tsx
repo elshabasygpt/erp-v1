@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { accountingApi, crmApi, salesApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function CreditNotesContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -30,7 +31,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
             const res = await accountingApi.getCreditNotes();
             setCreditNotes(res.data?.data || []);
         } catch (error) {
-            console.error(error);
+
         } finally {
             setLoading(false);
         }
@@ -41,7 +42,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
             const res = await crmApi.getCustomers();
             setCustomers(res.data?.data || []);
         } catch (error) {
-            console.error(error);
+
         }
     };
 
@@ -53,7 +54,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
             setForm({ customer_id: '', amount: 0, reason: '', date: new Date().toISOString().split('T')[0] });
             loadCreditNotes();
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error creating credit note');
+            toast.error(error?.response?.data?.message || 'Error creating credit note');
         }
     };
 
@@ -67,7 +68,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
             const res = await salesApi.getInvoices({ customer_id: note.customer_id, status: 'unpaid' });
             setInvoices(res.data?.data || []);
         } catch (error) {
-            console.error(error);
+
         }
     };
 
@@ -79,7 +80,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
             setIsApplyModalOpen(false);
             loadCreditNotes();
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error applying credit note');
+            toast.error(error?.response?.data?.message || 'Error applying credit note');
         }
     };
 

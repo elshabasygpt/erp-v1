@@ -22,7 +22,7 @@ export default function TaskDetailModal({ task, isRTL, onClose, onRefresh, onEdi
             await tasksApi.updateStatus(task.id, newStatus);
             onRefresh();
         } catch (error) {
-            console.error(error);
+
         }
     };
 
@@ -33,7 +33,7 @@ export default function TaskDetailModal({ task, isRTL, onClose, onRefresh, onEdi
             onRefresh();
             onClose();
         } catch (error) {
-            console.error(error);
+
         }
     };
 
@@ -47,7 +47,7 @@ export default function TaskDetailModal({ task, isRTL, onClose, onRefresh, onEdi
             setComment('');
             onRefresh();
         } catch (error) {
-            console.error(error);
+
         } finally {
             setLoading(false);
         }

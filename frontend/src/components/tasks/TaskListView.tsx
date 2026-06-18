@@ -24,7 +24,7 @@ export default function TaskListView({ tasks, isRTL, onRefresh, setDetailTask, s
             await tasksApi.updateStatus(task.id, newStatus);
             onRefresh();
         } catch (error) {
-            console.error(error);
+
         }
     };
 
@@ -34,7 +34,7 @@ export default function TaskListView({ tasks, isRTL, onRefresh, setDetailTask, s
             await tasksApi.deleteTask(id);
             onRefresh();
         } catch (error) {
-            console.error(error);
+
         }
     };
 

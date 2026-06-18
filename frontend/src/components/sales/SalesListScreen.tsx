@@ -69,7 +69,7 @@ export default function SalesListScreen() {
       setTotalPages(res.data.meta?.last_page || 1);
       setTotalItems(res.data.meta?.total || 0);
     } catch (error) {
-      console.error('Failed to fetch invoices', error);
+
     } finally {
       setLoading(false);
     }

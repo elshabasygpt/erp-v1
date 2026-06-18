@@ -32,7 +32,7 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
             setSummary(summaryRes.data.data);
             setEmployees(empRes.data.data.data || empRes.data.data);
         } catch (error) {
-            console.error('Error fetching loans data:', error);
+
         } finally {
             setLoading(false);
         }
@@ -72,7 +72,7 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
             const res = await hrApi.getLoan(id);
             setSelectedLoan(res.data.data);
         } catch (error) {
-            console.error(error);
+
         }
     };
 

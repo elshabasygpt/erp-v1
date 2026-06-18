@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { inventoryApi, crmApi, settingsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export interface CartItem {
     product: any;
@@ -133,7 +134,7 @@ export function usePosState(isRTL: boolean) {
     }, [activeIdx]);
 
     const handleNewTab = useCallback(() => {
-        if (sessions.length >= 8) return alert(isRTL ? 'الحد الأقصى للتبويبات هو 8' : 'Maximum 8 tabs allowed');
+        if (sessions.length >= 8) return toast.error(isRTL ? 'الحد الأقصى للتبويبات هو 8' : 'Maximum 8 tabs allowed');
         setSessions(prev => [...prev, createEmptySession(prev.length + 1, isRTL)]);
         setActiveIdx(sessions.length);
     }, [sessions.length, isRTL]);

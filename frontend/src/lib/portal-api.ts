@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 // Separate axios instance for the Partner Portal
 const portalApi = axios.create({
@@ -62,7 +63,7 @@ export const portalDataApi = {
             newWindow.document.write(res.data);
             newWindow.document.close();
         } else {
-            alert('يرجى السماح بالنوافذ المنبثقة (Pop-ups) لعرض كشف الحساب');
+            toast.error('يرجى السماح بالنوافذ المنبثقة (Pop-ups) لعرض كشف الحساب');
         }
     },
 };

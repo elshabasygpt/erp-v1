@@ -41,7 +41,7 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
             setCategories(catsRes.data?.data || catsRes.data || []);
             setUsers(usersRes.data || []);
         } catch (error) {
-            console.error('Failed to fetch tasks', error);
+
         } finally {
             setLoading(false);
         }

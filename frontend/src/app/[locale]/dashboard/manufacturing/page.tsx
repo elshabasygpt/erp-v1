@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { inventoryApi, productsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function ManufacturingPage() {
     const { isRTL } = useLanguage();
@@ -49,8 +50,8 @@ export default function ManufacturingPage() {
         try {
             await inventoryApi.setBOM(selectedProduct.id, { components: bomComponents });
             await loadBom(selectedProduct.id);
-            alert(isRTL ? 'تم حفظ وصفة الإنتاج بنجاح' : 'BOM saved successfully!');
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error saving BOM'); }
+            toast.success(isRTL ? 'تم حفظ وصفة الإنتاج بنجاح' : 'BOM saved successfully!');
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error saving BOM'); }
         finally { setSavingBom(false); }
     };
 
@@ -60,8 +61,8 @@ export default function ManufacturingPage() {
         try {
             await inventoryApi.assemble({ product_id: selectedProduct.id, quantity: qty });
             setHistory(prev => [...prev, { product: selectedProduct.name, qty, date: new Date().toLocaleString() }]);
-            alert(isRTL ? `تم تصنيع ${qty} وحدة من "${selectedProduct.name}" بنجاح!` : `Successfully produced ${qty} unit(s) of "${selectedProduct.name}"!`);
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error assembling'); }
+            toast.success(isRTL ? `تم تصنيع ${qty} وحدة من "${selectedProduct.name}" بنجاح!` : `Successfully produced ${qty} unit(s) of "${selectedProduct.name}"!`);
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error assembling'); }
         finally { setAssembling(false); }
     };
 

@@ -36,7 +36,7 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
             const res = await salesApi.getWarranties(params);
             setWarranties(res.data?.data?.data || []);
         } catch (err) {
-            console.error(err);
+
         } finally {
             setLoading(false);
         }
@@ -58,7 +58,7 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
             setSelectedWarranty(res.data?.data);
             setIsDetailModalOpen(true);
         } catch (error) {
-            console.error("Error fetching warranty details", error);
+
         }
     };
 

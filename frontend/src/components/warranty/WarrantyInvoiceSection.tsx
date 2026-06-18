@@ -14,7 +14,7 @@ export default function WarrantyInvoiceSection({ invoiceId, locale }: { invoiceI
                 const res = await salesApi.getInvoiceWarranties(invoiceId);
                 setWarranties(res.data?.data || []);
             } catch (error) {
-                console.error("Error fetching invoice warranties", error);
+
             } finally {
                 setLoading(false);
             }

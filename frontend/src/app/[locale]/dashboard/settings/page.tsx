@@ -8,6 +8,7 @@ import SalesChannelsSettings from '@/components/settings/SalesChannelsSettings';
 import BarcodeSettingsSection from '@/components/settings/BarcodeSettingsSection';
 import InvoiceSettingsSection from '@/components/settings/InvoiceSettingsSection';
 import { useSidebar, type SidebarMode } from '@/providers/SidebarProvider';
+import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
     const params = useParams();
@@ -58,9 +59,9 @@ export default function SettingsPage() {
         try {
             setSavingHr(true);
             await settingsApi.updateHrManagerEmail(hrEmail);
-            alert(isRTL ? 'تم حفظ إيميل المسؤول بنجاح' : 'HR Manager Email saved successfully');
+            toast.success(isRTL ? 'تم حفظ إيميل المسؤول بنجاح' : 'HR Manager Email saved successfully');
         } catch (e) {
-            alert(isRTL ? 'حدث خطأ' : 'Error saving email');
+            toast.error(isRTL ? 'حدث خطأ' : 'Error saving email');
         } finally {
             setSavingHr(false);
         }
@@ -74,7 +75,7 @@ export default function SettingsPage() {
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
         } catch {
-            alert(isRTL ? 'حدث خطأ أثناء حفظ الإعدادات' : 'Error saving settings');
+            toast.error(isRTL ? 'حدث خطأ أثناء حفظ الإعدادات' : 'Error saving settings');
         } finally {
             setSaving(false);
         }

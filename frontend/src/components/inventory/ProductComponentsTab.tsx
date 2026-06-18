@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api';
 import type { Product } from './hooks/useInventoryData';
+import toast from 'react-hot-toast';
 
 interface ProductComponentsTabProps {
     productId: string;
@@ -44,7 +45,7 @@ export function ProductComponentsTab({ productId, isRTL }: ProductComponentsTabP
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['product_components', productId] });
-            alert(isRTL ? 'تم حفظ الطقم بنجاح' : 'Kit components saved successfully');
+            toast.success(isRTL ? 'تم حفظ الطقم بنجاح' : 'Kit components saved successfully');
         }
     });
 

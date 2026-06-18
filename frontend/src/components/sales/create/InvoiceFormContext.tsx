@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api, { crmApi, inventoryApi } from '@/lib/api';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export interface InvoiceFormState {
   customer_id: string;
@@ -180,13 +181,13 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
   const dueAmount = grandTotal - form.paid_amount;
 
   const handleSubmit = async (status: string) => {
-    if (items.length === 0) return alert(isRTL ? 'الرجاء إضافة منتج واحد على الأقل' : 'Please add at least one item');
-    if (!form.warehouse_id) return alert(isRTL ? 'الرجاء اختيار المستودع' : 'Please select a warehouse');
-    if (form.type === 'credit' && !form.customer_id) return alert(isRTL ? 'مطلوب اختيار العميل في الفاتورة الآجلة' : 'Customer is required for credit invoice');
+    if (items.length === 0) { toast.error(isRTL ? 'الرجاء إضافة منتج واحد على الأقل' : 'Please add at least one item'); return; }
+    if (!form.warehouse_id) { toast.error(isRTL ? 'الرجاء اختيار المستودع' : 'Please select a warehouse'); return; }
+    if (form.type === 'credit' && !form.customer_id) { toast.error(isRTL ? 'مطلوب اختيار العميل في الفاتورة الآجلة' : 'Customer is required for credit invoice'); return; }
     
     // Check stock
     const outOfStock = items.find(i => i.quantity > i.stock);
-    if (outOfStock) return alert(isRTL ? `الكمية المطلوبة من ${outOfStock.name} أكبر من المخزون المتوفر (${outOfStock.stock})` : `Quantity for ${outOfStock.name} exceeds available stock (${outOfStock.stock})`);
+    if (outOfStock) { toast.error(isRTL ? `الكمية المطلوبة من ${outOfStock.name} أكبر من المخزون المتوفر (${outOfStock.stock})` : `Quantity for ${outOfStock.name} exceeds available stock (${outOfStock.stock})`); return; }
     
     setLoading(true);
     try {
@@ -216,11 +217,11 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
           setSavedInvoiceData({ ...payload, id: res.data.data?.id, total: grandTotal, subtotal, vat_amount: taxTotal, invoice_number: 'NEW' });
           setShowPrintPreview(true);
       } else {
-          alert(isRTL ? 'تم حفظ المسودة بنجاح!' : 'Draft saved successfully!');
+          toast.success(isRTL ? 'تم حفظ المسودة بنجاح!' : 'Draft saved successfully!');
           window.location.href = '/dashboard/sales/list';
       }
     } catch (error: any) {
-      alert(error.response?.data?.message || (isRTL ? 'خطأ في حفظ الفاتورة' : 'Error saving invoice'));
+      toast.error(error.response?.data?.message || (isRTL ? 'خطأ في حفظ الفاتورة' : 'Error saving invoice'));
     } finally {
       setLoading(false);
     }

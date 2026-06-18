@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi, usersApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function EmployeesPage() {
     const { d, isRTL } = useLanguage();
@@ -28,7 +29,7 @@ export default function EmployeesPage() {
             const res = await hrApi.getEmployees({ limit: 100 });
             setEmployees(res.data?.data || []);
         } catch (error) {
-            console.error("Failed to fetch employees", error);
+
         } finally {
             setLoading(false);
         }
@@ -39,7 +40,7 @@ export default function EmployeesPage() {
             const res = await usersApi.getUsers({ limit: 50 });
             setUsers(res.data?.data || []);
         } catch (error) {
-            console.error("Failed to fetch users", error);
+
         }
     };
 

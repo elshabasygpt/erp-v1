@@ -54,6 +54,7 @@ const mockTransactions = [
 
 import { crmApi } from '@/lib/api';
 import { useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 export function ViewAccountModal({ dict, locale, customer, onClose, formatCurrency }: ViewAccountProps) {
     const isRTL = locale === 'ar';
@@ -79,7 +80,7 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
             const res = await crmApi.getCustomerInsights(customer.id);
             setInsightsData(res?.data?.data || res?.data || null);
         } catch (e) {
-            console.error('Failed to load insights', e);
+
         } finally {
             setLoadingInsights(false);
         }
@@ -91,7 +92,7 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
             const res = await crmApi.getCustomerStatement(customer.id);
             setStatementData(res?.data || null);
         } catch (e) {
-            console.error('Failed to load statement', e);
+
         } finally {
             setLoading(false);
         }
@@ -132,8 +133,8 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
             setPaymentNotes('');
             loadStatement(); // Refresh ledger
         } catch (e) {
-            console.error(e);
-            alert('Failed to record voucher');
+
+            toast.error('Failed to record voucher');
         }
     };
 
@@ -405,7 +406,7 @@ export function CustomerGroupsModal({ dict, locale, customers, onClose }: Groups
         if (!newGroupName.trim()) return;
         const newKey = newGroupName.toLowerCase().replace(/\s+/g, '_');
         if (groupsList.find(g => g.key === newKey || g.label === newGroupName.trim())) {
-            alert(isRTL ? 'المجموعة موجودة مسبقاً' : 'Group already exists');
+            toast.error(isRTL ? 'المجموعة موجودة مسبقاً' : 'Group already exists');
             return;
         }
         
@@ -506,7 +507,7 @@ export function ImportCustomersModal({ dict, locale, onClose }: ImportModalProps
 
     const handleImport = async () => {
         if (!file) {
-            alert(isRTL ? 'الرجاء اختيار ملف' : 'Please select a file');
+            toast.error(isRTL ? 'الرجاء اختيار ملف' : 'Please select a file');
             return;
         }
 
@@ -516,11 +517,11 @@ export function ImportCustomersModal({ dict, locale, onClose }: ImportModalProps
             formData.append('file', file);
             
             const res = await crmApi.importCustomers(formData);
-            alert(isRTL ? `تم استيراد ${res.data.imported} عميل بنجاح!` : `Successfully imported ${res.data.imported} customers!`);
+            toast.success(isRTL ? `تم استيراد ${res.data.imported} عميل بنجاح!` : `Successfully imported ${res.data.imported} customers!`);
             onClose();
         } catch (e) {
-            console.error('Import failed', e);
-            alert(isRTL ? 'فشل الاستيراد' : 'Import failed');
+
+            toast.error(isRTL ? 'فشل الاستيراد' : 'Import failed');
         } finally {
             setImporting(false);
         }

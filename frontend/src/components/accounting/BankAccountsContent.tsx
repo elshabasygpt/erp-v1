@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { accountingApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function BankAccountsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -22,7 +23,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             const res = await accountingApi.getBankAccounts();
             setBanks(res.data?.data || []);
         } catch (error) {
-            console.error('Error loading banks', error);
+
         } finally {
             setLoading(false);
         }
@@ -40,7 +41,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             setForm({ name: '', account_number: '', bank_name: '', currency: 'SAR', opening_balance: 0 });
             loadBanks();
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error creating bank account');
+            toast.error(error?.response?.data?.message || 'Error creating bank account');
         }
     };
 
@@ -51,7 +52,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             setReconciliations(res.data?.data || []);
             setIsReconModalOpen(true);
         } catch (error) {
-            console.error(error);
+
         }
     };
 
@@ -64,7 +65,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             setReconciliations(res.data?.data || []);
             setReconForm({ statement_date: '', statement_balance: 0 });
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error starting reconciliation');
+            toast.error(error?.response?.data?.message || 'Error starting reconciliation');
         }
     };
 
@@ -73,11 +74,11 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
         if (!selectedBank || !importFile) return;
         try {
             await accountingApi.importBankTransactions(selectedBank.id, importFile);
-            alert(isRTL ? 'تم استيراد الحركات بنجاح' : 'Transactions imported successfully');
+            toast.success(isRTL ? 'تم استيراد الحركات بنجاح' : 'Transactions imported successfully');
             setImportFile(null);
             // Reload reconciliations if needed
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error importing transactions');
+            toast.error(error?.response?.data?.message || 'Error importing transactions');
         }
     };
 

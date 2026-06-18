@@ -31,7 +31,7 @@ export default function CustomerAnalyticsTab({ locale, formatCurrency }: { local
             setCategoriesData(catRes.data?.data || catRes.data);
             setDiscountData(discRes.data?.data || discRes.data);
         } catch (e) {
-            console.error('Failed to load customer analytics', e);
+
         } finally {
             setLoading(false);
         }

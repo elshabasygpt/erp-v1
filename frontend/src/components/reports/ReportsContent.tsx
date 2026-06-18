@@ -31,7 +31,7 @@ export default function ReportsContent({ dict, locale }: { dict: any, locale: st
             setAcctData(acct.data?.data);
             setKpiData(kpi.data?.data);
         } catch (e) {
-            console.error('Failed to load reports', e);
+
         }
         setLoading(false);
     };

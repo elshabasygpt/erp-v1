@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { crmApi, salesApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface AddServiceModalProps {
     customerId: string;
@@ -38,7 +39,7 @@ export default function AddServiceModal({ customerId, vehicleId, vehicleDisplayN
             const res = await salesApi.getInvoices({ search: invoiceQuery, customer_id: customerId });
             setInvoices(res.data?.data?.data || res.data?.data || []);
         } catch (error) {
-            console.error('Error searching invoices', error);
+
         } finally {
             setSearchingInvoice(false);
         }
@@ -57,7 +58,7 @@ export default function AddServiceModal({ customerId, vehicleId, vehicleDisplayN
             await crmApi.addVehicleService(customerId, vehicleId, data);
             onSuccess();
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error adding service record');
+            toast.error(error.response?.data?.message || 'Error adding service record');
         } finally {
             setLoading(false);
         }

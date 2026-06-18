@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { settingsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function BarcodeSettingsSection({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -46,7 +47,7 @@ export default function BarcodeSettingsSection({ dict, locale }: { dict: any; lo
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
         } catch {
-            alert(isRTL ? 'حدث خطأ أثناء حفظ الإعدادات' : 'Error saving settings');
+            toast.error(isRTL ? 'حدث خطأ أثناء حفظ الإعدادات' : 'Error saving settings');
         } finally {
             setSaving(false);
         }

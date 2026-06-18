@@ -26,7 +26,7 @@ export function ProductCompatibilityTab({ productId, isRTL }: ProductCompatibili
       const res = await inventoryApi.getProductCompatibility(productId);
       setCompatibleVehicles(res.data?.data || res.data);
     } catch (e) {
-      console.error(e);
+
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export function ProductCompatibilityTab({ productId, isRTL }: ProductCompatibili
       const res = await inventoryApi.vehicleQuickLookup(val);
       setSearchResults(res.data?.data || res.data);
     } catch (e) {
-      console.error(e);
+
     } finally {
       setSearching(false);
     }
@@ -56,7 +56,7 @@ export function ProductCompatibilityTab({ productId, isRTL }: ProductCompatibili
       setQ('');
       setSearchResults([]);
     } catch (e) {
-      console.error(e);
+
     }
   };
 
@@ -66,7 +66,7 @@ export function ProductCompatibilityTab({ productId, isRTL }: ProductCompatibili
       await inventoryApi.detachVehicle(productId, vehicleYearId);
       await loadCompatibility();
     } catch (e) {
-      console.error(e);
+
     }
   };
 

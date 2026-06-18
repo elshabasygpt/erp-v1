@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { treasuryApi, customersApi, suppliersApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 type Tab = 'safes' | 'vouchers' | 'transactions';
 
@@ -45,7 +46,7 @@ export default function TreasuryPage() {
             await treasuryApi.createSafe({ ...newSafeForm, balance: parseFloat(newSafeForm.balance || '0') });
             setNewSafeForm({ name: '', name_ar: '', type: 'cash', balance: '' });
             fetchSafes();
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error'); }
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error'); }
     };
 
     const handleVoucherSubmit = async (e: React.FormEvent) => {
@@ -64,7 +65,7 @@ export default function TreasuryPage() {
             setVoucherForm({ type: 'receipt', party_type: 'customer', party_id: '', safe_id: '', amount: '', notes: '', date: new Date().toISOString().split('T')[0] });
             fetchSafes();
             setTimeout(() => setVoucherSuccess(''), 3000);
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error creating voucher'); }
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error creating voucher'); }
     };
 
     const handleTransfer = async (e: React.FormEvent) => {
@@ -73,8 +74,8 @@ export default function TreasuryPage() {
             await treasuryApi.transfer({ ...transferForm, amount: parseFloat(transferForm.amount) });
             setTransferForm({ from_safe_id: '', to_safe_id: '', amount: '', description: '' });
             fetchSafes();
-            alert(isRTL ? 'تم التحويل بنجاح' : 'Transfer completed!');
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error'); }
+            toast.success(isRTL ? 'تم التحويل بنجاح' : 'Transfer completed!');
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error'); }
     };
 
     const parties = voucherForm.party_type === 'customer' ? customers : suppliers;

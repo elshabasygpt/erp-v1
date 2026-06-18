@@ -38,7 +38,7 @@ export default function AddLoanModal({ employees, isRTL, onClose, onSuccess }: A
         try {
             await onSuccess(form);
         } catch (error) {
-            console.error(error);
+
         } finally {
             setIsSubmitting(false);
         }

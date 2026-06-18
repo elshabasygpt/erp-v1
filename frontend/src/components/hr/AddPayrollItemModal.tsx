@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { hrApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface AddPayrollItemModalProps {
     payroll: { id: string; employee_id: string; employee: any; month: number; year: number };
@@ -41,8 +42,8 @@ export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess
             });
             onSuccess();
         } catch (error) {
-            console.error(error);
-            alert(isRTL ? 'حدث خطأ أثناء إضافة البند' : 'Error adding payroll item');
+
+            toast.error(isRTL ? 'حدث خطأ أثناء إضافة البند' : 'Error adding payroll item');
         } finally {
             setLoading(false);
         }

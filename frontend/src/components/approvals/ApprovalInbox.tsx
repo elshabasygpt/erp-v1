@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { approvalsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function ApprovalInbox({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -21,7 +22,7 @@ export default function ApprovalInbox({ dict, locale }: { dict: any; locale: str
             const res = await approvalsApi.getInbox({ status: statusFilter });
             setRequests(res.data?.data?.data || res.data?.data || []);
         } catch (error) {
-            console.error("Failed to load approvals", error);
+
         }
         setLoading(false);
     };
@@ -43,7 +44,7 @@ export default function ApprovalInbox({ dict, locale }: { dict: any; locale: str
             setNotes('');
             loadData();
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Action failed');
+            toast.error(error.response?.data?.message || 'Action failed');
         }
         setProcessing(false);
     };

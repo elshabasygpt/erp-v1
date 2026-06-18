@@ -5,6 +5,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
 import AddPayrollItemModal from '@/components/hr/AddPayrollItemModal';
 import PayslipModal from '@/components/hr/PayslipModal';
+import toast from 'react-hot-toast';
 
 export default function PayrollPage() {
     const { d, isRTL } = useLanguage();
@@ -37,7 +38,7 @@ export default function PayrollPage() {
             const res = await hrApi.getPayrolls({ month, year, limit: 100 });
             setPayrolls(res.data?.data || []);
         } catch (error) {
-            console.error("Failed to fetch payrolls", error);
+
         } finally {
             setLoading(false);
         }

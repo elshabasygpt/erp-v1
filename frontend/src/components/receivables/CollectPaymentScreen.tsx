@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/card';
+import toast from 'react-hot-toast';
 
 export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
     const [customers, setCustomers] = useState<any[]>([]);
@@ -64,12 +65,12 @@ export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
     };
 
     const handleSubmit = async () => {
-        if (!selectedCustomer) return alert('Select customer');
-        if (form.amount <= 0) return alert('Enter amount greater than 0');
+        if (!selectedCustomer) return toast.error('Select customer');
+        if (form.amount <= 0) return toast.error('Enter amount greater than 0');
 
         const totalAllocated = Object.values(allocations).reduce((sum, v) => sum + Number(v), 0);
         if (totalAllocated > form.amount) {
-            return alert('Allocations exceed total payment amount');
+            return toast.error('Allocations exceed total payment amount');
         }
 
         const allocArray = Object.entries(allocations)
@@ -82,14 +83,14 @@ export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
                 ...form,
                 allocations: allocArray
             });
-            alert(isRTL ? 'تم تحصيل الدفعة بنجاح' : 'Payment collected successfully');
+            toast.success(isRTL ? 'تم تحصيل الدفعة بنجاح' : 'Payment collected successfully');
             setForm({...form, amount: 0, transaction_id: '', notes: ''});
             setAllocations({});
             // Reload invoices
             api.get(`/sales/invoices?customer_id=${selectedCustomer}&payment_status=unpaid`)
                 .then(res => setInvoices(extractArray(res).filter((i:any) => i.type === 'credit' && i.payment_status !== 'paid')));
         } catch (e: any) {
-            alert(e.response?.data?.message || 'Error collecting payment');
+            toast.error(e.response?.data?.message || 'Error collecting payment');
         }
     };
 

@@ -95,7 +95,7 @@ export function VehicleSearchPanel({
       const res = await inventoryApi.searchByVehicle(params);
       setProducts(res.data?.data || res.data);
     } catch (err) {
-      console.error(err);
+
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export function VehicleSearchPanel({
       const res = await inventoryApi.searchProducts(oemSearch);
       setProducts(res.data?.data || res.data);
     } catch (err) {
-      console.error(err);
+
     } finally {
       setLoading(false);
     }

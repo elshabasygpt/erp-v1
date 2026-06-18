@@ -60,7 +60,7 @@ export function useOfflineSync() {
             }
 
         } catch (error) {
-            console.error('Failed to sync offline invoices:', error);
+
             // Will retry later or on next reload
         } finally {
             setIsSyncing(false);

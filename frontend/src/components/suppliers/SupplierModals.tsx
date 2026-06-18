@@ -32,6 +32,7 @@ const mockTransactions = [
 
 import { crmApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurrency }: ViewAccountProps) {
     const isRTL = locale === 'ar';
@@ -52,7 +53,7 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
             const res = await crmApi.getSupplierStatement(supplier.id);
             setStatementData(res?.data || null);
         } catch (e) {
-            console.error('Failed to load statement', e);
+
         } finally {
             setLoading(false);
         }
@@ -84,8 +85,8 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
             setPaymentNotes('');
             loadStatement();
         } catch (e) {
-            console.error(e);
-            alert('Failed to record voucher');
+
+            toast.error('Failed to record voucher');
         }
     };
 
@@ -216,7 +217,7 @@ export function ImportSuppliersModal({ dict, locale, onClose }: ImportProps) {
 
     const handleImport = async () => {
         if (!file) {
-            alert(isRTL ? 'الرجاء اختيار ملف' : 'Please select a file');
+            toast.error(isRTL ? 'الرجاء اختيار ملف' : 'Please select a file');
             return;
         }
 
@@ -226,11 +227,11 @@ export function ImportSuppliersModal({ dict, locale, onClose }: ImportProps) {
             formData.append('file', file);
             
             const res = await crmApi.importSuppliers(formData);
-            alert(isRTL ? `تم استيراد ${res.data.imported} مورد بنجاح!` : `Successfully imported ${res.data.imported} suppliers!`);
+            toast.success(isRTL ? `تم استيراد ${res.data.imported} مورد بنجاح!` : `Successfully imported ${res.data.imported} suppliers!`);
             onClose();
         } catch (e) {
-            console.error('Import failed', e);
-            alert(isRTL ? 'فشل الاستيراد' : 'Import failed');
+
+            toast.error(isRTL ? 'فشل الاستيراد' : 'Import failed');
         } finally {
             setImporting(false);
         }

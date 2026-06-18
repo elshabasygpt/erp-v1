@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { salesApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export function useDeliveryDashboard(isRTL: boolean) {
     const [deliveries, setDeliveries] = useState<any[]>([]);
@@ -30,7 +31,7 @@ export function useDeliveryDashboard(isRTL: boolean) {
             const res = await salesApi.getDeliveries({ limit: 100 });
             setDeliveries(res?.data?.data?.data || res?.data?.data || []);
         } catch (e) {
-            console.error(e);
+
         }
         setLoading(false);
     }, []);
@@ -40,7 +41,7 @@ export function useDeliveryDashboard(isRTL: boolean) {
             const chRes = await salesApi.getSalesChannels();
             setPlatforms(chRes?.data?.data?.data || chRes?.data?.data || []);
         } catch (e) {
-            console.error("Failed to load reference data", e);
+
         }
     }, []);
 
@@ -73,7 +74,7 @@ export function useDeliveryDashboard(isRTL: boolean) {
             setShowAssignModal(null);
             fetchData();
         } catch (e) {
-            alert(isRTL ? 'فشل التعيين' : 'Assignment failed');
+            toast.error(isRTL ? 'فشل التعيين' : 'Assignment failed');
         }
         setAssigning(false);
     }, [showAssignModal, selectedDriver, selectedPlatform, eta, trackingCode, deliveryFee, fetchData, isRTL]);
@@ -89,7 +90,7 @@ export function useDeliveryDashboard(isRTL: boolean) {
             setShowStatusModal(null);
             fetchData();
         } catch (e) {
-            alert(isRTL ? 'فشل تحديث الحالة' : 'Status update failed');
+            toast.error(isRTL ? 'فشل تحديث الحالة' : 'Status update failed');
         }
         setUpdatingStatus(false);
     }, [showStatusModal, newStatus, statusNotes, fetchData, isRTL]);

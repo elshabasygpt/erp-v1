@@ -23,7 +23,7 @@ export function useSalesActions(activeTab: string, sellerInfo: any, locale: stri
             else if (activeTab === 'shipping') res = await salesApi.getShippingInvoice(item.id);
             setDetailedData(res?.data?.data || res?.data);
         } catch (error) {
-            console.error("Failed fetching detail", error);
+
         }
         setFetchingDetail(false);
     }, [activeTab]);
@@ -65,7 +65,7 @@ export function useSalesActions(activeTab: string, sellerInfo: any, locale: stri
                 };
                 setPrintingInvoice(printData);
             } catch (error) {
-                console.error("Print failed", error);
+
             }
         } else {
             window.print();

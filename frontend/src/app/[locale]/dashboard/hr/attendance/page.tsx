@@ -22,7 +22,7 @@ export default function AttendancePage() {
             const res = await hrApi.getAttendance({ limit: 100, date: selectedDate });
             setAttendances(res.data?.data || []);
         } catch (error) {
-            console.error("Failed to fetch attendance", error);
+
         } finally {
             setLoading(false);
         }
@@ -33,7 +33,7 @@ export default function AttendancePage() {
             const res = await hrApi.getEmployees({ limit: 100, is_active: true });
             setEmployees(res.data?.data || []);
         } catch (error) {
-            console.error("Failed to fetch employees", error);
+
         }
     };
 
@@ -42,7 +42,7 @@ export default function AttendancePage() {
             await hrApi.checkIn({ employee_id: employeeId, date: selectedDate });
             fetchData();
         } catch (error) {
-            console.error(error);
+
         }
     };
 
@@ -51,7 +51,7 @@ export default function AttendancePage() {
             await hrApi.checkOut({ employee_id: employeeId, date: selectedDate });
             fetchData();
         } catch (error) {
-            console.error(error);
+
         }
     };
 

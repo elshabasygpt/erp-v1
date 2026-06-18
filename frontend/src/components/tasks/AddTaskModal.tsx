@@ -38,7 +38,7 @@ export default function AddTaskModal({ task, users, categories, isRTL, onClose, 
             }
             onSuccess();
         } catch (error) {
-            console.error(error);
+
         } finally {
             setLoading(false);
         }

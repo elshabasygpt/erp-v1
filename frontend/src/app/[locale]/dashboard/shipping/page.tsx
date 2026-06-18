@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { salesApi } from '@/lib/api';
 import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const STATUS_CONFIG: Record<string, { label_ar: string; label_en: string; color: string; icon: string }> = {
     pending:   { label_ar: 'في الانتظار', label_en: 'Pending',   color: 'bg-yellow-100 text-yellow-700', icon: '⏳' },
@@ -54,14 +55,14 @@ export default function ShippingPage() {
             setIsModalOpen(false);
             setForm(EMPTY_FORM);
             fetchData();
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error creating shipment'); }
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error creating shipment'); }
     };
 
     const handleStatusUpdate = async (id: string, status: string) => {
         try {
             await api.put(`/sales/shipping/${id}/status`, { status });
             fetchData();
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error'); }
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error'); }
     };
 
     const stats = {

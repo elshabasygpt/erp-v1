@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { PosSession } from './usePosState';
+import toast from 'react-hot-toast';
 
 export function usePosPayment(
     activeSession: PosSession,
@@ -51,7 +52,7 @@ export function usePosPayment(
 
     const handleCompletePurchase = useCallback(async (print: boolean) => {
         if ((activeSession.paymentType === 'cash' || activeSession.paymentType === 'split') && (totalPaidCNum + totalPaidCardNum) < cartTotal) {
-            alert(isRTL ? 'المبلغ المدفوع أقل من الإجمالي!' : 'Paid amount is less than total!');
+            toast.error(isRTL ? 'المبلغ المدفوع أقل من الإجمالي!' : 'Paid amount is less than total!');
             return;
         }
 

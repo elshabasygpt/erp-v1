@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { inventoryApi, crmApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface AddVehicleModalProps {
     customerId: string;
@@ -110,7 +111,7 @@ export default function AddVehicleModal({ customerId, vehicle, isOpen, onClose, 
             }
             onSuccess(data);
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error saving vehicle');
+            toast.error(error.response?.data?.message || 'Error saving vehicle');
         } finally {
             setLoading(false);
         }

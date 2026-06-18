@@ -17,7 +17,7 @@ export default function QuickAddTask({ columnStatus, isRTL, onRefresh }: { colum
                 e.currentTarget.value = '';
                 onRefresh();
             } catch (error) {
-                console.error(error);
+
             } finally {
                 setLoading(false);
             }

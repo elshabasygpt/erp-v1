@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { purchasesApi, purchaseReturnsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoices: () => void, fetchReturns: () => void) {
     const [activeTab, setActiveTab] = useState<'purchases' | 'returns'>('purchases');
@@ -64,8 +65,8 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
             setShowOrderModal(false);
             fetchInvoices();
         } catch (error) {
-            console.error('Error saving order', error);
-            alert('Failed to save order');
+
+            toast.error('Failed to save order');
         }
     };
 
@@ -73,20 +74,20 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
         if (status === 'confirmed') {
             const order = invoices.find(i => i.id === id);
             const wId = warehouse_id || order?.items?.[0]?.warehouse_id || warehouses[0]?.id;
-            if(!wId) return alert('No warehouse available to receive inventory');
+            if(!wId) return toast.error('No warehouse available to receive inventory');
             try {
                 await purchasesApi.updateStatus(id, { status, warehouse_id: wId });
                 fetchInvoices();
                 setSelectedOrder(null);
             } catch(e) {
-                alert('Error updating status');
+                toast.error('Error updating status');
             }
         } else {
             try {
                 await purchasesApi.updateStatus(id, { status });
                 fetchInvoices();
             } catch(e) {
-                alert('Error updating status');
+                toast.error('Error updating status');
             }
         }
     };
@@ -107,19 +108,19 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
             setShowReturnModal(false);
             fetchReturns();
         } catch (error) {
-            console.error(error);
-            alert('Failed to process return');
+
+            toast.error('Failed to process return');
         }
     };
 
     const handleCompleteReturn = async (id: string, warehouse_id: string) => {
-        if(!warehouse_id) return alert('Warehouse is required to complete return');
+        if(!warehouse_id) return toast.error('Warehouse is required to complete return');
         try {
             await purchaseReturnsApi.updateReturnStatus(id, { status: 'completed', notes: warehouse_id });
             fetchReturns();
             setSelectedReturn(null);
         } catch (error) {
-            alert('Error completing return');
+            toast.error('Error completing return');
         }
     };
 

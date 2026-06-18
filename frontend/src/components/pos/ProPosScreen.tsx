@@ -19,6 +19,7 @@ import { PosSidebar } from './PosSidebar';
 import { PosProductGrid } from './PosProductGrid';
 import { VehicleSearchPanel } from './VehicleSearchPanel';
 import { PosAlternativesModal } from './PosAlternativesModal';
+import toast from 'react-hot-toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CartItem {
@@ -172,7 +173,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
 
                 const cats = Array.from(new Set(prods.map((p: any) => p.category_name || p.category_id).filter(Boolean))) as string[];
                 setCategories(['all', ...cats]);
-            } catch (e) { console.error(e); } finally { setLoading(false); }
+            } catch (e) {  } finally { setLoading(false); }
         })();
         
         const isDarkEnv = document.documentElement.classList.contains('dark');
@@ -194,7 +195,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     return [...newCustomers, ...prev];
                 });
             } catch (e) {
-                console.error('Failed to search customers', e);
+
             } finally {
                 setIsSearchingCustomer(false);
             }
@@ -219,7 +220,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 } catch (e: any) {
                     if (e.response?.status === 428) {
                         success++; // Count as success since it's saved as pending
-                        alert(isRTL ? 'تم حفظ إحدى الفواتير للموافقة.' : 'An offline invoice was sent for approval.');
+                        toast.success(isRTL ? 'تم حفظ إحدى الفواتير للموافقة.' : 'An offline invoice was sent for approval.');
                     } else {
                         failedQueue.push(q);
                     }
@@ -227,7 +228,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
             }
             if (success > 0) {
                 localStorage.setItem('posOfflineQueue', JSON.stringify(queue.slice(success)));
-                alert(isRTL ? `تمت مزامنة ${success} من الفواتير المتأخرة بنجاح!` : `Successfully synced ${success} offline invoices!`);
+                toast.success(isRTL ? `تمت مزامنة ${success} من الفواتير المتأخرة بنجاح!` : `Successfully synced ${success} offline invoices!`);
             }
         };
         window.addEventListener('online', handleOnline);
@@ -286,8 +287,8 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 setNewCustomer({ name: '', phone: '' });
             }
         } catch (error) {
-            console.error(error);
-            alert(isRTL ? 'فشل إضافة العميل' : 'Failed to add customer');
+
+            toast.error(isRTL ? 'فشل إضافة العميل' : 'Failed to add customer');
         } finally {
             setIsSavingCustomer(false);
         }
@@ -433,11 +434,11 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 setShowReturnModal(false);
                 setReturnSearchQuery('');
             } else {
-                alert(isRTL ? 'الفاتورة غير موجودة أو غير مكتملة.' : 'Invoice not found or not confirmed.');
+                toast.success(isRTL ? 'الفاتورة غير موجودة أو غير مكتملة.' : 'Invoice not found or not confirmed.');
             }
         } catch (e) {
-            console.error(e);
-            alert(isRTL ? 'فشل جلب الفاتورة.' : 'Failed to fetch invoice.');
+
+            toast.error(isRTL ? 'فشل جلب الفاتورة.' : 'Failed to fetch invoice.');
         } finally {
             setIsSearchingReturn(false);
         }
@@ -558,7 +559,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
             }, 2000);
         } catch (e: any) {
             if (e.response?.status === 428) {
-                alert(isRTL ? 'تم الحفظ كمسودة وإرسالها للمدير للموافقة.' : 'Saved as draft and sent to manager for approval.');
+                toast.success(isRTL ? 'تم الحفظ كمسودة وإرسالها للمدير للموافقة.' : 'Saved as draft and sent to manager for approval.');
                 setShowSuccess(true);
                 setTimeout(() => {
                     setShowSuccess(false);
@@ -568,7 +569,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     setPayNumPad('');
                 }, 2000);
             } else {
-                alert(e.response?.data?.message || 'Error processing payment.'); 
+                toast.error(e.response?.data?.message || 'Error processing payment.'); 
             }
         } finally { 
             setIsSaving(false); 

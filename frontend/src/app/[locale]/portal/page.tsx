@@ -2,6 +2,7 @@
 
 import { usePartnerPolling } from '@/hooks/usePartnerPolling';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import toast from 'react-hot-toast';
 
 const GoldCard = ({ icon, label, value, sub, color = '#ffd700' }: any) => (
     <div className="rounded-2xl p-5 relative overflow-hidden"
@@ -117,7 +118,7 @@ export default function PortalDashboard({ params }: { params: { locale: string }
                                     const { portalDataApi } = await import('@/lib/portal-api');
                                     await portalDataApi.downloadStatementPdf();
                                 } catch (err) {
-                                    alert(isRTL ? 'فشل تحميل الملف' : 'Download failed');
+                                    toast.error(isRTL ? 'فشل تحميل الملف' : 'Download failed');
                                 } finally {
                                     btn.innerHTML = originalText;
                                     btn.disabled = false;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { hrApi, treasuryApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function HrContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -41,7 +42,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
                 setSafes(resS.data?.data?.filter((s: any) => s.type === 'cash' || s.type === 'bank') || []);
             }
         } catch (error) {
-            console.error("Failed fetching HR data", error);
+
         }
         setLoading(false);
     };
@@ -59,7 +60,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
             setShowEmpModal(false);
             fetchData();
         } catch (e) {
-            console.error(e);
+
         }
     };
 
@@ -73,8 +74,8 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
             setShowAttModal(false);
             fetchData();
         } catch (e) {
-            console.error(e);
-            alert("Attendance action failed. Ensure the employee has checked in today if checking out.");
+
+            toast.error("Attendance action failed. Ensure the employee has checked in today if checking out.");
         }
     };
 
@@ -84,7 +85,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
             setShowPayModal(false);
             fetchData();
         } catch (e) {
-            console.error(e);
+
         }
     };
 
@@ -95,8 +96,8 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
             await hrApi.markPayrollAsPaid(payrollId);
             fetchData();
         } catch (e) {
-            console.error(e);
-            alert("Failed to pay payroll. Check safe balance.");
+
+            toast.error("Failed to pay payroll. Check safe balance.");
         }
     };
 

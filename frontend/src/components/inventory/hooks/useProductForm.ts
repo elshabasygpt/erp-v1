@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Product } from './useInventoryData';
+import toast from 'react-hot-toast';
 
 export function useProductForm(products: Product[], setProducts: any, groups: any[], setGroups: any, units: any[], setUnits: any, isRTL: boolean) {
     const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', qualityGrade: '', countryOfOrigin: '', warrantyMonths: 0, hasCoreCharge: false, coreChargeAmount: 0, isKit: false, binLocation: '' };
@@ -136,8 +137,8 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
             }
             setShowAddEdit(false);
         } catch (err) {
-            console.error("Failed to save product", err);
-            alert(isRTL ? "حدث خطأ أثناء حفظ المنتج" : "Failed to save product");
+
+            toast.error(isRTL ? "حدث خطأ أثناء حفظ المنتج" : "Failed to save product");
         }
     }, [form, editingProduct, isRTL, setProducts]);
 

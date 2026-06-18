@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { subscriptionApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function SubscriptionPage() {
     const { isRTL } = useLanguage();
@@ -15,7 +16,7 @@ export default function SubscriptionPage() {
             const res = await subscriptionApi.getCurrent();
             setData(res.data?.data || res.data);
         } catch (error) {
-            console.error(error);
+
         } finally {
             setLoading(false);
         }
@@ -30,10 +31,10 @@ export default function SubscriptionPage() {
         setUpgrading(true);
         try {
             await subscriptionApi.checkout({ plan_id: planId, payment_method: 'credit_card' });
-            alert(isRTL ? 'تمت الترقية بنجاح!' : 'Upgraded successfully!');
+            toast.success(isRTL ? 'تمت الترقية بنجاح!' : 'Upgraded successfully!');
             loadData();
         } catch (err: any) {
-            alert(err?.response?.data?.message || 'Error upgrading');
+            toast.error(err?.response?.data?.message || 'Error upgrading');
         } finally {
             setUpgrading(false);
         }

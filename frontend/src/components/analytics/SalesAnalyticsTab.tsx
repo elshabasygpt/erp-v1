@@ -32,7 +32,7 @@ export default function SalesAnalyticsTab({ locale, formatCurrency }: { locale: 
             setReturns(retRes.data?.data || retRes.data);
             setChannels(chanRes.data?.data || chanRes.data);
         } catch (e) {
-            console.error('Failed to load sales analytics', e);
+
         } finally {
             setLoading(false);
         }

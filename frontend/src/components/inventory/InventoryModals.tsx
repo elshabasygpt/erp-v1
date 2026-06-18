@@ -5,6 +5,7 @@ import { inventoryApi } from '@/lib/api';
 import Barcode from 'react-barcode';
 import { QRCodeSVG } from 'qrcode.react';
 import { renderToString } from 'react-dom/server';
+import toast from 'react-hot-toast';
 
 // ── Types ──
 export interface MainGroup { id: string; name: string; nameAr: string; subGroups: SubGroup[]; imageUrl?: string; discount?: number; }
@@ -55,8 +56,8 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
             const res = await inventoryApi.uploadProductImage(file);
             return res.data?.data?.image_url;
         } catch (err) {
-            console.error("Failed to upload image", err);
-            alert(isRTL ? "فشل تحميل الصورة" : "Failed to upload image");
+
+            toast.error(isRTL ? "فشل تحميل الصورة" : "Failed to upload image");
             return null;
         } finally {
             setUploading(false);
@@ -659,7 +660,7 @@ export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!warehouseId || items.length === 0 || items.some(i => !i.productId || i.actual === '')) return alert(isRTL ? 'يرجى إكمال البيانات' : 'Please complete form');
+        if (!warehouseId || items.length === 0 || items.some(i => !i.productId || i.actual === '')) return toast.error(isRTL ? 'يرجى إكمال البيانات' : 'Please complete form');
         setLoading(true);
         try {
             await onSave({
@@ -671,7 +672,7 @@ export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({
             });
             onClose();
         } catch (err) {
-            alert(isRTL ? 'حدث خطأ. يرجى مراجعة البيانات.' : 'Error occurred. Please review inputs.');
+            toast.error(isRTL ? 'حدث خطأ. يرجى مراجعة البيانات.' : 'Error occurred. Please review inputs.');
         } finally {
             setLoading(false);
         }
@@ -744,13 +745,13 @@ export const AssembleProductModal = memo(function AssembleProductModal({ dict, l
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!warehouseId || !productId || Number(quantity) <= 0) return alert(isRTL ? 'بيانات غير صحيحة' : 'Invalid data');
+        if (!warehouseId || !productId || Number(quantity) <= 0) return toast.error(isRTL ? 'بيانات غير صحيحة' : 'Invalid data');
         setLoading(true);
         try {
             await onSave({ warehouse_id: warehouseId, product_id: productId, type, quantity: Number(quantity) });
             onClose();
         } catch (err) {
-            alert(isRTL ? 'حدث خطأ (ربما أرصدة غير كافية أو مكوّنات غير معرّفة)' : 'Error (Insufficient balance or undefined BOM)');
+            toast.error(isRTL ? 'حدث خطأ (ربما أرصدة غير كافية أو مكوّنات غير معرّفة)' : 'Error (Insufficient balance or undefined BOM)');
         } finally {
             setLoading(false);
         }

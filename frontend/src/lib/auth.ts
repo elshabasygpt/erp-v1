@@ -118,7 +118,7 @@ export async function login(
             const message = err?.response?.data?.message || 'Invalid email or password';
             return { success: false, error: message };
         }
-        console.error('[Auth] Backend error during login', err);
+
         return { success: false, error: 'Network error or backend unreachable.' };
     }
     return { success: false, error: 'Invalid email or password' };
@@ -161,7 +161,7 @@ export async function refreshUser(): Promise<AuthUser | null> {
             return user;
         }
     } catch (error) {
-        console.error('[Auth] Refresh user failed', error);
+
     }
     return null;
 }

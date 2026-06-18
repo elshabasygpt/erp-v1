@@ -19,7 +19,7 @@ export default function InventoryValuationTab({ locale, formatCurrency }: { loca
             const res = await analyticsApi.getInventoryValuation();
             setValData(res.data?.data || res.data);
         } catch (e) {
-            console.error('Failed to load inventory valuation', e);
+
         } finally {
             setLoading(false);
         }

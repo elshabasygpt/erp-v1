@@ -12,6 +12,7 @@ import InventoryToolbar from './InventoryToolbar';
 import InventoryTable from './InventoryTable';
 import InventoryCardGrid from './InventoryCardGrid';
 import InventoryFormModal from './InventoryFormModal';
+import toast from 'react-hot-toast';
 
 interface Props { dict: any; locale: string; }
 
@@ -37,8 +38,8 @@ export default function InventoryContent({ dict, locale }: Props) {
             queryClient.invalidateQueries({ queryKey: ['products'] });
             setShowAdjustment(false);
         } catch (error) {
-            console.error("Adjustment failed", error);
-            alert("Failed to save adjustment.");
+
+            toast.error("Failed to save adjustment.");
         }
     };
 
@@ -48,8 +49,8 @@ export default function InventoryContent({ dict, locale }: Props) {
             queryClient.invalidateQueries({ queryKey: ['products'] });
             setShowAssembly(false);
         } catch (error) {
-            console.error("Assembly failed", error);
-            alert("Failed to assemble product.");
+
+            toast.error("Failed to assemble product.");
         }
     };
 
@@ -94,8 +95,8 @@ export default function InventoryContent({ dict, locale }: Props) {
                 queryClient.invalidateQueries({ queryKey: ['products'] });
                 setShowDelete(null);
             } catch (err) {
-                console.error("Failed to delete product", err);
-                alert(isRTL ? "حدث خطأ أثناء حذف المنتج" : "Failed to delete product");
+
+                toast.error(isRTL ? "حدث خطأ أثناء حذف المنتج" : "Failed to delete product");
             }
         }
     }, [showDelete, isRTL, setProducts]);

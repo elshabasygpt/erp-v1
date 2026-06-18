@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 
 export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
     const [channels, setChannels] = useState<any[]>([]);
@@ -28,7 +29,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
                 setChannelTypes(settingsRes.data.data.sales_channel_types);
             }
         } catch (e) {
-            console.error('Failed to fetch data');
+
         } finally {
             setLoading(false);
         }
@@ -57,7 +58,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
             setModal({ isOpen: false, type: 'add', data: null });
             fetchChannels();
         } catch (e) {
-            alert(isRTL ? 'خطأ أثناء الحفظ' : 'Error saving');
+            toast.error(isRTL ? 'خطأ أثناء الحفظ' : 'Error saving');
         }
     };
 
@@ -67,7 +68,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
             await api.delete(`/sales/channels/${id}`);
             fetchChannels();
         } catch (e) {
-            alert(isRTL ? 'خطأ أثناء الحذف' : 'Error deleting');
+            toast.error(isRTL ? 'خطأ أثناء الحذف' : 'Error deleting');
         }
     };
 
@@ -109,7 +110,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
                 setForm(prev => ({ ...prev, logo_url: res.data.data.image_url }));
             }
         } catch (error) {
-            alert(isRTL ? 'فشل رفع الشعار' : 'Failed to upload logo');
+            toast.error(isRTL ? 'فشل رفع الشعار' : 'Failed to upload logo');
         } finally {
             setUploadingLogo(false);
         }

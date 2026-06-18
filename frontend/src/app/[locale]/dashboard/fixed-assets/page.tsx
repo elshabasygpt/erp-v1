@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { fixedAssetsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const CATEGORY_ICONS: Record<string, string> = { vehicles: '🚗', equipment: '💻', furniture: '🪑', buildings: '🏢', land: '🏞️', other: '📦' };
 
@@ -21,7 +22,7 @@ export default function FixedAssetsPage() {
             const res = await fixedAssetsApi.getAssets();
             setAssets(res.data?.data || res.data || []);
         } catch (error) {
-            console.error('Error loading assets:', error);
+
         } finally {
             setLoading(false);
         }
@@ -51,7 +52,7 @@ export default function FixedAssetsPage() {
             setForm(EMPTY_FORM);
             loadAssets();
         } catch (error: any) {
-            alert(error?.response?.data?.message || 'Error saving asset');
+            toast.error(error?.response?.data?.message || 'Error saving asset');
         }
     };
 
@@ -66,7 +67,7 @@ export default function FixedAssetsPage() {
             }
         }
         loadAssets();
-        alert(isRTL ? `تم ترحيل الاستهلاك لعدد ${successCount} أصل بنجاح` : `Depreciation posted for ${successCount} assets successfully!`);
+        toast.success(isRTL ? `تم ترحيل الاستهلاك لعدد ${successCount} أصل بنجاح` : `Depreciation posted for ${successCount} assets successfully!`);
     };
 
     return (

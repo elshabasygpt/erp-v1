@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other';
 type LeaveStatus = 'pending' | 'approved' | 'rejected';
@@ -51,7 +52,7 @@ export default function LeavesPage() {
             setIsModalOpen(false);
             setForm(EMPTY_FORM);
             fetchLeaves();
-        } catch (err: any) { alert(err?.response?.data?.message || 'Error applying leave'); }
+        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error applying leave'); }
     };
 
     const handleStatus = async (id: string, status: LeaveStatus) => {

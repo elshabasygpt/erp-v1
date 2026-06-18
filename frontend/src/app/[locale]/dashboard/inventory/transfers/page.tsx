@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { inventoryApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function StockTransfersPage() {
     const [transfers, setTransfers] = useState<any[]>([]);
@@ -34,7 +35,7 @@ export default function StockTransfersPage() {
             setWarehouses(wareRes.data.data.warehouses || []);
             setProducts(prodRes.data.data.products?.data || []);
         } catch (error) {
-            console.error('Error loading data', error);
+
         } finally {
             setIsLoading(false);
         }
@@ -53,7 +54,7 @@ export default function StockTransfersPage() {
             setFormData({ from_warehouse_id: '', to_warehouse_id: '', notes: '', items: [{ product_id: '', quantity: 1 }] });
             loadData();
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error creating transfer');
+            toast.error(error.response?.data?.message || 'Error creating transfer');
         } finally {
             setIsSubmitting(false);
         }
@@ -66,7 +67,7 @@ export default function StockTransfersPage() {
             setViewData(null);
             loadData();
         } catch (error: any) {
-             alert(error.response?.data?.message || 'Error approving transfer');
+             toast.error(error.response?.data?.message || 'Error approving transfer');
         }
     };
 
@@ -77,7 +78,7 @@ export default function StockTransfersPage() {
             setViewData(null);
             loadData();
         } catch (error: any) {
-             alert(error.response?.data?.message || 'Error receiving transfer');
+             toast.error(error.response?.data?.message || 'Error receiving transfer');
         }
     };
 

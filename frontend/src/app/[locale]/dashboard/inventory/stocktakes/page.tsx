@@ -59,7 +59,7 @@ export default function StocktakesPage() {
             
             setWarehouses(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error('Failed to load warehouses');
+
             setWarehouses([]);
         }
     };

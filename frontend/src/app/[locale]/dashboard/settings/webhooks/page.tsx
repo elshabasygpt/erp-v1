@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { webhooksApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function WebhooksPage() {
     const { isRTL } = useLanguage();
@@ -23,7 +24,7 @@ export default function WebhooksPage() {
             const res = await webhooksApi.getWebhooks();
             setWebhooks(res.data?.data || res.data || []);
         } catch (e) {
-            console.error(e);
+
         } finally {
             setLoading(false);
         }
@@ -51,7 +52,7 @@ export default function WebhooksPage() {
             setFormData({ name: '', url: '', is_active: true, events: [] });
             loadData();
         } catch (err: any) {
-            alert(err.response?.data?.message || 'Error saving webhook');
+            toast.error(err.response?.data?.message || 'Error saving webhook');
         }
     };
 
@@ -67,7 +68,7 @@ export default function WebhooksPage() {
             await webhooksApi.deleteWebhook(id);
             loadData();
         } catch (err) {
-            alert('Error deleting webhook');
+            toast.error('Error deleting webhook');
         }
     };
 

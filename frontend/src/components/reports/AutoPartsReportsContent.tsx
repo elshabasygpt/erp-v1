@@ -65,7 +65,7 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
                 });
                 setProfitData(res.data?.data);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {  }
         finally { setLoading(false); }
     }, [activeTab, slowDays, topDateFrom, topDateTo, topMakeFilter, profitGroupBy, profitFrom, profitTo]);
 

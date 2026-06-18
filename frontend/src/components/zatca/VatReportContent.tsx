@@ -63,7 +63,7 @@ export default function VatReportContent({ dict, locale }: VatReportContentProps
                 setVatData(res.data.data);
             }
         } catch (error) {
-            console.error("Failed fetching VAT report", error);
+
         }
         setLoading(false);
     };

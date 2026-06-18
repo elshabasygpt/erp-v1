@@ -26,7 +26,7 @@ export function ProductAlternativesTab({ productId, isRTL }: ProductAlternatives
       const res = await inventoryApi.getAlternatives(productId);
       setAlternatives(res.data?.data || res.data);
     } catch (e) {
-      console.error(e);
+
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ export function ProductAlternativesTab({ productId, isRTL }: ProductAlternatives
       const results = (res.data?.data || res.data).filter((p: any) => p.id !== productId);
       setSearchResults(results);
     } catch (e) {
-      console.error(e);
+
     } finally {
       setSearching(false);
     }
@@ -58,7 +58,7 @@ export function ProductAlternativesTab({ productId, isRTL }: ProductAlternatives
       setQ('');
       setSearchResults([]);
     } catch (e) {
-      console.error(e);
+
     }
   };
 
@@ -68,7 +68,7 @@ export function ProductAlternativesTab({ productId, isRTL }: ProductAlternatives
       await inventoryApi.detachAlternative(productId, alternativeId);
       await loadAlternatives();
     } catch (e) {
-      console.error(e);
+
     }
   };
 

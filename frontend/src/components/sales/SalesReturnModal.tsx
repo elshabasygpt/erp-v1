@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { salesApi, inventoryApi, crmApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface SalesReturnModalProps {
     dict: any;
@@ -44,7 +45,7 @@ export default function SalesReturnModal({ dict, locale, onClose, onSuccess }: S
                 const wRes = await inventoryApi.getWarehouses();
                 setWarehouses(wRes.data?.data?.data || wRes.data?.data || []);
             } catch (error) {
-                console.error("Failed to load Return data", error);
+
             }
             setFetchingData(false);
         };
@@ -92,14 +93,14 @@ export default function SalesReturnModal({ dict, locale, onClose, onSuccess }: S
     const handleSave = async () => {
         const itemsToProcess = returnItems.filter(i => i.selected && i.return_quantity > 0);
         
-        if (!selectedInvoiceId) return alert(isRTL ? "يرجى اختيار الفاتورة" : "Please select an invoice");
-        if (!selectedWarehouseId) return alert(isRTL ? "يرجى اختيار المستودع" : "Please select a warehouse");
-        if (itemsToProcess.length === 0) return alert(isRTL ? "يرجى تحديد أصناف للإرجاع" : "Please select items to return");
+        if (!selectedInvoiceId) return toast.error(isRTL ? "يرجى اختيار الفاتورة" : "Please select an invoice");
+        if (!selectedWarehouseId) return toast.error(isRTL ? "يرجى اختيار المستودع" : "Please select a warehouse");
+        if (itemsToProcess.length === 0) return toast.error(isRTL ? "يرجى تحديد أصناف للإرجاع" : "Please select items to return");
 
         // Validate quantities
         for (const item of itemsToProcess) {
             if (item.return_quantity > item.max_quantity) {
-                return alert(isRTL ? `الكمية المسترجعة للصنف تجاوزت الكمية في الفاتورة` : `Return quantity exceeds invoiced quantity`);
+                return toast.error(isRTL ? `الكمية المسترجعة للصنف تجاوزت الكمية في الفاتورة` : `Return quantity exceeds invoiced quantity`);
             }
         }
 
@@ -123,13 +124,13 @@ export default function SalesReturnModal({ dict, locale, onClose, onSuccess }: S
             if (onSuccess) onSuccess();
             onClose();
         } catch (error: any) {
-            console.error("Return save failed", error);
+
             if (error.response?.status === 428) {
-                alert(isRTL ? 'تم حفظ المرتجع كمسودة وتم إرساله للمدير للموافقة.' : 'Return saved as draft and sent to manager for approval.');
+                toast.success(isRTL ? 'تم حفظ المرتجع كمسودة وتم إرساله للمدير للموافقة.' : 'Return saved as draft and sent to manager for approval.');
                 if (onSuccess) onSuccess();
                 onClose();
             } else {
-                alert(error.response?.data?.message || (isRTL ? 'فشل حفظ المرتجع' : 'Failed to save return'));
+                toast.error(error.response?.data?.message || (isRTL ? 'فشل حفظ المرتجع' : 'Failed to save return'));
             }
         }
         setSaving(false);

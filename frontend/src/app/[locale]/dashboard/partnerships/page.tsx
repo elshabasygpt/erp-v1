@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { partnershipsApi } from '@/lib/api';
 import { analyticsApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface Partner {
     id: string;
@@ -57,7 +58,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
             setPartners(partnersRes.data.data || []);
             setAiForecast(aiRes.data?.data);
         } catch (error) {
-            console.error('Error fetching partners', error);
+
         } finally {
             setIsLoading(false);
         }
@@ -72,7 +73,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
             });
             setPreviewData(data.data);
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error calculating preview');
+            toast.error(error.response?.data?.message || 'Error calculating preview');
         }
     };
 
@@ -83,11 +84,11 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
                 period_start: startDate,
                 period_end: endDate
             });
-            alert(isRTL ? '✅ تم اعتماد وتوزيع الأرباح بنجاح!' : '✅ Profits distributed and approved successfully!');
+            toast.success(isRTL ? '✅ تم اعتماد وتوزيع الأرباح بنجاح!' : '✅ Profits distributed and approved successfully!');
             setShowDistributeModal(false);
             fetchPartners(); // Refresh balances
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error distributing profits');
+            toast.error(error.response?.data?.message || 'Error distributing profits');
         }
     };
 
@@ -109,7 +110,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
             setDurationValue('');
             fetchPartners();
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error adding partner');
+            toast.error(error.response?.data?.message || 'Error adding partner');
         }
     };
 
@@ -122,7 +123,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
             setWithdrawAmount('');
             fetchPartners();
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Error withdrawing profits');
+            toast.error(error.response?.data?.message || 'Error withdrawing profits');
         }
     };
 

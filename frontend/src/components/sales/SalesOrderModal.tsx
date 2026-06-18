@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { salesApi, inventoryApi, crmApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface POSItem {
     id: number;
@@ -96,7 +97,7 @@ export default function SalesOrderModal({ dict, locale, onClose, quotation }: Sa
                     }
                 }
             } catch (error) {
-                console.error("Failed to load SO data", error);
+
             }
             setFetchingData(false);
         };
@@ -135,9 +136,9 @@ export default function SalesOrderModal({ dict, locale, onClose, quotation }: Sa
     };
 
     const handleSave = async () => {
-        if (!selectedCustomer) return alert(isRTL ? "يرجى اختيار العميل" : "Please select a customer");
-        if (!selectedWarehouse) return alert(isRTL ? "يرجى اختيار المستودع" : "Please select a warehouse");
-        if (items.length === 0) return alert(isRTL ? "يرجى إضافة أصناف" : "Please add items");
+        if (!selectedCustomer) return toast.error(isRTL ? "يرجى اختيار العميل" : "Please select a customer");
+        if (!selectedWarehouse) return toast.error(isRTL ? "يرجى اختيار المستودع" : "Please select a warehouse");
+        if (items.length === 0) return toast.error(isRTL ? "يرجى إضافة أصناف" : "Please add items");
         
         setSaving(true);
         try {
@@ -157,8 +158,8 @@ export default function SalesOrderModal({ dict, locale, onClose, quotation }: Sa
             await salesApi.createSalesOrder(payload);
             onClose();
         } catch (error) {
-            console.error("Sales Order save failed", error);
-            alert(isRTL ? "فشل إنشاء أمر البيع، تأكد من توفر المخزون" : "Failed to create sales order. Check stock availability.");
+
+            toast.error(isRTL ? "فشل إنشاء أمر البيع، تأكد من توفر المخزون" : "Failed to create sales order. Check stock availability.");
         }
         setSaving(false);
     };

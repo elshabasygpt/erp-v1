@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { salesApi, inventoryApi, crmApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface POSItem {
     id: number;
@@ -70,7 +71,7 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
                 setProducts(pRes.data?.data?.data || pRes.data?.data || []);
                 setCustomers(cRes.data?.data?.data || cRes.data?.data || []);
             } catch (error) {
-                console.error("Failed to load POS data", error);
+
             }
             setFetchingData(false);
         };
@@ -210,7 +211,7 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
 
     // ── Save actions ──────────────────────────────────────────────────────────
     const handleSave = async () => {
-        if (items.length === 0) return alert(isRTL ? "يرجى إضافة أصناف أولاً" : "Please add items first");
+        if (items.length === 0) return toast.error(isRTL ? "يرجى إضافة أصناف أولاً" : "Please add items first");
         
         setSaving(true);
         try {
@@ -244,16 +245,16 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
                 onClose();
             }, 2000);
         } catch (error: any) {
-            console.error("Save failed", error);
+
             if (error.response?.status === 428) {
-                alert(isRTL ? 'تم حفظ الفاتورة كمسودة وتم إرسالها للمدير للموافقة.' : 'Invoice saved as draft and sent to manager for approval.');
+                toast.success(isRTL ? 'تم حفظ الفاتورة كمسودة وتم إرسالها للمدير للموافقة.' : 'Invoice saved as draft and sent to manager for approval.');
                 setShowSavedToast(true);
                 setTimeout(() => {
                     setShowSavedToast(false);
                     onClose();
                 }, 2000);
             } else {
-                alert(error.response?.data?.message || (isRTL ? "فشل حفظ الفاتورة" : "Failed to save invoice"));
+                toast.error(error.response?.data?.message || (isRTL ? "فشل حفظ الفاتورة" : "Failed to save invoice"));
             }
         }
         setSaving(false);

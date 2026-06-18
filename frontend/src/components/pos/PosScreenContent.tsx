@@ -17,6 +17,7 @@ import BasicPosProductGrid from './BasicPosProductGrid';
 import PosCartSidebar from './PosCartSidebar';
 import PosPaymentModal from './PosPaymentModal';
 import { PosAlternativesModal } from './PosAlternativesModal';
+import toast from 'react-hot-toast';
 
 export default function PosScreenContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -67,7 +68,7 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
                 setSearch('');
             }
         }).catch(() => {
-            alert(isRTL ? `منتج برمز ${barcode} غير موجود` : `Product with barcode ${barcode} not found`);
+            toast.error(isRTL ? `منتج برمز ${barcode} غير موجود` : `Product with barcode ${barcode} not found`);
         });
     }, true);
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { partnershipsApi } from '@/lib/api';
 import * as XLSX from 'xlsx';
+import toast from 'react-hot-toast';
 
 export default function PartnerReportPage({ params }: { params: { locale: string, id: string } }) {
     const isRTL = params.locale === 'ar';
@@ -40,7 +41,7 @@ export default function PartnerReportPage({ params }: { params: { locale: string
                 const combined = [...profits, ...withdrawals].sort((a, b) => b.date.getTime() - a.date.getTime());
                 setLedger(combined);
             } catch (error) {
-                console.error("Error loading partner report", error);
+
             } finally {
                 setIsLoading(false);
             }
@@ -61,7 +62,7 @@ export default function PartnerReportPage({ params }: { params: { locale: string
 
     const handleExportExcel = () => {
         if (ledger.length === 0) {
-            alert(isRTL ? 'لا توجد بيانات لتصديرها!' : 'No data to export!');
+            toast.error(isRTL ? 'لا توجد بيانات لتصديرها!' : 'No data to export!');
             return;
         }
 

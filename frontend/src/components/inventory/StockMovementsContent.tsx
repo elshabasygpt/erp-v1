@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { inventoryApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 interface StockMovementsContentProps {
     dict: any;
@@ -93,7 +94,7 @@ export default function StockMovementsContent({ dict, locale }: StockMovementsCo
             await loadData();
         } catch (err: any) {
             const msg = err?.response?.data?.message || (isRTL ? 'حدث خطأ أثناء الحفظ' : 'Error saving movement');
-            alert(msg);
+            toast.error(msg);
         } finally {
             setSaving(false);
         }

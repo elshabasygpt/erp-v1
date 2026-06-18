@@ -16,7 +16,7 @@ export default function ZatcaOnboardingContent({ dict, locale }: { dict: any; lo
             const res = await zatcaApi.getOnboardingStatus();
             setStatus(res.data?.data?.zatca_status || 'not_enrolled');
         } catch (err) {
-            console.error(err);
+
             setStatus('not_enrolled');
         }
     };

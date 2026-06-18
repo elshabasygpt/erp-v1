@@ -59,7 +59,7 @@ export default function KanbanView({ tasks, isRTL, onRefresh, setDetailTask, set
             await tasksApi.updateStatus(draggedTask.id, targetStatus);
             onRefresh();
         } catch (error) {
-            console.error(error);
+
         } finally {
             setDraggedTask(null);
         }

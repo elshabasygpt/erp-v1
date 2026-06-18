@@ -171,8 +171,8 @@ export default function CustomersContent({ dict, locale }: Props) {
             const a = document.createElement('a'); a.href = url; a.download = 'customers.xlsx'; a.click();
             URL.revokeObjectURL(url);
         } catch (e) {
-            console.error('Failed to export', e);
-            alert(isRTL ? 'فشل التصدير' : 'Export failed');
+
+            showToast(isRTL ? 'فشل التصدير' : 'Export failed', 'error');
         }
     }, [isRTL]);
 

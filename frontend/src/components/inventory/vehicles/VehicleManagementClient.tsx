@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryApi } from '@/lib/api';
 import { Car, ChevronRight, Plus, Trash2, Loader2, ArrowLeft, Edit2, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export function VehicleManagementClient({ locale, dict }: { locale: string; dict: any }) {
     const isRTL = locale === 'ar';
@@ -40,7 +41,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             setActiveMake(null);
             setActiveModel(null);
         } catch (e) {
-            console.error(e);
+
         } finally {
             setLoading(false);
         }
@@ -54,7 +55,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             const res = await inventoryApi.getVehicleModels(make.id);
             setModels(res.data?.data || res.data || []);
         } catch (e) {
-            console.error(e);
+
         } finally {
             setLoading(false);
         }
@@ -67,7 +68,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             const res = await inventoryApi.getVehicleYears(model.id);
             setYears(res.data?.data || res.data || []);
         } catch (e) {
-            console.error(e);
+
         } finally {
             setLoading(false);
         }
@@ -93,8 +94,8 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             setMakeLogo(null);
             loadMakes();
         } catch (e: any) {
-            console.error(e);
-            alert(JSON.stringify(e.response?.data?.errors || e.response?.data));
+
+            toast.error(JSON.stringify(e.response?.data?.errors || e.response?.data));
         }
     };
 
@@ -118,8 +119,8 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             setModelImage(null);
             selectMake(activeMake);
         } catch (e: any) {
-            console.error(e);
-            alert(JSON.stringify(e.response?.data?.errors || e.response?.data));
+
+            toast.error(JSON.stringify(e.response?.data?.errors || e.response?.data));
         }
     };
 
@@ -147,8 +148,8 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             setEngineImage(null);
             selectModel(activeModel);
         } catch (e: any) {
-            console.error(e);
-            alert(e.response?.data?.message || 'Failed to save year. ' + JSON.stringify(e.response?.data?.errors || {}));
+
+            toast.error(e.response?.data?.message || 'Failed to save year. ' + JSON.stringify(e.response?.data?.errors || {}));
         }
     };
 
@@ -159,7 +160,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             await inventoryApi.deleteVehicleMake(id);
             if (activeMake?.id === id) setActiveMake(null);
             loadMakes();
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
     };
 
     const handleDeleteModel = async (id: string, e: React.MouseEvent) => {
@@ -169,7 +170,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             await inventoryApi.deleteVehicleModel(id);
             if (activeModel?.id === id) setActiveModel(null);
             if (activeMake) selectMake(activeMake);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
     };
 
     const handleDeleteYear = async (id: string, e: React.MouseEvent) => {
@@ -178,7 +179,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
         try {
             await inventoryApi.deleteVehicleYear(id);
             if (activeModel) selectModel(activeModel);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
     };
 
     return (
