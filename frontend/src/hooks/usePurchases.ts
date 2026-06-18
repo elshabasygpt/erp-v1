@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { purchasesApi } from '@/lib/api';
+import { purchasesApi, purchaseReturnsApi } from '@/lib/api';
 
 export function usePurchasesDashboard() {
     return useQuery({
@@ -41,7 +41,7 @@ export function usePurchaseReturns(params?: any) {
     return useQuery({
         queryKey: ['purchaseReturns', params],
         queryFn: async () => {
-            const res = await purchasesApi.getReturns(params);
+            const res = await purchaseReturnsApi.getReturns(params);
             return res.data?.data || res.data || [];
         }
     });

@@ -74,7 +74,8 @@ export async function register(
                 error: error.response?.data?.message || 'Validation failed'
             };
         }
-    return { success: false, error: 'Registration failed unexpectedly.' };
+        return { success: false, error: 'Registration failed unexpectedly.' };
+    }
 }
 
 export async function login(
@@ -159,6 +160,7 @@ export async function refreshUser(): Promise<AuthUser | null> {
             }
             return user;
         }
+    } catch (error) {
         console.error('[Auth] Refresh user failed', error);
     }
     return null;
