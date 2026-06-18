@@ -20,7 +20,7 @@ class SettingsSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            DB::connection('tenant')->table('settings')->updateOrInsert(
+            DB::connection('tenant')->table('tenant_settings')->updateOrInsert(
                 ['key' => $setting['key']],
                 ['id' => Uuid::uuid4()->toString(), 'value' => $setting['value'], 'created_at' => now(), 'updated_at' => now()]
             );

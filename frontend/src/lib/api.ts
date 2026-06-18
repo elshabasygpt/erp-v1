@@ -921,9 +921,3 @@ export const dataApi = {
     importData: (type: string, data: any) => api.post(`/data/import/${type}`, data),
     downloadTemplate: (type: string) => api.get(`/data/template/${type}`),
 };
-
-import { initMockAdapter } from './setupMockAdapter';
-
-if (typeof window !== 'undefined') {
-    initMockAdapter(api);
-}
