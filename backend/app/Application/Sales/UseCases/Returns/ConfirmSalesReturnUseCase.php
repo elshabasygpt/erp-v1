@@ -25,7 +25,7 @@ class ConfirmSalesReturnUseCase
 
     public function execute(string $salesReturnId, string $userId): void
     {
-        DB::transaction(function () use ($salesReturnId, $userId) {
+        DB::connection('tenant')->transaction(function () use ($salesReturnId, $userId) {
             $salesReturn = SalesReturnModel::query()->with('items')->findOrFail($salesReturnId);
 
             if ($salesReturn->status !== 'pending_approval' && $salesReturn->status !== 'draft') {

@@ -25,19 +25,83 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Avoid infinite refresh loops
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 // Response interceptor - handle errors
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const originalRequest = error.config;
+        
         const isUnauthorized = error.response?.status === 401;
         const isTenantMissing = error.response?.status === 400 && error.response?.data?.error === 'missing_tenant';
         const isTenantNotFound = error.response?.status === 404 && error.response?.data?.error === 'tenant_not_found';
         const isTenantSuspended = error.response?.status === 403 && (error.response?.data?.error === 'tenant_suspended' || error.response?.data?.error === 'trial_expired');
 
+        if (isUnauthorized && !originalRequest._retry && typeof window !== 'undefined') {
+            const token = localStorage.getItem('auth_token');
+            // If it's a mock token, we don't refresh
+            if (token && token.startsWith('mock_token_')) {
+                // Ignore mock token expiration
+                return Promise.reject(error);
+            }
+
+            if (isRefreshing) {
+                return new Promise(function(resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                }).then(newToken => {
+                    originalRequest.headers.Authorization = 'Bearer ' + newToken;
+                    return api(originalRequest);
+                }).catch(err => {
+                    return Promise.reject(err);
+                });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                // Attempt to refresh token
+                const refreshResponse = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/auth/refresh`, {}, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                const newToken = refreshResponse.data?.token || refreshResponse.data?.access_token;
+                if (newToken) {
+                    localStorage.setItem('auth_token', newToken);
+                    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    processQueue(null, newToken);
+                    return api(originalRequest);
+                }
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+                // Refresh failed, proceed to logout
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
         if (isUnauthorized || isTenantMissing || isTenantNotFound || isTenantSuspended) {
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('tenant_id');
+                localStorage.removeItem('auth_user');
                 // Detect current locale from URL path instead of hardcoding
                 const pathParts = window.location.pathname.split('/');
                 const locale = ['ar', 'en'].includes(pathParts[1]) ? pathParts[1] : 'ar';
@@ -63,6 +127,11 @@ export const authApi = {
     }) => api.post('/auth/register', data),
     me: () => api.get('/auth/me'),
     logout: () => api.post('/auth/logout'),
+    getRoles: (params?: any) => api.get('/roles', { params }),
+    getPermissions: () => api.get('/permissions'),
+    createRole: (data: any) => api.post('/roles', data),
+    updateRole: (id: string, data: any) => api.put(`/roles/${id}`, data),
+    deleteRole: (id: string) => api.delete(`/roles/${id}`),
 };
 
 export const salesApi = {
@@ -249,6 +318,31 @@ export const inventoryApi = {
     setBOM: (productId: string, data: any) => api.post(`/inventory/assembly/${productId}`, data),
     assemble: (data: any) => api.post('/inventory/assemble', data),
 
+    // Stocktakes
+    getStocktakes: (params?: any) => api.get('/inventory/stocktakes', { params }),
+    getStocktake: (id: string) => api.get(`/inventory/stocktakes/${id}`),
+    createStocktake: (data: any) => api.post('/inventory/stocktakes', data),
+    updateStocktakeCounts: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/counts`, data),
+    updateStocktakeStatus: (id: string, data: any) => api.put(`/inventory/stocktakes/${id}/status`, data),
+    approveStocktake: (id: string) => api.post(`/inventory/stocktakes/${id}/approve`),
+    scanStocktakeBarcode: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/scan`, data),
+    addUnlistedItem: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/unlisted`, data),
+    exportStocktake: (id: string) => api.get(`/inventory/stocktakes/${id}/export`, { responseType: 'blob' }).then(res => res.data as any),
+    importStocktake: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/import`, data),
+    requestStocktakeRecount: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/recount`, data),
+
+    // Bin Locations
+    updateBinLocation: (productId: string, data: any) => api.put(`/inventory/products/${productId}/bin-location`, data),
+
+    // Alternatives
+    getAlternatives: (productId: string) => api.get(`/inventory/products/${productId}/alternatives`),
+    attachAlternative: (productId: string, alternativeId: string) => api.post(`/inventory/products/${productId}/alternatives/${alternativeId}`),
+    detachAlternative: (productId: string, alternativeId: string) => api.delete(`/inventory/products/${productId}/alternatives/${alternativeId}`),
+
+    // Assemblies
+    getAssemblies: (productId: string) => api.get(`/inventory/products/${productId}/assemblies`),
+    saveAssemblies: (productId: string, data: any) => api.post(`/inventory/products/${productId}/assemblies`, data),
+
     // Stock Movements
     getMovements: (params?: Record<string, any>) => api.get('/inventory/movements', { params }),
     getMovement: (id: string) => api.get(`/inventory/movements/${id}`),
@@ -362,6 +456,14 @@ export const crmApi = {
 
     searchVehicleByPlate: (plate: string) =>
         api.get('/crm/customers/vehicles/search', { params: { plate } }),
+
+    // Interactions & FollowUps
+    addCustomerNote: (customerId: string, note: any) => api.post(`/crm/customers/${customerId}/notes`, note),
+    addCustomerInteraction: (customerId: string, data: any) => api.post(`/crm/customers/${customerId}/interactions`, data),
+    createFollowUp: (data: any) => api.post(`/crm/follow-ups`, data),
+    markFollowUpCompleted: (followUpId: string) => api.put(`/crm/follow-ups/${followUpId}/complete`),
+    getCustomerInsights: (customerId: string) => api.get(`/crm/customers/${customerId}/insights`),
+    getFollowUps: (params?: any) => api.get('/crm/follow-ups', { params }),
 };
 
 // Convenience aliases used by some pages
@@ -447,6 +549,7 @@ export const purchaseReturnsApi = {
     getReturn: (id: string) => api.get(`/purchases/returns/${id}`),
     createReturn: (data: any) => api.post('/purchases/returns', data),
     updateStatus: (id: string, payload: any) => api.put(`/purchases/returns/${id}/status`, payload),
+    updateReturnStatus: (id: string, payload: any) => api.put(`/purchases/returns/${id}/status`, payload),
 };
 
 export const usersApi = {
@@ -455,6 +558,13 @@ export const usersApi = {
     createUser: (data: any) => api.post('/users', data),
     updateUser: (id: string, data: any) => api.put(`/users/${id}`, data),
     deleteUser: (id: string) => api.delete(`/users/${id}`),
+    
+    // Roles
+    getRoles: (params?: any) => api.get('/roles', { params }),
+    getPermissions: () => api.get('/permissions'),
+    createRole: (data: any) => api.post('/roles', data),
+    updateRole: (id: string, data: any) => api.put(`/roles/${id}`, data),
+    deleteRole: (id: string) => api.delete(`/roles/${id}`),
 };
 
 export const partnershipsApi = {
@@ -488,6 +598,32 @@ export const accountingApi = {
         api.post('/accounting/reports/zakat/post', data),
     payZakat: (data: { date: string; amount: number; safe_account_id: string; reference_number?: string }) =>
         api.post('/accounting/reports/zakat/pay', data),
+        
+    // Fiscal Period
+    listFiscalPeriods: () => api.get('/accounting/fiscal-periods'),
+    createFiscalPeriod: (data: any) => api.post('/accounting/fiscal-periods', data),
+    closeFiscalPeriod: (id: string) => api.post(`/accounting/fiscal-periods/${id}/close`),
+    reopenFiscalPeriod: (id: string) => api.post(`/accounting/fiscal-periods/${id}/reopen`),
+
+    // Account Mappings
+    getAccountMappings: () => api.get('/accounting/mappings'),
+    updateAccountMappings: (data: any) => api.post('/accounting/mappings', data),
+
+    // Bank Accounts
+    getBankAccounts: () => api.get('/accounting/bank-accounts'),
+    createBankAccount: (data: any) => api.post('/accounting/bank-accounts', data),
+    getReconciliations: (bankAccountId: string) => api.get(`/accounting/bank-accounts/${bankAccountId}/reconciliations`),
+    startReconciliation: (bankAccountId: string, data: any) => api.post('/accounting/reconciliations', { bank_account_id: bankAccountId, ...data }),
+    importBankTransactions: (bankAccountId: string, file: any) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post(`/accounting/bank-accounts/${bankAccountId}/import`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+
+    // Credit Notes
+    getCreditNotes: (params?: any) => api.get('/accounting/credit-notes', { params }),
+    createCreditNote: (data: any) => api.post('/accounting/credit-notes', data),
+    applyCreditNote: (id: string, data: any) => api.post(`/accounting/credit-notes/${id}/apply`, data),
 };
 
 export const fixedAssetsApi = {
@@ -507,6 +643,16 @@ export const analyticsApi = {
         api.post('/forecasting/auto-draft-po', { warehouse_id: warehouseId }),
     getPartnerForecast: () => 
         api.get('/forecasting/partner-forecast'),
+    getSalesByChannel: (params?: any) => api.get('/analytics/sales-by-channel', { params }),
+    getCustomerLifetimeValue: (params?: any) => api.get('/analytics/customer-lifetime-value', { params }),
+    getConversionFunnel: (params?: any) => api.get('/analytics/conversion-funnel', { params }),
+    getTopCategories: (params?: any) => api.get('/analytics/top-categories', { params }),
+    getDiscountAnalysis: (params?: any) => api.get('/analytics/discount-analysis', { params }),
+    getInventoryValuation: (params?: any) => api.get('/analytics/inventory-valuation', { params }),
+    getSalesPerformance: (params?: any) => api.get('/analytics/sales-performance', { params }),
+    getProfitability: (params?: any) => api.get('/analytics/profitability', { params }),
+    getReturnsAnalysis: (params?: any) => api.get('/analytics/returns-analysis', { params }),
+    chat: (data: any) => api.post('/analytics/chat', data),
 };
 
 export const reportsApi = {
@@ -757,6 +903,23 @@ export const tasksApi = {
     addComment: (taskId: string, content: string) =>
         api.post(`/tasks/${taskId}/comments`, { content }),
     getCategories: () => api.get('/tasks/categories'),
+};
+
+// ZATCA API
+export const zatcaApi = {
+    onboard: (data: any) => api.post('/zatca/onboard', data),
+    checkStatus: () => api.get('/zatca/status'),
+    syncInvoices: () => api.post('/zatca/sync'),
+    getSettings: () => api.get('/zatca/settings'),
+    saveSettings: (data: any) => api.post('/zatca/settings', data),
+    getOnboardingStatus: () => api.get('/zatca/onboarding-status'),
+    submitOtp: (data: any) => api.post('/zatca/submit-otp', data),
+};
+
+export const dataApi = {
+    exportData: (type: string) => api.get(`/data/export/${type}`),
+    importData: (type: string, data: any) => api.post(`/data/import/${type}`, data),
+    downloadTemplate: (type: string) => api.get(`/data/template/${type}`),
 };
 
 import { initMockAdapter } from './setupMockAdapter';

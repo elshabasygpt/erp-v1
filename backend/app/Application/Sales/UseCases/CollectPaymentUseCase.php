@@ -30,7 +30,7 @@ class CollectPaymentUseCase
 
     public function execute(string $tenantId, array $data, string $userId): CustomerPaymentModel
     {
-        return DB::transaction(function () use ($tenantId, $data, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($tenantId, $data, $userId) {
             $customer = CustomerModel::query()->findOrFail($data['customer_id']);
 
             // 1. Determine Payment Currency and Exchange Rate

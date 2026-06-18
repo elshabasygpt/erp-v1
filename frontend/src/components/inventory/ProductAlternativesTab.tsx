@@ -53,7 +53,7 @@ export function ProductAlternativesTab({ productId, isRTL }: ProductAlternatives
 
   const handleAttach = async (alternativeId: string) => {
     try {
-      await inventoryApi.attachAlternative(productId, { alternative_product_id: alternativeId });
+      await inventoryApi.attachAlternative(productId, alternativeId);
       await loadAlternatives();
       setQ('');
       setSearchResults([]);

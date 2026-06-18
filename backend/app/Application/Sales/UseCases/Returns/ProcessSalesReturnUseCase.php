@@ -22,7 +22,7 @@ final class ProcessSalesReturnUseCase
 
     public function execute(ProcessSalesReturnDTO $dto, string $userId): SalesReturnModel
     {
-        return DB::transaction(function () use ($dto, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($dto, $userId) {
             $invoice = InvoiceModel::query()->with('items')->findOrFail($dto->invoiceId);
             $customer = CustomerModel::query()->findOrFail($dto->customerId);
 

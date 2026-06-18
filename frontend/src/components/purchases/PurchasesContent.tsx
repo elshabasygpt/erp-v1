@@ -49,14 +49,14 @@ export default function PurchasesContent({ dict, locale }: PurchasesContentProps
     };
 
     // Derived states
-    const filteredInvoices = invoices.filter(i => {
+    const filteredInvoices = invoices.filter((i: any) => {
         const matchStr = searchInvoice.toLowerCase();
         const mat = i.invoice_number?.toLowerCase().includes(matchStr) || i.supplier?.name?.toLowerCase().includes(matchStr);
         const stat = statusFilter === 'all' || i.status === statusFilter;
         return mat && stat;
     });
 
-    const filteredReturns = returns.filter(r => {
+    const filteredReturns = returns.filter((r: any) => {
         const matchStr = searchReturn.toLowerCase();
         return r.number?.toLowerCase().includes(matchStr) || r.supplier?.name?.toLowerCase().includes(matchStr);
     });
@@ -70,9 +70,9 @@ export default function PurchasesContent({ dict, locale }: PurchasesContentProps
         );
     }
 
-    const totalPurchasesValue = invoices.reduce((acc, inv) => acc + Number(inv.total || 0), 0);
-    const pendingInvoices = invoices.filter(inv => inv.status === 'draft' || inv.status === 'pending').length;
-    const totalReturnsValue = returns.reduce((acc, ret) => acc + Number(ret.total_amount || 0), 0);
+    const totalPurchasesValue = invoices.reduce((acc: number, inv: any) => acc + Number(inv.total || 0), 0);
+    const pendingInvoices = invoices.filter((inv: any) => inv.status === 'draft' || inv.status === 'pending').length;
+    const totalReturnsValue = returns.reduce((acc: number, ret: any) => acc + Number(ret.total_amount || 0), 0);
 
     return (
         <div className="space-y-6 animate-fade-in">

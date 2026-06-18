@@ -15,11 +15,11 @@ final class AccountingService
         private JournalEntryRepositoryInterface $journalEntryRepository,
     ) {}
 
-    public function generateIncomeStatement(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId, ?string $costCenterId = null): array
+    public function generateIncomeStatement(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId, ?string $fiscalPeriodId = null, ?string $costCenterId = null): array
     {
         // Instead of fetching all ledger lines, we fetch aggregated balances.
         // We can use a modified trial balance query that accepts date ranges.
-        $balances = $this->getAggregatedBalances($from, $to, $tenantId, $costCenterId);
+        $balances = $this->getAggregatedBalances($from, $to, $tenantId, $fiscalPeriodId, $costCenterId);
 
         $revenues = [];
         $expenses = [];
@@ -50,9 +50,9 @@ final class AccountingService
         ];
     }
 
-    public function generateBalanceSheet(\DateTimeImmutable $asOf, string $tenantId, ?string $costCenterId = null): array
+    public function generateBalanceSheet(\DateTimeImmutable $asOf, string $tenantId, ?string $fiscalPeriodId = null, ?string $costCenterId = null): array
     {
-        $balances = $this->getAggregatedBalances(new \DateTimeImmutable('1970-01-01'), $asOf, $tenantId, $costCenterId);
+        $balances = $this->getAggregatedBalances(new \DateTimeImmutable('1970-01-01'), $asOf, $tenantId, $fiscalPeriodId, $costCenterId);
 
         $assetItems = [];
         $liabilityItems = [];
@@ -98,7 +98,7 @@ final class AccountingService
         ];
     }
 
-    private function getAggregatedBalances(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId, ?string $costCenterId = null): array
+    private function getAggregatedBalances(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId, ?string $fiscalPeriodId = null, ?string $costCenterId = null): array
     {
         $query = DB::connection('tenant')->table('journal_entry_lines')
             ->where('journal_entries.tenant_id', $tenantId)
@@ -106,6 +106,7 @@ final class AccountingService
             ->join('accounts', 'journal_entry_lines.account_id', '=', 'accounts.id')
             ->where('journal_entries.is_posted', true)
             ->whereBetween('journal_entries.date', [$from->format('Y-m-d'), $to->format('Y-m-d')])
+            ->when($fiscalPeriodId, fn($q) => $q->where('journal_entries.fiscal_period_id', $fiscalPeriodId))
             ->groupBy('accounts.id', 'accounts.code', 'accounts.name', 'accounts.name_ar', 'accounts.type')
             ->selectRaw('accounts.id, accounts.code, accounts.name, accounts.name_ar, accounts.type, SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit');
 

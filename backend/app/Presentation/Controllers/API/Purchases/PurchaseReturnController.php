@@ -50,7 +50,7 @@ class PurchaseReturnController extends BaseTenantController
         ]);
 
         try {
-            DB::beginTransaction();
+            DB::connection('tenant')->beginTransaction();
 
             $returnId = Str::uuid()->toString();
             $totalAmount = 0;
@@ -129,12 +129,12 @@ class PurchaseReturnController extends BaseTenantController
                 $supplier->save();
             }
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $this->success($purchaseReturn->load('items'), 'Purchase return created successfully', 201);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
 
             return $this->error('Failed to create purchase return: '.$e->getMessage(), 500);
         }
@@ -165,7 +165,7 @@ class PurchaseReturnController extends BaseTenantController
         ]);
 
         if ($purchaseReturn->status === 'draft' && $validated['status'] === 'completed') {
-            DB::beginTransaction();
+            DB::connection('tenant')->beginTransaction();
             try {
                 // Deduct from stock
                 foreach ($purchaseReturn->items as $item) {
@@ -199,9 +199,9 @@ class PurchaseReturnController extends BaseTenantController
 
                 $purchaseReturn->update(['status' => 'completed']);
 
-                DB::commit();
+                DB::connection('tenant')->commit();
             } catch (\Exception $e) {
-                DB::rollBack();
+                DB::connection('tenant')->rollBack();
 
                 return $this->error('Failed to complete return process: '.$e->getMessage(), 500);
             }

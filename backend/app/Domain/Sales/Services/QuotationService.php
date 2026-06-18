@@ -28,7 +28,7 @@ class QuotationService
             throw new DomainException("Cannot modify a quotation that is {$quotation->status}");
         }
 
-        DB::beginTransaction();
+        DB::connection('tenant')->beginTransaction();
         try {
             QuotationItemModel::query()->where('quotation_id', $quotation->id)->delete();
 
@@ -71,11 +71,11 @@ class QuotationService
                 ]);
             }
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $quotation->load('items');
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
             throw $e;
         }
     }

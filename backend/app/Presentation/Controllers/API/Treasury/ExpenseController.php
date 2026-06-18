@@ -62,7 +62,7 @@ class ExpenseController extends BaseTenantController
 
         $tenantId = $this->getTenantId($request);
 
-        return DB::transaction(function () use ($data, $tenantId, $request) {
+        return DB::connection('tenant')->transaction(function () use ($data, $tenantId, $request) {
             $safe = SafeModel::query()->lockForUpdate()->findOrFail($data['safe_id']);
             $this->assertBelongsToTenant($safe, $request);
 

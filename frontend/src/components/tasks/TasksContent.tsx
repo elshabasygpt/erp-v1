@@ -15,7 +15,7 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
         view: 'mine' as 'mine' | 'assigned' | 'created' | 'all',
         status: '',
         priority: '',
-        due: '',
+        due: '' as '' | 'today' | 'overdue' | 'week' | 'upcoming',
         category: '',
         search: '',
     });
@@ -30,7 +30,7 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
         setLoading(true);
         try {
             const [tasksRes, dashRes, catsRes, usersRes] = await Promise.all([
-                tasksApi.getTasks({ ...filters, per_page: 100 }),
+                tasksApi.getTasks({ ...filters, due: filters.due || undefined, per_page: 100 }),
                 tasksApi.getDashboard(),
                 tasksApi.getCategories(),
                 // In a real app we might fetch from usersApi, but assuming a generic endpoint:
@@ -109,11 +109,12 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
                     <option value="medium">{isRTL ? 'متوسط 🟡' : 'Medium'}</option>
                     <option value="low">{isRTL ? 'منخفض 🟢' : 'Low'}</option>
                 </select>
-                <select value={filters.due} onChange={e => setFilters({ ...filters, due: e.target.value })} className="input-field py-1.5 text-sm w-auto">
+                <select value={filters.due} onChange={e => setFilters({ ...filters, due: e.target.value as any })} className="input-field py-1.5 text-sm w-auto">
                     <option value="">{isRTL ? 'كل التواريخ' : 'All Dates'}</option>
                     <option value="today">{isRTL ? 'اليوم' : 'Today'}</option>
                     <option value="overdue">{isRTL ? 'متأخرة' : 'Overdue'}</option>
                     <option value="week">{isRTL ? 'هذا الأسبوع' : 'This Week'}</option>
+                    <option value="upcoming">{isRTL ? 'قادم' : 'Upcoming'}</option>
                 </select>
                 <div className="flex-1 relative min-w-[200px]">
                     <span className="absolute left-3 top-2 text-gray-400">🔍</span>

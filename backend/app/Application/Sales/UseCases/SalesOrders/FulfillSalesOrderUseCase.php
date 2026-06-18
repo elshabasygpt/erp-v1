@@ -19,7 +19,7 @@ final class FulfillSalesOrderUseCase
 
     public function execute(string $salesOrderId, string $userId): Invoice
     {
-        return DB::transaction(function () use ($salesOrderId, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($salesOrderId, $userId) {
             $salesOrder = SalesOrderModel::query()->with('items')->findOrFail($salesOrderId);
 
             if ($salesOrder->status === 'fulfilled') {

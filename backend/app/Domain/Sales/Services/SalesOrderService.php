@@ -26,7 +26,7 @@ class SalesOrderService
             throw new DomainException('Cannot cancel a fulfilled or already cancelled sales order.');
         }
 
-        DB::beginTransaction();
+        DB::connection('tenant')->beginTransaction();
         try {
             foreach ($salesOrder->items as $item) {
                 $unfulfilledQty = $item->quantity - $item->fulfilled_quantity;
@@ -46,11 +46,11 @@ class SalesOrderService
             $salesOrder->status = 'cancelled';
             $salesOrder->save();
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $salesOrder;
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
             throw $e;
         }
     }

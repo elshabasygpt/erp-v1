@@ -36,7 +36,7 @@ class DeliveryService
             throw new DomainException('Dispatch is currently only supported for Sales Orders.');
         }
 
-        DB::beginTransaction();
+        DB::connection('tenant')->beginTransaction();
         try {
             $order = $delivery->salesOrder;
 
@@ -92,11 +92,11 @@ class DeliveryService
             $delivery->status = 'dispatched';
             $delivery->save();
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $delivery;
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
             throw $e;
         }
     }
@@ -116,7 +116,7 @@ class DeliveryService
             throw new DomainException('Delivery is already cancelled or returned.');
         }
 
-        DB::beginTransaction();
+        DB::connection('tenant')->beginTransaction();
         try {
             $order = $delivery->salesOrder;
 
@@ -165,11 +165,11 @@ class DeliveryService
             $delivery->status = 'returned'; // Using returned as terminal state for cancelled
             $delivery->save();
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $delivery;
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
             throw $e;
         }
     }

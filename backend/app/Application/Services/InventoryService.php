@@ -18,7 +18,7 @@ class InventoryService
      */
     public function adjustProductStock(string $tenantId, string $productId, float $quantity, string $mode): void
     {
-        $product = ProductModel::query()->where('tenant_id', $tenantId)->find($productId);
+        $product = ProductModel::query()->where('tenant_id', $tenantId)->lockForUpdate()->find($productId);
         if (! $product) {
             return;
         }

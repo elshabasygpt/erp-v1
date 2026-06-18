@@ -103,7 +103,7 @@ class ProfitDistributionController extends BaseTenantController
         ]);
 
         try {
-            DB::beginTransaction();
+            DB::connection('tenant')->beginTransaction();
 
             $start = $validated['period_start'];
             $end = $validated['period_end'];
@@ -176,12 +176,12 @@ class ProfitDistributionController extends BaseTenantController
                 // 'approved_by' => request()->user()->id() // If auth hooked up correctly
             ]);
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $this->success($distribution->load('shares.partner'), 'Profits distributed and approved successfully.', 201);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
 
             return $this->error('Failed to distribute profits: '.$e->getMessage(), 500);
         }

@@ -66,7 +66,7 @@ class PayrollController extends BaseTenantController
         }
 
         try {
-            DB::beginTransaction();
+            DB::connection('tenant')->beginTransaction();
 
             // 1. Create/Find an Expense Category for Salaries
             $category = ExpenseCategoryModel::query()->firstOrCreate(
@@ -93,11 +93,11 @@ class PayrollController extends BaseTenantController
                 'expense_id' => $expense->id,
             ]);
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $this->success($payroll, 'Payroll marked as paid and expense recorded successfully');
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
 
             return $this->error('Failed to process payment: '.$e->getMessage(), 500);
         }

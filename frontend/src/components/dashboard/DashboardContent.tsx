@@ -17,6 +17,7 @@ import {
     Cell,
 } from 'recharts';
 import { salesApi, inventoryApi, purchasesApi, crmApi } from '@/lib/api';
+import { useDashboardData } from '@/hooks/useDashboard';
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -57,156 +58,76 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
     const isRTL = locale === 'ar';
     const [mounted, setMounted] = useState(false);
     const [currentTime, setCurrentTime] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-
-    // API States
-    const [statsSummary, setStatsSummary] = useState({
-        totalSales: 0,
-        totalPurchases: 0,
-        totalCustomers: 0,
-        totalProducts: 0,
-        todayInvoicesCount: 0,
-        pendingAmount: 0,
-        todayPurchasesCount: 0,
-        purchaseOrdersCount: 0,
-        activeProducts: 0,
-        lowStockCount: 0,
-        revenue: 0,
-        expenses: 0,
-        netIncome: 0,
-        activeCustomers: 0,
-        overduePaymentsCount: 0,
-        newCustomersThisMonth: 0,
-        pendingDelivery: 0,
-        supplierPayments: 0,
-    });
-    const [invoices, setInvoices] = useState<any[]>([]);
-    const [purchases, setPurchases] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [aiForecasts, setAiForecasts] = useState<any[]>([]);
-    const [topProducts, setTopProducts] = useState<any[]>([]);
-    const [topCustomers, setTopCustomers] = useState<any[]>([]);
-    const [accountsPie, setAccountsPie] = useState(defaultAccountsPie);
-    const [dailySalesData, setDailySalesData] = useState<any[]>([]);
     const [isDraftingPO, setIsDraftingPO] = useState(false);
-    const [deadStock, setDeadStock] = useState<any[]>([]);
-    
-    // SMACC-like Financial States
-    const [vatSummary, setVatSummary] = useState<any>(null);
-    const [receivablesAging, setReceivablesAging] = useState<any>(null);
-    const [payablesAging, setPayablesAging] = useState<any>(null);
-    const [liquidity, setLiquidity] = useState<any>(null);
-    const [pendingTasks, setPendingTasks] = useState<any>(null);
-    const [tasksDash, setTasksDash] = useState<any>(null);
-    const [grossMargin, setGrossMargin] = useState<any>(null);
-    const [salesReps, setSalesReps] = useState<any[]>([]);
-    const [liveAuditTrail, setLiveAuditTrail] = useState<any[]>([]);
-    const [expensesBreakdown, setExpensesBreakdown] = useState<any[]>([]);
-    
-    // Quick Search States
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchModal, setShowSearchModal] = useState(false);
 
+    const { data: dashboardData, isLoading } = useDashboardData();
+
+    // Derived states from React Query
+    const invoices = dashboardData?.salesRows || [];
+    const purchases = dashboardData?.purRows || [];
+    const products = dashboardData?.invRows || [];
+    const customers = dashboardData?.custRows || [];
+    const aiForecasts = dashboardData?.forecastsData || [];
+    const tasksDash = dashboardData?.tasksDashData || null;
+    const kpis = dashboardData?.kpis || {};
+    
+    const s = kpis.summary || {};
+    const statsSummary = {
+        totalSales: s.total_sales || 0,
+        totalPurchases: s.total_purchases || 0,
+        totalProducts: s.total_products || 0,
+        totalCustomers: s.total_customers || 0,
+        todayInvoicesCount: s.today_invoices_count || invoices.length,
+        pendingAmount: s.pending_amount || 0,
+        todayPurchasesCount: s.today_purchases_count || purchases.length,
+        purchaseOrdersCount: s.purchase_orders_count || purchases.length,
+        activeProducts: s.active_products || products.length,
+        lowStockCount: s.low_stock_count || 0,
+        revenue: s.revenue || s.total_sales || 0,
+        expenses: s.expenses || s.total_purchases || 0,
+        netIncome: s.net_income || ((s.total_sales || 0) - (s.total_purchases || 0)),
+        activeCustomers: s.active_customers || customers.length,
+        overduePaymentsCount: s.overdue_payments_count || 0,
+        newCustomersThisMonth: s.new_customers_this_month || 0,
+        pendingDelivery: s.pending_delivery || 0,
+        supplierPayments: s.supplier_payments || 0,
+    };
+
+    const topProducts = kpis.top_products || [];
+    const topCustomers = kpis.top_customers || [];
+    const deadStock = kpis.dead_stock || [];
+    const vatSummary = kpis.vat_summary || null;
+    const receivablesAging = kpis.receivables_aging || null;
+    const payablesAging = kpis.payables_aging || null;
+    const liquidity = kpis.liquidity || null;
+    const pendingTasks = kpis.pending_tasks || null;
+    const grossMargin = kpis.gross_margin || null;
+    const salesReps = kpis.top_sales_reps || [];
+    const liveAuditTrail = kpis.live_audit_trail || [];
+    const expensesBreakdown = kpis.expenses_breakdown || [];
+    const dailySalesData = (kpis.daily_sales || []).map((d: any) => ({
+        ...d,
+        revenue: Number(d.revenue || 0)
+    }));
+
+    const ad = kpis.accounts_distribution;
+    const accountsPie = ad ? [
+        { name: 'Assets', nameAr: 'الأصول', value: ad.assets || 0 },
+        { name: 'Liabilities', nameAr: 'الخصوم', value: ad.liabilities || 0 },
+        { name: 'Equity', nameAr: 'حقوق الملكية', value: ad.equity || 0 },
+    ] : defaultAccountsPie;
+
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const { reportsApi } = await import('@/lib/api');
-                // Parallel requests to avoid waterfall load times
-                const [salesRes, inventoryRes, purchasesRes, crmRes, aiRes, kpiRes, tasksRes] = await Promise.all([
-                    salesApi.getInvoices({ limit: 5 }),
-                    inventoryApi.getProducts({ limit: 5 }),
-                    purchasesApi.getInvoices({ limit: 5 }),
-                    crmApi.getCustomers({ limit: 5 }),
-                    import('@/lib/api').then(m => m.analyticsApi.getInventoryForecast(10).catch(() => ({ data: { data: { forecasts: [] } } }))),
-                    reportsApi.getGeneralKpis(),
-                    import('@/lib/api').then(m => m.tasksApi.getDashboard().catch(() => ({ data: { data: null } })))
-                ]);
-
-                const salesRows = salesRes.data?.data || [];
-                const invRows = inventoryRes.data?.data || [];
-                const purRows = purchasesRes.data?.data || [];
-                const custRows = crmRes.data?.data || [];
-                const forecastsData = aiRes?.data?.data?.forecasts || [];
-                const tasksDashData = tasksRes?.data?.data || tasksRes?.data || null;
-                
-                const kpis = kpiRes.data?.data || {};
-
-                setInvoices(salesRows);
-                setProducts(invRows);
-                setPurchases(purRows);
-                setCustomers(custRows);
-                setAiForecasts(forecastsData);
-                setTasksDash(tasksDashData);
-                
-                const s = kpis.summary || {};
-                setStatsSummary({
-                    totalSales: s.total_sales || 0,
-                    totalPurchases: s.total_purchases || 0,
-                    totalProducts: s.total_products || 0,
-                    totalCustomers: s.total_customers || 0,
-                    todayInvoicesCount: s.today_invoices_count || salesRows.length,
-                    pendingAmount: s.pending_amount || 0,
-                    todayPurchasesCount: s.today_purchases_count || purRows.length,
-                    purchaseOrdersCount: s.purchase_orders_count || purRows.length,
-                    activeProducts: s.active_products || invRows.length,
-                    lowStockCount: s.low_stock_count || 0,
-                    revenue: s.revenue || s.total_sales || 0,
-                    expenses: s.expenses || s.total_purchases || 0,
-                    netIncome: s.net_income || ((s.total_sales || 0) - (s.total_purchases || 0)),
-                    activeCustomers: s.active_customers || custRows.length,
-                    overduePaymentsCount: s.overdue_payments_count || 0,
-                    newCustomersThisMonth: s.new_customers_this_month || 0,
-                    pendingDelivery: s.pending_delivery || 0,
-                    supplierPayments: s.supplier_payments || 0,
-                });
-
-                setTopProducts(kpis.top_products || []);
-                setTopCustomers(kpis.top_customers || []);
-                setDeadStock(kpis.dead_stock || []);
-                setVatSummary(kpis.vat_summary || null);
-                setReceivablesAging(kpis.receivables_aging || null);
-                setPayablesAging(kpis.payables_aging || null);
-                setLiquidity(kpis.liquidity || null);
-                setPendingTasks(kpis.pending_tasks || null);
-                setGrossMargin(kpis.gross_margin || null);
-                setSalesReps(kpis.top_sales_reps || []);
-                setLiveAuditTrail(kpis.live_audit_trail || []);
-                setExpensesBreakdown(kpis.expenses_breakdown || []);
-                setDailySalesData((kpis.daily_sales || []).map((d: any) => ({
-                    ...d,
-                    revenue: Number(d.revenue || 0)
-                })));
-
-                // Accounts distribution for pie chart
-                if (kpis.accounts_distribution) {
-                    const ad = kpis.accounts_distribution;
-                    setAccountsPie([
-                        { name: 'Assets', nameAr: 'الأصول', value: ad.assets || 0 },
-                        { name: 'Liabilities', nameAr: 'الخصوم', value: ad.liabilities || 0 },
-                        { name: 'Equity', nameAr: 'حقوق الملكية', value: ad.equity || 0 },
-                    ]);
-                }
-
-            } catch (err) {
-                console.error("Error fetching dashboard data", err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-
         const tick = () => {
             setCurrentTime(new Date().toLocaleTimeString(isRTL ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
         };
         tick();
         const id = setInterval(tick, 1000);
-        
         setMounted(true);
-        
         return () => clearInterval(id);
     }, [isRTL]);
 
@@ -232,12 +153,9 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
             // Hardcode warehouse_id conceptually for demo, should be fetched from active warehouse context 
             const defaultWarehouse = "00000000-0000-0000-0000-000000000000"; // Assuming a master warehouse or fetched from API
             const res = await analyticsApi.autoDraftPurchaseOrder(defaultWarehouse);
-            
             if (res.data.data.status === 'success') {
+                // We could invalidate queries here if we passed queryClient down
                 alert(isRTL ? 'تم إنشاء مسودة فاتورة مشتريات ذكية بنجاح!' : 'Smart Purchase Order Drafted Successfully!');
-                // We could refresh purchases here
-                const purRes = await purchasesApi.getInvoices({ limit: 5 });
-                setPurchases(purRes.data?.data || []);
             } else {
                 alert(isRTL ? 'المخزون بوضع ممتاز، لا داعي للطلب.' : 'Inventory is healthy, no orders needed.');
             }
@@ -566,7 +484,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                 </tr>
                             </thead>
                             <tbody>
-                                {invoices.length > 0 ? invoices.map((inv) => (
+                                {invoices.length > 0 ? invoices.map((inv: any) => (
                                     <tr key={inv.id}>
                                         <td className="font-medium text-sm" style={{ color: 'var(--color-primary)' }}>{inv.invoice_number || inv.number || inv.id?.substring(0,8) || '---'}</td>
                                         <td className="text-sm" style={{ color: 'var(--text-primary)' }}>{inv.customer?.name || (isRTL ? 'عميل نقدي' : 'Cash Customer')}</td>
@@ -611,7 +529,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                 </tr>
                             </thead>
                             <tbody>
-                                {purchases.length > 0 ? purchases.map((po) => (
+                                {purchases.length > 0 ? purchases.map((po: any) => (
                                     <tr key={po.id}>
                                         <td className="font-medium text-sm" style={{ color: 'var(--color-primary)' }}>{po.invoice_number || po.number || po.id?.substring(0,8) || '---'}</td>
                                         <td className="text-sm" style={{ color: 'var(--text-primary)' }}>{po.supplier?.name || '---'}</td>
@@ -814,7 +732,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                         {isRTL ? 'قطع غيار متوفرة في المخزون ولم يتم بيعها مؤخراً، ينصح بتصفيتها.' : 'Parts in stock with zero recent sales, recommended for clearance.'}
                     </p>
                     <div className="space-y-3">
-                        {deadStock.length > 0 ? deadStock.map((p, i) => (
+                        {deadStock.length > 0 ? deadStock.map((p: any, i: number) => (
                             <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30">
                                 <div className="min-w-0 flex-1">
                                     <h4 className="font-semibold text-sm text-red-900 dark:text-red-200 truncate">{isRTL ? p.name_ar : p.name}</h4>
@@ -849,7 +767,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                         {isRTL ? 'أكثر قطع الغيار طلباً ومبيعاً، تأكد من عدم نفاد كمياتها.' : 'Highest demand spare parts, ensure these never run out of stock.'}
                     </p>
                     <div className="space-y-3">
-                        {topProducts.length > 0 ? topProducts.map((p, i) => (
+                        {topProducts.length > 0 ? topProducts.map((p: any, i: number) => (
                             <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30">
                                 <div className="min-w-0 flex-1">
                                     <h4 className="font-semibold text-sm text-green-900 dark:text-green-200 truncate">{isRTL ? p.name_ar : p.name}</h4>
@@ -1196,7 +1114,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                             paddingAngle={5}
                                             dataKey="total_amount"
                                         >
-                                            {expensesBreakdown.map((entry, index) => (
+                                            {expensesBreakdown.map((entry: any, index: number) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>

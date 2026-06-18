@@ -15,7 +15,7 @@ final class CreateDeliveryUseCase
 {
     public function execute(CreateDeliveryDTO $dto, string $userId): DeliveryModel
     {
-        return DB::transaction(function () use ($dto, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($dto, $userId) {
 
             // Check if delivery already exists for this order
             $existing = DeliveryModel::query()->where('order_id', $dto->orderId)

@@ -6,16 +6,8 @@ import { isMockMode } from './auth';
 let mockInstance: MockAdapter | null = null;
 
 export function initMockAdapter(api: AxiosInstance) {
-    // Only initialize once
-    if (mockInstance) return;
-
-    mockInstance = new MockAdapter(api, { onNoMatch: 'passthrough', delayResponse: 500 });
-    
-    // We only attach handlers if we are actually in mock mode right now.
-    // If the user logs in later, we can call setupMockHandlers() manually.
-    if (isMockMode()) {
-        setupMockHandlers();
-    }
+    // Mock adapter disabled for production readiness
+    console.log('[Mock Adapter] Disabled for real API integration.');
 }
 
 export function setupMockHandlers() {

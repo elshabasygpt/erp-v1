@@ -14,7 +14,7 @@ final class AssignDeliveryUseCase
 {
     public function execute(string $deliveryId, AssignDeliveryDTO $dto, string $userId): DeliveryModel
     {
-        return DB::transaction(function () use ($deliveryId, $dto, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($deliveryId, $dto, $userId) {
             $delivery = DeliveryModel::query()->findOrFail($deliveryId);
 
             if (in_array($delivery->status, ['delivered', 'returned'])) {

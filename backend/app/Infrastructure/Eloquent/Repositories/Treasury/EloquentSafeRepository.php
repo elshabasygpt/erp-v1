@@ -42,7 +42,7 @@ class EloquentSafeRepository implements SafeRepositoryInterface
 
     public function updateBalance(int $id, float $delta): void
     {
-        SafeModel::query()->findOrFail($id)->increment('balance', $delta);
+        SafeModel::query()->lockForUpdate()->findOrFail($id)->increment('balance', $delta);
     }
 
     private function toEntity(SafeModel $model): Safe

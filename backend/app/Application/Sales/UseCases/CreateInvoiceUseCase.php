@@ -42,7 +42,7 @@ final class CreateInvoiceUseCase
 
     public function execute(CreateInvoiceDTO $dto, string $userId): Invoice
     {
-        return DB::transaction(function () use ($dto, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($dto, $userId) {
             // 1. Generate invoice number
             $invoiceNumber = $this->invoiceRepository->getNextInvoiceNumber();
 

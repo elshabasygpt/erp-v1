@@ -19,7 +19,7 @@ final class UpdateDeliveryStatusUseCase
 
     public function execute(string $deliveryId, UpdateDeliveryStatusDTO $dto, string $userId): DeliveryModel
     {
-        return DB::transaction(function () use ($deliveryId, $dto, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($deliveryId, $dto, $userId) {
             $delivery = DeliveryModel::query()->findOrFail($deliveryId);
 
             if ($delivery->status === $dto->status) {

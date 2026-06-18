@@ -1,55 +1,53 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import api, { inventoryApi } from '@/lib/api';
 import { format } from 'date-fns';
 
 export function useSalesDashboard(isRTL: boolean) {
-    const [loading, setLoading] = useState(true);
-    const [kpis, setKpis] = useState<any>({});
-    const [charts, setCharts] = useState<any>({});
     const [dateRange, setDateRange] = useState({
         from: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'),
         to: format(new Date(), 'yyyy-MM-dd')
     });
     const [filters, setFilters] = useState({ branch_id: '', warehouse_id: '' });
-    const [branches, setBranches] = useState<any[]>([]);
-    const [warehouses, setWarehouses] = useState<any[]>([]);
-    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        inventoryApi.getBranches().then(res => {
+    const { data: branches = [] } = useQuery({
+        queryKey: ['branches'],
+        queryFn: async () => {
+            const res = await inventoryApi.getBranches();
             const data = res.data?.data?.data || res.data?.data || res.data || [];
-            setBranches(Array.isArray(data) ? data : []);
-        }).catch(() => setBranches([]));
-        inventoryApi.getWarehouses().then(res => {
-            const data = res.data?.data?.data || res.data?.data || res.data || [];
-            setWarehouses(Array.isArray(data) ? data : []);
-        }).catch(() => setWarehouses([]));
-    }, []);
+            return Array.isArray(data) ? data : [];
+        }
+    });
 
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true);
+    const { data: warehouses = [] } = useQuery({
+        queryKey: ['warehouses'],
+        queryFn: async () => {
+            const res = await inventoryApi.getWarehouses();
+            const data = res.data?.data?.data || res.data?.data || res.data || [];
+            return Array.isArray(data) ? data : [];
+        }
+    });
+
+    const { data: dashboardData, isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['salesDashboardAdvanced', dateRange, filters],
+        queryFn: async () => {
             const [kpiRes, chartRes] = await Promise.all([
                 api.get('/sales/advanced-reports/kpis', { params: { date_from: dateRange.from, date_to: dateRange.to, ...filters } }),
                 api.get('/sales/advanced-reports/charts', { params: { date_from: dateRange.from, date_to: dateRange.to, ...filters } })
             ]);
-            setKpis(kpiRes.data.data);
-            setCharts(chartRes.data.data);
-            setError(null);
-        } catch (error) {
-            console.error('Error fetching dashboard data', error);
-            setError(isRTL ? 'فشل تحميل بيانات لوحة القياس' : 'Failed to load dashboard data');
-        } finally {
-            setLoading(false);
+            return {
+                kpis: kpiRes.data?.data || {},
+                charts: chartRes.data?.data || {}
+            };
         }
-    }, [dateRange, filters, isRTL]);
+    });
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    const error = queryError ? (isRTL ? 'فشل تحميل بيانات لوحة القياس' : 'Failed to load dashboard data') : null;
 
     return { 
-        loading, kpis, charts, 
+        loading, 
+        kpis: dashboardData?.kpis || {}, 
+        charts: dashboardData?.charts || {}, 
         dateRange, setDateRange, 
         filters, setFilters, 
         branches, warehouses, error 

@@ -15,7 +15,7 @@ final class CreateSalesOrderUseCase
 {
     public function execute(CreateSalesOrderDTO $dto, string $userId): SalesOrderModel
     {
-        return DB::transaction(function () use ($dto, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($dto, $userId) {
 
             $subtotal = 0;
             $vatAmount = 0;

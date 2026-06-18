@@ -4,19 +4,15 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models\Accounting;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Infrastructure\Eloquent\Models\BaseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class CostCenterModel extends Model
+class CostCenterModel extends BaseModel
 {
-    protected $connection = 'tenant';
-
+    use SoftDeletes;
     protected $table = 'cost_centers';
-
-    public $incrementing = false;
-
-    protected $keyType = 'string';
 
     protected $fillable = [
         'id',

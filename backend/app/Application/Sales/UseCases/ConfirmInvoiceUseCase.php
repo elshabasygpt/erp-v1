@@ -56,7 +56,7 @@ class ConfirmInvoiceUseCase
 
     public function execute(string $invoiceId, string $userId): void
     {
-        DB::transaction(function () use ($invoiceId, $userId) {
+        DB::connection('tenant')->transaction(function () use ($invoiceId, $userId) {
             $invoice = $this->invoiceRepository->findById($invoiceId);
             if (! $invoice) {
                 throw new \DomainException('Invoice not found.');

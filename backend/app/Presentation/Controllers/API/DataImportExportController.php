@@ -123,7 +123,7 @@ class DataImportExportController extends BaseTenantController
         $insertedCount = 0;
         $now = now();
 
-        DB::beginTransaction();
+        DB::connection('tenant')->beginTransaction();
 
         try {
             while (($row = fgetcsv($stream)) !== false) {
@@ -182,13 +182,13 @@ class DataImportExportController extends BaseTenantController
                 $insertedCount += count($records);
             }
 
-            DB::commit();
+            DB::connection('tenant')->commit();
             fclose($stream);
 
             return $this->success(null, "Successfully imported {$insertedCount} records.", 200);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
             fclose($stream);
             return $this->error('Failed to import data: ' . $e->getMessage(), 500);
         }

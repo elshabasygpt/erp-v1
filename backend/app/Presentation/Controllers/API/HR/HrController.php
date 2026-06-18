@@ -113,7 +113,7 @@ class HrController extends BaseTenantController
             'safe_id' => 'required|exists:tenant.safes,id',
         ]);
 
-        return DB::transaction(function () use ($id, $validated) {
+        return DB::connection('tenant')->transaction(function () use ($id, $validated) {
             $payroll = PayrollModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
             if ($payroll->status === 'paid') {
                 return $this->error('Payroll already paid', 400);

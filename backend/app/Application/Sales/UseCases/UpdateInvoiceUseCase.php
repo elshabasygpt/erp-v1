@@ -132,7 +132,7 @@ final class UpdateInvoiceUseCase
         // Actually, since EloquentInvoiceRepository `update` only updates the invoice table, we need to fix it.
         // Let's call a method in the repository. Wait, `update()` in EloquentInvoiceRepository does not save items!
 
-        DB::beginTransaction();
+        DB::connection('tenant')->beginTransaction();
         try {
             InvoiceItemModel::query()->where('invoice_id', $updatedInvoice->getId())->delete();
             $savedInvoice = clone $updatedInvoice;
@@ -284,11 +284,11 @@ final class UpdateInvoiceUseCase
                 SubmitZatcaInvoiceJob::dispatch($updatedInvoice->getId(), $tenantId);
             }
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             return $this->invoiceRepository->findById($updatedInvoice->getId());
         } catch (\Exception $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
             throw $e;
         }
     }

@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription.active' => SubscriptionActiveMiddleware::class,
             'role' => RolePermissionMiddleware::class,
             'partner.auth' => PartnerAuth::class,
+            'rbac' => \App\Http\Middleware\EnforceRbacMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

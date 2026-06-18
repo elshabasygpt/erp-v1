@@ -3,6 +3,8 @@ import { getDictionary, getDirection, type Locale } from '@/i18n/config';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { Toaster } from 'react-hot-toast';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import HelpSystem from '@/components/ui/HelpSystem';
 import '../globals.css';
 
 export const metadata: Metadata = {
@@ -47,7 +49,12 @@ export default async function RootLayout({
                 className={`${direction === 'rtl' ? 'font-arabic' : 'font-sans'} min-h-screen`}
             >
                 <ThemeProvider>
-                    <QueryProvider>{children}</QueryProvider>
+                    <QueryProvider>
+                        <ErrorBoundary>
+                            {children}
+                            <HelpSystem locale={locale} />
+                        </ErrorBoundary>
+                    </QueryProvider>
                     <Toaster position="bottom-right" reverseOrder={false} />
                 </ThemeProvider>
             </body>

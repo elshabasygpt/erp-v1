@@ -1,59 +1,58 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { inventoryApi, purchasesApi, purchaseReturnsApi, crmApi } from '@/lib/api';
 
 export function usePurchasesData() {
-    const [loading, setLoading] = useState(true);
-    const [suppliers, setSuppliers] = useState<any[]>([]);
-    const [warehouses, setWarehouses] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
-    const [invoices, setInvoices] = useState<any[]>([]);
-    const [returns, setReturns] = useState<any[]>([]);
+    const { data: suppliersData, isLoading: loadingSup } = useQuery({
+        queryKey: ['suppliers'],
+        queryFn: async () => {
+            const res = await crmApi.getSuppliers({ limit: 100 });
+            return res.data?.data?.data || res.data?.data || [];
+        }
+    });
 
-    const fetchInvoices = useCallback(async () => {
-        try {
+    const { data: warehousesData, isLoading: loadingWar } = useQuery({
+        queryKey: ['warehouses'],
+        queryFn: async () => {
+            const res = await inventoryApi.getWarehouses({ limit: 100 });
+            return res.data?.data?.data || res.data?.data || [];
+        }
+    });
+
+    const { data: productsData, isLoading: loadingProd } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+            const res = await inventoryApi.getProducts({ limit: 100 });
+            return res.data?.data?.data || res.data?.data || [];
+        }
+    });
+
+    const { data: invoicesData, isLoading: loadingInv, refetch: fetchInvoices } = useQuery({
+        queryKey: ['purchaseInvoices'],
+        queryFn: async () => {
             const res = await purchasesApi.getInvoices({ limit: 100 });
-            setInvoices(res.data?.data?.data || []);
-        } catch (error) {
-            console.error(error);
+            return res.data?.data?.data || res.data?.data || [];
         }
-    }, []);
+    });
 
-    const fetchReturns = useCallback(async () => {
-        try {
+    const { data: returnsData, isLoading: loadingRet, refetch: fetchReturns } = useQuery({
+        queryKey: ['purchaseReturns'],
+        queryFn: async () => {
             const res = await purchaseReturnsApi.getReturns({ limit: 100 });
-            setReturns(res.data?.data?.data || []);
-        } catch (error) {
-            console.error(error);
+            return res.data?.data?.data || res.data?.data || [];
         }
-    }, []);
+    });
 
-    const fetchInitialData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [supRes, warRes, prodRes] = await Promise.all([
-                crmApi.getSuppliers({ limit: 100 }),
-                inventoryApi.getWarehouses({ limit: 100 }),
-                inventoryApi.getProducts({ limit: 100 })
-            ]);
-            setSuppliers(supRes.data?.data?.data || []);
-            setWarehouses(warRes.data?.data?.data || []);
-            setProducts(prodRes.data?.data?.data || []);
-            
-            await fetchInvoices();
-            await fetchReturns();
-        } catch (error) {
-            console.error('Initial data fetch error:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [fetchInvoices, fetchReturns]);
-
-    useEffect(() => {
-        fetchInitialData();
-    }, [fetchInitialData]);
+    const loading = loadingSup || loadingWar || loadingProd || loadingInv || loadingRet;
 
     return {
-        loading, suppliers, warehouses, products, invoices, returns,
-        fetchInvoices, fetchReturns, fetchInitialData
+        loading,
+        suppliers: suppliersData || [],
+        warehouses: warehousesData || [],
+        products: productsData || [],
+        invoices: invoicesData || [],
+        returns: returnsData || [],
+        fetchInvoices,
+        fetchReturns,
+        fetchInitialData: () => {} // Shim for backwards compatibility if needed
     };
 }

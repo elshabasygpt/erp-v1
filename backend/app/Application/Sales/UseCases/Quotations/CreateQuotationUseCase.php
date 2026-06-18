@@ -14,7 +14,7 @@ final class CreateQuotationUseCase
 {
     public function execute(CreateQuotationDTO $dto, string $userId): QuotationModel
     {
-        return DB::transaction(function () use ($dto, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($dto, $userId) {
 
             $subtotal = 0;
             $vatAmount = 0;

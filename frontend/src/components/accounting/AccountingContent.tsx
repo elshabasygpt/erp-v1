@@ -1,18 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { treasuryApi } from '@/lib/api';
 import Link from 'next/link';
+import { useSafes, useExpenses } from '@/hooks/useAccounting';
+import toast from 'react-hot-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AccountingContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
     const [activeTab, setActiveTab] = useState<'safes' | 'expenses' | 'transfers' | 'reports'>('safes');
     
-    // Data states
-    const [safes, setSafes] = useState<any[]>([]);
-    const [expenses, setExpenses] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+    const { data: safesData, isLoading: isLoadingSafes } = useSafes();
+    const { data: expensesData, isLoading: isLoadingExpenses } = useExpenses();
+    
+    const safes = safesData || [];
+    const expenses = expensesData?.expenses || [];
+    const categories = expensesData?.categories || [];
+    const loading = activeTab === 'safes' || activeTab === 'transfers' ? isLoadingSafes : isLoadingExpenses;
 
     // Form states
     const [showSafeModal, setShowSafeModal] = useState(false);
@@ -23,72 +29,47 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
 
     const [transferData, setTransferData] = useState({ from_safe_id: '', to_safe_id: '', amount: 0, description: '' });
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            if (activeTab === 'safes' || activeTab === 'transfers') {
-                const res = await treasuryApi.getSafes();
-                setSafes(res.data?.data || []);
-            } else if (activeTab === 'expenses') {
-                const [expRes, catRes, safeRes] = await Promise.all([
-                    treasuryApi.getExpenses(),
-                    treasuryApi.getExpenseCategories(),
-                    treasuryApi.getSafes()
-                ]);
-                setExpenses(expRes.data?.data || []);
-                setCategories(catRes.data?.data || []);
-                setSafes(safeRes.data?.data || []);
-            }
-        } catch (error) {
-            console.error("Failed fetching data", error);
-        }
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, [activeTab]);
-
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 2 }).format(val || 0);
 
     const handleCreateSafe = async () => {
         try {
             await treasuryApi.createSafe(newSafe);
+            toast.success(isRTL ? "تم إضافة الخزينة" : "Safe created");
             setShowSafeModal(false);
             setNewSafe({ name: '', type: 'cash', balance: 0 });
-            fetchData();
-        } catch (e) {
-            console.error(e);
+            queryClient.invalidateQueries({ queryKey: ['safes'] });
+        } catch (e: any) {
+            toast.error(e.response?.data?.message || "Error");
         }
     };
 
     const handleCreateExpense = async () => {
         try {
             await treasuryApi.createExpense(newExpense);
+            toast.success(isRTL ? "تم تسجيل المصروف" : "Expense recorded");
             setShowExpenseModal(false);
             setNewExpense({ category_id: '', safe_id: '', amount: 0, description: '' });
-            fetchData();
-        } catch (e) {
-            console.error(e);
+            queryClient.invalidateQueries({ queryKey: ['expenses'] });
+            queryClient.invalidateQueries({ queryKey: ['safes'] });
+        } catch (e: any) {
+            toast.error(e.response?.data?.message || "Error");
         }
     };
 
     const handleExecuteTransfer = async () => {
         if (!transferData.from_safe_id || !transferData.to_safe_id || transferData.amount <= 0) {
-            alert(isRTL ? "يرجى إكمال بيانات التحويل" : "Please complete transfer details");
+            toast.error(isRTL ? "يرجى إكمال بيانات التحويل" : "Please complete transfer details");
             return;
         }
-        setLoading(true);
         try {
             await treasuryApi.transfer(transferData);
             setTransferData({ from_safe_id: '', to_safe_id: '', amount: 0, description: '' });
-            fetchData();
-            alert(isRTL ? "تم التحويل بنجاح" : "Transfer completed successfully");
+            queryClient.invalidateQueries({ queryKey: ['safes'] });
+            toast.success(isRTL ? "تم التحويل بنجاح" : "Transfer completed successfully");
         } catch (e: any) {
-            alert(e.response?.data?.message || (isRTL ? "فشل التحويل" : "Transfer failed"));
+            toast.error(e.response?.data?.message || (isRTL ? "فشل التحويل" : "Transfer failed"));
         }
-        setLoading(false);
     };
 
     return (
@@ -134,7 +115,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
             {/* Safes Tab */}
             {activeTab === 'safes' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {loading ? <p>Loading...</p> : safes.map(safe => (
+                    {loading ? <p>Loading...</p> : safes.map((safe: any) => (
                         <div key={safe.id} className="glass-card p-6 border-l-4" style={{ borderLeftColor: safe.type === 'bank' ? '#3b82f6' : '#22c55e' }}>
                             <div className="flex justify-between items-start mb-2">
                                 <h3 className="text-lg font-bold text-white">{safe.name}</h3>
@@ -166,7 +147,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                                 </tr>
                             </thead>
                             <tbody>
-                                {expenses.map(exp => (
+                                {expenses.map((exp: any) => (
                                     <tr key={exp.id}>
                                         <td>{exp.description || '---'}</td>
                                         <td><span className="badge badge-info">{exp.category?.name}</span></td>
@@ -196,7 +177,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                                     onChange={e => setTransferData({...transferData, from_safe_id: e.target.value})}
                                 >
                                     <option value="">{isRTL ? 'اختر المصدر...' : 'Select Source...'}</option>
-                                    {safes.map(s => <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.balance)})</option>)}
+                                    {safes.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.balance)})</option>)}
                                 </select>
                             </div>
                             <div>
@@ -207,7 +188,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                                     onChange={e => setTransferData({...transferData, to_safe_id: e.target.value})}
                                 >
                                     <option value="">{isRTL ? 'اختر الوجهة...' : 'Select Destination...'}</option>
-                                    {safes.map(s => <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.balance)})</option>)}
+                                    {safes.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.balance)})</option>)}
                                 </select>
                             </div>
                             <div className="md:col-span-2">
@@ -289,13 +270,13 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                            <label className="block text-sm opacity-70 mb-1">{isRTL ? 'التصنيف' : 'Category'}</label>
                             <select className="select-field" value={newExpense.category_id} onChange={e => setNewExpense({...newExpense, category_id: e.target.value})}>
                                 <option value="">Select Category...</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
 
                             <label className="block text-sm opacity-70 mb-1">{isRTL ? 'الخزينة المخصوم منها' : 'Safe'}</label>
                             <select className="select-field" value={newExpense.safe_id} onChange={e => setNewExpense({...newExpense, safe_id: e.target.value})}>
                                 <option value="">Select Safe...</option>
-                                {safes.map(s => <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.balance)})</option>)}
+                                {safes.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.balance)})</option>)}
                             </select>
 
                             <label className="block text-sm opacity-70 mb-1">{isRTL ? 'المبلغ' : 'Amount'}</label>

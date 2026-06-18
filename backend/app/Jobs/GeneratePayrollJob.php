@@ -42,7 +42,7 @@ class GeneratePayrollJob implements ShouldQueue
         ]);
 
         try {
-            DB::beginTransaction();
+            DB::connection('tenant')->beginTransaction();
 
             $employees = EmployeeModel::query()->where('is_active', true)->get();
             $generatedCount = 0;
@@ -159,7 +159,7 @@ class GeneratePayrollJob implements ShouldQueue
                 $generatedCount++;
             }
 
-            DB::commit();
+            DB::connection('tenant')->commit();
 
             Log::info('GeneratePayrollJob completed', [
                 'tenant_id' => $this->tenantId,
@@ -167,7 +167,7 @@ class GeneratePayrollJob implements ShouldQueue
             ]);
 
         } catch (\Throwable $e) {
-            DB::rollBack();
+            DB::connection('tenant')->rollBack();
             Log::error('GeneratePayrollJob failed', [
                 'tenant_id' => $this->tenantId,
                 'error' => $e->getMessage(),
