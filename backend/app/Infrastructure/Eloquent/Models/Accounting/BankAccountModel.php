@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models\Accounting;
 
-use App\Infrastructure\Eloquent\Models\BaseModel;
 use App\Infrastructure\Eloquent\Models\AccountModel;
+use App\Infrastructure\Eloquent\Models\BaseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -22,7 +22,7 @@ class BankAccountModel extends BaseModel
         'current_balance',
         'chart_of_account_id',
         'is_active',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

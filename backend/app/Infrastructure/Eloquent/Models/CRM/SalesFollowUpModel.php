@@ -9,7 +9,7 @@ use App\Infrastructure\Eloquent\Models\UserModel;
 class SalesFollowUpModel extends BaseModel
 {
     protected $table = 'sales_follow_ups';
-    
+
     protected $fillable = [
         'customer_id',
         'assigned_to',

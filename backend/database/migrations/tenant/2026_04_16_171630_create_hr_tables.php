@@ -15,16 +15,16 @@ return new class extends Migration
             $table->string('name');
             $table->string('position')->nullable(); // المسمى الوظيفي
             $table->string('phone')->nullable();
-            
+
             // Work rules
             $table->decimal('base_salary', 14, 2)->default(0);
             $table->time('shift_start')->nullable(); // وقت الحضور الافتراضي
             $table->time('shift_end')->nullable();   // وقت الانصراف الافتراضي
-            
+
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
         });
 
@@ -35,11 +35,11 @@ return new class extends Migration
             $table->date('date');
             $table->time('check_in')->nullable();
             $table->time('check_out')->nullable();
-            $table->integer('late_minutes')->default(0); 
+            $table->integer('late_minutes')->default(0);
             $table->enum('status', ['present', 'absent', 'late', 'on_leave'])->default('present');
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
             $table->unique(['employee_id', 'date']);
         });
@@ -75,7 +75,7 @@ return new class extends Migration
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
             // Optional: link to global expenses if paid from treasury
             $table->foreign('expense_id')->references('id')->on('expenses')->nullOnDelete();
-            
+
             $table->unique(['employee_id', 'month', 'year']);
         });
     }

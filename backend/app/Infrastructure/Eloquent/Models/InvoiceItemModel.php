@@ -10,8 +10,9 @@ class InvoiceItemModel extends BaseModel
 
     protected $fillable = [
         'invoice_id', 'product_id', 'quantity', 'unit_price', 'cost_price',
-        'discount_percent', 'vat_rate', 'total',
-        'base_unit_price', 'adjusted_unit_price', 'adjustment_amount'
+        'discount_percent', 'vat_rate', 'total', 'subtotal', 'tax_amount',
+        'base_unit_price', 'adjusted_unit_price', 'adjustment_amount',
+        'core_charge_applied', 'core_charge_amount',
     ];
 
     protected $casts = [
@@ -24,6 +25,8 @@ class InvoiceItemModel extends BaseModel
         'base_unit_price' => 'decimal:2',
         'adjusted_unit_price' => 'decimal:2',
         'adjustment_amount' => 'decimal:2',
+        'core_charge_applied' => 'boolean',
+        'core_charge_amount' => 'decimal:2',
     ];
 
     public function invoice()

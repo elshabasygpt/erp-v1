@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Factories;
 
 use App\Infrastructure\Eloquent\Models\SafeModel;
@@ -11,10 +12,10 @@ class SafeFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'       => $this->faker->company() . ' Safe',
-            'type'       => 'cash',
-            'balance'    => $this->faker->numberBetween(1000, 50000),
-            'is_active'  => true,
+            'name' => $this->faker->company().' Safe',
+            'type' => 'cash',
+            'balance' => $this->faker->numberBetween(1000, 50000),
+            'is_active' => true,
         ];
     }
 }

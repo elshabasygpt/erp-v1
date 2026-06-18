@@ -2,55 +2,47 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-
+use App\Domain\Accounting\Repositories\AccountRepositoryInterface;
 // Sales
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
+use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
+use App\Domain\Auth\Repositories\UserRepositoryInterface;
+use App\Domain\CRM\Repositories\CustomerRepositoryInterface;
+// Inventory
+use App\Domain\CRM\Repositories\SupplierRepositoryInterface;
+use App\Domain\HR\Repositories\AttendanceRepositoryInterface;
+// CRM
+use App\Domain\HR\Repositories\EmployeeRepositoryInterface;
+use App\Domain\HR\Repositories\PayrollRepositoryInterface;
+use App\Domain\Inventory\Repositories\ProductRepositoryInterface;
+use App\Domain\Purchases\Repositories\PurchaseRepositoryInterface;
+// Purchases
 use App\Domain\Sales\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Sales\Repositories\SalesChannelRepositoryInterface;
-use App\Infrastructure\Eloquent\Repositories\EloquentInvoiceRepository;
-use App\Infrastructure\Eloquent\Repositories\EloquentSalesChannelRepository;
-
-// Inventory
-use App\Domain\Inventory\Repositories\ProductRepositoryInterface;
-use App\Infrastructure\Eloquent\Repositories\EloquentProductRepository;
-
-// CRM
-use App\Domain\CRM\Repositories\CustomerRepositoryInterface;
-use App\Domain\CRM\Repositories\SupplierRepositoryInterface;
-use App\Infrastructure\Eloquent\Repositories\EloquentCustomerRepository;
-use App\Infrastructure\Eloquent\Repositories\EloquentSupplierRepository;
-
-// Purchases
-use App\Domain\Purchases\Repositories\PurchaseRepositoryInterface;
-use App\Infrastructure\Eloquent\Repositories\EloquentPurchaseRepository;
-
 // Accounting
-use App\Domain\Accounting\Repositories\AccountRepositoryInterface;
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
-use App\Infrastructure\Eloquent\Repositories\EloquentAccountRepository;
-use App\Infrastructure\Eloquent\Repositories\EloquentJournalEntryRepository;
-
-// HR
-use App\Domain\HR\Repositories\EmployeeRepositoryInterface;
-use App\Domain\HR\Repositories\AttendanceRepositoryInterface;
-use App\Domain\HR\Repositories\PayrollRepositoryInterface;
-use App\Infrastructure\Eloquent\Repositories\HR\EloquentEmployeeRepository;
-use App\Infrastructure\Eloquent\Repositories\HR\EloquentAttendanceRepository;
-use App\Infrastructure\Eloquent\Repositories\HR\EloquentPayrollRepository;
-
-// Treasury
 use App\Domain\Treasury\Repositories\SafeRepositoryInterface;
 use App\Domain\Treasury\Repositories\SafeTransactionRepositoryInterface;
-use App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeRepository;
-use App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeTransactionRepository;
-
-// Approvals
-use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
 use App\Infrastructure\Eloquent\Repositories\Approvals\EloquentApprovalRepository;
-
-// Auth
-use App\Domain\Auth\Repositories\UserRepositoryInterface;
+use App\Infrastructure\Eloquent\Repositories\EloquentAccountRepository;
+// HR
+use App\Infrastructure\Eloquent\Repositories\EloquentCustomerRepository;
+use App\Infrastructure\Eloquent\Repositories\EloquentInvoiceRepository;
+use App\Infrastructure\Eloquent\Repositories\EloquentJournalEntryRepository;
+use App\Infrastructure\Eloquent\Repositories\EloquentProductRepository;
+use App\Infrastructure\Eloquent\Repositories\EloquentPurchaseRepository;
+use App\Infrastructure\Eloquent\Repositories\EloquentSalesChannelRepository;
+// Treasury
+use App\Infrastructure\Eloquent\Repositories\EloquentSupplierRepository;
 use App\Infrastructure\Eloquent\Repositories\EloquentUserRepository;
+use App\Infrastructure\Eloquent\Repositories\HR\EloquentAttendanceRepository;
+use App\Infrastructure\Eloquent\Repositories\HR\EloquentEmployeeRepository;
+// Approvals
+use App\Infrastructure\Eloquent\Repositories\HR\EloquentPayrollRepository;
+use App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeRepository;
+// Auth
+use App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeTransactionRepository;
+use App\Infrastructure\Validation\TenantPresenceVerifier;
+use Illuminate\Support\ServiceProvider;
 
 // Partnerships
 // use App\Domain\Partnerships\Repositories\PartnerRepositoryInterface;
@@ -100,7 +92,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->singleton('validation.presence', function ($app) {
-            return new \App\Infrastructure\Validation\TenantPresenceVerifier($app['db']);
+            return new TenantPresenceVerifier($app['db']);
         });
     }
 }

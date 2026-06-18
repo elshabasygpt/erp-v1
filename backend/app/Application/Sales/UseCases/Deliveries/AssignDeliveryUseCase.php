@@ -15,8 +15,8 @@ final class AssignDeliveryUseCase
     public function execute(string $deliveryId, AssignDeliveryDTO $dto, string $userId): DeliveryModel
     {
         return DB::transaction(function () use ($deliveryId, $dto, $userId) {
-            $delivery = DeliveryModel::findOrFail($deliveryId);
-            
+            $delivery = DeliveryModel::query()->findOrFail($deliveryId);
+
             if (in_array($delivery->status, ['delivered', 'returned'])) {
                 throw new \DomainException("Cannot modify assignment for a delivery in {$delivery->status} state.");
             }
@@ -47,11 +47,11 @@ final class AssignDeliveryUseCase
             $delivery->updated_by = $userId;
             $delivery->save();
 
-            DeliveryStatusLogModel::create([
+            DeliveryStatusLogModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'delivery_id' => $delivery->id,
                 'status' => $newStatus,
-                'notes' => 'Driver/Platform assigned: ' . ($dto->notes ?? ''),
+                'notes' => 'Driver/Platform assigned: '.($dto->notes ?? ''),
                 'created_by' => $userId,
             ]);
 

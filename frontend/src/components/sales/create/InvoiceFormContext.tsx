@@ -210,7 +210,7 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
         }))
       };
       
-      const res = await api.post('/invoices', payload);
+      const res = await api.post('/sales/invoices', payload);
       
       if (status === 'confirmed') {
           setSavedInvoiceData({ ...payload, id: res.data.data?.id, total: grandTotal, subtotal, vat_amount: taxTotal, invoice_number: 'NEW' });

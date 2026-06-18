@@ -22,17 +22,48 @@ final class StockMovement extends Entity
         private ?\DateTimeImmutable $createdAt = null,
     ) {
         parent::__construct($id);
-        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable;
     }
 
-    public function getProductId(): string { return $this->productId; }
-    public function getWarehouseId(): string { return $this->warehouseId; }
-    public function getType(): string { return $this->type; }
-    public function getQuantity(): float { return $this->quantity; }
-    public function getCostPerUnit(): float { return $this->costPerUnit; }
-    public function getReferenceType(): ?string { return $this->referenceType; }
-    public function getReferenceId(): ?string { return $this->referenceId; }
-    public function getNotes(): ?string { return $this->notes; }
+    public function getProductId(): string
+    {
+        return $this->productId;
+    }
+
+    public function getWarehouseId(): string
+    {
+        return $this->warehouseId;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function getQuantity(): float
+    {
+        return $this->quantity;
+    }
+
+    public function getCostPerUnit(): float
+    {
+        return $this->costPerUnit;
+    }
+
+    public function getReferenceType(): ?string
+    {
+        return $this->referenceType;
+    }
+
+    public function getReferenceId(): ?string
+    {
+        return $this->referenceId;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
 
     public function toArray(): array
     {

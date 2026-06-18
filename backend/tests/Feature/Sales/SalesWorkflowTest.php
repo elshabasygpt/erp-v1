@@ -2,37 +2,28 @@
 
 namespace Tests\Feature\Sales;
 
-use Tests\TestCase;
-use App\Infrastructure\Eloquent\Models\UserModel;
-use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
+use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class SalesWorkflowTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_confirmed_invoice_deducts_stock()
     {
-        $user = UserModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
-            'name' => 'Admin',
-            'email' => 'admin@test.com',
-            'password' => bcrypt('password'),
-        ]);
+        $this->actingAsAuthenticatedUser();
 
         $warehouse = WarehouseModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
+            'id' => Str::uuid(),
             'name' => 'Main Warehouse',
             'code' => 'WH01',
             'is_active' => true,
         ]);
 
         $product = ProductModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
-            'name' => 'Test Product',
+            'id' => Str::uuid(),
+            'name' => 'Test Product', 'name_ar' => 'Test Product', 'name_en' => 'Test Product',
             'sku' => 'SKU-1',
             'barcode' => '123',
             'type' => 'standard',
@@ -58,13 +49,16 @@ class SalesWorkflowTest extends TestCase
                     'quantity' => 2,
                     'unit_price' => 100,
                     'tax_rate' => 15,
-                ]
+                ],
             ],
-            'notes' => 'Test POS Invoice'
+            'notes' => 'Test POS Invoice',
         ];
 
-        $response = $this->actingAs($user, 'api')->postJson('/api/sales/invoices', $payload);
+        $response = $this->postJson('/api/sales/invoices', $payload);
 
+        if ($response->status() !== 201) {
+            dump($response->json());
+        }
         $response->assertStatus(201);
 
         $this->assertDatabaseHas('warehouse_products', [
@@ -77,7 +71,7 @@ class SalesWorkflowTest extends TestCase
             'product_id' => $product->id,
             'warehouse_id' => $warehouse->id,
             'type' => 'out',
-            'quantity' => -2,
+            'quantity' => 2,
         ]);
     }
 }

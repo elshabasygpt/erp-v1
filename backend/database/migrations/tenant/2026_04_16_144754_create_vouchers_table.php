@@ -25,7 +25,7 @@ return new class extends Migration
             $table->uuid('updated_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->foreign('customer_id')->references('id')->on('customers')->nullOnDelete();
             $table->index('branch_id');
             $table->index('type');

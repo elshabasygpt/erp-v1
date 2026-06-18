@@ -7,30 +7,36 @@ namespace App\Infrastructure\Eloquent\Repositories;
 use App\Domain\Sales\Entities\Invoice;
 use App\Domain\Sales\Entities\InvoiceItem;
 use App\Domain\Sales\Repositories\InvoiceRepositoryInterface;
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 {
     public function findById(string $id): ?Invoice
     {
-        $model = InvoiceModel::with('items.product')->find($id);
-        if (!$model) return null;
+        $model = InvoiceModel::query()->with('items.product')->find($id);
+        if (! $model) {
+            return null;
+        }
+
         return $this->toDomain($model);
     }
 
     public function findByInvoiceNumber(string $invoiceNumber): ?Invoice
     {
-        $model = InvoiceModel::with('items.product')->where('invoice_number', $invoiceNumber)->first();
-        if (!$model) return null;
+        $model = InvoiceModel::query()->with('items.product')->where('invoice_number', $invoiceNumber)->first();
+        if (! $model) {
+            return null;
+        }
+
         return $this->toDomain($model);
     }
 
     public function create(Invoice $invoice): Invoice
     {
         return DB::connection('tenant')->transaction(function () use ($invoice) {
-            $model = InvoiceModel::create([
+            $model = InvoiceModel::query()->create([
                 'id' => $invoice->getId(),
                 'invoice_number' => $invoice->getInvoiceNumber(),
                 'customer_id' => $invoice->getCustomerId(),
@@ -65,7 +71,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             ]);
 
             foreach ($invoice->getItems() as $item) {
-                InvoiceItemModel::create([
+                InvoiceItemModel::query()->create([
                     'id' => $item->getId(),
                     'invoice_id' => $model->id,
                     'product_id' => $item->getProductId(),
@@ -77,6 +83,8 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
                     'base_unit_price' => $item->getBaseUnitPrice(),
                     'adjusted_unit_price' => $item->getAdjustedUnitPrice(),
                     'adjustment_amount' => $item->getAdjustmentAmount(),
+                    'core_charge_applied' => $item->getCoreChargeApplied(),
+                    'core_charge_amount' => $item->getCoreChargeAmount(),
                 ]);
             }
 
@@ -86,7 +94,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     public function update(Invoice $invoice): Invoice
     {
-        InvoiceModel::where('id', $invoice->getId())->update([
+        InvoiceModel::query()->where('id', $invoice->getId())->update([
             'status' => $invoice->getStatus(),
             'notes' => $invoice->getNotes(),
             'subtotal' => $invoice->getSubtotal(),
@@ -107,45 +115,47 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     public function delete(string $id): bool
     {
-        return InvoiceModel::where('id', $id)->delete() > 0;
+        return InvoiceModel::query()->where('id', $id)->delete() > 0;
     }
 
     public function getNextInvoiceNumber(): string
     {
-        $last = InvoiceModel::orderBy('created_at', 'desc')->first();
+        $last = InvoiceModel::query()->orderBy('created_at', 'desc')->first();
         $nextNum = $last ? ((int) substr($last->invoice_number, 4)) + 1 : 1;
-        return 'INV-' . str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
+
+        return 'INV-'.str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
     }
 
     public function paginate(int $perPage = 15, array $filters = []): array
     {
-        $query = InvoiceModel::with('items', 'customer');
+        $query = InvoiceModel::query()->with('items', 'customer');
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-        if (!empty($filters['type'])) {
+        if (! empty($filters['type'])) {
             $query->where('type', $filters['type']);
         }
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $query->where('invoice_date', '>=', $filters['from']);
         }
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $query->where('invoice_date', '<=', $filters['to']);
         }
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('invoice_number', 'ilike', "%{$filters['search']}%");
             });
         }
 
         $result = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
         return $result->toArray();
     }
 
     public function getByCustomer(string $customerId, int $perPage = 15): array
     {
-        return InvoiceModel::with('items')
+        return InvoiceModel::query()->with('items')
             ->where('customer_id', $customerId)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage)
@@ -185,7 +195,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             notes: $model->notes,
             warehouseId: $model->warehouse_id,
             createdBy: $model->created_by,
-            invoiceDate: new \DateTimeImmutable($model->invoice_date),
+            invoiceDate: $model->invoice_date instanceof \DateTimeInterface ? \DateTimeImmutable::createFromInterface($model->invoice_date) : new \DateTimeImmutable($model->invoice_date),
             zatcaQrCode: $model->zatca_qr_code,
             zatcaXml: $model->zatca_xml,
             zatcaHash: $model->zatca_hash,
@@ -219,10 +229,13 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
                 baseUnitPrice: $itemModel->base_unit_price ? (float) $itemModel->base_unit_price : null,
                 adjustedUnitPrice: $itemModel->adjusted_unit_price ? (float) $itemModel->adjusted_unit_price : null,
                 adjustmentAmount: $itemModel->adjustment_amount ? (float) $itemModel->adjustment_amount : null,
+                coreChargeApplied: (bool) $itemModel->core_charge_applied,
+                coreChargeAmount: (float) $itemModel->core_charge_amount,
             );
         })->toArray();
 
         $invoice->setItems($items);
+
         return $invoice;
     }
 }

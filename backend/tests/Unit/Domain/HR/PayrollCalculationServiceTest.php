@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests\Unit\Domain\HR;
 
 use App\Domain\HR\Services\PayrollCalculationService;
@@ -10,7 +11,7 @@ class PayrollCalculationServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->service = new PayrollCalculationService();
+        $this->service = new PayrollCalculationService;
     }
 
     public function test_calculates_full_month_with_no_absences(): void

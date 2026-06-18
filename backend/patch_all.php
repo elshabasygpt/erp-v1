@@ -1,10 +1,13 @@
 <?php
 
-function replaceInFile($file, $search, $replace) {
-    if (!file_exists($file)) return;
+function replaceInFile($file, $search, $replace)
+{
+    if (! file_exists($file)) {
+        return;
+    }
     $content = file_get_contents($file);
     if (is_array($search)) {
-        foreach($search as $i => $s) {
+        foreach ($search as $i => $s) {
             $content = str_replace($s, $replace[$i], $content);
         }
     } else {
@@ -18,18 +21,18 @@ replaceInFile(
     'app/Application/Accounting/Services/AccountingService.php',
     [
         "public function generateIncomeStatement(\DateTimeImmutable \$from, \DateTimeImmutable \$to): array",
-        "DB::connection('tenant')->table('journal_entry_lines')"
+        "DB::connection('tenant')->table('journal_entry_lines')",
     ],
     [
         "public function generateIncomeStatement(\DateTimeImmutable \$from, \DateTimeImmutable \$to, string \$tenantId): array",
-        "DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', \$tenantId)"
+        "DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', \$tenantId)",
     ]
 );
 // Also need to update ReportsController to pass tenantId
 replaceInFile(
     'app/Presentation/Controllers/API/Accounting/ReportsController.php',
-    "return \$this->success(\$this->accountingService->generateIncomeStatement(\$from, \$to));",
-    "return \$this->success(\$this->accountingService->generateIncomeStatement(\$from, \$to, (string) \$this->getTenantId(\$request)));"
+    'return $this->success($this->accountingService->generateIncomeStatement($from, $to));',
+    'return $this->success($this->accountingService->generateIncomeStatement($from, $to, (string) $this->getTenantId($request)));'
 );
 
 // 2. ConfirmInvoiceUseCase
@@ -37,11 +40,11 @@ replaceInFile(
     'app/Application/Sales/UseCases/ConfirmInvoiceUseCase.php',
     [
         "DB::connection('tenant')->table('safe_users')",
-        "public function execute(string \$invoiceId, string \$userId): void"
+        'public function execute(string $invoiceId, string $userId): void',
     ],
     [
         "DB::connection('tenant')->table('safe_users')->where('tenant_id', \$invoice->tenant_id)",
-        "public function execute(string \$invoiceId, string \$userId): void"
+        'public function execute(string $invoiceId, string $userId): void',
     ]
 );
 
@@ -50,11 +53,11 @@ replaceInFile(
     'app/Application/Sales/UseCases/GetCustomerStatementUseCase.php',
     [
         "DB::table('invoices')",
-        "DB::table('customer_payments')"
+        "DB::table('customer_payments')",
     ],
     [
         "DB::table('invoices')->where('tenant_id', \$tenantId)",
-        "DB::table('customer_payments')->where('tenant_id', \$tenantId)"
+        "DB::table('customer_payments')->where('tenant_id', \$tenantId)",
     ]
 );
 
@@ -77,11 +80,11 @@ replaceInFile(
     'app/Domain/Accounting/Services/FiscalPeriodService.php',
     [
         "DB::connection('tenant')->table('fiscal_periods')\n            ->where('id', \$periodId)",
-        "DB::connection('tenant')->table('fiscal_periods')->insert(["
+        "DB::connection('tenant')->table('fiscal_periods')->insert([",
     ],
     [
         "DB::connection('tenant')->table('fiscal_periods')\n            ->where('tenant_id', \$tenantId)\n            ->where('id', \$periodId)",
-        "DB::connection('tenant')->table('fiscal_periods')->insert([\n            'tenant_id' => \$tenantId,"
+        "DB::connection('tenant')->table('fiscal_periods')->insert([\n            'tenant_id' => \$tenantId,",
     ]
 );
 

@@ -13,7 +13,7 @@ return new class extends Migration
             'purchase_invoices',
             'customer_payments',
             'supplier_payments',
-            'safe_transactions'
+            'safe_transactions',
         ];
 
         foreach ($tables as $tableName) {
@@ -32,7 +32,7 @@ return new class extends Migration
             'purchase_invoices',
             'customer_payments',
             'supplier_payments',
-            'safe_transactions'
+            'safe_transactions',
         ];
 
         foreach ($tables as $tableName) {

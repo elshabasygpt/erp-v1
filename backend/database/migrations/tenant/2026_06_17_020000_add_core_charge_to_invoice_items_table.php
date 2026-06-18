@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('invoice_items', function (Blueprint $table) {
+            if (! Schema::hasColumn('invoice_items', 'core_charge_applied')) {
+                $table->boolean('core_charge_applied')->default(false)->after('total');
+            }
+            if (! Schema::hasColumn('invoice_items', 'core_charge_amount')) {
+                $table->decimal('core_charge_amount', 15, 2)->default(0.00)->after('core_charge_applied');
+            }
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('invoice_items', function (Blueprint $table) {
+            $table->dropColumn(['core_charge_applied', 'core_charge_amount']);
+        });
+    }
+};

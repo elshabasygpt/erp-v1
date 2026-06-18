@@ -1,16 +1,18 @@
 <?php
-require __DIR__ . '/vendor/autoload.php';
-$app = require_once __DIR__ . '/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/vendor/autoload.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
 use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
+use App\Infrastructure\Eloquent\Models\WarehouseModel;
+use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Presentation\Controllers\API\Sales\InvoiceController;
 use App\Presentation\Controllers\API\Sales\SalesReturnController;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
 
 echo "--- Starting Advanced Sales Programmatic Verification ---\n";
@@ -19,7 +21,7 @@ $warehouse = WarehouseModel::first();
 $product = ProductModel::first();
 $customer = CustomerModel::first();
 
-if (!$warehouse || !$product || !$customer) {
+if (! $warehouse || ! $product || ! $customer) {
     echo "Missing base data\n";
     exit;
 }
@@ -50,15 +52,15 @@ $invoiceReq = new Request([
             'quantity' => 2,
             'unit_price' => 500, // Subtotal 1000, Tax 150 = 1150
             'vat_rate' => 15,
-            'discount_percent' => 0
-        ]
-    ]
+            'discount_percent' => 0,
+        ],
+    ],
 ]);
 
 $controller = app(InvoiceController::class);
 $res = $controller->store($invoiceReq);
 if ($res->getStatusCode() !== 201) {
-    echo "[FAIL] Draft Creation: " . json_encode($res->getData()) . "\n";
+    echo '[FAIL] Draft Creation: '.json_encode($res->getData())."\n";
     exit;
 }
 $invoice = $res->getData()->data;
@@ -67,16 +69,21 @@ echo "[OK] Draft Sales Invoice Created. ID: {$invoice->id}\n";
 // Ensure balance and stock did NOT change!
 $customer->refresh();
 $wp->refresh();
-if ((float)$customer->balance !== (float)$initialBalance) { echo "[FAIL] Customer balance changed on draft!\n"; exit; }
-if ((float)$wp->quantity !== (float)$initialStock) { echo "[FAIL] Stock changed on draft!\n"; exit; }
+if ((float) $customer->balance !== (float) $initialBalance) {
+    echo "[FAIL] Customer balance changed on draft!\n";
+    exit;
+}
+if ((float) $wp->quantity !== (float) $initialStock) {
+    echo "[FAIL] Stock changed on draft!\n";
+    exit;
+}
 echo "[OK] Debt and Stock unchanged on draft.\n\n";
-
 
 // 2. Confirm the Invoice
 $statusReq = new Request(['status' => 'confirmed']);
 $resStatus = $controller->updateStatus($statusReq, $invoice->id);
 if ($resStatus->getStatusCode() !== 200) {
-    echo "[FAIL] Status Update: " . json_encode($resStatus->getData()) . "\n";
+    echo '[FAIL] Status Update: '.json_encode($resStatus->getData())."\n";
     exit;
 }
 echo "[OK] Sales Invoice Confirmed.\n";
@@ -86,20 +93,20 @@ $wp->refresh();
 $expectedBalance = $initialBalance + 1150; // Customer owes us more
 $expectedStock = $initialStock - 2;
 
-if ((float)$customer->balance !== (float)$expectedBalance) {
-    echo "[FAIL] Balance mismatch. Expected {$expectedBalance}, Got {$customer->balance}\n"; 
+if ((float) $customer->balance !== (float) $expectedBalance) {
+    echo "[FAIL] Balance mismatch. Expected {$expectedBalance}, Got {$customer->balance}\n";
 } else {
     echo "[OK] Customer debt correctly increased to {$customer->balance}\n";
 }
 
-if ((float)$wp->quantity !== (float)$expectedStock) {
-    echo "[FAIL] Stock mismatch. Expected {$expectedStock}, Got {$wp->quantity}\n"; 
+if ((float) $wp->quantity !== (float) $expectedStock) {
+    echo "[FAIL] Stock mismatch. Expected {$expectedStock}, Got {$wp->quantity}\n";
 } else {
     echo "[OK] Stock quantity correctly deduced to {$wp->quantity}\n";
 }
 
 $movement = StockMovementModel::where('reference_id', $invoice->id)->first();
-if (!$movement || $movement->type !== 'out' || $movement->quantity != -2) {
+if (! $movement || $movement->type !== 'out' || $movement->quantity != -2) {
     echo "[FAIL] Stock movement record missing or incorrect.\n";
 } else {
     echo "[OK] Stock movement recorded properly: TYPE={$movement->type}, QTY={$movement->quantity}\n\n";
@@ -116,15 +123,15 @@ $returnReq = new Request([
             'product_id' => $product->id,
             'quantity' => 1,
             'unit_price' => 500, // Total 575
-            'vat_rate' => 15
-        ]
-    ]
+            'vat_rate' => 15,
+        ],
+    ],
 ]);
 
 $returnController = app(SalesReturnController::class);
 $resRet = $returnController->store($returnReq);
 if ($resRet->getStatusCode() !== 201) {
-    echo "[FAIL] Return Creation: " . json_encode($resRet->getData()) . "\n";
+    echo '[FAIL] Return Creation: '.json_encode($resRet->getData())."\n";
     exit;
 }
 echo "[OK] Completed Sales Return Created.\n";
@@ -134,14 +141,14 @@ $wp->refresh();
 $expectedBalance2 = $expectedBalance - 575;
 $expectedStock2 = $expectedStock + 1;
 
-if ((float)$customer->balance !== (float)$expectedBalance2) {
-    echo "[FAIL] Customer balance mismatch after return. Expected {$expectedBalance2}, Got {$customer->balance}\n"; 
+if ((float) $customer->balance !== (float) $expectedBalance2) {
+    echo "[FAIL] Customer balance mismatch after return. Expected {$expectedBalance2}, Got {$customer->balance}\n";
 } else {
     echo "[OK] Customer debt correctly refunded/decreased to {$customer->balance}\n";
 }
 
-if ((float)$wp->quantity !== (float)$expectedStock2) {
-    echo "[FAIL] Stock mismatch after return. Expected {$expectedStock2}, Got {$wp->quantity}\n"; 
+if ((float) $wp->quantity !== (float) $expectedStock2) {
+    echo "[FAIL] Stock mismatch after return. Expected {$expectedStock2}, Got {$wp->quantity}\n";
 } else {
     echo "[OK] Stock quantity correctly returned to warehouse: {$wp->quantity}\n";
 }

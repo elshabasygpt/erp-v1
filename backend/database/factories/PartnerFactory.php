@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Factories;
 
 use App\Infrastructure\Eloquent\Models\PartnerModel;
@@ -11,13 +12,13 @@ class PartnerFactory extends Factory
     public function definition(): array
     {
         return [
-            
-            'name'          => $this->faker->name(),
-            'email'         => $this->faker->unique()->safeEmail(),
-            'profit_share'  => $this->faker->numberBetween(10, 40),
-            'joined_at'     => $this->faker->date(),
-            'status'        => 'active',
-            'portal_access' => false,
+
+            'name' => $this->faker->name(),
+            'email' => $this->faker->unique()->safeEmail(),
+            'profit_share_percentage' => $this->faker->numberBetween(10, 40),
+            'is_active' => true,
+            'portal_enabled' => false,
+            'capital_amount' => 10000,
         ];
     }
 }

@@ -18,7 +18,7 @@ class SalesReturnItemModel extends BaseModel
         'cost_price',
         'vat_rate',
         'total',
-        'condition'
+        'condition',
     ];
 
     protected $casts = [
@@ -26,7 +26,7 @@ class SalesReturnItemModel extends BaseModel
         'unit_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
         'vat_rate' => 'decimal:2',
-        'total' => 'decimal:2'
+        'total' => 'decimal:2',
     ];
 
     public function salesReturn()

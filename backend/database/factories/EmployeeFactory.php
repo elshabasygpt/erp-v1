@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Factories;
 
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
@@ -11,11 +12,11 @@ class EmployeeFactory extends Factory
     public function definition(): array
     {
         return [
-            'name'        => $this->faker->name(),
-            'position'    => $this->faker->jobTitle(),
-            'phone'       => $this->faker->phoneNumber(),
+            'name' => $this->faker->name(),
+            'position' => $this->faker->jobTitle(),
+            'phone' => $this->faker->phoneNumber(),
             'base_salary' => $this->faker->numberBetween(3000, 15000),
-            'is_active'   => true,
+            'is_active' => true,
         ];
     }
 }

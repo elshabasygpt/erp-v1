@@ -17,6 +17,7 @@ class ProductModel extends BaseModel
         'sell_price', 'wholesale_price', 'semi_wholesale_price', 'vat_rate', 'stock_alert_level', 'is_active',
         'category_id', 'unit_of_measure', 'description', 'image_url', 'is_favorite',
         'oem_number', 'part_number', 'brand', 'quality_grade', 'warranty_months', 'country_of_origin',
+        'has_core_charge', 'core_charge_amount', 'is_kit',
         'created_by', 'updated_by',
     ];
 
@@ -30,6 +31,9 @@ class ProductModel extends BaseModel
         'is_active' => 'boolean',
         'is_favorite' => 'boolean',
         'warranty_months' => 'integer',
+        'has_core_charge' => 'boolean',
+        'core_charge_amount' => 'decimal:2',
+        'is_kit' => 'boolean',
     ];
 
     public function warehouseStocks()
@@ -57,8 +61,38 @@ class ProductModel extends BaseModel
         )->with(['vehicleModel.make'])->withPivot('notes')->withTimestamps();
     }
 
+    public function components()
+    {
+        return $this->belongsToMany(
+            ProductModel::class,
+            'product_components',
+            'parent_product_id',
+            'child_product_id'
+        )->withPivot('quantity_required')->withTimestamps();
+    }
+
     public function warranties()
     {
         return $this->hasMany(WarrantyModel::class, 'product_id');
+    }
+
+    public function alternatives()
+    {
+        return $this->belongsToMany(
+            ProductModel::class,
+            'product_alternatives',
+            'product_id',
+            'alternative_product_id'
+        )->withPivot('notes')->withTimestamps();
+    }
+
+    public function inverseAlternatives()
+    {
+        return $this->belongsToMany(
+            ProductModel::class,
+            'product_alternatives',
+            'alternative_product_id',
+            'product_id'
+        )->withPivot('notes')->withTimestamps();
     }
 }

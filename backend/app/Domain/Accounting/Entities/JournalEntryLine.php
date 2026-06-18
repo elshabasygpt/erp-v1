@@ -24,15 +24,50 @@ final class JournalEntryLine extends Entity
         $this->validate();
     }
 
-    public function getJournalEntryId(): string { return $this->journalEntryId; }
-    public function getAccountId(): string { return $this->accountId; }
-    public function getDebit(): float { return $this->debit; }
-    public function getCredit(): float { return $this->credit; }
-    public function getTransactionDebit(): float { return $this->transactionDebit; }
-    public function getTransactionCredit(): float { return $this->transactionCredit; }
-    public function getDescription(): ?string { return $this->description; }
-    public function getCostCenterId(): ?string { return $this->costCenterId; }
-    public function getProjectId(): ?string { return $this->projectId; }
+    public function getJournalEntryId(): string
+    {
+        return $this->journalEntryId;
+    }
+
+    public function getAccountId(): string
+    {
+        return $this->accountId;
+    }
+
+    public function getDebit(): float
+    {
+        return $this->debit;
+    }
+
+    public function getCredit(): float
+    {
+        return $this->credit;
+    }
+
+    public function getTransactionDebit(): float
+    {
+        return $this->transactionDebit;
+    }
+
+    public function getTransactionCredit(): float
+    {
+        return $this->transactionCredit;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function getCostCenterId(): ?string
+    {
+        return $this->costCenterId;
+    }
+
+    public function getProjectId(): ?string
+    {
+        return $this->projectId;
+    }
 
     private function validate(): void
     {

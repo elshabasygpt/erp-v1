@@ -4,21 +4,18 @@ declare(strict_types=1);
 
 namespace App\Application\Sales\UseCases\Returns;
 
-use App\Infrastructure\Eloquent\Models\SalesReturnModel;
-use App\Infrastructure\Eloquent\Models\SalesReturnItemModel;
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\JournalEntryModel;
-use App\Infrastructure\Eloquent\Models\JournalEntryLineModel;
-use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
-use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Domain\Sales\Services\SalesReturnService;
 use App\Infrastructure\Eloquent\Models\AccountModel;
+use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Infrastructure\Eloquent\Models\JournalEntryLineModel;
+use App\Infrastructure\Eloquent\Models\JournalEntryModel;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Infrastructure\Eloquent\Models\SalesReturnModel;
+use App\Infrastructure\Eloquent\Models\WarrantyModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-
-use App\Domain\Sales\Services\SalesReturnService;
 
 class ConfirmSalesReturnUseCase
 {
@@ -29,14 +26,14 @@ class ConfirmSalesReturnUseCase
     public function execute(string $salesReturnId, string $userId): void
     {
         DB::transaction(function () use ($salesReturnId, $userId) {
-            $salesReturn = SalesReturnModel::with('items')->findOrFail($salesReturnId);
-            
+            $salesReturn = SalesReturnModel::query()->with('items')->findOrFail($salesReturnId);
+
             if ($salesReturn->status !== 'pending_approval' && $salesReturn->status !== 'draft') {
-                throw new \DomainException("Sales Return cannot be confirmed in its current state.");
+                throw new \DomainException('Sales Return cannot be confirmed in its current state.');
             }
 
-            $invoice = InvoiceModel::findOrFail($salesReturn->invoice_id);
-            $customer = CustomerModel::findOrFail($salesReturn->customer_id);
+            $invoice = InvoiceModel::query()->findOrFail($salesReturn->invoice_id);
+            $customer = CustomerModel::query()->findOrFail($salesReturn->customer_id);
 
             // Change status
             $salesReturn->status = 'completed';
@@ -48,60 +45,60 @@ class ConfirmSalesReturnUseCase
 
             // Void related warranties for the returned items
             foreach ($salesReturn->items as $item) {
-                \App\Infrastructure\Eloquent\Models\WarrantyModel::where('invoice_id', $salesReturn->invoice_id)
+                WarrantyModel::query()->where('invoice_id', $salesReturn->invoice_id)
                     ->where('product_id', $item->product_id)
                     ->whereIn('status', ['active', 'claimed'])
                     ->update([
                         'status' => 'void',
-                        'notes' => DB::raw("CONCAT(COALESCE(notes, ''), '\nVoided due to Sales Return: {$salesReturn->return_number}')")
+                        'notes' => DB::raw("CONCAT(COALESCE(notes, ''), '\nVoided due to Sales Return: {$salesReturn->return_number}')"),
                     ]);
             }
 
             // 3. Accounting Reversal (Double Entry)
-            $salesReturnsAccount = AccountModel::where('code', '4102')->first();
-            $vatPayableAccount = AccountModel::where('code', '2105')->first();
-            $receivablesAccount = AccountModel::where('code', '1103')->first();
-            $cashAccount = AccountModel::where('code', '1101')->first();
+            $salesReturnsAccount = AccountModel::query()->where('code', '4102')->first();
+            $vatPayableAccount = AccountModel::query()->where('code', '2105')->first();
+            $receivablesAccount = AccountModel::query()->where('code', '1103')->first();
+            $cashAccount = AccountModel::query()->where('code', '1101')->first();
 
             if ($salesReturnsAccount && $vatPayableAccount && ($receivablesAccount || $cashAccount)) {
-                $je = JournalEntryModel::create([
+                $je = JournalEntryModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'date' => now(),
-                    'reference' => 'RET-' . $salesReturn->return_number,
-                    'description' => "Sales Return for Invoice " . $invoice->invoice_number,
+                    'reference' => 'RET-'.$salesReturn->return_number,
+                    'description' => 'Sales Return for Invoice '.$invoice->invoice_number,
                     'status' => 'posted',
                     'created_by' => $userId,
                 ]);
 
-                JournalEntryLineModel::create([
+                JournalEntryLineModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'journal_entry_id' => $je->id,
                     'account_id' => $salesReturnsAccount->id,
                     'debit' => $salesReturn->subtotal,
                     'credit' => 0,
-                    'description' => 'Sales Return Subtotal'
+                    'description' => 'Sales Return Subtotal',
                 ]);
 
                 if ($salesReturn->vat_amount > 0) {
-                    JournalEntryLineModel::create([
+                    JournalEntryLineModel::query()->create([
                         'id' => Str::uuid()->toString(),
                         'journal_entry_id' => $je->id,
                         'account_id' => $vatPayableAccount->id,
                         'debit' => $salesReturn->vat_amount,
                         'credit' => 0,
-                        'description' => 'Sales Return VAT'
+                        'description' => 'Sales Return VAT',
                     ]);
                 }
 
                 $creditAccount = ($salesReturn->refund_method === 'store_credit') ? $receivablesAccount : $cashAccount;
-                
-                JournalEntryLineModel::create([
+
+                JournalEntryLineModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'journal_entry_id' => $je->id,
                     'account_id' => $creditAccount->id,
                     'debit' => 0,
                     'credit' => $salesReturn->total,
-                    'description' => "Sales Return Refund ({$salesReturn->refund_method})"
+                    'description' => "Sales Return Refund ({$salesReturn->refund_method})",
                 ]);
             }
 
@@ -113,7 +110,7 @@ class ConfirmSalesReturnUseCase
             // CRM Loyalty Reversal
             $deductedPoints = floor($salesReturn->total / 10);
             $customer->loyalty_points = max(0, $customer->loyalty_points - $deductedPoints);
-            
+
             // Re-evaluate segmentation
             if ($customer->loyalty_points >= 1000) {
                 $customer->segment = 'VIP';
@@ -123,19 +120,19 @@ class ConfirmSalesReturnUseCase
                 $customer->segment = 'Regular';
             }
 
-            $customer->save(); 
-            
+            $customer->save();
+
             if (in_array($salesReturn->refund_method, ['cash', 'card', 'bank_transfer'])) {
-                $safe = SafeModel::where('is_active', true)->first();
+                $safe = SafeModel::query()->where('is_active', true)->first();
                 if ($safe) {
-                    SafeTransactionModel::create([
+                    SafeTransactionModel::query()->create([
                         'id' => Str::uuid()->toString(),
                         'safe_id' => $safe->id,
                         'type' => 'expense',
                         'amount' => $salesReturn->total,
                         'reference_id' => $salesReturn->id,
                         'reference_type' => 'sales_return',
-                        'description' => "Refund for Sales Return " . $salesReturn->return_number,
+                        'description' => 'Refund for Sales Return '.$salesReturn->return_number,
                         'transaction_date' => now(),
                         'created_by' => $userId,
                     ]);

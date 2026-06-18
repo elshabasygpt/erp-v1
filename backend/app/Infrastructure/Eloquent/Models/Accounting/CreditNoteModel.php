@@ -6,9 +6,9 @@ namespace App\Infrastructure\Eloquent\Models\Accounting;
 
 use App\Infrastructure\Eloquent\Models\BaseModel;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\SupplierModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
+use App\Infrastructure\Eloquent\Models\SupplierModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CreditNoteModel extends BaseModel
@@ -28,7 +28,7 @@ class CreditNoteModel extends BaseModel
         'total',
         'status',
         'reason',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

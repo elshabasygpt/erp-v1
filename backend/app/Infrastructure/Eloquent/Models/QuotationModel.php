@@ -24,7 +24,7 @@ class QuotationModel extends BaseModel
         'status',
         'notes',
         'created_by',
-        'updated_by'
+        'updated_by',
     ];
 
     protected $casts = [
@@ -32,7 +32,7 @@ class QuotationModel extends BaseModel
         'vat_amount' => 'decimal:2',
         'total' => 'decimal:2',
         'issue_date' => 'datetime',
-        'expiry_date' => 'datetime'
+        'expiry_date' => 'datetime',
     ];
 
     public function items()

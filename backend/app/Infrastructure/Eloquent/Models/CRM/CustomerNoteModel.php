@@ -9,7 +9,7 @@ use App\Infrastructure\Eloquent\Models\UserModel;
 class CustomerNoteModel extends BaseModel
 {
     protected $table = 'customer_notes';
-    
+
     protected $fillable = [
         'customer_id',
         'user_id',

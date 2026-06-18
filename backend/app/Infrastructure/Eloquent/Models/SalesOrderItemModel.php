@@ -17,7 +17,7 @@ class SalesOrderItemModel extends BaseModel
         'fulfilled_quantity',
         'unit_price',
         'vat_rate',
-        'total'
+        'total',
     ];
 
     protected $casts = [

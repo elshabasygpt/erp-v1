@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Factories;
 
 use App\Infrastructure\Eloquent\Models\WarehouseModel;
@@ -11,9 +12,9 @@ class WarehouseFactory extends Factory
     public function definition(): array
     {
         return [
-            
-            'name'      => $this->faker->word() . ' warehouse',
-            'location'  => $this->faker->city(),
+
+            'name' => $this->faker->word().' warehouse',
+            'location' => $this->faker->city(),
             'is_active' => true,
         ];
     }

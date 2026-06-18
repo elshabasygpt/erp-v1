@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory\Services;
 
-use App\Infrastructure\Eloquent\Models\StockTransferModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
+use App\Infrastructure\Eloquent\Models\StockTransferModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Exception;
 
 class StockTransferService
 {
@@ -19,8 +19,8 @@ class StockTransferService
     public function createTransfer(array $data, string $userId): StockTransferModel
     {
         return DB::connection('tenant')->transaction(function () use ($data, $userId) {
-            $transfer = StockTransferModel::create([
-                'reference_number' => 'ST-' . strtoupper(Str::random(8)),
+            $transfer = StockTransferModel::query()->create([
+                'reference_number' => 'ST-'.strtoupper(Str::random(8)),
                 'from_warehouse_id' => $data['from_warehouse_id'],
                 'to_warehouse_id' => $data['to_warehouse_id'],
                 'status' => 'draft',
@@ -45,27 +45,27 @@ class StockTransferService
     public function approveTransfer(string $transferId, string $userId): StockTransferModel
     {
         return DB::connection('tenant')->transaction(function () use ($transferId, $userId) {
-            $transfer = StockTransferModel::with('items')->findOrFail($transferId);
+            $transfer = StockTransferModel::query()->with('items')->findOrFail($transferId);
 
             if ($transfer->status !== 'draft') {
-                throw new Exception("Only draft transfers can be approved.");
+                throw new Exception('Only draft transfers can be approved.');
             }
 
             foreach ($transfer->items as $item) {
                 // Deduct from source warehouse (with pessimistic lock)
-                $sourceStock = WarehouseProductModel::where('warehouse_id', $transfer->from_warehouse_id)
+                $sourceStock = WarehouseProductModel::query()->where('warehouse_id', $transfer->from_warehouse_id)
                     ->where('product_id', $item->product_id)
                     ->lockForUpdate()
                     ->first();
 
-                if (!$sourceStock || $sourceStock->quantity < $item->quantity) {
+                if (! $sourceStock || $sourceStock->quantity < $item->quantity) {
                     throw new Exception("Insufficient stock in source warehouse for product ID: {$item->product_id}");
                 }
 
                 $sourceStock->decrement('quantity', $item->quantity);
 
                 // Log movement
-                StockMovementModel::create([
+                StockMovementModel::query()->create([
                     'product_id' => $item->product_id,
                     'warehouse_id' => $transfer->from_warehouse_id,
                     'type' => 'out',
@@ -92,10 +92,10 @@ class StockTransferService
     public function receiveTransfer(string $transferId, string $userId, array $receivedItems = []): StockTransferModel
     {
         return DB::connection('tenant')->transaction(function () use ($transferId, $userId, $receivedItems) {
-            $transfer = StockTransferModel::with('items')->findOrFail($transferId);
+            $transfer = StockTransferModel::query()->with('items')->findOrFail($transferId);
 
             if ($transfer->status !== 'in_transit') {
-                throw new Exception("Only in-transit transfers can be received.");
+                throw new Exception('Only in-transit transfers can be received.');
             }
 
             // Map received items if partial receives are allowed, otherwise assume fully received
@@ -106,12 +106,12 @@ class StockTransferService
 
             foreach ($transfer->items as $item) {
                 $qtyToReceive = isset($receivedMap[$item->id]) ? $receivedMap[$item->id] : $item->quantity;
-                
+
                 $item->update(['received_quantity' => $qtyToReceive]);
 
                 if ($qtyToReceive > 0) {
                     // Add to destination warehouse
-                    $destStock = WarehouseProductModel::firstOrCreate(
+                    $destStock = WarehouseProductModel::query()->firstOrCreate(
                         ['warehouse_id' => $transfer->to_warehouse_id, 'product_id' => $item->product_id],
                         ['quantity' => 0, 'average_cost' => 0]
                     );
@@ -119,7 +119,7 @@ class StockTransferService
                     $destStock->increment('quantity', $qtyToReceive);
 
                     // Log movement
-                    StockMovementModel::create([
+                    StockMovementModel::query()->create([
                         'product_id' => $item->product_id,
                         'warehouse_id' => $transfer->to_warehouse_id,
                         'type' => 'in',

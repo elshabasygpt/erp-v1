@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Infrastructure\Helpers\SimpleXLSX;
+use App\Infrastructure\Helpers\SimpleXLSXGen;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CustomerController extends BaseTenantController
 {
@@ -20,16 +23,16 @@ class CustomerController extends BaseTenantController
         $limit = $request->query('limit', '15');
         $search = $request->query('search');
 
-        $query = CustomerModel::where('tenant_id', $this->getTenantId($request))
+        $query = CustomerModel::query()->where('tenant_id', $this->getTenantId($request))
             ->withCount('invoices as orders_count')
             ->withSum('invoices as total_purchases', 'total')
             ->withMax('invoices as last_order', 'invoice_date');
 
         if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'ilike', '%' . $search . '%')
-                  ->orWhere('phone', 'ilike', '%' . $search . '%')
-                  ->orWhere('email', 'ilike', '%' . $search . '%');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', '%'.$search.'%')
+                    ->orWhere('phone', 'ilike', '%'.$search.'%')
+                    ->orWhere('email', 'ilike', '%'.$search.'%');
             });
         }
 
@@ -41,6 +44,7 @@ class CustomerController extends BaseTenantController
             $c->group = $c->segment ?: 'retail';
             $c->payment_type = $c->credit_limit > 0 ? 'credit' : 'cash';
             $c->total_purchases = $c->total_purchases ?: 0;
+
             return $c;
         });
 
@@ -52,10 +56,18 @@ class CustomerController extends BaseTenantController
      */
     public function store(Request $request): JsonResponse
     {
-        $validated['tenant_id'] = $this->getTenantId($request);
-        $customer = CustomerModel::create([
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'tax_number' => 'nullable|string|max:50',
+            'is_active' => 'boolean',
+        ]);
+
+        $customer = CustomerModel::query()->create([
             'tenant_id' => $this->getTenantId($request),
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'name' => $validated['name'],
             'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'] ?? null,
@@ -73,9 +85,9 @@ class CustomerController extends BaseTenantController
      */
     public function show(Request $request, string $id): JsonResponse
     {
-        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $customer = CustomerModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->error('Customer not found', 404);
         }
 
@@ -87,15 +99,15 @@ class CustomerController extends BaseTenantController
      */
     public function update(Request $request, string $id): JsonResponse
     {
-        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $customer = CustomerModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->error('Customer not found', 404);
         }
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => 'nullable|email|max:255|unique:customers,email,' . $id,
+            'email' => 'nullable|email|max:255|unique:customers,email,'.$id,
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'tax_number' => 'nullable|string|max:50',
@@ -112,9 +124,9 @@ class CustomerController extends BaseTenantController
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $customer = CustomerModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->error('Customer not found', 404);
         }
 
@@ -130,11 +142,11 @@ class CustomerController extends BaseTenantController
     public function export(Request $request)
     {
         $customers = CustomerModel::cursor();
-        
+
         $data = [
-            ['Name', 'Email', 'Phone', 'Address', 'Tax Number', 'Current Balance', 'Loyalty Points', 'Segment']
+            ['Name', 'Email', 'Phone', 'Address', 'Tax Number', 'Current Balance', 'Loyalty Points', 'Segment'],
         ];
-        
+
         foreach ($customers as $customer) {
             $data[] = [
                 $customer->name,
@@ -144,14 +156,15 @@ class CustomerController extends BaseTenantController
                 $customer->tax_number,
                 $customer->balance,
                 $customer->loyalty_points,
-                $customer->segment ?? 'Unsegmented'
+                $customer->segment ?? 'Unsegmented',
             ];
         }
 
-        $xlsx = \App\Infrastructure\Helpers\SimpleXLSXGen::fromArray($data);
+        $xlsx = SimpleXLSXGen::fromArray($data);
+
         return response((string) $xlsx, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="customers.xlsx"'
+            'Content-Disposition' => 'attachment; filename="customers.xlsx"',
         ]);
     }
 
@@ -161,46 +174,51 @@ class CustomerController extends BaseTenantController
     public function import(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls'
+            'file' => 'required|file|mimes:xlsx,xls',
         ]);
 
         $file = $request->file('file')->getPathname();
-        
-        if ($xlsx = \App\Infrastructure\Helpers\SimpleXLSX::parse($file)) {
+
+        if ($xlsx = SimpleXLSX::parse($file)) {
             $rows = $xlsx->rows();
-            
+
             $imported = 0;
             $failed = 0;
             $isFirst = true;
-            
+
             foreach ($rows as $index => $item) {
-                if ($isFirst) { $isFirst = false; continue; } // Remove header
+                if ($isFirst) {
+                    $isFirst = false;
+
+                    continue;
+                } // Remove header
                 $row = (array) $item;
 
                 // Ensure row has basic data (Name) and avoid OutOfBoundsException
                 $name = trim((string) ($row[0] ?? ''));
                 if (empty($name)) {
                     $failed++;
+
                     continue;
                 }
-                
+
                 $email = trim((string) ($row[1] ?? ''));
-                if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                if (! empty($email) && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $email = null; // Ignore invalid emails rather than crashing
                 }
-                
+
                 $phone = trim((string) ($row[2] ?? ''));
                 $address = trim((string) ($row[3] ?? ''));
                 $tax_number = trim((string) ($row[4] ?? ''));
-                
+
                 $balanceStr = preg_replace('/[^0-9.-]/', '', (string) ($row[5] ?? '0'));
                 $balance = is_numeric($balanceStr) ? (float) $balanceStr : 0.0;
-                
+
                 try {
-                    CustomerModel::updateOrCreate(
-                        ['email' => $email ?: \Illuminate\Support\Str::random(10) . '@temp.local'], // Prevent null matching all
+                    CustomerModel::query()->updateOrCreate(
+                        ['email' => $email ?: Str::random(10).'@temp.local'], // Prevent null matching all
                         [
-                            'id' => \Illuminate\Support\Str::uuid()->toString(),
+                            'id' => Str::uuid()->toString(),
                             'name' => $name,
                             'email' => $email ?: null,
                             'phone' => $phone ?: null,
@@ -212,9 +230,10 @@ class CustomerController extends BaseTenantController
                     $imported++;
                 } catch (\Exception $e) {
                     $failed++;
-                    Log::warning("Customer import failed for row $index: " . $e->getMessage());
+                    Log::warning("Customer import failed for row $index: ".$e->getMessage());
                 }
             }
+
             return $this->success(['imported' => $imported, 'failed' => $failed], "Successfully imported $imported customers. Failed: $failed.");
         } else {
             return $this->error('Failed to parse Excel file', 400);
@@ -224,11 +243,11 @@ class CustomerController extends BaseTenantController
     /**
      * Get Customer Ledger Statement (كشف حساب تفصيلي)
      */
-    public function statement(string $id): JsonResponse
+    public function statement(Request $request, string $id): JsonResponse
     {
-        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->with(['invoices', 'vouchers'])->find($id);
+        $customer = CustomerModel::query()->where('tenant_id', $this->getTenantId($request))->with(['invoices', 'vouchers'])->find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->error('Customer not found', 404);
         }
 
@@ -253,10 +272,10 @@ class CustomerController extends BaseTenantController
             $isCredit = in_array($voucher->type, ['receipt', 'discount']); // Customer pays us or gets discount
             $transactions->push([
                 '_date' => $voucher->date,
-                'type' => 'voucher_' . $voucher->type,
+                'type' => 'voucher_'.$voucher->type,
                 'reference' => $voucher->reference_number,
                 'date' => $voucher->date->format('Y-m-d'),
-                'description' => $voucher->notes ?: 'سند ' . $voucher->type,
+                'description' => $voucher->notes ?: 'سند '.$voucher->type,
                 'debit' => $isCredit ? 0 : (float) $voucher->amount,
                 'credit' => $isCredit ? (float) $voucher->amount : 0,
             ]);
@@ -286,7 +305,7 @@ class CustomerController extends BaseTenantController
         foreach ($transactions as $tx) {
             $runningBalance += $tx['debit'];
             $runningBalance -= $tx['credit'];
-            
+
             $tx['balance'] = $runningBalance;
             unset($tx['_date']); // remove sorting key
             $ledger[] = $tx;
@@ -296,9 +315,7 @@ class CustomerController extends BaseTenantController
             'customer' => $customer->name,
             'opening_balance' => (float) $customer->balance,
             'current_balance' => $runningBalance,
-            'statement' => $ledger
+            'statement' => $ledger,
         ], 'Customer statement generated successfully.');
     }
 }
-
-

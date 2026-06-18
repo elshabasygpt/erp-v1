@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Purchases;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\SupplierPaymentAllocationService;
 use App\Infrastructure\Eloquent\Models\Accounting\SupplierPaymentAllocationModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,10 +18,10 @@ class SupplierPaymentAllocationController extends BaseTenantController
 
     public function index(string $paymentId): JsonResponse
     {
-        $allocations = SupplierPaymentAllocationModel::where('tenant_id', $this->getTenantId($request))->where('supplier_payment_id', $paymentId)
+        $allocations = SupplierPaymentAllocationModel::query()->where('tenant_id', $this->getTenantId($request))->where('supplier_payment_id', $paymentId)
             ->with('purchaseInvoice')
             ->get();
-            
+
         return $this->success($allocations, 'Payment allocations retrieved successfully');
     }
 
@@ -35,11 +35,10 @@ class SupplierPaymentAllocationController extends BaseTenantController
 
         try {
             $this->allocationService->allocatePayment($paymentId, $validated['allocations']);
+
             return $this->success(null, 'Payment allocated successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to allocate payment: ' . $e->getMessage(), 422);
+            return $this->error('Failed to allocate payment: '.$e->getMessage(), 422);
         }
     }
 }
-
-

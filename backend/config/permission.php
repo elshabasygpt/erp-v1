@@ -1,5 +1,6 @@
 <?php
 
+use App\Infrastructure\Eloquent\Models\RoleModel;
 use Spatie\Permission\DefaultTeamResolver;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -28,7 +29,7 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
 
-        'role' => \App\Infrastructure\Eloquent\Models\RoleModel::class,
+        'role' => RoleModel::class,
 
     ],
 

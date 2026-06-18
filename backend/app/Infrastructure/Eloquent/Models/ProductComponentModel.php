@@ -9,6 +9,7 @@ class ProductComponentModel extends BaseModel
     use HasUuids;
 
     protected $table = 'product_components';
+
     protected $connection = 'tenant';
 
     protected $fillable = [

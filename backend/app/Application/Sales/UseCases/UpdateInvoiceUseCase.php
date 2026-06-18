@@ -5,17 +5,24 @@ declare(strict_types=1);
 namespace App\Application\Sales\UseCases;
 
 use App\Application\Sales\DTOs\UpdateInvoiceDTO;
+use App\Domain\Accounting\Entities\JournalEntry;
+use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
+use App\Domain\Inventory\Repositories\ProductRepositoryInterface;
 use App\Domain\Sales\Entities\Invoice;
 use App\Domain\Sales\Entities\InvoiceItem;
 use App\Domain\Sales\Repositories\InvoiceRepositoryInterface;
-use App\Domain\Sales\Rules\InvoiceRules;
-use App\Domain\Inventory\Repositories\ProductRepositoryInterface;
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
-use App\Domain\Accounting\Entities\JournalEntry;
-use App\Domain\Accounting\Entities\JournalEntryLine;
-use App\Domain\Sales\Services\ZatcaPhase1Service;
-use App\Jobs\SubmitZatcaInvoiceJob;
 use App\Domain\Sales\Repositories\SalesChannelRepositoryInterface;
+use App\Domain\Sales\Rules\InvoiceRules;
+use App\Domain\Sales\Services\ZatcaPhase1Service;
+use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Jobs\SubmitZatcaInvoiceJob;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class UpdateInvoiceUseCase
 {
@@ -30,13 +37,13 @@ final class UpdateInvoiceUseCase
     public function execute(UpdateInvoiceDTO $dto, string $userId): Invoice
     {
         $invoice = $this->invoiceRepository->findById($dto->id);
-        
-        if (!$invoice) {
-            throw new \DomainException("Invoice not found");
+
+        if (! $invoice) {
+            throw new \DomainException('Invoice not found');
         }
 
         if ($invoice->getStatus() !== 'draft') {
-            throw new \DomainException("Only draft invoices can be modified");
+            throw new \DomainException('Only draft invoices can be modified');
         }
 
         $items = [];
@@ -58,7 +65,7 @@ final class UpdateInvoiceUseCase
 
         // We should replace the entire invoice using a new instance since Entities are somewhat immutable
         // But since this is PHP, we will use reflection or recreate the invoice entirely
-        
+
         $salesChannel = null;
         if ($dto->salesChannelId) {
             $salesChannel = $this->salesChannelRepository->findById($dto->salesChannelId);
@@ -100,15 +107,15 @@ final class UpdateInvoiceUseCase
 
         if ($dto->status === 'confirmed') {
             $errors = InvoiceRules::validateForConfirmation($updatedInvoice);
-            if (!empty($errors)) {
+            if (! empty($errors)) {
                 throw new \DomainException(implode(' ', $errors));
             }
 
             $updatedInvoice->confirm();
 
             $sellerName = 'شركة تجريبية';
-            $vatNumber = '300000000000003'; 
-            
+            $vatNumber = '300000000000003';
+
             $qrCode = $this->zatcaPhase1Service->generateQrBase64(
                 $sellerName,
                 $vatNumber,
@@ -124,14 +131,14 @@ final class UpdateInvoiceUseCase
         // We need to handle this. Let's rely on standard delete-and-create pattern in repository or here.
         // Actually, since EloquentInvoiceRepository `update` only updates the invoice table, we need to fix it.
         // Let's call a method in the repository. Wait, `update()` in EloquentInvoiceRepository does not save items!
-        
-        \Illuminate\Support\Facades\DB::beginTransaction();
+
+        DB::beginTransaction();
         try {
-            \App\Infrastructure\Eloquent\Models\InvoiceItemModel::where('invoice_id', $updatedInvoice->getId())->delete();
+            InvoiceItemModel::query()->where('invoice_id', $updatedInvoice->getId())->delete();
             $savedInvoice = clone $updatedInvoice;
-            
+
             // Delete the invoice header so we can recreate it, or use standard update
-            \App\Infrastructure\Eloquent\Models\InvoiceModel::where('id', $updatedInvoice->getId())->update([
+            InvoiceModel::query()->where('id', $updatedInvoice->getId())->update([
                 'customer_id' => $updatedInvoice->getCustomerId(),
                 'type' => $updatedInvoice->getType(),
                 'subtotal' => $updatedInvoice->getSubtotal(),
@@ -155,7 +162,7 @@ final class UpdateInvoiceUseCase
             ]);
 
             foreach ($updatedInvoice->getItems() as $item) {
-                \App\Infrastructure\Eloquent\Models\InvoiceItemModel::create([
+                InvoiceItemModel::query()->create([
                     'id' => $item->getId(),
                     'invoice_id' => $updatedInvoice->getId(),
                     'product_id' => $item->getProductId(),
@@ -181,9 +188,9 @@ final class UpdateInvoiceUseCase
 
                 $totalAmount = $updatedInvoice->getTotal();
                 $paidAmount = $dto->type === 'cash' ? $totalAmount : $dto->paidAmount;
-                
+
                 if ($dto->customerId) {
-                    $customer = \App\Infrastructure\Eloquent\Models\CustomerModel::find($dto->customerId);
+                    $customer = CustomerModel::query()->find($dto->customerId);
                     if ($customer) {
                         if ($dto->type === 'credit') {
                             $due = $totalAmount - $paidAmount;
@@ -193,37 +200,37 @@ final class UpdateInvoiceUseCase
                         // CRM Loyalty Calculation
                         $earnedPoints = floor($totalAmount / 10);
                         $customer->loyalty_points += $earnedPoints;
-                        
+
                         if ($customer->loyalty_points >= 1000) {
                             $customer->segment = 'VIP';
                         } elseif ($customer->loyalty_points >= 500) {
                             $customer->segment = 'Gold';
-                        } elseif (!$customer->segment) {
+                        } elseif (! $customer->segment) {
                             $customer->segment = 'Regular';
                         }
 
                         $customer->save();
                     }
                 }
-                
+
                 if ($paidAmount > 0) {
-                    $safeId = \Illuminate\Support\Facades\DB::connection('tenant')->table('safe_users')
+                    $safeId = DB::connection('tenant')->table('safe_users')
                         ->where('user_id', $userId)
                         ->where('is_primary', true)
                         ->value('safe_id');
-                        
+
                     if ($safeId) {
-                        $safe = \App\Infrastructure\Eloquent\Models\SafeModel::find($safeId);
+                        $safe = SafeModel::query()->find($safeId);
                         if ($safe) {
                             $safe->balance += $paidAmount;
                             $safe->save();
-                            
-                            \App\Infrastructure\Eloquent\Models\SafeTransactionModel::create([
-                                'id' => \Illuminate\Support\Str::uuid()->toString(),
+
+                            SafeTransactionModel::query()->create([
+                                'id' => Str::uuid()->toString(),
                                 'safe_id' => $safe->id,
                                 'type' => 'deposit',
                                 'amount' => $paidAmount,
-                                'description' => 'أرباح نقدية لفاتورة رقم: ' . $updatedInvoice->getInvoiceNumber(),
+                                'description' => 'أرباح نقدية لفاتورة رقم: '.$updatedInvoice->getInvoiceNumber(),
                                 'reference_type' => 'sales_invoice',
                                 'reference_id' => $updatedInvoice->getId(),
                                 'created_by' => $userId,
@@ -236,8 +243,8 @@ final class UpdateInvoiceUseCase
                 $journalEntry = new JournalEntry(
                     id: null,
                     entryNumber: $entryNumber,
-                    entryDate: new \DateTimeImmutable(),
-                    description: "Sales Invoice " . $updatedInvoice->getInvoiceNumber(),
+                    entryDate: new \DateTimeImmutable,
+                    description: 'Sales Invoice '.$updatedInvoice->getInvoiceNumber(),
                     referenceType: 'invoice',
                     referenceId: $updatedInvoice->getId(),
                     status: 'posted',
@@ -248,7 +255,7 @@ final class UpdateInvoiceUseCase
                     id: null,
                     journalEntryId: '',
                     accountId: '1100',
-                    description: "Sales for Invoice " . $updatedInvoice->getInvoiceNumber(),
+                    description: 'Sales for Invoice '.$updatedInvoice->getInvoiceNumber(),
                     debit: $updatedInvoice->getTotal(),
                     credit: 0
                 ));
@@ -257,7 +264,7 @@ final class UpdateInvoiceUseCase
                     id: null,
                     journalEntryId: '',
                     accountId: '4100',
-                    description: "Revenue for Invoice " . $updatedInvoice->getInvoiceNumber(),
+                    description: 'Revenue for Invoice '.$updatedInvoice->getInvoiceNumber(),
                     debit: 0,
                     credit: $updatedInvoice->getSubtotal() - $updatedInvoice->getDiscountAmount()
                 ));
@@ -266,21 +273,22 @@ final class UpdateInvoiceUseCase
                     id: null,
                     journalEntryId: '',
                     accountId: '2200',
-                    description: "VAT for Invoice " . $updatedInvoice->getInvoiceNumber(),
+                    description: 'VAT for Invoice '.$updatedInvoice->getInvoiceNumber(),
                     debit: 0,
                     credit: $updatedInvoice->getVatAmount()
                 ));
 
                 $this->journalEntryRepository->save($journalEntry);
 
-                $tenantId = app('currentTenant')->id ?? 'tenant_context';
+                $tenantId = app('current_tenant')->id ?? 'tenant_context';
                 SubmitZatcaInvoiceJob::dispatch($updatedInvoice->getId(), $tenantId);
             }
 
-            \Illuminate\Support\Facades\DB::commit();
+            DB::commit();
+
             return $this->invoiceRepository->findById($updatedInvoice->getId());
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
+            DB::rollBack();
             throw $e;
         }
     }

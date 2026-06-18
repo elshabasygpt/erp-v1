@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Infrastructure\Eloquent\Models\FixedAssetModel;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class FixedAssetModelController

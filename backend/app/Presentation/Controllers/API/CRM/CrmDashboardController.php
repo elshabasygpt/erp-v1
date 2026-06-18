@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -17,25 +17,25 @@ class CrmDashboardController extends BaseTenantController
      */
     public function getCustomerInsights(string $id): JsonResponse
     {
-        $customer = CustomerModel::where('tenant_id', $this->getTenantId($request))->with(['notes.user', 'interactions.user', 'followUps.assignee'])->find($id);
+        $customer = CustomerModel::query()->where('tenant_id', $this->getTenantId($request))->with(['notes.user', 'interactions.user', 'followUps.assignee'])->find($id);
 
-        if (!$customer) {
+        if (! $customer) {
             return $this->error('Customer not found', 404);
         }
 
         // Purchase History (last 10 invoices)
-        $purchaseHistory = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
+        $purchaseHistory = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
             ->where('status', '!=', 'cancelled')
             ->orderBy('invoice_date', 'desc')
             ->take(10)
             ->get(['id', 'invoice_number', 'total', 'invoice_date', 'status']);
 
         // Aggregate Metrics
-        $totalSpend = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
+        $totalSpend = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
             ->where('status', '!=', 'cancelled')
             ->sum('total');
 
-        $totalInvoices = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
+        $totalInvoices = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('customer_id', $id)
             ->where('status', '!=', 'cancelled')
             ->count();
 
@@ -76,5 +76,3 @@ class CrmDashboardController extends BaseTenantController
         ], 'Customer CRM insights retrieved successfully');
     }
 }
-
-

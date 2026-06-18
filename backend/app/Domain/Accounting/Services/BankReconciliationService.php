@@ -6,13 +6,12 @@ namespace App\Domain\Accounting\Services;
 
 use App\Infrastructure\Eloquent\Models\Accounting\BankAccountModel;
 use App\Infrastructure\Eloquent\Models\Accounting\BankTransactionModel;
-use App\Infrastructure\Eloquent\Models\Accounting\ReconciliationModel;
 use App\Infrastructure\Eloquent\Models\Accounting\ReconciliationLineModel;
+use App\Infrastructure\Eloquent\Models\Accounting\ReconciliationModel;
 use App\Infrastructure\Eloquent\Models\JournalEntryLineModel;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
-use DomainException;
 
 /**
  * BankReconciliationService
@@ -29,7 +28,7 @@ class BankReconciliationService
         $data['id'] = Str::uuid()->toString();
         $data['created_by'] = $userId;
 
-        return BankAccountModel::create($data);
+        return BankAccountModel::query()->create($data);
     }
 
     /**
@@ -39,13 +38,13 @@ class BankReconciliationService
     {
         $imported = [];
         DB::connection('tenant')->transaction(function () use ($bankAccountId, $transactionsData, $userId, &$imported) {
-            $bankAccount = BankAccountModel::findOrFail($bankAccountId);
+            $bankAccount = BankAccountModel::query()->findOrFail($bankAccountId);
 
             foreach ($transactionsData as $data) {
                 // Ensure date format is correct
                 $date = date('Y-m-d', strtotime($data['transaction_date']));
 
-                $transaction = BankTransactionModel::create([
+                $transaction = BankTransactionModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'bank_account_id' => $bankAccount->id,
                     'transaction_date' => $date,
@@ -79,13 +78,13 @@ class BankReconciliationService
     public function startReconciliation(string $bankAccountId, string $startDate, string $endDate, float $statementBalance, string $userId): ReconciliationModel
     {
         return DB::connection('tenant')->transaction(function () use ($bankAccountId, $startDate, $endDate, $statementBalance, $userId) {
-            $bankAccount = BankAccountModel::findOrFail($bankAccountId);
+            $bankAccount = BankAccountModel::query()->findOrFail($bankAccountId);
 
             // Calculate system balance from GL (simplification for now)
             // Ideally, we would sum the debits/credits of the linked chart_of_account_id
-            $systemBalance = $bankAccount->current_balance; 
-            
-            $reconciliation = ReconciliationModel::create([
+            $systemBalance = $bankAccount->current_balance;
+
+            $reconciliation = ReconciliationModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'bank_account_id' => $bankAccountId,
                 'statement_date' => $endDate, // Usually end date is statement date
@@ -108,18 +107,18 @@ class BankReconciliationService
     public function matchTransaction(string $reconciliationId, string $bankTransactionId, string $journalEntryLineId): ReconciliationLineModel
     {
         return DB::connection('tenant')->transaction(function () use ($reconciliationId, $bankTransactionId, $journalEntryLineId) {
-            $reconciliation = ReconciliationModel::findOrFail($reconciliationId);
-            
+            $reconciliation = ReconciliationModel::query()->findOrFail($reconciliationId);
+
             if ($reconciliation->status !== 'draft') {
-                throw new DomainException("Cannot match transactions on a completed reconciliation.");
+                throw new DomainException('Cannot match transactions on a completed reconciliation.');
             }
 
-            $bankTransaction = BankTransactionModel::findOrFail($bankTransactionId);
-            $journalEntryLine = JournalEntryLineModel::findOrFail($journalEntryLineId);
+            $bankTransaction = BankTransactionModel::query()->findOrFail($bankTransactionId);
+            $journalEntryLine = JournalEntryLineModel::query()->findOrFail($journalEntryLineId);
 
             // Validation logic could go here (e.g., amounts match, dates are close)
 
-            $line = ReconciliationLineModel::create([
+            $line = ReconciliationLineModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'reconciliation_id' => $reconciliationId,
                 'bank_transaction_id' => $bankTransactionId,
@@ -144,10 +143,10 @@ class BankReconciliationService
     public function completeReconciliation(string $reconciliationId, string $userId): ReconciliationModel
     {
         return DB::connection('tenant')->transaction(function () use ($reconciliationId, $userId) {
-            $reconciliation = ReconciliationModel::lockForUpdate()->findOrFail($reconciliationId);
+            $reconciliation = ReconciliationModel::query()->lockForUpdate()->findOrFail($reconciliationId);
 
             if ($reconciliation->status === 'completed') {
-                throw new DomainException("Reconciliation is already completed.");
+                throw new DomainException('Reconciliation is already completed.');
             }
 
             // Check if difference is zero (or within tolerance)

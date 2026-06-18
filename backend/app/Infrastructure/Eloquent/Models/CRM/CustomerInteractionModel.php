@@ -9,7 +9,7 @@ use App\Infrastructure\Eloquent\Models\UserModel;
 class CustomerInteractionModel extends BaseModel
 {
     protected $table = 'customer_interactions';
-    
+
     protected $fillable = [
         'customer_id',
         'user_id',

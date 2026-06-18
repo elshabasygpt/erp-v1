@@ -24,16 +24,55 @@ final class Plan extends Entity
         parent::__construct($id);
     }
 
-    public function getName(): string { return $this->name; }
-    public function getSlug(): string { return $this->slug; }
-    public function getPrice(): float { return $this->price; }
-    public function getBillingCycle(): string { return $this->billingCycle; }
-    public function getMaxUsers(): int { return $this->maxUsers; }
-    public function getMaxProducts(): int { return $this->maxProducts; }
-    public function getFeatures(): array { return $this->features; }
-    public function isActive(): bool { return $this->isActive; }
-    public function getTrialDays(): ?int { return $this->trialDays; }
-    public function getDescription(): ?string { return $this->description; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getSlug(): string
+    {
+        return $this->slug;
+    }
+
+    public function getPrice(): float
+    {
+        return $this->price;
+    }
+
+    public function getBillingCycle(): string
+    {
+        return $this->billingCycle;
+    }
+
+    public function getMaxUsers(): int
+    {
+        return $this->maxUsers;
+    }
+
+    public function getMaxProducts(): int
+    {
+        return $this->maxProducts;
+    }
+
+    public function getFeatures(): array
+    {
+        return $this->features;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getTrialDays(): ?int
+    {
+        return $this->trialDays;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
 
     public function toArray(): array
     {

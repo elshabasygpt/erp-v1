@@ -1,4 +1,5 @@
 <?php
+
 $content = file_get_contents('tests/TestCase.php');
 
 $search = "            // For subsequent tests, just ensure the PDO is shared

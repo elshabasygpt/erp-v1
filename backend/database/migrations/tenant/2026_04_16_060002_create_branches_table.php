@@ -19,7 +19,7 @@ return new class extends Migration
             $table->uuid('updated_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('is_active');
             $table->index('is_default');
         });

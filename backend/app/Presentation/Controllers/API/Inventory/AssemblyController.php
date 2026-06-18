@@ -4,23 +4,25 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\ProductComponentModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use Illuminate\Http\Request;
+use App\Infrastructure\Eloquent\Models\StockMovementModel;
+use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AssemblyController extends BaseTenantController
 {
     // BOM Management
-    public function getComponents($productId): JsonResponse
+    public function getComponents(Request $request, $productId): JsonResponse
     {
-        $components = ProductComponentModel::where('tenant_id', $this->getTenantId($request))->with('component')
+        $components = ProductComponentModel::query()->where('tenant_id', $this->getTenantId($request))->with('component')
             ->where('parent_product_id', $productId)
             ->get();
+
         return $this->success($components->toArray());
     }
 
@@ -32,30 +34,34 @@ class AssemblyController extends BaseTenantController
             'components.*.quantity_required' => 'required|numeric|min:0.001',
         ]);
 
-        ProductModel::where('tenant_id', $this->getTenantId($request))->findOrFail($productId);
+        ProductModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($productId);
 
         DB::connection('tenant')->beginTransaction();
         try {
             // Delete old components
-            ProductComponentModel::where('parent_product_id', $productId)->delete();
-            
+            ProductComponentModel::query()->where('parent_product_id', $productId)->delete();
+
             $inserted = [];
             foreach ($validated['components'] as $comp) {
                 // Prevent self-loop
-                if ($comp['child_product_id'] === $productId) continue;
+                if ($comp['child_product_id'] === $productId) {
+                    continue;
+                }
 
-                $inserted[] = ProductComponentModel::create([
-            'tenant_id' => $this->getTenantId($request),
+                $inserted[] = ProductComponentModel::query()->create([
+                    'tenant_id' => $this->getTenantId($request),
                     'parent_product_id' => $productId,
                     'child_product_id' => $comp['child_product_id'],
-                    'quantity_required' => $comp['quantity_required']
+                    'quantity_required' => $comp['quantity_required'],
                 ]);
             }
             DB::connection('tenant')->commit();
+
             return $this->success($inserted, 'BOM updated successfully.');
         } catch (\Exception $e) {
             DB::connection('tenant')->rollBack();
-            return $this->error('Failed to update components: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update components: '.$e->getMessage(), 500);
         }
     }
 
@@ -67,7 +73,7 @@ class AssemblyController extends BaseTenantController
             'warehouse_id' => 'required|uuid|exists:tenant.warehouses,id',
             'quantity' => 'required|numeric|min:0.001',
             'type' => 'required|in:assemble,disassemble', // assemble = +product, -raw // disassemble = -product, +raw
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ]);
 
         $productId = $validated['product_id'];
@@ -77,13 +83,13 @@ class AssemblyController extends BaseTenantController
 
         DB::connection('tenant')->beginTransaction();
         try {
-            $components = ProductComponentModel::where('tenant_id', $this->getTenantId($request))->where('parent_product_id', $productId)->get();
+            $components = ProductComponentModel::query()->where('tenant_id', $this->getTenantId($request))->where('parent_product_id', $productId)->get();
             if ($components->isEmpty()) {
                 throw new \Exception('This product has no components defined (BOM is empty).');
             }
 
             // Reference Number for the batch
-            $ref = 'ASM-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4));
+            $ref = 'ASM-'.date('Ymd').'-'.strtoupper(Str::random(4));
 
             // Variable to accumulate total cost of the assembled block
             $totalCostAdded = 0;
@@ -91,13 +97,13 @@ class AssemblyController extends BaseTenantController
             // 1. Process Raw Materials
             foreach ($components as $component) {
                 $rawQtyNeeded = $component->quantity_required * $qty;
-                
-                $rawStock = WarehouseProductModel::firstOrCreate(
+
+                $rawStock = WarehouseProductModel::query()->firstOrCreate(
                     ['warehouse_id' => $warehouseId, 'product_id' => $component->child_product_id],
                     ['quantity' => 0, 'average_cost' => 0]
                 );
 
-                $productInfo = ProductModel::where('tenant_id', $this->getTenantId($request))->find($component->child_product_id);
+                $productInfo = ProductModel::query()->where('tenant_id', $this->getTenantId($request))->find($component->child_product_id);
                 $unitCost = $productInfo->cost_price;
                 $componentTotalCost = $unitCost * $rawQtyNeeded;
 
@@ -118,8 +124,8 @@ class AssemblyController extends BaseTenantController
                 $rawStock->save();
 
                 // Log raw movement
-                StockMovementModel::create([
-            'tenant_id' => $this->getTenantId($request),
+                StockMovementModel::query()->create([
+                    'tenant_id' => $this->getTenantId($request),
                     'product_id' => $component->child_product_id,
                     'warehouse_id' => $warehouseId,
                     'type' => 'adjustment', // Assembly
@@ -133,7 +139,7 @@ class AssemblyController extends BaseTenantController
             }
 
             // 2. Process Finished Good
-            $finishedStock = WarehouseProductModel::firstOrCreate(
+            $finishedStock = WarehouseProductModel::query()->firstOrCreate(
                 ['warehouse_id' => $warehouseId, 'product_id' => $productId],
                 ['quantity' => 0, 'average_cost' => 0]
             );
@@ -155,8 +161,8 @@ class AssemblyController extends BaseTenantController
             $finishedStock->save();
 
             // Log Finished good movement
-            StockMovementModel::create([
-            'tenant_id' => $this->getTenantId($request),
+            StockMovementModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
                 'product_id' => $productId,
                 'warehouse_id' => $warehouseId,
                 'type' => 'adjustment', // Assembly
@@ -169,12 +175,12 @@ class AssemblyController extends BaseTenantController
             ]);
 
             DB::connection('tenant')->commit();
-            return $this->success(null, 'Product ' . $validated['type'] . ' processed successfully.', 201);
+
+            return $this->success(null, 'Product '.$validated['type'].' processed successfully.', 201);
         } catch (\Exception $e) {
             DB::connection('tenant')->rollBack();
+
             return $this->error($e->getMessage(), 400);
         }
     }
 }
-
-

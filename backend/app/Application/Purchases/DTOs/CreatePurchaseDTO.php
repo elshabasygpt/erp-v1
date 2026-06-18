@@ -11,7 +11,7 @@ namespace App\Application\Purchases\DTOs;
 final class CreatePurchaseDTO
 {
     /**
-     * @param array<array{product_id: string, quantity: float, unit_price: float, tax_rate: float, lot_number?: string, serial_number?: string, production_date?: string, expiry_date?: string}> $items
+     * @param  array<array{product_id: string, quantity: float, unit_price: float, tax_rate: float, lot_number?: string, serial_number?: string, production_date?: string, expiry_date?: string}>  $items
      */
     public function __construct(
         public readonly string $supplierId,

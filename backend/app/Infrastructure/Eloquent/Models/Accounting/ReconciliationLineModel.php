@@ -15,7 +15,7 @@ class ReconciliationLineModel extends BaseModel
         'reconciliation_id',
         'bank_transaction_id',
         'journal_entry_line_id',
-        'status'
+        'status',
     ];
 
     public function reconciliation(): BelongsTo

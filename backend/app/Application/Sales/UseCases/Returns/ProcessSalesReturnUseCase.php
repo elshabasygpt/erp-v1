@@ -4,21 +4,15 @@ declare(strict_types=1);
 
 namespace App\Application\Sales\UseCases\Returns;
 
-use App\Application\Sales\DTOs\Returns\ProcessSalesReturnDTO;
-use App\Infrastructure\Eloquent\Models\SalesReturnModel;
-use App\Infrastructure\Eloquent\Models\SalesReturnItemModel;
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
-use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
-use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
-
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-
 use App\Application\Approvals\Services\ApprovalWorkflowService;
 use App\Application\Exceptions\ApprovalRequiredException;
+use App\Application\Sales\DTOs\Returns\ProcessSalesReturnDTO;
+use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Infrastructure\Eloquent\Models\SalesReturnItemModel;
+use App\Infrastructure\Eloquent\Models\SalesReturnModel;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class ProcessSalesReturnUseCase
 {
@@ -29,8 +23,8 @@ final class ProcessSalesReturnUseCase
     public function execute(ProcessSalesReturnDTO $dto, string $userId): SalesReturnModel
     {
         return DB::transaction(function () use ($dto, $userId) {
-            $invoice = InvoiceModel::with('items')->findOrFail($dto->invoiceId);
-            $customer = CustomerModel::findOrFail($dto->customerId);
+            $invoice = InvoiceModel::query()->with('items')->findOrFail($dto->invoiceId);
+            $customer = CustomerModel::query()->findOrFail($dto->customerId);
 
             // Validation and calculation
             $subtotalAmount = 0;
@@ -41,19 +35,19 @@ final class ProcessSalesReturnUseCase
             foreach ($dto->items as $reqItem) {
                 // Find matching item in invoice to get exact price and tax rate
                 $invItem = $invoice->items->firstWhere('product_id', $reqItem['productId']);
-                if (!$invItem) {
+                if (! $invItem) {
                     throw new \DomainException("Product ID {$reqItem['productId']} was not found on the selected invoice.");
                 }
 
                 if ($reqItem['quantity'] > $invItem->quantity) {
                     throw new \DomainException("Cannot return more than invoiced quantity for product {$reqItem['productId']}");
                 }
-                
+
                 // Note: We should ideally track previously returned quantities, but keeping it simple for MVP.
 
                 $gross = $reqItem['quantity'] * $invItem->unit_price;
                 $itemTax = $gross * ($invItem->vat_rate / 100);
-                
+
                 $subtotalAmount += $gross;
                 $taxAmount += $itemTax;
                 $totalProfit += ($invItem->unit_price - $invItem->cost_price) * $reqItem['quantity'];
@@ -65,7 +59,7 @@ final class ProcessSalesReturnUseCase
                     'cost_price' => $invItem->cost_price,
                     'vat_rate' => $invItem->vat_rate,
                     'total' => $gross + $itemTax,
-                    'condition' => $reqItem['condition']
+                    'condition' => $reqItem['condition'],
                 ];
             }
 
@@ -74,18 +68,18 @@ final class ProcessSalesReturnUseCase
             // Calculate Commission reversal (negative)
             $currentUser = auth()->user();
             $commissionRate = (float) ($currentUser->commission_rate ?? 0);
-            $commissionAmount = - ($totalProfit * ($commissionRate / 100));
+            $commissionAmount = -($totalProfit * ($commissionRate / 100));
 
             // Generate Return Number
             $lastReturn = SalesReturnModel::latest('created_at')->first();
             $nextNum = $lastReturn ? ((int) str_replace('RET-', '', $lastReturn->return_number)) + 1 : 1;
-            $returnNumber = 'RET-' . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
+            $returnNumber = 'RET-'.str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
 
             // 4.5. Evaluate Approvals
             $triggers = $this->approvalService->evaluateReturn($dto);
-            if (!empty($triggers)) {
+            if (! empty($triggers)) {
                 // Create Return Entity as pending_approval
-                $salesReturn = SalesReturnModel::create([
+                $salesReturn = SalesReturnModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'return_number' => $returnNumber,
                     'invoice_id' => $invoice->id,
@@ -107,7 +101,7 @@ final class ProcessSalesReturnUseCase
 
                 // Save items
                 foreach ($itemsToReturn as $item) {
-                    SalesReturnItemModel::create([
+                    SalesReturnItemModel::query()->create([
                         'id' => Str::uuid()->toString(),
                         'sales_return_id' => $salesReturn->id,
                         'product_id' => $item['product_id'],
@@ -116,16 +110,16 @@ final class ProcessSalesReturnUseCase
                         'cost_price' => $item['cost_price'],
                         'vat_rate' => $item['vat_rate'],
                         'total' => $item['total'],
-                        'condition' => $item['condition']
+                        'condition' => $item['condition'],
                     ]);
                 }
 
                 $this->approvalService->requestApproval('return', $salesReturn->id, $triggers, $userId);
-                throw new ApprovalRequiredException("Sales Return requires manager approval due to: " . $triggers[0]['reason'], $salesReturn->id);
+                throw new ApprovalRequiredException('Sales Return requires manager approval due to: '.$triggers[0]['reason'], $salesReturn->id);
             }
 
             // 1. Create Return Entity
-            $salesReturn = SalesReturnModel::create([
+            $salesReturn = SalesReturnModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'return_number' => $returnNumber,
                 'invoice_id' => $invoice->id,
@@ -146,7 +140,7 @@ final class ProcessSalesReturnUseCase
             ]);
 
             foreach ($itemsToReturn as $item) {
-                SalesReturnItemModel::create([
+                SalesReturnItemModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'sales_return_id' => $salesReturn->id,
                     'product_id' => $item['product_id'],
@@ -155,12 +149,12 @@ final class ProcessSalesReturnUseCase
                     'cost_price' => $item['cost_price'],
                     'vat_rate' => $item['vat_rate'],
                     'total' => $item['total'],
-                    'condition' => $item['condition']
+                    'condition' => $item['condition'],
                 ]);
             }
 
             // Immediately confirm if no approval needed
-            $confirmUseCase = app(\App\Application\Sales\UseCases\Returns\ConfirmSalesReturnUseCase::class);
+            $confirmUseCase = app(ConfirmSalesReturnUseCase::class);
             $confirmUseCase->execute($salesReturn->id, $userId);
 
             return $salesReturn->load('items.product');

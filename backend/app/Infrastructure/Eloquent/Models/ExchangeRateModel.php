@@ -15,7 +15,7 @@ class ExchangeRateModel extends BaseModel
         'currency_id',
         'rate',
         'date',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

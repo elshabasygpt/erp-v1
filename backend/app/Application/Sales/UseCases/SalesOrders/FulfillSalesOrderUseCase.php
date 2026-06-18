@@ -6,6 +6,7 @@ namespace App\Application\Sales\UseCases\SalesOrders;
 
 use App\Application\Sales\DTOs\CreateInvoiceDTO;
 use App\Application\Sales\UseCases\CreateInvoiceUseCase;
+use App\Domain\Sales\Entities\Invoice;
 use App\Infrastructure\Eloquent\Models\SalesOrderModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +17,10 @@ final class FulfillSalesOrderUseCase
         private readonly CreateInvoiceUseCase $createInvoiceUseCase
     ) {}
 
-    public function execute(string $salesOrderId, string $userId): \App\Domain\Sales\Entities\Invoice
+    public function execute(string $salesOrderId, string $userId): Invoice
     {
         return DB::transaction(function () use ($salesOrderId, $userId) {
-            $salesOrder = SalesOrderModel::with('items')->findOrFail($salesOrderId);
+            $salesOrder = SalesOrderModel::query()->with('items')->findOrFail($salesOrderId);
 
             if ($salesOrder->status === 'fulfilled') {
                 throw new \DomainException('Sales order is already fulfilled.');
@@ -33,7 +34,9 @@ final class FulfillSalesOrderUseCase
             foreach ($salesOrder->items as $item) {
                 // Determine quantity to fulfill
                 $qtyToFulfill = $item->quantity - $item->fulfilled_quantity;
-                if ($qtyToFulfill <= 0) continue;
+                if ($qtyToFulfill <= 0) {
+                    continue;
+                }
 
                 $invoiceItems[] = [
                     'product_id' => $item->product_id,
@@ -45,7 +48,7 @@ final class FulfillSalesOrderUseCase
                 // 1. Release reserved stock (subtract from reserved_quantity)
                 // 2. The CreateInvoiceUseCase will deduct the actual quantity.
                 // We just need to remove the reservation lock here.
-                $wp = WarehouseProductModel::where('warehouse_id', $salesOrder->warehouse_id)
+                $wp = WarehouseProductModel::query()->where('warehouse_id', $salesOrder->warehouse_id)
                     ->where('product_id', $item->product_id)
                     ->lockForUpdate()
                     ->first();

@@ -6,8 +6,8 @@ namespace App\Infrastructure\Eloquent\Models\Inventory;
 
 use App\Infrastructure\Eloquent\Models\BaseModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceItemModel;
+use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockLotModel extends BaseModel
@@ -23,7 +23,7 @@ class StockLotModel extends BaseModel
         'expiry_date',
         'quantity',
         'purchase_invoice_item_id',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

@@ -13,8 +13,7 @@ class InventoryForecastingService
     /**
      * Get products that are forecasted to run out in <= $thresholdDays based on 30-day velocity.
      *
-     * @param int $thresholdDays The day threshold to flag a warning
-     * @return array
+     * @param  int  $thresholdDays  The day threshold to flag a warning
      */
     public function getLowStockForecasts(int $thresholdDays = 10): array
     {
@@ -24,16 +23,16 @@ class InventoryForecastingService
         // Only confirmed invoices ideally, but checking all for simplicity
         $salesVelocity = InvoiceItemModel::whereHas('invoice', function ($q) use ($thirtyDaysAgo) {
             $q->where('status', 'confirmed')
-              ->where('invoice_date', '>=', $thirtyDaysAgo);
+                ->where('invoice_date', '>=', $thirtyDaysAgo);
         })
-        ->selectRaw('product_id, SUM(quantity) as total_sold_30_days')
-        ->groupBy('product_id')
-        ->get()
-        ->keyBy('product_id');
+            ->selectRaw('product_id, SUM(quantity) as total_sold_30_days')
+            ->groupBy('product_id')
+            ->get()
+            ->keyBy('product_id');
 
         // Fetch current stock from warehouse_products
         // Grouping across warehouses for total stock
-        $currentStocks = WarehouseProductModel::with('product')
+        $currentStocks = WarehouseProductModel::query()->with('product')
             ->selectRaw('product_id, SUM(quantity) as total_stock')
             ->groupBy('product_id')
             ->get();
@@ -43,8 +42,8 @@ class InventoryForecastingService
         foreach ($currentStocks as $stockData) {
             $productId = $stockData->product_id;
             $product = $stockData->product;
-            
-            if (!$product || !$product->is_active) {
+
+            if (! $product || ! $product->is_active) {
                 continue;
             }
 
@@ -84,7 +83,7 @@ class InventoryForecastingService
         }
 
         // Sort by days_to_empty ascending
-        usort($forecasts, fn($a, $b) => $a['days_to_empty'] <=> $b['days_to_empty']);
+        usort($forecasts, fn ($a, $b) => $a['days_to_empty'] <=> $b['days_to_empty']);
 
         return $forecasts;
     }

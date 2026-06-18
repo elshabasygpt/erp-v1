@@ -12,6 +12,7 @@ class ProductUnitModel extends Model
     use HasUuids;
 
     protected $table = 'product_units';
+
     protected $connection = 'tenant';
 
     protected $fillable = [
@@ -19,7 +20,7 @@ class ProductUnitModel extends Model
         'unit_name',
         'conversion_factor',
         'barcode',
-        'sell_price'
+        'sell_price',
     ];
 
     protected $casts = [

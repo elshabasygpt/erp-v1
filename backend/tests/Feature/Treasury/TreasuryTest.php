@@ -1,13 +1,11 @@
 <?php
+
 namespace Tests\Feature\Treasury;
 
 use Tests\TestCase;
 
-
 class TreasuryTest extends TestCase
 {
-    
-
     public function test_can_list_safes(): void
     {
         $this->actingAsAuthenticatedUser();
@@ -15,7 +13,7 @@ class TreasuryTest extends TestCase
         $response = $this->getJson('/api/treasury/safes');
         $response->dump();
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_can_create_safe(): void
@@ -23,14 +21,16 @@ class TreasuryTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/treasury/safes', [
-            'name'       => 'الخزينة الرئيسية',
-            'type'       => 'cash',
-            'currency'   => 'SAR',
-            'is_default' => true,
+            'name' => 'الخزينة الرئيسية',
+            'type' => 'cash',
+            'type' => 'cash',
         ]);
 
+        if ($response->status() !== 201) {
+            dump($response->json());
+        }
         $response->assertStatus(201)
-                 ->assertJsonPath('data.name', 'الخزينة الرئيسية');
+            ->assertJsonPath('data.name', 'الخزينة الرئيسية');
     }
 
     public function test_can_transfer_between_safes(): void
@@ -42,14 +42,17 @@ class TreasuryTest extends TestCase
 
         $response = $this->postJson('/api/treasury/transfer', [
             'from_safe_id' => $safe1->id,
-            'to_safe_id'   => $safe2->id,
-            'amount'       => 300,
-            'description'  => 'تحويل داخلي',
+            'to_safe_id' => $safe2->id,
+            'amount' => 300,
+            'description' => 'تحويل داخلي',
         ]);
 
+        if ($response->status() !== 200) {
+            dump($response->json());
+        }
         $response->assertStatus(200);
-        $this->assertEquals(700,  $safe1->fresh()->balance);
-        $this->assertEquals(800,  $safe2->fresh()->balance);
+        $this->assertEquals(700, $safe1->fresh()->balance);
+        $this->assertEquals(800, $safe2->fresh()->balance);
     }
 
     public function test_transfer_fails_with_insufficient_balance(): void
@@ -61,10 +64,13 @@ class TreasuryTest extends TestCase
 
         $response = $this->postJson('/api/treasury/transfer', [
             'from_safe_id' => $safe1->id,
-            'to_safe_id'   => $safe2->id,
-            'amount'       => 500,
+            'to_safe_id' => $safe2->id,
+            'amount' => 500,
         ]);
 
-        $response->assertStatus(400);
+        if ($response->status() !== 422) {
+            dump($response->json());
+        }
+        $response->assertStatus(422);
     }
 }

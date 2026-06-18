@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Partnerships;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use App\Infrastructure\Eloquent\Models\ProfitDistributionModel;
-use App\Infrastructure\Eloquent\Models\PartnerProfitShareModel;
-use App\Infrastructure\Eloquent\Models\PartnerModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Infrastructure\Eloquent\Models\PartnerModel;
+use App\Infrastructure\Eloquent\Models\PartnerProfitShareModel;
+use App\Infrastructure\Eloquent\Models\ProfitDistributionModel;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +23,7 @@ class ProfitDistributionController extends BaseTenantController
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
-        $distributions = ProfitDistributionModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $this->getTenantId($request))->with('shares.partner')
+        $distributions = ProfitDistributionModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $this->getTenantId($request))->with('shares.partner')
             ->orderBy('created_at', 'desc')
             ->paginate((int) $limit);
 
@@ -45,18 +45,18 @@ class ProfitDistributionController extends BaseTenantController
         $tenantId = $this->getTenantId($request);
 
         // Calculate Revenue (Sales Invoices)
-        $revenue = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])
-                    ->sum('total');
+        $revenue = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])
+            ->sum('total');
 
         // Calculate Expenses (Purchase Invoices / Operating expenses)
-        $expenses = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])
-                    ->sum('total');
+        $expenses = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])
+            ->sum('total');
 
         $netProfit = $revenue - $expenses;
 
         // Fetch active partners
-        $partners = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->where('is_active', true)->get();
-        
+        $partners = PartnerModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->where('is_active', true)->get();
+
         $shares = [];
         $totalPartnerShare = 0;
 
@@ -65,14 +65,14 @@ class ProfitDistributionController extends BaseTenantController
             if ($netProfit > 0) {
                 $shareAmount = $netProfit * ($partner->profit_share_percentage / 100);
             }
-            
+
             $shares[] = [
                 'partner_id' => $partner->id,
                 'partner_name' => $partner->name,
                 'share_percentage' => $partner->profit_share_percentage,
-                'amount' => $shareAmount
+                'amount' => $shareAmount,
             ];
-            
+
             $totalPartnerShare += $shareAmount;
         }
 
@@ -87,7 +87,7 @@ class ProfitDistributionController extends BaseTenantController
             'net_profit' => $netProfit,
             'can_distribute' => $netProfit > 0,
             'owner_business_share' => $ownerShare,
-            'partner_shares' => $shares
+            'partner_shares' => $shares,
         ], 'Preview calculated');
     }
 
@@ -99,7 +99,7 @@ class ProfitDistributionController extends BaseTenantController
         $validated = $request->validate([
             'period_start' => 'required|date',
             'period_end' => 'required|date|after_or_equal:period_start',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ]);
 
         try {
@@ -110,8 +110,8 @@ class ProfitDistributionController extends BaseTenantController
             $tenantId = $this->getTenantId($request);
 
             // Recalculate to ensure accuracy at moment of approval
-            $revenue = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])->sum('total');
-            $expenses = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])->sum('total');
+            $revenue = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])->sum('total');
+            $expenses = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->whereBetween('invoice_date', [$start, $end])->sum('total');
             $netProfit = $revenue - $expenses;
 
             if ($netProfit <= 0) {
@@ -119,28 +119,28 @@ class ProfitDistributionController extends BaseTenantController
             }
 
             // Check if period overlaps with existing approved distributions to prevent double dip
-            $overlappingExists = ProfitDistributionModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->where('status', 'approved')
-                ->where(function($q) use ($start, $end) {
+            $overlappingExists = ProfitDistributionModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->where('status', 'approved')
+                ->where(function ($q) use ($start, $end) {
                     $q->whereBetween('period_start', [$start, $end])
-                      ->orWhereBetween('period_end', [$start, $end]);
+                        ->orWhereBetween('period_end', [$start, $end]);
                 })->exists();
 
             if ($overlappingExists) {
                 return $this->error('A profit distribution has already been approved for dates within this period.', 422);
             }
 
-            $partners = PartnerModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->where('is_active', true)->get();
+            $partners = PartnerModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->where('is_active', true)->get();
             $totalDistributed = 0;
 
             $distributionId = Str::uuid()->toString();
-            
+
             // Generate Shares
             foreach ($partners as $partner) {
                 $shareAmount = $netProfit * ($partner->profit_share_percentage / 100);
-                
+
                 if ($shareAmount > 0) {
-                    PartnerProfitShareModel::create([
-            'tenant_id' => $this->getTenantId($request),
+                    PartnerProfitShareModel::query()->create([
+                        'tenant_id' => $this->getTenantId($request),
                         'id' => Str::uuid()->toString(),
                         'tenant_id' => $tenantId,
                         'distribution_id' => $distributionId,
@@ -150,9 +150,9 @@ class ProfitDistributionController extends BaseTenantController
                         'is_paid' => false,
                     ]);
 
-                    /** @var \App\Infrastructure\Eloquent\Models\PartnerModel $partner */
+                    /** @var PartnerModel $partner */
                     $partner->update([
-                        'total_pending' => $partner->total_pending + $shareAmount
+                        'total_pending' => $partner->total_pending + $shareAmount,
                     ]);
 
                     $totalDistributed += $shareAmount;
@@ -160,8 +160,8 @@ class ProfitDistributionController extends BaseTenantController
             }
 
             // Create Master Record
-            $distribution = ProfitDistributionModel::create([
-            'tenant_id' => $this->getTenantId($request),
+            $distribution = ProfitDistributionModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
                 'id' => $distributionId,
                 'tenant_id' => $tenantId,
                 'period_start' => $start,
@@ -182,9 +182,8 @@ class ProfitDistributionController extends BaseTenantController
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to distribute profits: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to distribute profits: '.$e->getMessage(), 500);
         }
     }
 }
-
-

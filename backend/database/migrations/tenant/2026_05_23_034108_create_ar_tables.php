@@ -49,7 +49,7 @@ return new class extends Migration
         });
 
         Schema::table('invoices', function (Blueprint $table) {
-            if (!Schema::hasColumn('invoices', 'payment_status')) {
+            if (! Schema::hasColumn('invoices', 'payment_status')) {
                 $table->string('payment_status')->default('unpaid')->after('status');
             }
         });

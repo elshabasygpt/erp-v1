@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Infrastructure\Eloquent\Models\EmployeeModel;
+use App\Infrastructure\Eloquent\Models\PayrollModel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -10,15 +12,15 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Infrastructure\Eloquent\Models\PayrollModel;
-use App\Infrastructure\Eloquent\Models\EmployeeModel;
 
 class GeneratePayrollJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 120;
+
     public int $backoff = 60;
 
     public function __construct(
@@ -34,49 +36,90 @@ class GeneratePayrollJob implements ShouldQueue
 
         Log::info('GeneratePayrollJob started', [
             'tenant_id' => $this->tenantId,
-            'month'     => $this->month,
-            'year'      => $this->year,
+            'month' => $this->month,
+            'year' => $this->year,
         ]);
 
         try {
             DB::beginTransaction();
 
-            $employees = EmployeeModel::where('is_active', true)->get();
+            $employees = EmployeeModel::query()->where('is_active', true)->get();
             $generatedCount = 0;
 
             /** @var EmployeeModel $employee */
             foreach ($employees as $employee) {
                 // Check if payroll already exists for this month
-                $existing = PayrollModel::where('employee_id', $employee->id)
+                $existing = PayrollModel::query()->where('employee_id', $employee->id)
                     ->where('month', $this->month)
                     ->where('year', $this->year)
                     ->first();
 
-                if ($existing) continue;
+                if ($existing) {
+                    continue;
+                }
 
                 $attendances = $employee->attendances()
                     ->whereMonth('date', $this->month)
                     ->whereYear('date', $this->year)
                     ->get();
 
-                $totalLateMinutes = $attendances->sum('late_minutes');
-                $deductions = $totalLateMinutes * 0.5;
+                $baseSalary = (float) $employee->base_salary;
 
-                $baseSalary = (float)$employee->base_salary;
-                $bonuses = 0; 
-                $netSalary = $baseSalary + $bonuses - $deductions;
+                // 1. جزاءات التأخير من سجل الحضور
+                $lateDeductions = (float) $attendances->sum('penalty_amount');
+                if ($lateDeductions == 0 && $attendances->sum('late_minutes') > 0) {
+                    $lateDeductions = $attendances->sum('late_minutes') * 0.5;
+                }
 
-                PayrollModel::create([
-                    'id' => Str::uuid()->toString(),
-                    'employee_id' => $employee->id,
-                    'month' => $this->month,
-                    'year' => $this->year,
-                    'base_salary' => $baseSalary,
-                    'bonuses' => $bonuses,
-                    'deductions' => $deductions,
-                    'net_salary' => $netSalary,
-                    'status' => 'draft'
+                // 2. جلب بنود الراتب للشهر (مدخلة يدوياً)
+                $payrollItems = \App\Infrastructure\Eloquent\Models\PayrollItemModel::where('employee_id', $employee->id)
+                    ->where('month', $this->month)
+                    ->where('year', $this->year)
+                    ->where('status', 'approved')
+                    ->whereNull('payroll_id') // فقط البنود غير المربوطة بعد
+                    ->get();
+
+                $manualDeductions = $payrollItems->filter->isDeduction()->sum('amount');
+                $manualBonuses    = $payrollItems->filter->isAddition()->sum('amount');
+
+                $totalDeductions = $lateDeductions + $manualDeductions;
+                $totalBonuses    = $manualBonuses;
+                $netSalary       = max(0, $baseSalary + $totalBonuses - $totalDeductions);
+
+                // بناء الـ breakdown
+                $deductionsBreakdown = [];
+                if ($lateDeductions > 0) {
+                    $deductionsBreakdown[] = ['reason' => 'جزاءات التأخير', 'type' => 'خصم تأخير', 'amount' => $lateDeductions];
+                }
+                foreach ($payrollItems->filter->isDeduction() as $item) {
+                    $deductionsBreakdown[] = ['reason' => $item->reason, 'type' => $item->type_label, 'amount' => (float)$item->amount];
+                }
+
+                $bonusesBreakdown = $payrollItems->filter->isAddition()
+                    ->map(fn($i) => ['reason' => $i->reason, 'type' => $i->type_label, 'amount' => (float)$i->amount])
+                    ->values()->toArray();
+
+                $advancesBreakdown = $payrollItems->where('type', 'advance')
+                    ->map(fn($i) => ['reason' => $i->reason, 'amount' => (float)$i->amount])
+                    ->values()->toArray();
+
+                $payroll = PayrollModel::create([
+                    'id'                   => Str::uuid()->toString(),
+                    'employee_id'          => $employee->id,
+                    'month'                => $this->month,
+                    'year'                 => $this->year,
+                    'base_salary'          => $baseSalary,
+                    'bonuses'              => $totalBonuses,
+                    'deductions'           => $totalDeductions,
+                    'net_salary'           => $netSalary,
+                    'status'               => 'draft',
+                    'deductions_breakdown' => $deductionsBreakdown,
+                    'bonuses_breakdown'    => $bonusesBreakdown,
+                    'advances_breakdown'   => $advancesBreakdown,
                 ]);
+
+                // ربط البنود اليدوية بالـ payroll الجديد
+                $payrollItems->each(fn($item) => $item->update(['payroll_id' => $payroll->id]));
 
                 $generatedCount++;
             }
@@ -84,7 +127,7 @@ class GeneratePayrollJob implements ShouldQueue
             DB::commit();
 
             Log::info('GeneratePayrollJob completed', [
-                'tenant_id'       => $this->tenantId,
+                'tenant_id' => $this->tenantId,
                 'payrolls_created' => $generatedCount,
             ]);
 
@@ -92,7 +135,7 @@ class GeneratePayrollJob implements ShouldQueue
             DB::rollBack();
             Log::error('GeneratePayrollJob failed', [
                 'tenant_id' => $this->tenantId,
-                'error'     => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
 
             throw $e; // يخلي الـ Queue يعمل retry
@@ -103,7 +146,7 @@ class GeneratePayrollJob implements ShouldQueue
     {
         Log::error('GeneratePayrollJob permanently failed', [
             'tenant_id' => $this->tenantId,
-            'error'     => $exception->getMessage(),
+            'error' => $exception->getMessage(),
         ]);
     }
 }

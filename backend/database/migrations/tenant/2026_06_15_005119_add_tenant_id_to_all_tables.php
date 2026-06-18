@@ -3,14 +3,13 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
         $connection = Schema::connection('tenant');
-        $tables = array_map(function($table) {
+        $tables = array_map(function ($table) {
             return $table['name'];
         }, $connection->getTables());
 
@@ -19,7 +18,7 @@ return new class extends Migration
                 continue;
             }
 
-            if (!$connection->hasColumn($table, 'tenant_id')) {
+            if (! $connection->hasColumn($table, 'tenant_id')) {
                 $connection->table($table, function (Blueprint $blueprint) {
                     $blueprint->uuid('tenant_id')->default('00000000-0000-0000-0000-000000000001')->nullable();
                 });
@@ -30,7 +29,7 @@ return new class extends Migration
     public function down(): void
     {
         $connection = Schema::connection('tenant');
-        $tables = array_map(function($table) {
+        $tables = array_map(function ($table) {
             return $table['name'];
         }, $connection->getTables());
 

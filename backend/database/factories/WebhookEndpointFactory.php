@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Factories;
 
 use App\Infrastructure\Eloquent\Models\WebhookEndpointModel;
@@ -11,11 +12,11 @@ class WebhookEndpointFactory extends Factory
     public function definition(): array
     {
         return [
-            
-            'url'       => $this->faker->url(),
-            'events'    => ['invoice.confirmed'],
+
+            'url' => $this->faker->url(),
+            'events' => ['invoice.confirmed'],
             'is_active' => true,
-            'secret'    => $this->faker->uuid(),
+            'secret' => $this->faker->uuid(),
         ];
     }
 }

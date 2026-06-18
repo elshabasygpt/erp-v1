@@ -2,8 +2,8 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DeliveryModel extends BaseModel
 {
@@ -24,7 +24,7 @@ class DeliveryModel extends BaseModel
         'eta',
         'notes',
         'created_by',
-        'updated_by'
+        'updated_by',
     ];
 
     protected $casts = [

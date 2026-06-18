@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Inventory\Services;
 
 use App\Infrastructure\Eloquent\Models\Inventory\StockLotModel;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use DomainException;
+use Illuminate\Support\Str;
 
 /**
  * StockLotService
@@ -24,7 +23,7 @@ class StockLotService
         $data['id'] = Str::uuid()->toString();
         $data['created_by'] = $userId;
 
-        return StockLotModel::create($data);
+        return StockLotModel::query()->create($data);
     }
 
     /**
@@ -32,10 +31,10 @@ class StockLotService
      */
     public function deductLot(string $lotId, float $quantity, string $warehouseId): void
     {
-        $lot = StockLotModel::where('id', $lotId)->where('warehouse_id', $warehouseId)->lockForUpdate()->first();
+        $lot = StockLotModel::query()->where('id', $lotId)->where('warehouse_id', $warehouseId)->lockForUpdate()->first();
 
-        if (!$lot) {
-            throw new DomainException("Stock lot not found in the specified warehouse.");
+        if (! $lot) {
+            throw new DomainException('Stock lot not found in the specified warehouse.');
         }
 
         if ($lot->quantity < $quantity) {

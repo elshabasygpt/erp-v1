@@ -11,6 +11,7 @@ namespace App\Domain\Shared;
 final class Money extends ValueObject
 {
     private int $amount; // in cents
+
     private string $currency;
 
     public function __construct(int $amount, string $currency = 'SAR')
@@ -45,6 +46,7 @@ final class Money extends ValueObject
     public function add(Money $other): self
     {
         $this->ensureSameCurrency($other);
+
         return new self($this->amount + $other->amount, $this->currency);
     }
 
@@ -55,6 +57,7 @@ final class Money extends ValueObject
         if ($result < 0) {
             throw new \DomainException('Resulting money amount cannot be negative.');
         }
+
         return new self($result, $this->currency);
     }
 
@@ -77,6 +80,6 @@ final class Money extends ValueObject
 
     public function __toString(): string
     {
-        return number_format($this->toFloat(), 2) . ' ' . $this->currency;
+        return number_format($this->toFloat(), 2).' '.$this->currency;
     }
 }

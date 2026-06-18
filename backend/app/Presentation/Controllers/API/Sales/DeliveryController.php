@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
+use App\Application\Sales\DTOs\Deliveries\AssignDeliveryDTO;
 use App\Application\Sales\DTOs\Deliveries\CreateDeliveryDTO;
 use App\Application\Sales\DTOs\Deliveries\UpdateDeliveryStatusDTO;
-use App\Application\Sales\DTOs\Deliveries\AssignDeliveryDTO;
+use App\Application\Sales\UseCases\Deliveries\AssignDeliveryUseCase;
 use App\Application\Sales\UseCases\Deliveries\CreateDeliveryUseCase;
 use App\Application\Sales\UseCases\Deliveries\UpdateDeliveryStatusUseCase;
-use App\Application\Sales\UseCases\Deliveries\AssignDeliveryUseCase;
+use App\Domain\Sales\Services\DeliveryService;
 use App\Infrastructure\Eloquent\Models\DeliveryModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,16 +22,16 @@ class DeliveryController extends BaseTenantController
         private readonly CreateDeliveryUseCase $createDeliveryUseCase,
         private readonly UpdateDeliveryStatusUseCase $updateDeliveryStatusUseCase,
         private readonly AssignDeliveryUseCase $assignDeliveryUseCase,
-        private readonly \App\Domain\Sales\Services\DeliveryService $deliveryService
+        private readonly DeliveryService $deliveryService
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
-        
-        $query = DeliveryModel::where('tenant_id', $this->getTenantId($request))->with(['salesOrder.customer', 'driver'])->orderBy('delivery_date', 'desc');
-        
+
+        $query = DeliveryModel::query()->where('tenant_id', $this->getTenantId($request))->with(['salesOrder.customer', 'driver'])->orderBy('delivery_date', 'desc');
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -41,6 +42,7 @@ class DeliveryController extends BaseTenantController
         }
 
         $deliveries = $query->paginate((int) $limit);
+
         return $this->paginated($deliveries->toArray(), 'Deliveries retrieved successfully');
     }
 
@@ -70,16 +72,17 @@ class DeliveryController extends BaseTenantController
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Delivery creation failed: ' . $e->getMessage());
-            return $this->error('Failed to create delivery: ' . $e->getMessage(), 500);
+            \Log::error('Delivery creation failed: '.$e->getMessage());
+
+            return $this->error('Failed to create delivery: '.$e->getMessage(), 500);
         }
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $delivery = DeliveryModel::where('tenant_id', $this->getTenantId($request))->with(['salesOrder.items', 'driver'])->find($id);
-        
-        if (!$delivery) {
+        $delivery = DeliveryModel::query()->where('tenant_id', $this->getTenantId($request))->with(['salesOrder.items', 'driver'])->find($id);
+
+        if (! $delivery) {
             return $this->error('Delivery not found', 404);
         }
 
@@ -104,8 +107,9 @@ class DeliveryController extends BaseTenantController
 
             return $this->success($delivery->toArray(), 'Delivery assigned successfully');
         } catch (\Exception $e) {
-            \Log::error('Delivery assignment failed: ' . $e->getMessage());
-            return $this->error('Failed to assign delivery: ' . $e->getMessage(), 500);
+            \Log::error('Delivery assignment failed: '.$e->getMessage());
+
+            return $this->error('Failed to assign delivery: '.$e->getMessage(), 500);
         }
     }
 
@@ -123,8 +127,9 @@ class DeliveryController extends BaseTenantController
 
             return $this->success($delivery->toArray(), 'Delivery status updated successfully');
         } catch (\Exception $e) {
-            \Log::error('Delivery status update failed: ' . $e->getMessage());
-            return $this->error('Failed to update delivery status: ' . $e->getMessage(), 500);
+            \Log::error('Delivery status update failed: '.$e->getMessage());
+
+            return $this->error('Failed to update delivery status: '.$e->getMessage(), 500);
         }
     }
 
@@ -132,13 +137,14 @@ class DeliveryController extends BaseTenantController
     {
         try {
             $delivery = $this->deliveryService->cancelDelivery($this->getTenantId($request), $id, auth()->id() ?? '');
+
             return $this->success($delivery->toArray(), 'Delivery cancelled successfully');
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Delivery cancellation failed: ' . $e->getMessage());
-            return $this->error('Failed to cancel delivery: ' . $e->getMessage(), 500);
+            \Log::error('Delivery cancellation failed: '.$e->getMessage());
+
+            return $this->error('Failed to cancel delivery: '.$e->getMessage(), 500);
         }
     }
 }
-

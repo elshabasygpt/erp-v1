@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Sales\Services;
 
-use App\Infrastructure\Eloquent\Models\QuotationModel;
 use App\Infrastructure\Eloquent\Models\QuotationItemModel;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use App\Infrastructure\Eloquent\Models\QuotationModel;
 use Carbon\Carbon;
 use DomainException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class QuotationService
 {
@@ -18,10 +18,10 @@ class QuotationService
      */
     public function updateQuotation(string $tenantId, string $quotationId, array $data): QuotationModel
     {
-        $quotation = QuotationModel::where('tenant_id', $tenantId)->find($quotationId);
+        $quotation = QuotationModel::query()->where('tenant_id', $tenantId)->find($quotationId);
 
-        if (!$quotation) {
-            throw new DomainException("Quotation not found");
+        if (! $quotation) {
+            throw new DomainException('Quotation not found');
         }
 
         if (in_array($quotation->status, ['accepted', 'rejected', 'expired'])) {
@@ -30,7 +30,7 @@ class QuotationService
 
         DB::beginTransaction();
         try {
-            QuotationItemModel::where('quotation_id', $quotation->id)->delete();
+            QuotationItemModel::query()->where('quotation_id', $quotation->id)->delete();
 
             $subtotalAmount = 0;
             $taxAmount = 0;
@@ -41,7 +41,7 @@ class QuotationService
                 $subtotalAmount += $gross;
                 $taxAmount += $itemTax;
             }
-            
+
             $totalAmount = $subtotalAmount + $taxAmount;
 
             $quotation->update([
@@ -59,7 +59,7 @@ class QuotationService
                 $gross = $item['quantity'] * $item['unit_price'];
                 $itemTax = $gross * ($item['vat_rate'] / 100);
 
-                QuotationItemModel::create([
+                QuotationItemModel::query()->create([
                     'tenant_id' => $tenantId,
                     'id' => Str::uuid()->toString(),
                     'quotation_id' => $quotation->id,
@@ -72,6 +72,7 @@ class QuotationService
             }
 
             DB::commit();
+
             return $quotation->load('items');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -89,8 +90,9 @@ class QuotationService
         }
 
         if ($quotation->expiry_date && Carbon::parse($quotation->expiry_date)->isPast()) {
-            if (!in_array($quotation->status, ['accepted', 'rejected'])) {
+            if (! in_array($quotation->status, ['accepted', 'rejected'])) {
                 $quotation->update(['status' => 'expired']);
+
                 return true;
             }
         }

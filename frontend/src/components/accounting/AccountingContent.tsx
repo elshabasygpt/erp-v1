@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { treasuryApi } from '@/lib/api';
+import Link from 'next/link';
 
 export default function AccountingContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -247,14 +248,14 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                         { title: isRTL ? 'الأرباح والخسائر' : 'P&L Statement', icon: '📈', color: '#f59e0b', link: '/accounting/reports/income-statement' },
                         { title: isRTL ? 'الأستاذ العام' : 'General Ledger', icon: '📖', color: '#8b5cf6', link: '/accounting/reports/general-ledger' },
                     ].map((report, idx) => (
-                        <div key={idx} className="glass-card p-6 flex flex-col items-center text-center group cursor-pointer hover:border-primary-500 transition-all">
+                        <Link key={idx} href={`/${locale}/dashboard${report.link}`} className="glass-card p-6 flex flex-col items-center text-center group cursor-pointer hover:border-primary-500 transition-all">
                             <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">{report.icon}</span>
                             <h3 className="font-bold text-white mb-2">{report.title}</h3>
                             <p className="text-xs opacity-50 mb-4">{isRTL ? 'تقارير محاسبية تفصيلية مطابقة للمعايير' : 'Standard detailed accounting reports'}</p>
                             <button className="text-xs font-semibold py-1.5 px-3 rounded-lg bg-surface-800 text-surface-300 hover:bg-primary-600 hover:text-white transition-colors">
                                 {isRTL ? 'عرض التقرير' : 'View Report'}
                             </button>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )}

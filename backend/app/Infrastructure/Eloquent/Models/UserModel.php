@@ -4,24 +4,28 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Infrastructure\Eloquent\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class UserModel extends Authenticatable
 {
-    use HasApiTokens, HasUuids, SoftDeletes, HasFactory;
+    use HasApiTokens, HasFactory, HasUuids, SoftDeletes;
 
     protected $connection = 'tenant';
+
     protected $table = 'users';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected static function booted()
     {
-        static::addGlobalScope(new \App\Infrastructure\Eloquent\Models\Scopes\TenantScope);
+        static::addGlobalScope(new TenantScope);
     }
 
     protected $fillable = [
@@ -52,6 +56,7 @@ class UserModel extends Authenticatable
     {
         return $this->role && $this->role->name === $roleName;
     }
+
     public function branch()
     {
         return $this->belongsTo(BranchModel::class, 'branch_id');

@@ -1,11 +1,12 @@
 <?php
+
 namespace App\Application\HR\UseCases;
 
-use App\Domain\HR\Repositories\EmployeeRepositoryInterface;
+use App\Domain\HR\Entities\Payroll;
 use App\Domain\HR\Repositories\AttendanceRepositoryInterface;
+use App\Domain\HR\Repositories\EmployeeRepositoryInterface;
 use App\Domain\HR\Repositories\PayrollRepositoryInterface;
 use App\Domain\HR\Services\PayrollCalculationService;
-use App\Domain\HR\Entities\Payroll;
 
 class GeneratePayrollUseCase
 {
@@ -19,12 +20,12 @@ class GeneratePayrollUseCase
     public function execute(int $tenantId, string $periodStart, string $periodEnd, int $workingDays): array
     {
         $employees = $this->employeeRepo->findAll($tenantId, ['status' => 'active']);
-        $results   = [];
+        $results = [];
 
         foreach ($employees as $employee) {
-            $attendance  = $this->attendanceRepo->findByEmployee($employee->id, [
+            $attendance = $this->attendanceRepo->findByEmployee($employee->id, [
                 'from' => $periodStart,
-                'to'   => $periodEnd,
+                'to' => $periodEnd,
             ]);
 
             $absentDays = collect($attendance)
@@ -38,9 +39,9 @@ class GeneratePayrollUseCase
             );
 
             $payroll = Payroll::create([
-                'employee_id'  => $employee->id,
+                'employee_id' => $employee->id,
                 'period_start' => $periodStart,
-                'period_end'   => $periodEnd,
+                'period_end' => $periodEnd,
                 ...$calculated,
             ]);
 

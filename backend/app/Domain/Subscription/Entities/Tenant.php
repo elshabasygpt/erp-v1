@@ -19,14 +19,33 @@ final class Tenant extends Entity
         private ?\DateTimeImmutable $createdAt = null,
     ) {
         parent::__construct($id);
-        $this->createdAt = $createdAt ?? new \DateTimeImmutable();
+        $this->createdAt = $createdAt ?? new \DateTimeImmutable;
     }
 
-    public function getName(): string { return $this->name; }
-    public function getDomain(): string { return $this->domain; }
-    public function getDatabaseName(): string { return $this->databaseName; }
-    public function getStatus(): string { return $this->status; }
-    public function getTrialEndsAt(): ?\DateTimeImmutable { return $this->trialEndsAt; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getDomain(): string
+    {
+        return $this->domain;
+    }
+
+    public function getDatabaseName(): string
+    {
+        return $this->databaseName;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function getTrialEndsAt(): ?\DateTimeImmutable
+    {
+        return $this->trialEndsAt;
+    }
 
     public function suspend(): void
     {
@@ -43,12 +62,13 @@ final class Tenant extends Entity
         if ($this->trialEndsAt === null) {
             return false;
         }
-        return $this->trialEndsAt < new \DateTimeImmutable();
+
+        return $this->trialEndsAt < new \DateTimeImmutable;
     }
 
     public function isActive(): bool
     {
-        return $this->status === 'active' || ($this->status === 'trial' && !$this->isTrialExpired());
+        return $this->status === 'active' || ($this->status === 'trial' && ! $this->isTrialExpired());
     }
 
     public function toArray(): array

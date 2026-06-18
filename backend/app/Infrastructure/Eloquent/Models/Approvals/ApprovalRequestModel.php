@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models\Approvals;
 
-use App\Infrastructure\Eloquent\Models\BaseTenantModel;
+use App\Infrastructure\Eloquent\Models\BaseModel;
 use App\Infrastructure\Eloquent\Models\UserModel;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ApprovalRequestModel extends BaseTenantModel
+class ApprovalRequestModel extends BaseModel
 {
-    use SoftDeletes, HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'approval_requests';
 
@@ -28,7 +28,7 @@ class ApprovalRequestModel extends BaseTenantModel
         'resolved_by',
         'escalated_at',
         'notes',
-        'payload'
+        'payload',
     ];
 
     protected $casts = [

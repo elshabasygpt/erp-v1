@@ -17,12 +17,12 @@ class InvoiceModel extends BaseModel
         'vat_amount', 'discount_amount', 'total', 'status',
         'notes', 'warehouse_id', 'branch_id', 'invoice_date',
         'created_by', 'updated_by',
-        'zatca_qr_code', 'zatca_xml', 'zatca_hash', 
+        'zatca_qr_code', 'zatca_xml', 'zatca_hash',
         'zatca_uuid', 'zatca_status', 'zatca_error_message',
         'commission_amount',
-        'sales_channel_id', 'sales_channel_name', 
+        'sales_channel_id', 'sales_channel_name',
         'pricing_adjustment_type', 'pricing_adjustment_value',
-        'due_date', 'internal_notes', 'reference_no', 'paid_amount', 'salesperson_id', 'cost_center_id', 'currency_id', 'exchange_rate'
+        'due_date', 'internal_notes', 'reference_no', 'paid_amount', 'salesperson_id', 'cost_center_id', 'currency_id', 'exchange_rate',
     ];
 
     protected $casts = [
@@ -42,9 +42,20 @@ class InvoiceModel extends BaseModel
         return $this->hasMany(InvoiceItemModel::class, 'invoice_id');
     }
 
-    public function customer() { return $this->belongsTo(CustomerModel::class, 'customer_id'); }
-    public function shippingInvoices() { return $this->hasMany(ShippingInvoiceModel::class, 'invoice_id'); }
-    public function salesReturns() { return $this->hasMany(SalesReturnModel::class, 'invoice_id'); }
+    public function customer()
+    {
+        return $this->belongsTo(CustomerModel::class, 'customer_id');
+    }
+
+    public function shippingInvoices()
+    {
+        return $this->hasMany(ShippingInvoiceModel::class, 'invoice_id');
+    }
+
+    public function salesReturns()
+    {
+        return $this->hasMany(SalesReturnModel::class, 'invoice_id');
+    }
 
     public function installments()
     {

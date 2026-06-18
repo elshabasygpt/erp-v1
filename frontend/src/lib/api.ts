@@ -335,6 +335,18 @@ export const purchasesApi = {
     createInvoice: (data: any) => api.post('/purchases/invoices', data),
     updateInvoice: (id: string, data: any) => api.put(`/purchases/invoices/${id}`, data),
     updateStatus: (id: string, payload: any) => api.put(`/purchases/invoices/${id}/status`, payload),
+
+    // Advanced Procurement
+    getPurchaseRequests: (params?: Record<string, any>) => api.get('/purchases/requests', { params }),
+    createPurchaseRequest: (data: any) => api.post('/purchases/requests', data),
+    updatePurchaseRequestStatus: (id: string, data: any) => api.put(`/purchases/requests/${id}/status`, data),
+
+    getRFQs: (params?: Record<string, any>) => api.get('/purchases/rfqs', { params }),
+    createRFQ: (data: any) => api.post('/purchases/rfqs', data),
+
+    getPurchaseOrders: (params?: Record<string, any>) => api.get('/purchases/orders', { params }),
+    createPurchaseOrder: (data: any) => api.post('/purchases/orders', data),
+    updatePurchaseOrderStatus: (id: string, data: any) => api.put(`/purchases/orders/${id}/status`, data),
 };
 
 export const purchaseReturnsApi = {
@@ -414,6 +426,7 @@ export const settingsApi = {
     updateSettings: (data: any) => api.put('/settings', data),
     getCompanyInfo: () => api.get('/settings/company'),
     updateCompanyInfo: (data: any) => api.put('/settings/company', data),
+    updateHrManagerEmail: (email: string) => api.post('/settings/hr-manager-email', { email }),
 };
 
 export const webhooksApi = {
@@ -449,6 +462,53 @@ export const hrApi = {
     getPayrolls: (params?: { month: number; year: number; limit?: number }) => api.get('/hr/payroll', { params }),
     generatePayroll: (data: { month: number; year: number }) => api.post('/hr/payroll/generate', data),
     markPayrollAsPaid: (id: string) => api.post(`/hr/payroll/${id}/pay`),
+
+    // Penalty Rules
+    getPenaltyRules: () => api.get('/hr/penalty-rules'),
+    createPenaltyRule: (data: {
+        late_from_minutes: number;
+        late_to_minutes: number;
+        deduction_type: 'fixed' | 'per_minute' | 'percentage_of_daily';
+        deduction_value: number;
+        grace_minutes?: number;
+        label?: string;
+        label_ar?: string;
+        sort_order?: number;
+    }) => api.post('/hr/penalty-rules', data),
+    updatePenaltyRule: (id: string, data: any) => api.put(`/hr/penalty-rules/${id}`, data),
+    deletePenaltyRule: (id: string) => api.delete(`/hr/penalty-rules/${id}`),
+    getPenaltyReport: (params: {
+        month: number;
+        year: number;
+        employee_id?: string;
+    }) => api.get('/hr/penalty-report', { params }),
+
+    // Payroll Items
+    getPayrollItems: (params?: {
+        employee_id?: string;
+        month?: number;
+        year?: number;
+        type?: string;
+        status?: string;
+        limit?: number;
+    }) => api.get('/hr/payroll-items', { params }),
+
+    addPayrollItem: (data: {
+        employee_id: string;
+        month: number;
+        year: number;
+        type: 'deduction' | 'bonus' | 'advance' | 'overtime' | 'other_add' | 'other_deduct';
+        reason: string;
+        amount: number;
+        notes?: string;
+    }) => api.post('/hr/payroll-items', data),
+
+    deletePayrollItem: (id: string) => api.delete(`/hr/payroll-items/${id}`),
+
+    getPayslip: (payrollId: string) => api.get(`/hr/payroll/${payrollId}/payslip`),
+
+    recordSignature: (payrollId: string, data: { signature_url?: string; notes?: string }) =>
+        api.post(`/hr/payroll/${payrollId}/sign`, data),
 };
 
 
@@ -502,6 +562,45 @@ export const subscriptionsApiNew = {
     api.post('/subscriptions/checkout', { plan_id: planId }),
 };
 
+// Tasks
+export const tasksApi = {
+    getDashboard: () => api.get('/tasks/dashboard'),
+
+    getTasks: (params?: {
+        view?: 'mine' | 'assigned' | 'created' | 'all';
+        status?: string;
+        priority?: string;
+        due?: 'today' | 'overdue' | 'week' | 'upcoming';
+        category?: string;
+        search?: string;
+        per_page?: number;
+    }) => api.get('/tasks', { params }),
+
+    createTask: (data: {
+        title: string;
+        description?: string;
+        priority?: 'low' | 'medium' | 'high' | 'urgent';
+        status?: string;
+        category?: string;
+        color?: string;
+        due_date?: string;
+        due_time?: string;
+        reminder_at?: string;
+        assigned_to?: string;
+        related_type?: string;
+        related_id?: string;
+        related_label?: string;
+    }) => api.post('/tasks', data),
+
+    updateTask: (id: string, data: any) => api.put(`/tasks/${id}`, data),
+    updateStatus: (id: string, status: string) => api.patch(`/tasks/${id}/status`, { status }),
+    deleteTask: (id: string) => api.delete(`/tasks/${id}`),
+    reorderTasks: (items: { id: string; order: number; status: string }[]) =>
+        api.post('/tasks/reorder', { items }),
+    addComment: (taskId: string, content: string) =>
+        api.post(`/tasks/${taskId}/comments`, { content }),
+    getCategories: () => api.get('/tasks/categories'),
+};
 
 import { initMockAdapter } from './setupMockAdapter';
 

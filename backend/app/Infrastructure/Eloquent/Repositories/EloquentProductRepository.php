@@ -7,32 +7,35 @@ namespace App\Infrastructure\Eloquent\Repositories;
 use App\Domain\Inventory\Entities\Product;
 use App\Domain\Inventory\Repositories\ProductRepositoryInterface;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
+use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 
 final class EloquentProductRepository implements ProductRepositoryInterface
 {
     public function findById(string $id): ?Product
     {
-        $model = ProductModel::find($id);
+        $model = ProductModel::query()->find($id);
+
         return $model ? $this->toDomain($model) : null;
     }
 
     public function findBySku(string $sku): ?Product
     {
-        $model = ProductModel::where('sku', $sku)->first();
+        $model = ProductModel::query()->where('sku', $sku)->first();
+
         return $model ? $this->toDomain($model) : null;
     }
 
     public function findByBarcode(string $barcode): ?Product
     {
-        $model = ProductModel::where('barcode', $barcode)->first();
+        $model = ProductModel::query()->where('barcode', $barcode)->first();
+
         return $model ? $this->toDomain($model) : null;
     }
 
     public function create(Product $product): Product
     {
-        $model = ProductModel::create([
+        $model = ProductModel::query()->create([
             'id' => $product->getId(),
             'name' => $product->getName(),
             'name_ar' => $product->getNameAr(),
@@ -40,6 +43,8 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             'barcode' => $product->getBarcode(),
             'cost_price' => $product->getCostPrice(),
             'sell_price' => $product->getSellPrice(),
+            'wholesale_price' => $product->getWholesalePrice(),
+            'semi_wholesale_price' => $product->getSemiWholesalePrice(),
             'vat_rate' => $product->getVatRate(),
             'stock_alert_level' => $product->getStockAlertLevel(),
             'is_active' => $product->isActive(),
@@ -48,47 +53,52 @@ final class EloquentProductRepository implements ProductRepositoryInterface
             'description' => $product->getDescription(),
             'image_url' => $product->getImageUrl(),
         ]);
+
         return $this->toDomain($model);
     }
 
     public function update(Product $product): Product
     {
-        ProductModel::where('id', $product->getId())->update([
+        ProductModel::query()->where('id', $product->getId())->update([
             'name' => $product->getName(),
             'name_ar' => $product->getNameAr(),
             'cost_price' => $product->getCostPrice(),
             'sell_price' => $product->getSellPrice(),
+            'wholesale_price' => $product->getWholesalePrice(),
+            'semi_wholesale_price' => $product->getSemiWholesalePrice(),
             'vat_rate' => $product->getVatRate(),
             'stock_alert_level' => $product->getStockAlertLevel(),
             'is_active' => $product->isActive(),
             'description' => $product->getDescription(),
             'image_url' => $product->getImageUrl(),
         ]);
+
         return $this->findById($product->getId());
     }
 
     public function delete(string $id): bool
     {
-        return ProductModel::where('id', $id)->delete() > 0;
+        return ProductModel::query()->where('id', $id)->delete() > 0;
     }
 
     public function paginate(int $perPage = 15, array $filters = []): array
     {
-        $query = ProductModel::select([
-            'id', 'name', 'name_ar', 'sku', 'barcode', 'cost_price', 
+        $query = ProductModel::query()->select([
+            'id', 'name', 'name_ar', 'sku', 'barcode', 'cost_price',
             'sell_price', 'wholesale_price', 'semi_wholesale_price', 'is_active', 'unit_of_measure', 'category_id',
-            'description', 'image_url', 'stock_alert_level', 'tenant_id'
+            'description', 'image_url', 'stock_alert_level', 'tenant_id',
         ])->with(['warehouseStocks', 'units']);
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('sku', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('barcode', 'ilike', "%{$filters['search']}%");
+                    ->orWhere('sku', 'ilike', "%{$filters['search']}%")
+                    ->orWhere('barcode', 'ilike', "%{$filters['search']}%");
             });
         }
         if (isset($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);
         }
+
         return $query->orderBy('name')->paginate($perPage)->toArray();
     }
 
@@ -104,24 +114,26 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
     public function getStockLevel(string $productId, string $warehouseId): float
     {
-        $wp = WarehouseProductModel::where('product_id', $productId)
+        $wp = WarehouseProductModel::query()->where('product_id', $productId)
             ->where('warehouse_id', $warehouseId)
             ->first();
+
         return $wp ? (float) $wp->quantity : 0;
     }
 
     public function getStockLevelForUpdate(string $productId, string $warehouseId): float
     {
-        $wp = WarehouseProductModel::where('product_id', $productId)
+        $wp = WarehouseProductModel::query()->where('product_id', $productId)
             ->where('warehouse_id', $warehouseId)
             ->lockForUpdate()
             ->first();
+
         return $wp ? (float) $wp->quantity : 0;
     }
 
     public function adjustStock(string $productId, string $warehouseId, float $quantity, float $averageCost): void
     {
-        $wp = WarehouseProductModel::firstOrCreate(
+        $wp = WarehouseProductModel::query()->firstOrCreate(
             ['product_id' => $productId, 'warehouse_id' => $warehouseId],
             ['quantity' => 0, 'average_cost' => 0]
         );
@@ -137,7 +149,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
         $wp->save();
 
         // Log the stock movement
-        StockMovementModel::create([
+        StockMovementModel::query()->create([
             'product_id' => $productId,
             'warehouse_id' => $warehouseId,
             'type' => $quantity > 0 ? 'in' : 'out',
@@ -148,12 +160,12 @@ final class EloquentProductRepository implements ProductRepositoryInterface
 
     public function search(string $query, int $limit = 20): array
     {
-        return ProductModel::where('is_active', true)
+        return ProductModel::query()->where('is_active', true)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'ilike', "%{$query}%")
-                  ->orWhere('name_ar', 'ilike', "%{$query}%")
-                  ->orWhere('sku', 'ilike', "%{$query}%")
-                  ->orWhere('barcode', $query);
+                    ->orWhere('name_ar', 'ilike', "%{$query}%")
+                    ->orWhere('sku', 'ilike', "%{$query}%")
+                    ->orWhere('barcode', $query);
             })
             ->limit($limit)
             ->get()

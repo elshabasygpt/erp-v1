@@ -6,6 +6,7 @@ namespace App\Application\Accounting\Services;
 
 use App\Domain\Accounting\Repositories\AccountRepositoryInterface;
 use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 
 final class AccountingService
 {
@@ -29,12 +30,12 @@ final class AccountingService
             if ($account->type === 'revenue') {
                 // Revenue normal balance is Credit
                 $balance = $account->total_credit - $account->total_debit;
-                $revenues[] = ['account' => (array)$account, 'balance' => $balance];
+                $revenues[] = ['account' => (array) $account, 'balance' => $balance];
                 $totalRevenue += $balance;
             } elseif ($account->type === 'expense') {
                 // Expense normal balance is Debit
                 $balance = $account->total_debit - $account->total_credit;
-                $expenses[] = ['account' => (array)$account, 'balance' => $balance];
+                $expenses[] = ['account' => (array) $account, 'balance' => $balance];
                 $totalExpenses += $balance;
             }
         }
@@ -63,15 +64,15 @@ final class AccountingService
         foreach ($balances as $account) {
             if ($account->type === 'asset') {
                 $balance = $account->total_debit - $account->total_credit;
-                $assetItems[] = ['account' => (array)$account, 'balance' => $balance];
+                $assetItems[] = ['account' => (array) $account, 'balance' => $balance];
                 $totalAssets += $balance;
             } elseif ($account->type === 'liability') {
                 $balance = $account->total_credit - $account->total_debit;
-                $liabilityItems[] = ['account' => (array)$account, 'balance' => $balance];
+                $liabilityItems[] = ['account' => (array) $account, 'balance' => $balance];
                 $totalLiabilities += $balance;
             } elseif ($account->type === 'equity') {
                 $balance = $account->total_credit - $account->total_debit;
-                $equityItems[] = ['account' => (array)$account, 'balance' => $balance];
+                $equityItems[] = ['account' => (array) $account, 'balance' => $balance];
                 $totalEquity += $balance;
             }
         }
@@ -83,7 +84,7 @@ final class AccountingService
         if ($netIncome !== 0.0) {
             $equityItems[] = [
                 'account' => ['name' => 'Current Year Earnings', 'type' => 'equity'],
-                'balance' => $netIncome
+                'balance' => $netIncome,
             ];
             $totalEquity += $netIncome;
         }
@@ -99,15 +100,15 @@ final class AccountingService
 
     private function getAggregatedBalances(\DateTimeImmutable $from, \DateTimeImmutable $to, string $tenantId, ?string $costCenterId = null): array
     {
-        $query = \Illuminate\Support\Facades\DB::connection('tenant')->table('journal_entry_lines')
+        $query = DB::connection('tenant')->table('journal_entry_lines')
             ->where('journal_entries.tenant_id', $tenantId)
-            ->join('journal_entries','journal_entry_lines.journal_entry_id','=','journal_entries.id')
-            ->join('accounts','journal_entry_lines.account_id','=','accounts.id')
+            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->join('accounts', 'journal_entry_lines.account_id', '=', 'accounts.id')
             ->where('journal_entries.is_posted', true)
             ->whereBetween('journal_entries.date', [$from->format('Y-m-d'), $to->format('Y-m-d')])
-            ->groupBy('accounts.id','accounts.code','accounts.name','accounts.name_ar','accounts.type')
+            ->groupBy('accounts.id', 'accounts.code', 'accounts.name', 'accounts.name_ar', 'accounts.type')
             ->selectRaw('accounts.id, accounts.code, accounts.name, accounts.name_ar, accounts.type, SUM(journal_entry_lines.debit) as total_debit, SUM(journal_entry_lines.credit) as total_credit');
-            
+
         if ($costCenterId) {
             $query->where('journal_entry_lines.cost_center_id', $costCenterId);
         }

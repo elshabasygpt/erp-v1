@@ -16,7 +16,7 @@ final class SubscriptionService
     {
         $count = 0;
 
-        $expiredTenants = DB::connection('pgsql')
+        $expiredTenants = DB::connection(env('DB_CONNECTION', 'pgsql'))
             ->table('subscriptions')
             ->join('tenants', 'subscriptions.tenant_id', '=', 'tenants.id')
             ->where('subscriptions.ends_at', '<', now())
@@ -25,7 +25,7 @@ final class SubscriptionService
             ->get();
 
         foreach ($expiredTenants as $tenant) {
-            DB::connection('pgsql')
+            DB::connection(env('DB_CONNECTION', 'pgsql'))
                 ->table('tenants')
                 ->where('id', $tenant->id)
                 ->update([
@@ -33,7 +33,7 @@ final class SubscriptionService
                     'updated_at' => now(),
                 ]);
 
-            DB::connection('pgsql')
+            DB::connection(env('DB_CONNECTION', 'pgsql'))
                 ->table('subscriptions')
                 ->where('tenant_id', $tenant->id)
                 ->where('status', 'active')
@@ -56,7 +56,7 @@ final class SubscriptionService
         $now = now();
         $endsAt = $now->copy()->addMonths($months);
 
-        DB::connection('pgsql')
+        DB::connection(env('DB_CONNECTION', 'pgsql'))
             ->table('subscriptions')
             ->where('tenant_id', $tenantId)
             ->update([
@@ -67,7 +67,7 @@ final class SubscriptionService
                 'updated_at' => $now,
             ]);
 
-        DB::connection('pgsql')
+        DB::connection(env('DB_CONNECTION', 'pgsql'))
             ->table('tenants')
             ->where('id', $tenantId)
             ->update([

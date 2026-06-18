@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Infrastructure\Eloquent\Models\PartnerAuditLogModel;
+use App\Infrastructure\Eloquent\Models\PartnerModel;
 use Closure;
 use Illuminate\Http\Request;
-use App\Infrastructure\Eloquent\Models\PartnerModel;
-use App\Infrastructure\Eloquent\Models\PartnerAuditLogModel;
 use Illuminate\Support\Str;
 
 class PartnerAuth
@@ -19,7 +19,7 @@ class PartnerAuth
     {
         $token = $request->bearerToken();
 
-        if (!$token) {
+        if (! $token) {
             return response()->json([
                 'success' => false,
                 'message' => 'Authentication required.',
@@ -28,12 +28,12 @@ class PartnerAuth
 
         // Find partner by hashed access token
         $hashedToken = hash('sha256', $token);
-        $partner = PartnerModel::where('access_token', $hashedToken)
+        $partner = PartnerModel::query()->where('access_token', $hashedToken)
             ->where('portal_enabled', true)
             ->where('is_active', true)
             ->first();
 
-        if (!$partner) {
+        if (! $partner) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired token.',
@@ -66,13 +66,13 @@ class PartnerAuth
         };
 
         // Throttle audit logs: only log once per action per 5 minutes
-        $recentLog = PartnerAuditLogModel::where('partner_id', $partner->id)
+        $recentLog = PartnerAuditLogModel::query()->where('partner_id', $partner->id)
             ->where('action', $action)
             ->where('created_at', '>=', now()->subMinutes(5))
             ->exists();
 
-        if (!$recentLog) {
-            PartnerAuditLogModel::create([
+        if (! $recentLog) {
+            PartnerAuditLogModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'partner_id' => $partner->id,
                 'action' => $action,

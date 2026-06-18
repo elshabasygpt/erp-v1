@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 
 class PartnerAuditLogModel extends Model
 {
     use HasUuids;
 
     protected $connection = 'tenant';
+
     protected $table = 'partner_audit_logs';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     protected $fillable = [

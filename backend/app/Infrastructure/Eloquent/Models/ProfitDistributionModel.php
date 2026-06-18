@@ -11,8 +11,11 @@ class ProfitDistributionModel extends BaseModel
     use HasUuids;
 
     protected $connection = 'tenant';
+
     protected $table = 'profit_distributions';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Purchases;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
 use App\Application\Purchases\DTOs\CreatePurchaseDTO;
-use App\Application\Purchases\UseCases\CreatePurchaseUseCase;
 use App\Application\Purchases\UseCases\ConfirmPurchaseUseCase;
+use App\Application\Purchases\UseCases\CreatePurchaseUseCase;
+use App\Application\Services\Webhooks\WebhookService;
+use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PurchaseController extends BaseTenantController
 {
@@ -23,9 +25,9 @@ class PurchaseController extends BaseTenantController
     {
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
-        
-        $query = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['supplier', 'items.product'])->orderBy('invoice_date', 'desc');
-        
+
+        $query = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->with(['supplier', 'items.product'])->orderBy('invoice_date', 'desc');
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -58,19 +60,23 @@ class PurchaseController extends BaseTenantController
             $validated['tenant_id'] = $this->getTenantId($request);
             $dto = CreatePurchaseDTO::fromRequest($validated);
             $purchase = $this->createPurchaseUseCase->execute($dto, auth()->id() ?? '');
-            return $this->created($purchase, 'Purchase invoice created successfully');
+
+            return $this->success($purchase, 'Purchase invoice created successfully', 201);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Purchase creation failed: ' . $e->getMessage());
-            return $this->error('Failed to create purchase invoice: ' . $e->getMessage(), 500);
+            \Log::error('Purchase creation failed: '.$e->getMessage());
+
+            return $this->error('Failed to create purchase invoice: '.$e->getMessage(), 500);
         }
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $purchase = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
-        if (!$purchase) { return $this->error('Purchase invoice not found', 404); }
+        $purchase = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $purchase) {
+            return $this->error('Purchase invoice not found', 404);
+        }
         if ($purchase->status !== 'draft') {
             return $this->error('Cannot modify a confirmed invoice. Please use adjustments or returns.', 422);
         }
@@ -97,7 +103,7 @@ class PurchaseController extends BaseTenantController
             $purchase->items()->delete();
 
             $dto = CreatePurchaseDTO::fromRequest(array_merge($validated, ['supplier_id' => $validated['supplier_id']]));
-            
+
             $subtotalAmount = 0;
             $taxAmount = 0;
             foreach ($dto->items as $item) {
@@ -123,7 +129,7 @@ class PurchaseController extends BaseTenantController
                 $itemTax = round($itemSub * ($item['tax_rate'] / 100), 2);
 
                 $purchase->items()->create([
-                    'id' => \Illuminate\Support\Str::uuid()->toString(),
+                    'id' => Str::uuid()->toString(),
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
@@ -142,23 +148,29 @@ class PurchaseController extends BaseTenantController
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Purchase update failed: ' . $e->getMessage());
-            return $this->error('Failed to update purchase invoice: ' . $e->getMessage(), 500);
+            \Log::error('Purchase update failed: '.$e->getMessage());
+
+            return $this->error('Failed to update purchase invoice: '.$e->getMessage(), 500);
         }
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $purchase = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'supplier'])->find($id);
-        if (!$purchase) { return $this->error('Purchase invoice not found', 404); }
+        $purchase = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->with(['items.product', 'supplier'])->find($id);
+        if (! $purchase) {
+            return $this->error('Purchase invoice not found', 404);
+        }
+
         return $this->success($purchase, 'Purchase invoice retrieved successfully');
     }
-    
+
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $purchase = PurchaseInvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
-        if (!$purchase) { return $this->error('Purchase invoice not found', 404); }
-        
+        $purchase = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $purchase) {
+            return $this->error('Purchase invoice not found', 404);
+        }
+
         $validated = $request->validate([
             'status' => 'required|string|in:draft,confirmed,cancelled',
             'payment_type' => 'nullable|string|in:cash,credit',
@@ -174,24 +186,24 @@ class PurchaseController extends BaseTenantController
                 $this->confirmPurchaseUseCase->execute($purchase->id, $paymentType, auth()->id() ?? '');
                 $purchase->refresh();
 
-                \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
+                WebhookService::dispatchForTenant(
                     tenantId: (string) $this->getTenantId($request),
                     event: 'purchase.confirmed',
                     payload: [
                         'purchase_id' => $purchase->id,
                         'supplier_id' => $purchase->supplier_id,
-                        'total'       => $purchase->total,
+                        'total' => $purchase->total,
                     ]
                 );
             } catch (\Exception $e) {
-                \Log::error('Purchase confirmation failed: ' . $e->getMessage());
-                return $this->error('Failed to confirm purchase: ' . $e->getMessage(), 500);
+                \Log::error('Purchase confirmation failed: '.$e->getMessage());
+
+                return $this->error('Failed to confirm purchase: '.$e->getMessage(), 500);
             }
         } else {
             $purchase->update(['status' => $validated['status']]);
         }
-        
+
         return $this->success($purchase, 'Purchase invoice status updated successfully');
     }
 }
-

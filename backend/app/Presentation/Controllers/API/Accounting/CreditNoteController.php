@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\CreditNoteService;
 use App\Infrastructure\Eloquent\Models\Accounting\CreditNoteModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,13 +20,14 @@ class CreditNoteController extends BaseTenantController
     public function index(Request $request): JsonResponse
     {
         $type = $request->query('type');
-        $query = CreditNoteModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'supplier', 'salesInvoice', 'purchaseInvoice']);
+        $query = CreditNoteModel::query()->where('tenant_id', $this->getTenantId($request))->with(['customer', 'supplier', 'salesInvoice', 'purchaseInvoice']);
 
         if ($type) {
             $query->where('type', $type);
         }
 
         $creditNotes = $query->orderBy('created_at', 'desc')->paginate(15);
+
         return $this->paginated($creditNotes->toArray(), 'Credit notes retrieved successfully');
     }
 
@@ -47,9 +48,10 @@ class CreditNoteController extends BaseTenantController
 
         try {
             $creditNote = $this->creditNoteService->createCreditNote($validated, (string) (Auth::id() ?? ''));
+
             return $this->created($creditNote, 'Credit note created successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to create credit note: ' . $e->getMessage(), 422);
+            return $this->error('Failed to create credit note: '.$e->getMessage(), 422);
         }
     }
 
@@ -57,11 +59,10 @@ class CreditNoteController extends BaseTenantController
     {
         try {
             $this->creditNoteService->applyCreditNote($id, (string) (Auth::id() ?? ''));
+
             return $this->success(null, 'Credit note applied successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to apply credit note: ' . $e->getMessage(), 422);
+            return $this->error('Failed to apply credit note: '.$e->getMessage(), 422);
         }
     }
 }
-
-

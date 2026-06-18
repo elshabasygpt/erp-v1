@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Sales\Services;
 
+use App\Application\Sales\DTOs\CreateSalesOrderDTO;
+use App\Application\Sales\UseCases\SalesOrders\CreateSalesOrderUseCase;
 use App\Infrastructure\Eloquent\Models\QuotationModel;
 use App\Infrastructure\Eloquent\Models\SalesOrderModel;
-use App\Application\Sales\UseCases\SalesOrders\CreateSalesOrderUseCase;
-use App\Application\Sales\DTOs\CreateSalesOrderDTO;
 use DomainException;
 
 class SalesWorkflowService
@@ -22,18 +22,18 @@ class SalesWorkflowService
      */
     public function convertQuotationToSalesOrder(string $tenantId, string $quotationId, string $userId): SalesOrderModel
     {
-        $quotation = QuotationModel::where('tenant_id', $tenantId)->with('items')->find($quotationId);
+        $quotation = QuotationModel::query()->where('tenant_id', $tenantId)->with('items')->find($quotationId);
 
-        if (!$quotation) {
-            throw new DomainException("Quotation not found");
+        if (! $quotation) {
+            throw new DomainException('Quotation not found');
         }
 
         if ($this->quotationService->enforceExpiry($quotation)) {
-            throw new DomainException("Cannot convert an expired quotation.");
+            throw new DomainException('Cannot convert an expired quotation.');
         }
 
         if ($quotation->status !== 'accepted') {
-            throw new DomainException("Quotation must be accepted before converting to a Sales Order.");
+            throw new DomainException('Quotation must be accepted before converting to a Sales Order.');
         }
 
         // Map items
@@ -57,11 +57,11 @@ class SalesWorkflowService
         ];
 
         if (empty($data['warehouse_id'])) {
-            throw new DomainException("Quotation is missing a designated warehouse for fulfillment.");
+            throw new DomainException('Quotation is missing a designated warehouse for fulfillment.');
         }
 
         $dto = CreateSalesOrderDTO::fromRequest($data);
-        
+
         // Use the CreateSalesOrderUseCase which handles stock reservations and calculations
         return $this->createSalesOrderUseCase->execute($dto, $userId);
     }

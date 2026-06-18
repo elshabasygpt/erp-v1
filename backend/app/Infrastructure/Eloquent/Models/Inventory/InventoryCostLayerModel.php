@@ -6,8 +6,8 @@ namespace App\Infrastructure\Eloquent\Models\Inventory;
 
 use App\Infrastructure\Eloquent\Models\BaseModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\UserModel;
+use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -24,7 +24,7 @@ class InventoryCostLayerModel extends BaseModel
         'remaining_quantity',
         'reference_type',
         'reference_id',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

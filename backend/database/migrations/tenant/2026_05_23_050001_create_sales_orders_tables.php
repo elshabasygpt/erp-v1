@@ -16,17 +16,17 @@ return new class extends Migration
             $table->uuid('warehouse_id');
             $table->timestamp('issue_date')->useCurrent();
             $table->timestamp('delivery_date')->nullable();
-            
+
             $table->decimal('subtotal', 14, 2)->default(0);
             $table->decimal('vat_amount', 14, 2)->default(0);
             $table->decimal('total', 14, 2)->default(0);
-            
+
             $table->enum('status', ['draft', 'approved', 'partially_fulfilled', 'fulfilled', 'cancelled'])->default('draft');
             $table->text('notes')->nullable();
-            
+
             $table->uuid('created_by')->nullable();
             $table->uuid('updated_by')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
 
@@ -44,7 +44,7 @@ return new class extends Migration
             $table->decimal('unit_price', 12, 2);
             $table->decimal('vat_rate', 5, 2)->default(15);
             $table->decimal('total', 14, 2)->default(0);
-            
+
             $table->timestamps();
             $table->softDeletes();
 

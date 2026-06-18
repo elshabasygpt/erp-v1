@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\VoucherModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,10 +35,10 @@ class VoucherController extends BaseTenantController
 
         try {
             // 1. Create the Voucher
-            $voucher = VoucherModel::create([
-            'tenant_id' => $this->getTenantId($request),
+            $voucher = VoucherModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
-                'reference_number' => 'VCH-' . time() . '-' . rand(100, 999), // Generator logic
+                'reference_number' => 'VCH-'.time().'-'.rand(100, 999), // Generator logic
                 'type' => $validated['type'],
                 'amount' => $validated['amount'],
                 'date' => $validated['date'],
@@ -53,14 +52,14 @@ class VoucherController extends BaseTenantController
             // Note: In a true ERP, you would query Chart of Accounts for the specific IDs.
             // For now, we simulate inserting a double-entry record into `journal_entries`
             // dynamically to satisfy the requirement "الاثنين".
-            
+
             $journalId = Str::uuid()->toString();
             DB::connection('tenant')->table('journal_entries')->insert([
                 'tenant_id' => $this->getTenantId($request),
                 'id' => $journalId,
-                'entry_number' => 'JE-' . time() . '-' . rand(10, 99),
+                'entry_number' => 'JE-'.time().'-'.rand(10, 99),
                 'date' => $validated['date'],
-                'description' => 'قيد آلي: ' . $voucher->reference_number . ' - ' . ($validated['notes'] ?? 'سند مالي'),
+                'description' => 'قيد آلي: '.$voucher->reference_number.' - '.($validated['notes'] ?? 'سند مالي'),
                 'is_posted' => true,
                 'reference_type' => VoucherModel::class,
                 'reference_id' => $voucher->id,
@@ -73,9 +72,9 @@ class VoucherController extends BaseTenantController
             // Receipt (قبض): Debit Cash (+), Credit Customer/AR (-)
             // Discount (خصم): Debit Discount Exp (+), Credit Customer/AR (-)
             // Service (خدمات): Debit Customer/AR (+), Credit Revenue (+)
-            
+
             $isCustomerCredit = in_array($validated['type'], ['receipt', 'discount']);
-            
+
             // Dummy logic representing the two sides of the accounting equation
             // Side A: Asset/Expense
             DB::connection('tenant')->table('journal_entry_lines')->insert([
@@ -109,7 +108,8 @@ class VoucherController extends BaseTenantController
 
         } catch (\Exception $e) {
             DB::connection('tenant')->rollBack();
-            return $this->error('Failed to issue voucher: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to issue voucher: '.$e->getMessage(), 500);
         }
     }
 
@@ -121,21 +121,21 @@ class VoucherController extends BaseTenantController
     {
         // Simple mock returning the first asset/revenue account IDs to avoid crash.
         $acc = DB::connection('tenant')->table('accounts')->where('tenant_id', $tenantId)->first();
-        if (!$acc) {
+        if (! $acc) {
             // Seed a dummy account if pure empty DB
             $id = Str::uuid()->toString();
             DB::connection('tenant')->table('accounts')->insert([
                 'tenant_id' => $tenantId,
                 'id' => $id,
                 'code' => rand(1000, 9999),
-                'name' => 'System Account ' . $alias,
+                'name' => 'System Account '.$alias,
                 'name_ar' => 'حساب نظام',
                 'type' => 'asset',
             ]);
+
             return $id;
         }
+
         return $acc->id;
     }
 }
-
-

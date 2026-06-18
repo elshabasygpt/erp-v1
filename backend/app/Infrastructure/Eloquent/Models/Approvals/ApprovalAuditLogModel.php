@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models\Approvals;
 
-use App\Infrastructure\Eloquent\Models\BaseTenantModel;
+use App\Infrastructure\Eloquent\Models\BaseModel;
 use App\Infrastructure\Eloquent\Models\UserModel;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ApprovalAuditLogModel extends BaseTenantModel
+class ApprovalAuditLogModel extends BaseModel
 {
     use SoftDeletes;
 

@@ -23,7 +23,7 @@ class SalesOrderModel extends BaseModel
         'status',
         'notes',
         'created_by',
-        'updated_by'
+        'updated_by',
     ];
 
     protected $casts = [
@@ -31,7 +31,7 @@ class SalesOrderModel extends BaseModel
         'vat_amount' => 'decimal:2',
         'total' => 'decimal:2',
         'issue_date' => 'datetime',
-        'delivery_date' => 'datetime'
+        'delivery_date' => 'datetime',
     ];
 
     public function items()

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models;
 
+use App\Infrastructure\Eloquent\Models\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,6 +14,7 @@ class BaseModel extends Model
     use HasUuids, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     /**
@@ -26,6 +28,6 @@ class BaseModel extends Model
 
     protected static function booted()
     {
-        static::addGlobalScope(new \App\Infrastructure\Eloquent\Models\Scopes\TenantScope);
+        static::addGlobalScope(new TenantScope);
     }
 }

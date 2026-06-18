@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Application\Purchases\UseCases;
 
-use App\Infrastructure\Eloquent\Models\SupplierPaymentModel;
-use App\Infrastructure\Eloquent\Models\SafeModel;
-use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
+use App\Application\Accounting\Services\ExchangeRateService;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Services\AccountMappingService;
 use App\Domain\Accounting\Services\FXGainLossService;
-use App\Application\Accounting\Services\ExchangeRateService;
 use App\Domain\Accounting\Services\SupplierPaymentAllocationService;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Infrastructure\Eloquent\Models\SupplierPaymentModel;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use DomainException;
 
 final class CreateSupplierPaymentUseCase
 {
@@ -41,9 +41,9 @@ final class CreateSupplierPaymentUseCase
             $paymentDate = $data['payment_date'] ?? date('Y-m-d');
             $allocations = $data['allocations'] ?? [];
 
-            $safe = SafeModel::where('tenant_id', $tenantId)->find($safeId);
-            if (!$safe) {
-                throw new DomainException("Safe not found.");
+            $safe = SafeModel::query()->where('tenant_id', $tenantId)->find($safeId);
+            if (! $safe) {
+                throw new DomainException('Safe not found.');
             }
 
             if ($safe->balance < $amount) {
@@ -62,7 +62,7 @@ final class CreateSupplierPaymentUseCase
 
             // Create Payment
             $paymentId = Str::uuid()->toString();
-            $payment = SupplierPaymentModel::create([
+            $payment = SupplierPaymentModel::query()->create([
                 'id' => $paymentId,
                 'tenant_id' => $tenantId,
                 'supplier_id' => $supplierId,
@@ -77,11 +77,11 @@ final class CreateSupplierPaymentUseCase
 
             // Allocate Payment to Invoices and Calculate FX Differences
             $fxGainLoss = 0.0;
-            if (!empty($allocations)) {
+            if (! empty($allocations)) {
                 $this->allocationService->allocatePayment($paymentId, $allocations);
-                
+
                 foreach ($allocations as $allocation) {
-                    $invoice = PurchaseInvoiceModel::find($allocation['invoice_id']);
+                    $invoice = PurchaseInvoiceModel::query()->find($allocation['invoice_id']);
                     if ($invoice) {
                         $invoiceRate = (float) $invoice->exchange_rate;
                         $allocatedForeign = (float) $allocation['amount'];
@@ -95,13 +95,13 @@ final class CreateSupplierPaymentUseCase
             $safe->balance -= $amount;
             $safe->save();
 
-            SafeTransactionModel::create([
+            SafeTransactionModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'safe_id' => $safe->id,
                 'type' => 'withdrawal',
                 'amount' => $amount,
                 'exchange_rate' => $exchangeRate,
-                'description' => "Payment to supplier",
+                'description' => 'Payment to supplier',
                 'reference_type' => 'supplier_payment',
                 'reference_id' => $payment->id,
                 'created_by' => $userId,
@@ -115,7 +115,7 @@ final class CreateSupplierPaymentUseCase
                 id: null,
                 entryNumber: $entryNumber,
                 date: new \DateTimeImmutable($paymentDate),
-                description: "Supplier Payment",
+                description: 'Supplier Payment',
                 transactionCurrencyId: $currencyId,
                 exchangeRate: $exchangeRate,
                 isPosted: true,
@@ -147,7 +147,7 @@ final class CreateSupplierPaymentUseCase
                 credit: 0,
                 transactionDebit: round($amount, 2),
                 transactionCredit: 0.0,
-                description: "Supplier Payment - AP Settlement",
+                description: 'Supplier Payment - AP Settlement',
                 costCenterId: $data['cost_center_id'] ?? null,
             ));
 

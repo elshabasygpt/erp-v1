@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory\Services;
 
-use App\Infrastructure\Eloquent\Models\Inventory\StockLedgerModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\Inventory\InventoryCostLayerModel;
 use App\Infrastructure\Eloquent\Models\Inventory\InventoryCostLayerConsumptionModel;
+use App\Infrastructure\Eloquent\Models\Inventory\InventoryCostLayerModel;
+use App\Infrastructure\Eloquent\Models\Inventory\StockLedgerModel;
+use App\Infrastructure\Eloquent\Models\StockMovementModel;
+use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
-use DomainException;
 
 /**
  * InventoryValuationService
@@ -26,14 +24,11 @@ class InventoryValuationService
     /**
      * Record a stock movement and recalculate the average cost.
      * Must be called within a database transaction.
-     * 
-     * @param string $productId
-     * @param string $warehouseId
-     * @param float $quantityChange Positive for incoming, negative for outgoing
-     * @param float $unitCost The cost of the incoming items (required for incoming, ignored for outgoing)
-     * @param string $transactionType 'purchase', 'sale', 'transfer', 'adjustment', 'return'
-     * @param string|null $referenceId The ID of the transaction (invoice, purchase, etc.)
-     * @param string|null $userId
+     *
+     * @param  float  $quantityChange  Positive for incoming, negative for outgoing
+     * @param  float  $unitCost  The cost of the incoming items (required for incoming, ignored for outgoing)
+     * @param  string  $transactionType  'purchase', 'sale', 'transfer', 'adjustment', 'return'
+     * @param  string|null  $referenceId  The ID of the transaction (invoice, purchase, etc.)
      * @return float The average cost used/calculated for this transaction
      */
     public function recordMovement(
@@ -45,11 +40,11 @@ class InventoryValuationService
         ?string $referenceId = null,
         ?string $userId = null
     ): float {
-        $tenantId = app('currentTenant')->id ?? 'tenant_context';
+        $tenantId = app('current_tenant')->id ?? 'tenant_context';
         $valuationMethod = DB::connection('tenant')->table('tenant_settings')->where('key', 'inventory_valuation_method')->value('value') ?? 'average_cost';
 
         // Lock the warehouse product row to prevent race conditions during cost calculation
-        $wp = WarehouseProductModel::lockForUpdate()->firstOrCreate(
+        $wp = WarehouseProductModel::query()->lockForUpdate()->firstOrCreate(
             ['warehouse_id' => $warehouseId, 'product_id' => $productId],
             ['id' => Str::uuid()->toString(), 'quantity' => 0, 'average_cost' => 0]
         );
@@ -74,7 +69,7 @@ class InventoryValuationService
             $wp->average_cost = $newAverageCost;
 
             // Create Cost Layer for FIFO/LIFO
-            InventoryCostLayerModel::create([
+            InventoryCostLayerModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'tenant_id' => $tenantId,
                 'product_id' => $productId,
@@ -95,8 +90,8 @@ class InventoryValuationService
             } else {
                 // FIFO or LIFO
                 $orderDirection = $valuationMethod === 'fifo' ? 'asc' : 'desc';
-                
-                $layers = InventoryCostLayerModel::where('product_id', $productId)
+
+                $layers = InventoryCostLayerModel::query()->where('product_id', $productId)
                     ->where('warehouse_id', $warehouseId)
                     ->where('remaining_quantity', '>', 0)
                     ->orderBy('created_at', $orderDirection)
@@ -107,18 +102,20 @@ class InventoryValuationService
 
                 foreach ($layers as $layer) {
                     /** @var InventoryCostLayerModel $layer */
-                    if ($remainingToDeduct <= 0) break;
+                    if ($remainingToDeduct <= 0) {
+                        break;
+                    }
 
                     $availableQty = (float) $layer->remaining_quantity;
                     $deductQty = min($availableQty, $remainingToDeduct);
-                    
+
                     $layerCost = $deductQty * (float) $layer->unit_cost;
                     $transactionTotalCost += $layerCost;
 
                     $layer->remaining_quantity -= $deductQty;
                     $layer->save();
 
-                    InventoryCostLayerConsumptionModel::create([
+                    InventoryCostLayerConsumptionModel::query()->create([
                         'id' => Str::uuid()->toString(),
                         'tenant_id' => $tenantId,
                         'layer_id' => $layer->id,
@@ -144,7 +141,7 @@ class InventoryValuationService
         $wp->save();
 
         // Create Stock Ledger Entry
-        StockLedgerModel::create([
+        StockLedgerModel::query()->create([
             'id' => Str::uuid()->toString(),
             'product_id' => $productId,
             'warehouse_id' => $warehouseId,
@@ -161,7 +158,7 @@ class InventoryValuationService
         ]);
 
         // Create Stock Movement (for backward compatibility)
-        StockMovementModel::create([
+        StockMovementModel::query()->create([
             'id' => Str::uuid()->toString(),
             'product_id' => $productId,
             'warehouse_id' => $warehouseId,
@@ -200,7 +197,7 @@ class InventoryValuationService
 
         return [
             'total_valuation' => $totalValuation,
-            'items' => $valuation->toArray()
+            'items' => $valuation->toArray(),
         ];
     }
 }

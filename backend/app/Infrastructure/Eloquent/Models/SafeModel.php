@@ -2,14 +2,14 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SafeModel extends Model
 {
-    use HasUuids, SoftDeletes, HasFactory;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'safes';
 
@@ -19,7 +19,7 @@ class SafeModel extends Model
         'type', // cash, bank
         'balance',
         'is_active',
-        'created_by'
+        'created_by',
     ];
 
     public function transactions()
@@ -30,6 +30,6 @@ class SafeModel extends Model
     public function users()
     {
         return $this->belongsToMany(UserModel::class, 'safe_users', 'safe_id', 'user_id')
-                    ->withPivot('is_primary');
+            ->withPivot('is_primary');
     }
 }

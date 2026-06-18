@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Infrastructure\Eloquent\Repositories\Treasury;
 
 use App\Domain\Treasury\Entities\Safe;
@@ -9,29 +10,30 @@ class EloquentSafeRepository implements SafeRepositoryInterface
 {
     public function findById(int $id): ?Safe
     {
-        $model = SafeModel::find($id);
+        $model = SafeModel::query()->find($id);
+
         return $model ? $this->toEntity($model) : null;
     }
 
     public function findAll(int $tenantId): array
     {
-        return SafeModel::where('tenant_id', $tenantId)
+        return SafeModel::query()->where('tenant_id', $tenantId)
             ->get()
-            ->map(fn(SafeModel $m) => $this->toEntity($m))
+            ->map(fn (SafeModel $m) => $this->toEntity($m))
             ->toArray();
     }
 
     public function save(Safe $safe): Safe
     {
         $model = $safe->id
-            ? SafeModel::findOrFail($safe->id)
-            : new SafeModel();
+            ? SafeModel::query()->findOrFail($safe->id)
+            : new SafeModel;
 
         $model->fill([
-            'tenant_id'  => $safe->tenantId,
-            'name'       => $safe->name,
-            'balance'    => $safe->balance,
-            'currency'   => $safe->currency,
+            'tenant_id' => $safe->tenantId,
+            'name' => $safe->name,
+            'balance' => $safe->balance,
+            'currency' => $safe->currency,
             'is_default' => $safe->isDefault,
         ])->save();
 
@@ -40,7 +42,7 @@ class EloquentSafeRepository implements SafeRepositoryInterface
 
     public function updateBalance(int $id, float $delta): void
     {
-        SafeModel::findOrFail($id)->increment('balance', $delta);
+        SafeModel::query()->findOrFail($id)->increment('balance', $delta);
     }
 
     private function toEntity(SafeModel $model): Safe

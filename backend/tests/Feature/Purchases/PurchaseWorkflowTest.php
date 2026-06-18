@@ -2,41 +2,33 @@
 
 namespace Tests\Feature\Purchases;
 
-use Tests\TestCase;
-use App\Infrastructure\Eloquent\Models\UserModel;
-use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Infrastructure\Eloquent\Models\SupplierModel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Infrastructure\Eloquent\Models\WarehouseModel;
+use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class PurchaseWorkflowTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_confirmed_purchase_adds_stock()
     {
-        $user = UserModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
-            'name' => 'Admin',
-            'email' => 'admin@test.com',
-            'password' => bcrypt('password'),
-        ]);
+        $this->actingAsAuthenticatedUser();
 
         $warehouse = WarehouseModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
+            'id' => Str::uuid(),
             'name' => 'Main Warehouse',
             'code' => 'WH01',
             'is_active' => true,
         ]);
 
         $supplier = SupplierModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
+            'id' => Str::uuid(),
             'name' => 'Test Supplier',
         ]);
 
         $product = ProductModel::create([
-            'id' => \Illuminate\Support\Str::uuid(),
-            'name' => 'Test Product',
+            'id' => Str::uuid(),
+            'name' => 'Test Product', 'name_ar' => 'Test Product', 'name_en' => 'Test Product',
             'sku' => 'SKU-1',
             'barcode' => '123',
             'type' => 'standard',
@@ -57,13 +49,16 @@ class PurchaseWorkflowTest extends TestCase
                     'quantity' => 10,
                     'unit_price' => 45,
                     'tax_rate' => 15,
-                ]
+                ],
             ],
-            'notes' => 'Test Purchase'
+            'notes' => 'Test Purchase',
         ];
 
-        $response = $this->actingAs($user, 'api')->postJson('/api/purchases/invoices', $payload);
+        $response = $this->postJson('/api/purchases/invoices', $payload);
 
+        if ($response->status() !== 201) {
+            dump($response->json());
+        }
         $response->assertStatus(201);
 
         $this->assertDatabaseHas('warehouse_products', [

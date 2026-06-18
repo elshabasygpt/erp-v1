@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests\Unit\Domain\Approvals;
 
 use App\Application\Approvals\UseCases\ApproveRequestUseCase;
@@ -6,8 +7,8 @@ use App\Application\Approvals\UseCases\RejectRequestUseCase;
 use App\Domain\Approvals\Entities\ApprovalRequest;
 use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
 use InvalidArgumentException;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 class ApproveRequestUseCaseTest extends TestCase
 {

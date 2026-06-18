@@ -25,16 +25,55 @@ final class JournalEntry extends Entity
         parent::__construct($id);
     }
 
-    public function getEntryNumber(): string { return $this->entryNumber; }
-    public function getDate(): \DateTimeImmutable { return $this->date; }
-    public function getDescription(): string { return $this->description; }
-    public function getTransactionCurrencyId(): ?string { return $this->transactionCurrencyId; }
-    public function getExchangeRate(): float { return $this->exchangeRate; }
-    public function isPosted(): bool { return $this->isPosted; }
-    public function getReferenceType(): ?string { return $this->referenceType; }
-    public function getReferenceId(): ?string { return $this->referenceId; }
-    public function getCreatedBy(): ?string { return $this->createdBy; }
-    public function getLines(): array { return $this->lines; }
+    public function getEntryNumber(): string
+    {
+        return $this->entryNumber;
+    }
+
+    public function getDate(): \DateTimeImmutable
+    {
+        return $this->date;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    public function getTransactionCurrencyId(): ?string
+    {
+        return $this->transactionCurrencyId;
+    }
+
+    public function getExchangeRate(): float
+    {
+        return $this->exchangeRate;
+    }
+
+    public function isPosted(): bool
+    {
+        return $this->isPosted;
+    }
+
+    public function getReferenceType(): ?string
+    {
+        return $this->referenceType;
+    }
+
+    public function getReferenceId(): ?string
+    {
+        return $this->referenceId;
+    }
+
+    public function getCreatedBy(): ?string
+    {
+        return $this->createdBy;
+    }
+
+    public function getLines(): array
+    {
+        return $this->lines;
+    }
 
     public function addLine(JournalEntryLine $line): void
     {
@@ -52,7 +91,7 @@ final class JournalEntry extends Entity
             throw new \DomainException('Journal entry is already posted.');
         }
 
-        if (!$this->isBalanced()) {
+        if (! $this->isBalanced()) {
             throw new \DomainException('Journal entry is not balanced. Total debits must equal total credits.');
         }
 
@@ -78,12 +117,12 @@ final class JournalEntry extends Entity
 
     public function getTotalDebit(): float
     {
-        return array_sum(array_map(fn(JournalEntryLine $l) => $l->getDebit(), $this->lines));
+        return array_sum(array_map(fn (JournalEntryLine $l) => $l->getDebit(), $this->lines));
     }
 
     public function getTotalCredit(): float
     {
-        return array_sum(array_map(fn(JournalEntryLine $l) => $l->getCredit(), $this->lines));
+        return array_sum(array_map(fn (JournalEntryLine $l) => $l->getCredit(), $this->lines));
     }
 
     public function toArray(): array
@@ -100,7 +139,7 @@ final class JournalEntry extends Entity
             'reference_id' => $this->referenceId,
             'total_debit' => $this->getTotalDebit(),
             'total_credit' => $this->getTotalCredit(),
-            'lines' => array_map(fn(JournalEntryLine $l) => $l->toArray(), $this->lines),
+            'lines' => array_map(fn (JournalEntryLine $l) => $l->toArray(), $this->lines),
         ];
     }
 }

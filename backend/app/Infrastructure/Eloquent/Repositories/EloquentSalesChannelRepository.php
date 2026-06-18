@@ -10,9 +10,9 @@ class EloquentSalesChannelRepository implements SalesChannelRepositoryInterface
 {
     public function findById(string $id): ?SalesChannel
     {
-        $model = SalesChannelModel::find($id);
-        
-        if (!$model) {
+        $model = SalesChannelModel::query()->find($id);
+
+        if (! $model) {
             return null;
         }
 
@@ -22,25 +22,27 @@ class EloquentSalesChannelRepository implements SalesChannelRepositoryInterface
     public function findAll(): array
     {
         $models = SalesChannelModel::orderBy('sort_order')->get();
-        return $models->map(fn($m) => $this->toDomain($m))->toArray();
+
+        return $models->map(fn ($m) => $this->toDomain($m))->toArray();
     }
 
     public function getActive(): array
     {
-        $models = SalesChannelModel::where('is_active', true)->orderBy('sort_order')->get();
-        return $models->map(fn($m) => $this->toDomain($m))->toArray();
+        $models = SalesChannelModel::query()->where('is_active', true)->orderBy('sort_order')->get();
+
+        return $models->map(fn ($m) => $this->toDomain($m))->toArray();
     }
 
     public function save(SalesChannel $channel): void
     {
-        $model = new SalesChannelModel();
+        $model = new SalesChannelModel;
         $this->fillModel($model, $channel);
         $model->save();
     }
 
     public function update(SalesChannel $channel): void
     {
-        $model = SalesChannelModel::findOrFail($channel->getId());
+        $model = SalesChannelModel::query()->findOrFail($channel->getId());
         $this->fillModel($model, $channel);
         $model->save();
     }

@@ -13,7 +13,7 @@ class ProductFactory extends Factory
     {
         return [
             'name' => fake()->word(),
-            'name_ar' => fake()->word() . ' بالعربي',
+            'name_ar' => fake()->word().' بالعربي',
             'sku' => fake()->unique()->numerify('SKU-#####'),
             'barcode' => fake()->unique()->ean13(),
             'cost_price' => fake()->randomFloat(2, 10, 500),
@@ -24,7 +24,7 @@ class ProductFactory extends Factory
             'category_id' => null,
             'unit_of_measure' => 'piece',
             'description' => $this->faker->sentence(),
-            
+
         ];
     }
 }

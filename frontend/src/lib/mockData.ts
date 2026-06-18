@@ -112,10 +112,30 @@ export const mockData = {
       { id: 3, name: 'عميل نقدي سريع', phone: '' }
     ]
   },
-  users: {
+    users: {
     data: [
-      { id: 1, name: 'أحمد المبيعات', role: 'sales' },
-      { id: 2, name: 'خالد الكاشير', role: 'sales' }
+      { id: '1', name: 'أحمد المبيعات', role: 'sales' },
+      { id: '2', name: 'خالد الكاشير', role: 'sales' }
+    ]
+  },
+  tasks: {
+    data: [
+        { id: 'task-1', title: 'مراجعة الميزانية', status: 'todo', priority: 'high', due_date: '2026-06-20', category: 'إدارة', is_overdue: false, is_due_today: false, assignee: { name: 'أحمد' } },
+        { id: 'task-2', title: 'تجهيز طلبية العميل محمد', status: 'in_progress', priority: 'urgent', due_date: '2026-06-18', category: 'مبيعات', is_overdue: false, is_due_today: true, assignee: { name: 'خالد' } },
+        { id: 'task-3', title: 'تسوية الجرد الشهري', status: 'done', priority: 'medium', due_date: '2026-06-10', category: 'مخزون', is_overdue: false, is_due_today: false, assignee: { name: 'أحمد' } }
+    ]
+  },
+  tasksDashboard: {
+    counts: { todo: 1, in_progress: 1, due_today: 1, overdue: 0, done_today: 0 },
+    urgent: [
+        { id: 'task-2', title: 'تجهيز طلبية العميل محمد', status: 'in_progress', assignee: { name: 'خالد' } }
+    ],
+    due_today: [
+        { id: 'task-2', title: 'تجهيز طلبية العميل محمد', status: 'in_progress', assignee: { name: 'خالد' } }
+    ],
+    categories: [
+        { category: 'مبيعات', count: 1, color: '#3b82f6' },
+        { category: 'إدارة', count: 1, color: '#8b5cf6' }
     ]
   }
 };

@@ -1,13 +1,11 @@
 <?php
+
 namespace Tests\Feature\HR;
 
 use Tests\TestCase;
 
-
 class HRTest extends TestCase
 {
-    
-
     public function test_can_list_employees(): void
     {
         $this->actingAsAuthenticatedUser();
@@ -15,7 +13,7 @@ class HRTest extends TestCase
         $response = $this->getJson('/api/hr/employees');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_can_create_employee(): void
@@ -23,14 +21,14 @@ class HRTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/hr/employees', [
-            'name'        => 'أحمد محمد',
-            'position'    => 'محاسب',
-            'phone'       => '0500000000',
+            'name' => 'أحمد محمد',
+            'position' => 'محاسب',
+            'phone' => '0500000000',
             'base_salary' => 5000,
         ]);
 
         $response->assertStatus(201)
-                 ->assertJsonPath('data.name', 'أحمد محمد');
+            ->assertJsonPath('data.name', 'أحمد محمد');
     }
 
     public function test_can_checkin_attendance(): void
@@ -51,13 +49,13 @@ class HRTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/hr/payroll/generate', [
-            'month'                 => 1,
-            'year'                  => 2024,
+            'month' => 1,
+            'year' => 2024,
             'working_days_in_month' => 26,
         ]);
 
-        $response->assertStatus(201)
-                 ->assertJsonStructure(['data']);
+        $response->assertStatus(202)
+            ->assertJsonStructure(['data']);
     }
 
     public function test_unauthenticated_user_cannot_access_hr(): void

@@ -21,21 +21,76 @@ final class InvoiceItem extends Entity
         private ?float $adjustedUnitPrice = null,
         private ?float $adjustmentAmount = null,
         private ?string $stockLotId = null,
+        private bool $coreChargeApplied = false,
+        private float $coreChargeAmount = 0.0,
     ) {
         parent::__construct($id);
     }
 
-    public function getInvoiceId(): string { return $this->invoiceId; }
-    public function getProductId(): string { return $this->productId; }
-    public function getQuantity(): float { return $this->quantity; }
-    public function getUnitPrice(): float { return $this->unitPrice; }
-    public function getDiscountPercent(): float { return $this->discountPercent; }
-    public function getVatRate(): float { return $this->vatRate; }
-    public function getProductName(): ?string { return $this->productName; }
-    public function getBaseUnitPrice(): ?float { return $this->baseUnitPrice; }
-    public function getAdjustedUnitPrice(): ?float { return $this->adjustedUnitPrice; }
-    public function getAdjustmentAmount(): ?float { return $this->adjustmentAmount; }
-    public function getStockLotId(): ?string { return $this->stockLotId; }
+    public function getInvoiceId(): string
+    {
+        return $this->invoiceId;
+    }
+
+    public function getProductId(): string
+    {
+        return $this->productId;
+    }
+
+    public function getQuantity(): float
+    {
+        return $this->quantity;
+    }
+
+    public function getUnitPrice(): float
+    {
+        return $this->unitPrice;
+    }
+
+    public function getDiscountPercent(): float
+    {
+        return $this->discountPercent;
+    }
+
+    public function getVatRate(): float
+    {
+        return $this->vatRate;
+    }
+
+    public function getProductName(): ?string
+    {
+        return $this->productName;
+    }
+
+    public function getBaseUnitPrice(): ?float
+    {
+        return $this->baseUnitPrice;
+    }
+
+    public function getAdjustedUnitPrice(): ?float
+    {
+        return $this->adjustedUnitPrice;
+    }
+
+    public function getAdjustmentAmount(): ?float
+    {
+        return $this->adjustmentAmount;
+    }
+
+    public function getStockLotId(): ?string
+    {
+        return $this->stockLotId;
+    }
+
+    public function getCoreChargeApplied(): bool
+    {
+        return $this->coreChargeApplied;
+    }
+
+    public function getCoreChargeAmount(): float
+    {
+        return $this->coreChargeAmount;
+    }
 
     public function getSubtotal(): float
     {
@@ -50,6 +105,7 @@ final class InvoiceItem extends Entity
     public function getVatTotal(): float
     {
         $afterDiscount = $this->getSubtotal() - $this->getDiscountTotal();
+
         return $afterDiscount * ($this->vatRate / 100);
     }
 
@@ -77,6 +133,8 @@ final class InvoiceItem extends Entity
             'adjusted_unit_price' => $this->adjustedUnitPrice,
             'adjustment_amount' => $this->adjustmentAmount,
             'stock_lot_id' => $this->stockLotId,
+            'core_charge_applied' => $this->coreChargeApplied,
+            'core_charge_amount' => $this->coreChargeAmount,
         ];
     }
 }

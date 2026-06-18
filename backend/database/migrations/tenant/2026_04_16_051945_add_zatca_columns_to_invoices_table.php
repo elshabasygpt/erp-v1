@@ -22,7 +22,7 @@ return new class extends Migration
     {
         Schema::connection('tenant')->table('invoices', function (Blueprint $table) {
             $table->dropColumn([
-                'zatca_qr_code', 'zatca_xml', 'zatca_hash', 'zatca_uuid', 'zatca_status', 'zatca_error_message'
+                'zatca_qr_code', 'zatca_xml', 'zatca_hash', 'zatca_uuid', 'zatca_status', 'zatca_error_message',
             ]);
         });
     }

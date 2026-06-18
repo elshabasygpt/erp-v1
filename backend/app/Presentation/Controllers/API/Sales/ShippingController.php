@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\ShippingInvoiceModel;
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ShippingController extends BaseTenantController
@@ -18,9 +16,9 @@ class ShippingController extends BaseTenantController
     {
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
-        
-        $query = ShippingInvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['salesInvoice.customer', 'salesInvoice.items.product', 'creator'])->orderBy('created_at', 'desc');
-        
+
+        $query = ShippingInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->with(['salesInvoice.customer', 'salesInvoice.items.product', 'creator'])->orderBy('created_at', 'desc');
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -43,17 +41,17 @@ class ShippingController extends BaseTenantController
 
         try {
             // Ensure no duplicate shipping for an invoice
-            $existing = ShippingInvoiceModel::where('tenant_id', $this->getTenantId($request))->where('invoice_id', $validated['invoice_id'])->first();
+            $existing = ShippingInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('invoice_id', $validated['invoice_id'])->first();
             if ($existing) {
                 return $this->error('A shipping invoice already exists for this sales invoice.', 422);
             }
 
             $lastShip = ShippingInvoiceModel::latest('created_at')->first();
             $nextNum = $lastShip ? ((int) str_replace('SHP-', '', $lastShip->shipping_number)) + 1 : 1;
-            $shipNumber = 'SHP-' . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
+            $shipNumber = 'SHP-'.str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
 
-            $shipping = ShippingInvoiceModel::create([
-            'tenant_id' => $this->getTenantId($request),
+            $shipping = ShippingInvoiceModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'shipping_number' => $shipNumber,
                 'invoice_id' => $validated['invoice_id'],
@@ -66,17 +64,19 @@ class ShippingController extends BaseTenantController
             ]);
 
             return $this->success($shipping, 'Shipping invoice created successfully', 201);
-            
+
         } catch (\Exception $e) {
-            return $this->error('Failed to create shipping invoice: ' . $e->getMessage(), 500);
+            return $this->error('Failed to create shipping invoice: '.$e->getMessage(), 500);
         }
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $shipping = ShippingInvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $shipping = ShippingInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$shipping) { return $this->error('Shipping invoice not found', 404); }
+        if (! $shipping) {
+            return $this->error('Shipping invoice not found', 404);
+        }
 
         $validated = $request->validate([
             'carrier' => 'nullable|string',
@@ -93,40 +93,38 @@ class ShippingController extends BaseTenantController
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $shipping = ShippingInvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['salesInvoice.customer', 'salesInvoice.items.product'])->find($id);
+        $shipping = ShippingInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->with(['salesInvoice.customer', 'salesInvoice.items.product'])->find($id);
 
-        if (!$shipping) {
+        if (! $shipping) {
             return $this->error('Shipping invoice not found', 404);
         }
 
         return $this->success($shipping, 'Shipping invoice retrieved successfully');
     }
-    
+
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $shipping = ShippingInvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $shipping = ShippingInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$shipping) {
+        if (! $shipping) {
             return $this->error('Shipping invoice not found', 404);
         }
-        
+
         $validated = $request->validate([
             'status' => 'required|string|in:pending,shipped,delivered,returned,cancelled',
         ]);
 
         $updateData = ['status' => $validated['status']];
-        
-        if ($validated['status'] === 'shipped' && !$shipping->shipped_at) {
+
+        if ($validated['status'] === 'shipped' && ! $shipping->shipped_at) {
             $updateData['shipped_at'] = now();
         }
-        if ($validated['status'] === 'delivered' && !$shipping->delivered_at) {
+        if ($validated['status'] === 'delivered' && ! $shipping->delivered_at) {
             $updateData['delivered_at'] = now();
         }
-        
+
         $shipping->update($updateData);
-        
+
         return $this->success($shipping, 'Shipping status updated successfully');
     }
 }
-
-

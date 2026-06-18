@@ -15,7 +15,7 @@ class WarrantyClaimModel extends BaseModel
     protected $fillable = [
         'claim_number', 'warranty_id', 'claim_date', 'claim_type',
         'complaint', 'resolution', 'replacement_invoice_id', 'status',
-        'resolved_at', 'created_by', 'updated_by'
+        'resolved_at', 'created_by', 'updated_by',
     ];
 
     protected $casts = [

@@ -2,8 +2,10 @@ import React, { memo } from 'react';
 import type { MainGroup, Unit } from './InventoryModals';
 import type { Product } from './hooks/useInventoryData';
 import { ProductCompatibilityTab } from './ProductCompatibilityTab';
+import { ProductAlternativesTab } from './ProductAlternativesTab';
+import { ProductComponentsTab } from './ProductComponentsTab';
 
-type TabType = 'basic' | 'compatibility';
+type TabType = 'basic' | 'compatibility' | 'alternatives' | 'components';
 
 interface InventoryFormModalProps {
     isRTL: boolean;
@@ -59,6 +61,20 @@ const InventoryFormModal = memo(function InventoryFormModal({
                         >
                             {isRTL ? 'التوافق مع السيارات' : 'Vehicle Compatibility'}
                         </button>
+                        <button 
+                            className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'alternatives' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                            onClick={() => setActiveTab('alternatives')}
+                        >
+                            {isRTL ? 'القطع البديلة والمطابقات' : 'Cross-References'}
+                        </button>
+                        {form.isKit && (
+                            <button 
+                                className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'components' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                                onClick={() => setActiveTab('components')}
+                            >
+                                {isRTL ? 'مكونات الطقم' : 'Kit Components'}
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -206,6 +222,12 @@ const InventoryFormModal = memo(function InventoryFormModal({
                                 </div>
                                 <div>
                                     <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>
+                                        {isRTL ? 'موقع الرف (Bin Location)' : 'Bin Location'}
+                                    </label>
+                                    <input className="input-field w-full" value={form.binLocation || ''} onChange={e => setForm((f:any) => ({ ...f, binLocation: e.target.value }))} placeholder="e.g. A-12-B" />
+                                </div>
+                                <div>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>
                                         {isRTL ? 'مدة الضمان (شهور)' : 'Warranty (Months)'}
                                     </label>
                                     <input
@@ -221,6 +243,47 @@ const InventoryFormModal = memo(function InventoryFormModal({
                                         <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
                                             {isRTL ? `الضمان يُنشأ تلقائياً عند البيع لمدة ${form.warrantyMonths} شهر` : `Warranty auto-created on sale for ${form.warrantyMonths} months`}
                                         </p>
+                                    )}
+                                </div>
+                                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-2">
+                                    <div className="flex items-center gap-3 mt-6">
+                                        <input 
+                                            type="checkbox" 
+                                            id="isKit"
+                                            checked={form.isKit || false}
+                                            onChange={e => setForm((f: any) => ({ ...f, isKit: e.target.checked }))}
+                                            className="w-4 h-4 text-purple-600 rounded"
+                                        />
+                                        <label htmlFor="isKit" className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                                            {isRTL ? 'هل هذا طقم / تجميعة وهمية (Kit)؟' : 'Is this a Kit / Bundle?'}
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-6">
+                                        <input 
+                                            type="checkbox" 
+                                            id="hasCoreCharge"
+                                            checked={form.hasCoreCharge || false}
+                                            onChange={e => setForm((f: any) => ({ ...f, hasCoreCharge: e.target.checked }))}
+                                            className="w-4 h-4 text-blue-600 rounded"
+                                        />
+                                        <label htmlFor="hasCoreCharge" className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                                            {isRTL ? 'يتطلب إرجاع التالف (Core Charge)؟' : 'Requires Core Return?'}
+                                        </label>
+                                    </div>
+                                    {form.hasCoreCharge && (
+                                        <div>
+                                            <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>
+                                                {isRTL ? 'قيمة التالف' : 'Core Charge Amount'}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                className="input-field w-full"
+                                                value={form.coreChargeAmount || 0}
+                                                onChange={e => setForm((f: any) => ({ ...f, coreChargeAmount: parseFloat(e.target.value) || 0 }))}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -265,8 +328,12 @@ const InventoryFormModal = memo(function InventoryFormModal({
                         <textarea className="input-field w-full min-h-[80px] resize-y" value={form.description} onChange={e => setForm((f:any) => ({ ...f, description: e.target.value }))} />
                     </div>
                         </>
-                    ) : (
+                    ) : activeTab === 'compatibility' ? (
                         <ProductCompatibilityTab productId={editingProduct!.id} isRTL={isRTL} />
+                    ) : activeTab === 'components' ? (
+                        <ProductComponentsTab productId={editingProduct!.id} isRTL={isRTL} />
+                    ) : (
+                        <ProductAlternativesTab productId={editingProduct!.id} isRTL={isRTL} />
                     )}
                 </div>
                 <div className="p-5 border-t flex justify-end gap-3" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-secondary)' }}>

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Domain\Treasury\Entities;
 
 class SafeTransaction

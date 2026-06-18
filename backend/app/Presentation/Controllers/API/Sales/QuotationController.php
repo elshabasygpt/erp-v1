@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
+use App\Application\Sales\DTOs\CreateQuotationDTO;
+use App\Application\Sales\UseCases\Quotations\CreateQuotationUseCase;
+use App\Domain\Sales\Services\QuotationService;
+use App\Domain\Sales\Services\SalesWorkflowService;
 use App\Infrastructure\Eloquent\Models\QuotationModel;
-use App\Infrastructure\Eloquent\Models\QuotationItemModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class QuotationController extends BaseTenantController
 {
@@ -19,9 +19,9 @@ class QuotationController extends BaseTenantController
     {
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
-        
-        $query = QuotationModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'items.product', 'creator'])->orderBy('issue_date', 'desc');
-        
+
+        $query = QuotationModel::query()->where('tenant_id', $this->getTenantId($request))->with(['customer', 'items.product', 'creator'])->orderBy('issue_date', 'desc');
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -32,9 +32,9 @@ class QuotationController extends BaseTenantController
     }
 
     public function __construct(
-        private readonly \App\Application\Sales\UseCases\Quotations\CreateQuotationUseCase $createQuotationUseCase,
-        private readonly \App\Domain\Sales\Services\QuotationService $quotationService,
-        private readonly \App\Domain\Sales\Services\SalesWorkflowService $salesWorkflowService
+        private readonly CreateQuotationUseCase $createQuotationUseCase,
+        private readonly QuotationService $quotationService,
+        private readonly SalesWorkflowService $salesWorkflowService
     ) {}
 
     public function store(Request $request): JsonResponse
@@ -55,7 +55,7 @@ class QuotationController extends BaseTenantController
         ]);
 
         try {
-            $dto = \App\Application\Sales\DTOs\CreateQuotationDTO::fromRequest($validated);
+            $dto = CreateQuotationDTO::fromRequest($validated);
             $quotation = $this->createQuotationUseCase->execute($dto, auth()->id() ?? '');
 
             // Update status if it's not draft
@@ -64,17 +64,19 @@ class QuotationController extends BaseTenantController
             }
 
             return $this->success($quotation, 'Quotation created successfully', 201);
-            
+
         } catch (\Exception $e) {
-            return $this->error('Failed to create quotation: ' . $e->getMessage(), 500);
+            return $this->error('Failed to create quotation: '.$e->getMessage(), 500);
         }
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $quotation = QuotationModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $quotation = QuotationModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$quotation) { return $this->error('Quotation not found', 404); }
+        if (! $quotation) {
+            return $this->error('Quotation not found', 404);
+        }
 
         $validated = $request->validate([
             'customer_id' => 'required|uuid|exists:customers,id',
@@ -91,39 +93,40 @@ class QuotationController extends BaseTenantController
 
         try {
             $quotation = $this->quotationService->updateQuotation($this->getTenantId($request), $id, $validated);
+
             return $this->success($quotation, 'Quotation updated successfully', 200);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            return $this->error('Failed to update quotation: ' . $e->getMessage(), 500);
+            return $this->error('Failed to update quotation: '.$e->getMessage(), 500);
         }
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $quotation = QuotationModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer'])->find($id);
+        $quotation = QuotationModel::query()->where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer'])->find($id);
 
-        if (!$quotation) {
+        if (! $quotation) {
             return $this->error('Quotation not found', 404);
         }
 
         return $this->success($quotation, 'Quotation retrieved successfully');
     }
-    
+
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $quotation = QuotationModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $quotation = QuotationModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$quotation) {
+        if (! $quotation) {
             return $this->error('Quotation not found', 404);
         }
-        
+
         $validated = $request->validate([
             'status' => 'required|string|in:draft,sent,accepted,rejected,expired',
         ]);
-        
+
         $quotation->update(['status' => $validated['status']]);
-        
+
         return $this->success($quotation, 'Quotation status updated successfully');
     }
 
@@ -135,14 +138,14 @@ class QuotationController extends BaseTenantController
                 $id,
                 auth()->id() ?? ''
             );
+
             return $this->success($salesOrder->toArray(), 'Quotation converted to Sales Order successfully', 201);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Failed to convert quotation: ' . $e->getMessage());
-            return $this->error('Failed to convert quotation: ' . $e->getMessage(), 500);
+            \Log::error('Failed to convert quotation: '.$e->getMessage());
+
+            return $this->error('Failed to convert quotation: '.$e->getMessage(), 500);
         }
     }
 }
-
-

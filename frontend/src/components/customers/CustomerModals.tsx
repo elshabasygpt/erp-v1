@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { exportTableToPDF } from '@/lib/pdf-export';
+import CustomerVehiclesTab from './CustomerVehiclesTab';
+import CustomerInsightsTab from './CustomerInsightsTab';
+import CustomerInteractionsTab from './CustomerInteractionsTab';
 
 interface DeleteConfirmProps {
     dict: any;
@@ -57,6 +60,8 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
     const c = dict.customers;
     const usedPercent = customer.creditLimit > 0 ? Math.round((customer.balance / customer.creditLimit) * 100) : 0;
 
+    const [activeTab, setActiveTab] = useState<'account' | 'insights' | 'interactions' | 'vehicles'>('account');
+
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentType, setPaymentType] = useState('receipt');
@@ -64,6 +69,21 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
     
     const [statementData, setStatementData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    const [insightsData, setInsightsData] = useState<any>(null);
+    const [loadingInsights, setLoadingInsights] = useState(false);
+
+    const loadInsights = async () => {
+        try {
+            setLoadingInsights(true);
+            const res = await crmApi.getCustomerInsights(customer.id);
+            setInsightsData(res?.data?.data || res?.data || null);
+        } catch (e) {
+            console.error('Failed to load insights', e);
+        } finally {
+            setLoadingInsights(false);
+        }
+    };
 
     const loadStatement = async () => {
         try {
@@ -85,6 +105,14 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
             setLoading(false);
         }
     }, [customer]);
+
+    useEffect(() => {
+        if (activeTab === 'insights' || activeTab === 'interactions') {
+            if (!insightsData && customer?.id && customer.id.length > 10) {
+                loadInsights();
+            }
+        }
+    }, [activeTab]);
 
     const txWithBalance = statementData ? statementData.statement : mockTransactions.map(t => ({...t, runningBalance: t.amount}));
     const currentBalance = statementData ? statementData.current_balance : customer.balance;
@@ -147,13 +175,46 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
                 <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
                     <div className="flex items-center gap-2">
                         <span className="text-xl">💰</span>
-                        <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{c.viewAccount} - كشف حساب</h2>
+                        <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{isRTL ? (customer.nameAr || customer.name) : customer.name}</h2>
                     </div>
                     <button onClick={onClose} className="btn-icon">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
 
+                <div className="flex gap-4 border-b px-5 pt-2 overflow-x-auto" style={{ borderColor: 'var(--border-default)' }}>
+                    <button
+                        onClick={() => setActiveTab('account')}
+                        className={`pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap
+                            ${activeTab === 'account' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`}
+                    >
+                        {isRTL ? 'كشف الحساب' : 'Account Statement'}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('insights')}
+                        className={`pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap
+                            ${activeTab === 'insights' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500'}`}
+                    >
+                        {isRTL ? 'رؤى وتحليلات' : 'Insights'}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('interactions')}
+                        className={`pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap
+                            ${activeTab === 'interactions' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500'}`}
+                    >
+                        {isRTL ? 'تفاعلات وملاحظات' : 'Interactions'}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('vehicles')}
+                        className={`pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap
+                            ${activeTab === 'vehicles' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'}`}
+                    >
+                        {isRTL ? 'سياراته' : 'Vehicles'}
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto max-h-[75vh]">
+                {activeTab === 'account' && (
                 <div className="p-5 space-y-5">
                     {/* Customer Info */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -280,6 +341,17 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
                             </div>
                         )}
                     </div>
+                </div>
+                )}
+                {activeTab === 'vehicles' && (
+                    <CustomerVehiclesTab customerId={customer.id} locale={locale} />
+                )}
+                {activeTab === 'insights' && (
+                    <CustomerInsightsTab locale={locale} insightsData={insightsData} formatCurrency={formatCurrency} />
+                )}
+                {activeTab === 'interactions' && (
+                    <CustomerInteractionsTab locale={locale} customerId={customer.id} insightsData={insightsData} onRefresh={loadInsights} />
+                )}
                 </div>
             </div>
         </div>

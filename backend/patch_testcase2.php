@@ -1,6 +1,6 @@
 <?php
 
-$file = "tests/TestCase.php";
+$file = 'tests/TestCase.php';
 $content = file_get_contents($file);
 
 // Replace refreshTestDatabase
@@ -82,4 +82,3 @@ PHP;
 $content = preg_replace('/protected function refreshTestDatabase\(\)\s*\{.*?\n    \}/s', $newRefresh, $content, 1);
 file_put_contents($file, $content);
 echo "TestCase.php patched.\n";
-

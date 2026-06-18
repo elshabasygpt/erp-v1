@@ -16,13 +16,13 @@ return new class extends Migration
             $table->uuid('to_warehouse_id');
             $table->enum('status', ['draft', 'approved', 'in_transit', 'received', 'cancelled'])->default('draft');
             $table->text('notes')->nullable();
-            
+
             $table->uuid('created_by')->nullable();
             $table->uuid('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->uuid('received_by')->nullable();
             $table->timestamp('received_at')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
 
@@ -39,7 +39,7 @@ return new class extends Migration
             $table->uuid('product_id');
             $table->decimal('quantity', 12, 2);
             $table->decimal('received_quantity', 12, 2)->default(0);
-            
+
             $table->timestamps();
 
             $table->foreign('stock_transfer_id')->references('id')->on('stock_transfers')->onDelete('cascade');

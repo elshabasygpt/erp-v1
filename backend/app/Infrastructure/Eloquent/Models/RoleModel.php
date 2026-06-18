@@ -2,8 +2,8 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Spatie\Permission\Models\Role as SpatieRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Spatie\Permission\Models\Role as SpatieRole;
 
 class RoleModel extends SpatieRole
 {

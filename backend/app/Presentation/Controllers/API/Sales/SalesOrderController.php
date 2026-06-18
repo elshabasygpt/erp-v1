@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Sales\DTOs\CreateSalesOrderDTO;
 use App\Application\Sales\UseCases\SalesOrders\CreateSalesOrderUseCase;
 use App\Application\Sales\UseCases\SalesOrders\FulfillSalesOrderUseCase;
+use App\Domain\Sales\Services\SalesOrderService;
 use App\Infrastructure\Eloquent\Models\SalesOrderModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,16 +18,16 @@ class SalesOrderController extends BaseTenantController
     public function __construct(
         private readonly CreateSalesOrderUseCase $createSalesOrderUseCase,
         private readonly FulfillSalesOrderUseCase $fulfillSalesOrderUseCase,
-        private readonly \App\Domain\Sales\Services\SalesOrderService $salesOrderService
+        private readonly SalesOrderService $salesOrderService
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
-        
-        $query = SalesOrderModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'warehouse', 'creator'])->orderBy('issue_date', 'desc');
-        
+
+        $query = SalesOrderModel::query()->where('tenant_id', $this->getTenantId($request))->with(['customer', 'warehouse', 'creator'])->orderBy('issue_date', 'desc');
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -37,6 +38,7 @@ class SalesOrderController extends BaseTenantController
         }
 
         $salesOrders = $query->paginate((int) $limit);
+
         return $this->paginated($salesOrders->toArray(), 'Sales Orders retrieved successfully');
     }
 
@@ -65,16 +67,17 @@ class SalesOrderController extends BaseTenantController
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Sales Order creation failed: ' . $e->getMessage());
-            return $this->error('Failed to create sales order: ' . $e->getMessage(), 500);
+            \Log::error('Sales Order creation failed: '.$e->getMessage());
+
+            return $this->error('Failed to create sales order: '.$e->getMessage(), 500);
         }
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $salesOrder = SalesOrderModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer', 'warehouse', 'quotation'])->find($id);
-        
-        if (!$salesOrder) {
+        $salesOrder = SalesOrderModel::query()->where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer', 'warehouse', 'quotation'])->find($id);
+
+        if (! $salesOrder) {
             return $this->error('Sales Order not found', 404);
         }
 
@@ -85,17 +88,18 @@ class SalesOrderController extends BaseTenantController
     {
         try {
             $invoice = $this->fulfillSalesOrderUseCase->execute($id, auth()->id() ?? '');
-            
+
             return $this->success(
-                $invoice->toArray(), 
-                'Sales order fulfilled successfully and invoice created', 
+                $invoice->toArray(),
+                'Sales order fulfilled successfully and invoice created',
                 201
             );
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Sales Order fulfillment failed: ' . $e->getMessage());
-            return $this->error('Failed to fulfill sales order: ' . $e->getMessage(), 500);
+            \Log::error('Sales Order fulfillment failed: '.$e->getMessage());
+
+            return $this->error('Failed to fulfill sales order: '.$e->getMessage(), 500);
         }
     }
 
@@ -103,12 +107,12 @@ class SalesOrderController extends BaseTenantController
     {
         try {
             $salesOrder = $this->salesOrderService->cancelOrder($this->getTenantId($request), $id);
+
             return $this->success($salesOrder->toArray(), 'Sales Order cancelled and stock released.');
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            return $this->error('Failed to cancel sales order: ' . $e->getMessage(), 500);
+            return $this->error('Failed to cancel sales order: '.$e->getMessage(), 500);
         }
     }
 }
-

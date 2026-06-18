@@ -2,22 +2,25 @@
 
 namespace App\Jobs;
 
+use App\Infrastructure\Eloquent\Models\WebhookEndpointModel;
+use App\Infrastructure\Eloquent\Models\WebhookLogModel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use App\Infrastructure\Eloquent\Models\WebhookEndpointModel;
-use App\Infrastructure\Eloquent\Models\WebhookLogModel;
+use Illuminate\Support\Str;
 
 class SendWebhookJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 5;
+
     public int $timeout = 30;
 
     public function backoff(): array
@@ -37,20 +40,21 @@ class SendWebhookJob implements ShouldQueue
     {
         DB::setDefaultConnection('tenant');
 
-        $webhook = WebhookEndpointModel::find($this->webhookId);
+        $webhook = WebhookEndpointModel::query()->find($this->webhookId);
 
-        if (!$webhook || !$webhook->is_active) {
+        if (! $webhook || ! $webhook->is_active) {
             Log::info('SendWebhookJob skipped — webhook inactive or not found', [
                 'webhook_id' => $this->webhookId,
             ]);
+
             return;
         }
 
         $body = json_encode([
-            'event'      => $this->event,
-            'tenant_id'  => $this->tenantId,
-            'timestamp'  => now()->toISOString(),
-            'data'       => $this->payload,
+            'event' => $this->event,
+            'tenant_id' => $this->tenantId,
+            'timestamp' => now()->toISOString(),
+            'data' => $this->payload,
         ]);
 
         $signature = hash_hmac('sha256', $body, $webhook->secret ?? '');
@@ -59,57 +63,57 @@ class SendWebhookJob implements ShouldQueue
 
         try {
             $response = Http::withHeaders([
-                'Content-Type'       => 'application/json',
-                'X-Webhook-Event'    => $this->event,
-                'X-Webhook-Signature' => 'sha256=' . $signature,
+                'Content-Type' => 'application/json',
+                'X-Webhook-Event' => $this->event,
+                'X-Webhook-Signature' => 'sha256='.$signature,
             ])
-            ->timeout(25)
-            ->post($webhook->url, json_decode($body, true));
+                ->timeout(25)
+                ->post($webhook->url, json_decode($body, true));
 
             $duration = round((microtime(true) - $startTime) * 1000);
 
             $success = $response->successful();
 
-            WebhookLogModel::create([
-                'id'          => \Illuminate\Support\Str::uuid(),
-                'webhook_id'  => $this->webhookId,
-                'event'       => $this->event,
-                'payload'     => $body,
+            WebhookLogModel::query()->create([
+                'id' => Str::uuid(),
+                'webhook_id' => $this->webhookId,
+                'event' => $this->event,
+                'payload' => $body,
                 'status_code' => $response->status(),
-                'response'    => substr($response->body(), 0, 1000),
+                'response' => substr($response->body(), 0, 1000),
                 'duration_ms' => $duration,
-                'success'     => $success,
-                'attempt'     => $this->attempts(),
-                'created_at'  => now(),
+                'success' => $success,
+                'attempt' => $this->attempts(),
+                'created_at' => now(),
             ]);
 
-            if (!$success) {
+            if (! $success) {
                 throw new \RuntimeException(
-                    "Webhook returned HTTP {$response->status()}: " . substr($response->body(), 0, 200)
+                    "Webhook returned HTTP {$response->status()}: ".substr($response->body(), 0, 200)
                 );
             }
 
             Log::info('SendWebhookJob succeeded', [
-                'webhook_id'  => $this->webhookId,
-                'event'       => $this->event,
+                'webhook_id' => $this->webhookId,
+                'event' => $this->event,
                 'status_code' => $response->status(),
                 'duration_ms' => $duration,
             ]);
 
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             $duration = round((microtime(true) - $startTime) * 1000);
 
-            WebhookLogModel::create([
-                'id'          => \Illuminate\Support\Str::uuid(),
-                'webhook_id'  => $this->webhookId,
-                'event'       => $this->event,
-                'payload'     => $body,
+            WebhookLogModel::query()->create([
+                'id' => Str::uuid(),
+                'webhook_id' => $this->webhookId,
+                'event' => $this->event,
+                'payload' => $body,
                 'status_code' => 0,
-                'response'    => 'Connection failed: ' . $e->getMessage(),
+                'response' => 'Connection failed: '.$e->getMessage(),
                 'duration_ms' => $duration,
-                'success'     => false,
-                'attempt'     => $this->attempts(),
-                'created_at'  => now(),
+                'success' => false,
+                'attempt' => $this->attempts(),
+                'created_at' => now(),
             ]);
 
             throw $e; // يخلي الـ Queue يعمل retry
@@ -120,22 +124,22 @@ class SendWebhookJob implements ShouldQueue
     {
         Log::error('SendWebhookJob permanently failed after all retries', [
             'webhook_id' => $this->webhookId,
-            'event'      => $this->event,
-            'error'      => $exception->getMessage(),
+            'event' => $this->event,
+            'error' => $exception->getMessage(),
         ]);
 
         // Mark webhook as failed in logs
-        WebhookLogModel::create([
-            'id'          => \Illuminate\Support\Str::uuid(),
-            'webhook_id'  => $this->webhookId,
-            'event'       => $this->event,
-            'payload'     => json_encode($this->payload),
+        WebhookLogModel::query()->create([
+            'id' => Str::uuid(),
+            'webhook_id' => $this->webhookId,
+            'event' => $this->event,
+            'payload' => json_encode($this->payload),
             'status_code' => 0,
-            'response'    => 'Permanently failed: ' . $exception->getMessage(),
+            'response' => 'Permanently failed: '.$exception->getMessage(),
             'duration_ms' => 0,
-            'success'     => false,
-            'attempt'     => $this->attempts(),
-            'created_at'  => now(),
+            'success' => false,
+            'attempt' => $this->attempts(),
+            'created_at' => now(),
         ]);
     }
 }

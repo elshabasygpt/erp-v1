@@ -2,10 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel;
 use App\Infrastructure\Eloquent\Models\Approvals\ApprovalAuditLogModel;
-use App\Infrastructure\Eloquent\Models\Approvals\ApprovalRuleModel;
+use App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel;
+use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 class EscalatePendingApprovals extends Command
@@ -32,20 +31,21 @@ class EscalatePendingApprovals extends Command
         $hours = (int) $this->option('hours');
         $thresholdTime = now()->subHours($hours);
 
-        $pendingRequests = ApprovalRequestModel::where('status', 'pending')
+        $pendingRequests = ApprovalRequestModel::query()->where('status', 'pending')
             ->whereNull('escalated_at')
             ->where('created_at', '<', $thresholdTime)
             ->get();
 
         if ($pendingRequests->isEmpty()) {
-            $this->info("No pending requests to escalate.");
+            $this->info('No pending requests to escalate.');
+
             return;
         }
 
         foreach ($pendingRequests as $request) {
             // Mark as escalated
             $request->escalated_at = now();
-            
+
             // Optionally, we could change the required_role to 'admin' by updating the rule,
             // but rules are shared across requests. Instead, we can let the frontend or Controller
             // handle the 'escalated' state, or we could change the rule assigned to this request if we wanted.
@@ -54,7 +54,7 @@ class EscalatePendingApprovals extends Command
             $request->save();
 
             // Log escalation
-            ApprovalAuditLogModel::create([
+            ApprovalAuditLogModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'approval_request_id' => $request->id,
                 'user_id' => null, // System action

@@ -19,7 +19,7 @@ class InventoryCostLayerConsumptionModel extends BaseModel
         'transaction_id',
         'quantity_consumed',
         'unit_cost',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

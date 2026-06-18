@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Application\Treasury\UseCases;
 
-use App\Infrastructure\Eloquent\Models\SafeModel;
-use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Services\AccountMappingService;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use DomainException;
 
 final class CreateTreasuryPaymentUseCase
 {
@@ -31,12 +31,12 @@ final class CreateTreasuryPaymentUseCase
             $description = $data['description'] ?? 'Treasury Payment';
 
             if ($amount <= 0) {
-                throw new DomainException("Amount must be greater than zero.");
+                throw new DomainException('Amount must be greater than zero.');
             }
 
-            $safe = SafeModel::where('tenant_id', $tenantId)->find($safeId);
-            if (!$safe) {
-                throw new DomainException("Safe not found.");
+            $safe = SafeModel::query()->where('tenant_id', $tenantId)->find($safeId);
+            if (! $safe) {
+                throw new DomainException('Safe not found.');
             }
 
             if ($safe->balance < $amount) {
@@ -48,7 +48,7 @@ final class CreateTreasuryPaymentUseCase
             $safe->save();
 
             // Create Transaction
-            $transaction = SafeTransactionModel::create([
+            $transaction = SafeTransactionModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'safe_id' => $safe->id,
                 'type' => 'withdrawal',
@@ -85,7 +85,7 @@ final class CreateTreasuryPaymentUseCase
                 accountId: $debitAccountId,
                 debit: $amount,
                 credit: 0,
-                description: "Treasury Payment Destination",
+                description: 'Treasury Payment Destination',
                 costCenterId: $data['cost_center_id'] ?? null,
             ));
 

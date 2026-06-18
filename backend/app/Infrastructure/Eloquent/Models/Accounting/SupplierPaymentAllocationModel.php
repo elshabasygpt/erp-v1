@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Eloquent\Models\Accounting;
 
 use App\Infrastructure\Eloquent\Models\BaseModel;
-use App\Infrastructure\Eloquent\Models\SupplierPaymentModel;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
+use App\Infrastructure\Eloquent\Models\SupplierPaymentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SupplierPaymentAllocationModel extends BaseModel

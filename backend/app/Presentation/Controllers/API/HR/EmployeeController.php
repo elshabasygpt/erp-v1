@@ -4,28 +4,27 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\HR;
 
+use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use App\Presentation\Controllers\API\BaseTenantController;
 use App\Presentation\Requests\HR\StoreEmployeeRequest;
-use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
-        $query = EmployeeModel::where('tenant_id', $this->getTenantId($request))->select([
-            'id', 'user_id', 'name', 'position', 'phone', 'base_salary', 'is_active', 'created_at'
+        $query = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->select([
+            'id', 'user_id', 'name', 'position', 'phone', 'base_salary', 'is_active', 'created_at',
         ])->with('user:id,name,email')->where('tenant_id', $this->getTenantId($request));
 
         if ($request->filled('search')) {
             $search = $request->query('search');
             $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('position', 'like', "%{$search}%");
+                ->orWhere('phone', 'like', "%{$search}%")
+                ->orWhere('position', 'like', "%{$search}%");
         }
 
         if ($request->filled('is_active')) {
@@ -41,7 +40,7 @@ class EmployeeController extends BaseTenantController
     {
         $validated = $request->validated();
 
-        $employee = EmployeeModel::create([
+        $employee = EmployeeModel::query()->create([
             'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'tenant_id' => $this->getTenantId($request),
@@ -60,10 +59,10 @@ class EmployeeController extends BaseTenantController
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->with('user')->find($id);
+        $employee = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->with('user')->find($id);
         $this->assertBelongsToTenant($employee, $request);
 
-        if (!$employee) {
+        if (! $employee) {
             return $this->error('Employee not found', 404);
         }
 
@@ -72,10 +71,10 @@ class EmployeeController extends BaseTenantController
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $employee = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
         $this->assertBelongsToTenant($employee, $request);
 
-        if (!$employee) {
+        if (! $employee) {
             return $this->error('Employee not found', 404);
         }
 
@@ -87,15 +86,15 @@ class EmployeeController extends BaseTenantController
             'base_salary' => 'sometimes|required|numeric|min:0',
             'shift_start' => 'nullable|date_format:H:i:s,H:i',
             'shift_end' => 'nullable|date_format:H:i:s,H:i',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         // Fix potential H:i:s formatting issues from front-end
         if (isset($validated['shift_start']) && strlen($validated['shift_start']) === 5) {
-             $validated['shift_start'] .= ':00';
+            $validated['shift_start'] .= ':00';
         }
         if (isset($validated['shift_end']) && strlen($validated['shift_end']) === 5) {
-             $validated['shift_end'] .= ':00';
+            $validated['shift_end'] .= ':00';
         }
 
         $employee->update($validated);
@@ -105,10 +104,10 @@ class EmployeeController extends BaseTenantController
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $employee = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
         $this->assertBelongsToTenant($employee, $request);
 
-        if (!$employee) {
+        if (! $employee) {
             return $this->error('Employee not found', 404);
         }
 
@@ -118,4 +117,3 @@ class EmployeeController extends BaseTenantController
         return $this->success(null, 'Employee deleted successfully');
     }
 }
-

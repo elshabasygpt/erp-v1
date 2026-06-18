@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Application\Purchases\UseCases;
 
-use App\Infrastructure\Eloquent\Models\SupplierPaymentModel;
-use App\Infrastructure\Eloquent\Models\SafeModel;
-use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Services\AccountMappingService;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Infrastructure\Eloquent\Models\SupplierPaymentModel;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use DomainException;
 
 final class ProcessSupplierRefundUseCase
 {
@@ -30,14 +30,14 @@ final class ProcessSupplierRefundUseCase
             $amount = (float) $data['amount'];
             $date = $data['date'] ?? date('Y-m-d');
 
-            $safe = SafeModel::where('tenant_id', $tenantId)->find($safeId);
-            if (!$safe) {
-                throw new DomainException("Safe not found.");
+            $safe = SafeModel::query()->where('tenant_id', $tenantId)->find($safeId);
+            if (! $safe) {
+                throw new DomainException('Safe not found.');
             }
 
             // Create Refund Record (Negative Payment or specific type if exists, but we use SupplierPaymentModel)
             $paymentId = Str::uuid()->toString();
-            $payment = SupplierPaymentModel::create([
+            $payment = SupplierPaymentModel::query()->create([
                 'id' => $paymentId,
                 'tenant_id' => $tenantId,
                 'supplier_id' => $supplierId,
@@ -51,12 +51,12 @@ final class ProcessSupplierRefundUseCase
             $safe->balance += $amount;
             $safe->save();
 
-            SafeTransactionModel::create([
+            SafeTransactionModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'safe_id' => $safe->id,
                 'type' => 'deposit',
                 'amount' => $amount,
-                'description' => "Refund from supplier",
+                'description' => 'Refund from supplier',
                 'reference_type' => 'supplier_refund',
                 'reference_id' => $payment->id,
                 'created_by' => $userId,
@@ -69,7 +69,7 @@ final class ProcessSupplierRefundUseCase
                 id: null,
                 entryNumber: $entryNumber,
                 date: new \DateTimeImmutable($date),
-                description: "Supplier Refund",
+                description: 'Supplier Refund',
                 isPosted: true,
                 referenceType: 'supplier_refund',
                 referenceId: $payment->id,
@@ -94,7 +94,7 @@ final class ProcessSupplierRefundUseCase
                 accountId: $this->accountMapping->resolve('ap'),
                 debit: 0,
                 credit: $amount,
-                description: "Supplier Refund"
+                description: 'Supplier Refund'
             ));
 
             $this->journalEntryRepository->create($journalEntry);

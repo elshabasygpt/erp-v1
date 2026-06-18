@@ -15,7 +15,7 @@ class DemoDataSeeder extends Seeder
         // 1. Warehouses
         $warehouseRiyadh = Uuid::uuid4()->toString();
         $warehouseJeddah = Uuid::uuid4()->toString();
-        
+
         DB::connection('tenant')->table('warehouses')->insert([
             ['id' => $warehouseRiyadh, 'name' => 'المستودع الرئيسي - الرياض', 'location' => 'الرياض', 'is_default' => true, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
             ['id' => $warehouseJeddah, 'name' => 'مستودع التوزيع - جدة', 'location' => 'جدة', 'is_default' => false, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
@@ -72,7 +72,7 @@ class DemoDataSeeder extends Seeder
             [
                 'name' => 'جبنة كرافت شيدر 100 جرام', 'name_ar' => 'جبنة كرافت شيدر 100 جرام', 'sku' => 'KRAFT-100', 'barcode' => '6281555000060', 'cost_price' => 4.00, 'sell_price' => 6.00, 'stock_alert_level' => 30, 'unit_of_measure' => 'علبة',
                 'units' => [['unit_name' => 'كرتون', 'conversion_factor' => 48, 'sell_price' => 250.00, 'barcode' => '6281555000061']], 'stock_riyadh' => 120, 'stock_jeddah' => 90,
-            ]
+            ],
         ];
 
         foreach ($products as $p) {

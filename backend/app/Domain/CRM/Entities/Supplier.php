@@ -23,13 +23,40 @@ final class Supplier extends Entity
         parent::__construct($id);
     }
 
-    public function getName(): string { return $this->name; }
-    public function getEmail(): ?string { return $this->email; }
-    public function getPhone(): ?string { return $this->phone; }
-    public function getAddress(): ?string { return $this->address; }
-    public function getTaxNumber(): ?string { return $this->taxNumber; }
-    public function getBalance(): float { return $this->balance; }
-    public function isActive(): bool { return $this->isActive; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function getTaxNumber(): ?string
+    {
+        return $this->taxNumber;
+    }
+
+    public function getBalance(): float
+    {
+        return $this->balance;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
 
     public function adjustBalance(float $amount): void
     {

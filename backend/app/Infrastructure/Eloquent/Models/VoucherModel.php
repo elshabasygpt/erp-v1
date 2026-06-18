@@ -10,6 +10,7 @@ class VoucherModel extends BaseModel
     use HasUuids, SoftDeletes;
 
     protected $table = 'vouchers';
+
     protected $connection = 'tenant';
 
     protected $fillable = [

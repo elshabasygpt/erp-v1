@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Accounting\Services;
 
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\SupplierModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SupplierModel;
 use Illuminate\Support\Facades\DB;
-use DomainException;
 
 /**
  * Handles the initialization of balances for a new tenant or system.
@@ -27,8 +25,8 @@ final class OpeningBalanceService
     public function setCustomerOpeningBalance(string $tenantId, string $customerId, float $amount, string $userId): void
     {
         DB::connection('tenant')->transaction(function () use ($tenantId, $customerId, $amount, $userId) {
-            $customer = CustomerModel::where('tenant_id', $tenantId)->findOrFail($customerId);
-            
+            $customer = CustomerModel::query()->where('tenant_id', $tenantId)->findOrFail($customerId);
+
             // Assuming customer balance field update if exists (if not, we rely purely on accounting)
             // But we should create the journal entry.
             $equityAccountId = $this->accountMapping->resolve('opening_balance_equity');
@@ -37,7 +35,7 @@ final class OpeningBalanceService
             $entry = new JournalEntry(
                 id: null,
                 entryNumber: $this->journalEntryRepository->getNextEntryNumber(),
-                date: new \DateTimeImmutable(),
+                date: new \DateTimeImmutable,
                 description: "Opening Balance for Customer: {$customer->name}",
                 isPosted: true,
                 referenceType: 'opening_balance',
@@ -62,15 +60,15 @@ final class OpeningBalanceService
     public function setSupplierOpeningBalance(string $tenantId, string $supplierId, float $amount, string $userId): void
     {
         DB::connection('tenant')->transaction(function () use ($tenantId, $supplierId, $amount, $userId) {
-            $supplier = SupplierModel::where('tenant_id', $tenantId)->findOrFail($supplierId);
-            
+            $supplier = SupplierModel::query()->where('tenant_id', $tenantId)->findOrFail($supplierId);
+
             $equityAccountId = $this->accountMapping->resolve('opening_balance_equity');
             $apAccountId = $this->accountMapping->resolve('ap');
 
             $entry = new JournalEntry(
                 id: null,
                 entryNumber: $this->journalEntryRepository->getNextEntryNumber(),
-                date: new \DateTimeImmutable(),
+                date: new \DateTimeImmutable,
                 description: "Opening Balance for Supplier: {$supplier->name}",
                 isPosted: true,
                 referenceType: 'opening_balance',
@@ -95,7 +93,7 @@ final class OpeningBalanceService
     public function setSafeOpeningBalance(string $tenantId, string $safeId, float $amount, string $userId): void
     {
         DB::connection('tenant')->transaction(function () use ($tenantId, $safeId, $amount, $userId) {
-            $safe = SafeModel::where('tenant_id', $tenantId)->findOrFail($safeId);
+            $safe = SafeModel::query()->where('tenant_id', $tenantId)->findOrFail($safeId);
             $safe->balance = $amount; // Assuming initial setup
             $safe->save();
 
@@ -105,7 +103,7 @@ final class OpeningBalanceService
             $entry = new JournalEntry(
                 id: null,
                 entryNumber: $this->journalEntryRepository->getNextEntryNumber(),
-                date: new \DateTimeImmutable(),
+                date: new \DateTimeImmutable,
                 description: "Opening Balance for Safe: {$safe->name}",
                 isPosted: true,
                 referenceType: 'opening_balance',

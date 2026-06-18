@@ -55,7 +55,7 @@ export default function InventoryContent({ dict, locale }: Props) {
 
     const {
         form, setForm, editingProduct, showAddEdit, setShowAddEdit,
-        promptModal, setPromptModal, openAdd, openEdit, saveProduct, handlePromptSubmit, updateCostAndProfit, generateBarcode
+        promptModal, setPromptModal, openAdd, openEdit, openDuplicate, saveProduct, handlePromptSubmit, updateCostAndProfit, generateBarcode
     } = useProductForm(products, setProducts, groups, setGroups, units, setUnits, isRTL);
 
     const [search, setSearch] = useState('');
@@ -219,13 +219,13 @@ export default function InventoryContent({ dict, locale }: Props) {
                     <InventoryTable 
                         isRTL={isRTL} inv={inv} common={dict.common} filtered={filtered}
                         stockStatus={stockStatus} getGroupName={getGroupName} getSubGroupName={getSubGroupName} getUnitSymbol={getUnitSymbol} formatCurrency={formatCurrency}
-                        setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} setShowDelete={setShowDelete}
+                        setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} openDuplicate={openDuplicate} setShowDelete={setShowDelete}
                     />
                 ) : (
                     <InventoryCardGrid 
                         isRTL={isRTL} inv={inv} filtered={filtered}
                         stockStatus={stockStatus} getGroupName={getGroupName} getUnitSymbol={getUnitSymbol} formatCurrency={formatCurrency}
-                        setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} setShowDelete={setShowDelete}
+                        setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} openDuplicate={openDuplicate} setShowDelete={setShowDelete}
                     />
                 )}
             </div>

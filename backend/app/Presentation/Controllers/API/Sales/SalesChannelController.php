@@ -29,7 +29,7 @@ class SalesChannelController extends BaseTenantController
 
         return response()->json([
             'status' => 'success',
-            'data' => SalesChannelResource::collection($channels)
+            'data' => SalesChannelResource::collection($channels),
         ]);
     }
 
@@ -41,7 +41,7 @@ class SalesChannelController extends BaseTenantController
         return response()->json([
             'status' => 'success',
             'message' => 'Sales channel created successfully.',
-            'data' => new SalesChannelResource($channel)
+            'data' => new SalesChannelResource($channel),
         ], 201);
     }
 
@@ -53,7 +53,7 @@ class SalesChannelController extends BaseTenantController
         return response()->json([
             'status' => 'success',
             'message' => 'Sales channel updated successfully.',
-            'data' => new SalesChannelResource($channel)
+            'data' => new SalesChannelResource($channel),
         ]);
     }
 
@@ -63,7 +63,7 @@ class SalesChannelController extends BaseTenantController
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Sales channel deleted successfully.'
+            'message' => 'Sales channel deleted successfully.',
         ]);
     }
 
@@ -75,29 +75,27 @@ class SalesChannelController extends BaseTenantController
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            
-            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/channels');
-            if (!file_exists($destinationPath)) {
+            $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+
+            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/channels');
+            if (! file_exists($destinationPath)) {
                 mkdir($destinationPath, 0755, true);
             }
-            
+
             $file->move($destinationPath, $filename);
-            
-            $url = $request->getSchemeAndHttpHost() . '/uploads/tenant_' . $this->getTenantId($request) . '/channels/' . $filename;
-            
+
+            $url = $request->getSchemeAndHttpHost().'/uploads/tenant_'.$this->getTenantId($request).'/channels/'.$filename;
+
             return response()->json([
                 'status' => 'success',
                 'data' => ['image_url' => $url],
-                'message' => 'Image uploaded successfully'
+                'message' => 'Image uploaded successfully',
             ]);
         }
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Failed to upload image'
+            'message' => 'Failed to upload image',
         ], 400);
     }
 }
-
-

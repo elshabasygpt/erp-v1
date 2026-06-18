@@ -2,14 +2,11 @@
 
 namespace Tests\Feature\Partnerships;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Infrastructure\Eloquent\Models\PartnerModel;
+use Tests\TestCase;
 
 class PartnershipsTest extends TestCase
 {
-
-
     public function test_can_list_partners(): void
     {
         $this->actingAsAuthenticatedUser();
@@ -17,7 +14,7 @@ class PartnershipsTest extends TestCase
         $response = $this->getJson('/api/partnerships/partners');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_can_create_partner(): void
@@ -25,14 +22,18 @@ class PartnershipsTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/partnerships/partners', [
-            'name'           => 'شريك تجريبي',
-            'email'          => 'partner@example.com',
-            'profit_share'   => 25.00,
-            'joined_at'      => now()->toDateString(),
+            'name' => 'شريك تجريبي',
+            'email' => 'partner@example.com',
+            'capital_amount' => 50000,
+            'profit_share_percentage' => 25.00,
+            'joined_at' => now()->toDateString(),
         ]);
 
+        if ($response->status() !== 201) {
+            dump($response->json());
+        }
         $response->assertStatus(201)
-                 ->assertJsonPath('data.name', 'شريك تجريبي');
+            ->assertJsonPath('data.name', 'شريك تجريبي');
     }
 
     public function test_can_show_partner(): void
@@ -53,7 +54,7 @@ class PartnershipsTest extends TestCase
         $partner = PartnerModel::factory()->create([]);
 
         $response = $this->putJson("/api/partnerships/partners/{$partner->id}", [
-            'name'         => 'شريك محدّث',
+            'name' => 'شريك محدّث',
             'profit_share' => 30.00,
         ]);
 
@@ -67,17 +68,17 @@ class PartnershipsTest extends TestCase
         $response = $this->getJson('/api/partnerships/distributions');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_can_preview_profit_distribution(): void
     {
         $this->actingAsAuthenticatedUser();
 
-        $response = $this->getJson('/api/partnerships/distributions/preview?' .
+        $response = $this->getJson('/api/partnerships/distributions/preview?'.
             http_build_query([
                 'period_start' => now()->startOfMonth()->toDateString(),
-                'period_end'   => now()->toDateString(),
+                'period_end' => now()->toDateString(),
             ])
         );
 

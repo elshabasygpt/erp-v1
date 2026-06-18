@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('domain')->unique();
             $table->string('database_name')->unique();
-            $table->string('status') /* changed from enum for testing */->default('trial');
+            $table->string('status') /* changed from enum for testing */ ->default('trial');
             $table->timestamp('trial_ends_at')->nullable();
             $table->uuid('created_by')->nullable();
             $table->timestamps();

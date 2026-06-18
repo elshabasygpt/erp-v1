@@ -2,27 +2,49 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
+use App\Application\Accounting\Services\ExchangeRateService;
 use App\Application\Sales\UseCases\CollectPaymentUseCase;
+use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
+use App\Domain\Accounting\Services\AccountMappingService;
+use App\Domain\Accounting\Services\FXGainLossService;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\CustomerPaymentModel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class CollectPaymentUseCaseTest extends TestCase
 {
-    use RefreshDatabase;
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAuthenticatedUser();
+    }
 
     public function test_it_collects_payment_and_creates_journal_entry()
     {
         // 1. Setup mock repository
         $journalRepo = $this->createMock(JournalEntryRepositoryInterface::class);
         $journalRepo->method('getNextEntryNumber')->willReturn('JE-001');
-        $journalRepo->expects($this->once())->method('save');
+        $dummyEntry = new JournalEntry(
+            id: 'test-id',
+            entryNumber: 'JE-001',
+            date: new \DateTimeImmutable,
+            description: 'Test'
+        );
+        $journalRepo->expects($this->once())->method('create')->willReturn($dummyEntry);
 
-        $useCase = new CollectPaymentUseCase($journalRepo);
+        $accountMapping = $this->createMock(AccountMappingService::class);
+        $accountMapping->method('resolve')->willReturn('a209c905-6c86-45d4-bde3-721604c4e5b5');
+
+        $exchangeRate = $this->createMock(ExchangeRateService::class);
+        $exchangeRate->method('getRate')->willReturn(1.0);
+
+        $fxGainLoss = $this->createMock(FXGainLossService::class);
+        $fxGainLoss->method('calculateAndGenerateLines')->willReturn(['fx_amount' => 0, 'lines' => []]);
+
+        $useCase = new CollectPaymentUseCase($journalRepo, $accountMapping, $exchangeRate, $fxGainLoss);
 
         // 2. Setup Data
         $customer = CustomerModel::create([
@@ -53,11 +75,10 @@ class CollectPaymentUseCaseTest extends TestCase
                 [
                     'invoice_id' => $invoice->id,
                     'amount' => 500,
-                ]
-            ]
+                ],
+            ],
         ];
-
-        $payment = $useCase->execute($data, Str::uuid()->toString());
+        $payment = $useCase->execute('00000000-0000-0000-0000-000000000001', $data, Str::uuid()->toString());
 
         // 4. Assertions
         $this->assertInstanceOf(CustomerPaymentModel::class, $payment);

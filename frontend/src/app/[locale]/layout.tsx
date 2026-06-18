@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getDictionary, getDirection, type Locale } from '@/i18n/config';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { Toaster } from 'react-hot-toast';
 import '../globals.css';
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export default async function RootLayout({
             >
                 <ThemeProvider>
                     <QueryProvider>{children}</QueryProvider>
+                    <Toaster position="bottom-right" reverseOrder={false} />
                 </ThemeProvider>
             </body>
         </html>

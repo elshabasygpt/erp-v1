@@ -58,7 +58,7 @@ return new class extends Migration
         });
 
         // Personal access tokens (Sanctum)
-        if (!Schema::connection('tenant')->hasTable('personal_access_tokens')) {
+        if (! Schema::connection('tenant')->hasTable('personal_access_tokens')) {
             Schema::connection('tenant')->create('personal_access_tokens', function (Blueprint $table) {
                 $table->id();
                 $table->uuidMorphs('tokenable');

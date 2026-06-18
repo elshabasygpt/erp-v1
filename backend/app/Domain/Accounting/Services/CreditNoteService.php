@@ -28,14 +28,14 @@ class CreditNoteService
 
             // Generate credit note number based on type
             $prefix = $data['type'] === 'customer' ? 'CN-C-' : 'CN-S-';
-            $lastCn = CreditNoteModel::where('type', $data['type'])
+            $lastCn = CreditNoteModel::query()->where('type', $data['type'])
                 ->latest('created_at')
                 ->first();
-            
-            $nextNum = $lastCn ? ((int) str_replace($prefix, '', $lastCn->credit_note_number)) + 1 : 1;
-            $data['credit_note_number'] = $prefix . str_pad((string)$nextNum, 6, '0', STR_PAD_LEFT);
 
-            $creditNote = CreditNoteModel::create($data);
+            $nextNum = $lastCn ? ((int) str_replace($prefix, '', $lastCn->credit_note_number)) + 1 : 1;
+            $data['credit_note_number'] = $prefix.str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
+
+            $creditNote = CreditNoteModel::query()->create($data);
 
             return $creditNote;
         });
@@ -46,22 +46,22 @@ class CreditNoteService
      */
     public function applyCreditNote(string $creditNoteId, string $userId): void
     {
-        DB::connection('tenant')->transaction(function () use ($creditNoteId, $userId) {
-            $creditNote = CreditNoteModel::lockForUpdate()->findOrFail($creditNoteId);
+        DB::connection('tenant')->transaction(function () use ($creditNoteId) {
+            $creditNote = CreditNoteModel::query()->lockForUpdate()->findOrFail($creditNoteId);
 
             if ($creditNote->status !== 'draft') {
                 throw new \DomainException("Credit note is already {$creditNote->status}.");
             }
 
             if ($creditNote->type === 'customer') {
-                $customer = CustomerModel::lockForUpdate()->find($creditNote->customer_id);
+                $customer = CustomerModel::query()->lockForUpdate()->find($creditNote->customer_id);
                 if ($customer) {
                     // Credit Note decreases what the customer owes us
                     $customer->balance -= $creditNote->total;
                     $customer->save();
                 }
             } else {
-                $supplier = SupplierModel::lockForUpdate()->find($creditNote->supplier_id);
+                $supplier = SupplierModel::query()->lockForUpdate()->find($creditNote->supplier_id);
                 if ($supplier) {
                     // Credit Note decreases what we owe the supplier
                     $supplier->balance -= $creditNote->total;

@@ -27,10 +27,10 @@ final class ProcessSalesReturnDTO
             refundMethod: $data['refund_method'],
             reason: $data['reason'] ?? null,
             notes: $data['notes'] ?? null,
-            items: array_map(fn($i) => [
+            items: array_map(fn ($i) => [
                 'productId' => $i['product_id'],
-                'quantity' => (float)$i['quantity'],
-                'condition' => $i['condition'] ?? 'good'
+                'quantity' => (float) $i['quantity'],
+                'condition' => $i['condition'] ?? 'good',
             ], $data['items'] ?? [])
         );
     }

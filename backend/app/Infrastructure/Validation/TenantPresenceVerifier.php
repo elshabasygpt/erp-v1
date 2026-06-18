@@ -2,8 +2,8 @@
 
 namespace App\Infrastructure\Validation;
 
-use Illuminate\Validation\DatabasePresenceVerifier;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\DatabasePresenceVerifier;
 
 class TenantPresenceVerifier extends DatabasePresenceVerifier
 {
@@ -17,7 +17,7 @@ class TenantPresenceVerifier extends DatabasePresenceVerifier
             $tenantId = request()->header('X-Tenant-ID');
         }
 
-        if (!$tenantId) {
+        if (! $tenantId) {
             return;
         }
 
@@ -30,9 +30,9 @@ class TenantPresenceVerifier extends DatabasePresenceVerifier
         // This is necessary because some central tables like migrations or plans might not have it.
         // Caching the result for performance.
         static $schemaCache = [];
-        $cacheKey = $connectionName . '.' . $table;
-        
-        if (!isset($schemaCache[$cacheKey])) {
+        $cacheKey = $connectionName.'.'.$table;
+
+        if (! isset($schemaCache[$cacheKey])) {
             $schemaCache[$cacheKey] = Schema::connection($connectionName)->hasColumn($table, 'tenant_id');
         }
 
@@ -45,12 +45,14 @@ class TenantPresenceVerifier extends DatabasePresenceVerifier
     public function getCount($collection, $column, $value, $excludeId = null, $idColumn = null, array $extra = [])
     {
         $this->injectTenantScope($collection, $extra);
+
         return parent::getCount($collection, $column, $value, $excludeId, $idColumn, $extra);
     }
 
     public function getMultiCount($collection, $column, array $values, array $extra = [])
     {
         $this->injectTenantScope($collection, $extra);
+
         return parent::getMultiCount($collection, $column, $values, $extra);
     }
 }

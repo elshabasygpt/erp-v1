@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Domain\Treasury\Services;
 
 use App\Domain\Treasury\Repositories\SafeRepositoryInterface;
@@ -17,7 +18,7 @@ class TransferService
         }
 
         $from = $this->safeRepo->findById($fromId);
-        if (!$from || $from->balance < $amount) {
+        if (! $from || $from->balance < $amount) {
             throw new InvalidArgumentException('Insufficient balance');
         }
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\Accounting\Services;
 
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Services\AccountMappingService;
 use Illuminate\Support\Facades\DB;
 
@@ -42,10 +41,10 @@ final class CashFlowService
         foreach ($cashLines as $line) {
             $inflow = (float) $line->inflow;
             $outflow = (float) $line->outflow;
-            
+
             $totalInflow += $inflow;
             $totalOutflow += $outflow;
-            
+
             $net = $inflow - $outflow;
             $type = $line->reference_type ?? 'other';
 

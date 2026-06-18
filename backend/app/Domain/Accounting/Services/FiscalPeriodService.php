@@ -33,34 +33,34 @@ final class FiscalPeriodService
             ->first();
 
         // If no period covers this date, check if any periods exist at all
-        if (!$period) {
+        if (! $period) {
             $anyPeriods = DB::connection('tenant')
                 ->table('fiscal_periods')
                 ->whereNull('deleted_at')
                 ->exists();
 
             // If no fiscal periods configured yet, allow posting (backward compatible)
-            if (!$anyPeriods) {
+            if (! $anyPeriods) {
                 return;
             }
 
             throw new \DomainException(
-                "No fiscal period found for date {$dateStr}. " .
-                "Please create a fiscal period covering this date, or post to a different date."
+                "No fiscal period found for date {$dateStr}. ".
+                'Please create a fiscal period covering this date, or post to a different date.'
             );
         }
 
         if ($period->status === 'closed') {
             throw new \DomainException(
-                "Cannot post to fiscal period '{$period->name}' ({$period->start_date} – {$period->end_date}). " .
-                "The period is closed. Contact an admin to reopen it if needed."
+                "Cannot post to fiscal period '{$period->name}' ({$period->start_date} – {$period->end_date}). ".
+                'The period is closed. Contact an admin to reopen it if needed.'
             );
         }
 
         if ($period->status === 'locked') {
             throw new \DomainException(
-                "Cannot post to fiscal period '{$period->name}'. " .
-                "The period is permanently locked and cannot be modified."
+                "Cannot post to fiscal period '{$period->name}'. ".
+                'The period is permanently locked and cannot be modified.'
             );
         }
     }
@@ -76,7 +76,7 @@ final class FiscalPeriodService
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$period) {
+        if (! $period) {
             throw new \DomainException('Fiscal period not found.');
         }
 
@@ -107,7 +107,7 @@ final class FiscalPeriodService
             ->whereNull('deleted_at')
             ->first();
 
-        if (!$period) {
+        if (! $period) {
             throw new \DomainException('Fiscal period not found.');
         }
 
@@ -141,11 +141,11 @@ final class FiscalPeriodService
             ->whereNull('deleted_at')
             ->where(function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('start_date', [$startDate, $endDate])
-                  ->orWhereBetween('end_date', [$startDate, $endDate])
-                  ->orWhere(function ($q2) use ($startDate, $endDate) {
-                      $q2->where('start_date', '<=', $startDate)
-                         ->where('end_date', '>=', $endDate);
-                  });
+                    ->orWhereBetween('end_date', [$startDate, $endDate])
+                    ->orWhere(function ($q2) use ($startDate, $endDate) {
+                        $q2->where('start_date', '<=', $startDate)
+                            ->where('end_date', '>=', $endDate);
+                    });
             })
             ->exists();
 

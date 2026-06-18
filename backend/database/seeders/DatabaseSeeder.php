@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Ramsey\Uuid\Uuid;
 
 class DatabaseSeeder extends Seeder
@@ -18,10 +19,10 @@ class DatabaseSeeder extends Seeder
         // Create Default Tenant
         $tenantId = '00000000-0000-0000-0000-000000000001';
         $this->command->info('Creating default tenant...');
-        
+
         // Disable foreign key checks for clean seeding if necessary (Postgres uses different syntax, but we are just inserting)
-        
-        DB::connection('pgsql')->table('tenants')->insertOrIgnore([
+
+        DB::table('tenants')->insertOrIgnore([
             'id' => $tenantId,
             'name' => 'Default Company',
             'domain' => 'default.localhost',
@@ -39,6 +40,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Running DemoDataSeeder...');
         $this->call(DemoDataSeeder::class);
 
+        // Run Settings Seeder
+        $this->command->info('Running SettingsSeeder...');
+        $this->call(SettingsSeeder::class);
+
         // Run Vehicle Data Seeder
         $this->command->info('Running VehicleDataSeeder...');
         $this->call(VehicleDataSeeder::class);
@@ -46,12 +51,12 @@ class DatabaseSeeder extends Seeder
         // Link Admin User to Default Tenant
         $this->command->info('Linking Admin User to Default Tenant...');
         $adminEmail = 'admin@company.com';
-        
+
         // Assuming admin was created by AdminSeeder with this email
-        DB::connection('pgsql')->table('tenant_users')->insertOrIgnore([
+        DB::table('tenant_users')->insertOrIgnore([
             'id' => Uuid::uuid4()->toString(),
             'email' => $adminEmail,
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
+            'password' => Hash::make('password'),
             'is_owner' => true,
             'tenant_id' => $tenantId,
             'created_at' => now(),

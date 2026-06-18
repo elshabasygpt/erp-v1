@@ -98,6 +98,7 @@ const GROUPS: MenuGroup[] = [
         color: '#22c55e',
         children: [
             { key: 'inventory', path: '/inventory', iconKey: 'inventory', labelAr: 'الأصناف والمنتجات', labelEn: 'Products' },
+            { key: 'stocktakes', path: '/inventory/stocktakes', iconKey: 'reports', labelAr: 'الجرد الفعلي للمخزون', labelEn: 'Physical Stocktakes' },
             { key: 'stockMovements', path: '/inventory/movements', iconKey: 'movements', labelAr: 'حركات المخزون', labelEn: 'Stock Movements' },
             { key: 'transfers', path: '/inventory/transfers', iconKey: 'transfers', labelAr: 'تحويلات المخازن', labelEn: 'Transfers' },
             { key: 'manufacturing', path: '/manufacturing', iconKey: 'inventory', labelAr: 'التصنيع والتجميع', labelEn: 'Manufacturing' },
@@ -111,6 +112,9 @@ const GROUPS: MenuGroup[] = [
         labelEn: 'Purchases',
         color: '#f59e0b',
         children: [
+            { key: 'purchaseRequests', path: '/purchases/requests', iconKey: 'purchases', labelAr: 'طلبات الشراء (PR)', labelEn: 'Purchase Requests' },
+            { key: 'rfqs', path: '/purchases/rfqs', iconKey: 'purchases', labelAr: 'عروض الأسعار (RFQ)', labelEn: 'RFQs' },
+            { key: 'purchaseOrders', path: '/purchases/orders', iconKey: 'purchases', labelAr: 'أوامر الشراء (PO)', labelEn: 'Purchase Orders' },
             { key: 'purchases', path: '/purchases', iconKey: 'purchases', labelAr: 'فواتير الشراء', labelEn: 'Purchase Invoices' },
             { key: 'suppliers', path: '/suppliers', iconKey: 'suppliers', labelAr: 'الموردين', labelEn: 'Suppliers' },
         ],
@@ -123,11 +127,17 @@ const GROUPS: MenuGroup[] = [
         color: '#8b5cf6',
         children: [
             { key: 'accounting', path: '/accounting', iconKey: 'accounting', labelAr: 'القيود اليومية', labelEn: 'Journal Entries' },
+            { key: 'banks', path: '/accounting/banks', iconKey: 'accounting', labelAr: 'الحسابات البنكية', labelEn: 'Bank Accounts' },
             { key: 'treasury', path: '/treasury', iconKey: 'accounting', labelAr: 'الخزينة والبنوك', labelEn: 'Treasury & Banks' },
+            { key: 'creditNotes', path: '/accounting/credit-notes', iconKey: 'accounting', labelAr: 'الإشعارات الدائنة', labelEn: 'Credit Notes' },
             { key: 'fixedAssets', path: '/fixed-assets', iconKey: 'inventory', labelAr: 'الأصول الثابتة', labelEn: 'Fixed Assets' },
+            { key: 'accSettings', path: '/accounting/settings', iconKey: 'settings', labelAr: 'إعدادات المحاسبة', labelEn: 'Accounting Settings' },
             {
                 key: 'vatReport', path: '/zatca/vat-report', iconKey: 'zatca', labelAr: 'تقرير ضريبة القيمة المضافة', labelEn: 'VAT Report',
                 badge: { text: 'ZATCA', color: '#10b981' },
+            },
+            {
+                key: 'zatcaOnboarding', path: '/zatca/onboarding', iconKey: 'zatca', labelAr: 'إعدادات ربط الزكاة والدخل', labelEn: 'ZATCA Onboarding',
             },
         ],
     },
@@ -139,6 +149,7 @@ const GROUPS: MenuGroup[] = [
         color: '#06b6d4',
         children: [
             { key: 'customers', path: '/customers', iconKey: 'customers', labelAr: 'العملاء', labelEn: 'Customers' },
+            { key: 'customerVehicles', path: '/customers/vehicles', iconKey: 'car', labelAr: 'سيارات العملاء', labelEn: 'Customer Vehicles' },
             { key: 'receivables-dash', path: '/receivables', iconKey: 'reports', labelAr: 'إدارة المديونيات', labelEn: 'Receivables Dashboard' },
             { key: 'receivables-collect', path: '/receivables/collect', iconKey: 'accounting', labelAr: 'تحصيل الدفعات', labelEn: 'Collect Payment' },
             { key: 'receivables-statement', path: '/receivables/statement', iconKey: 'reports', labelAr: 'كشف حساب عميل', labelEn: 'Customer Statement' },
@@ -156,20 +167,27 @@ const GROUPS: MenuGroup[] = [
             { key: 'attendance', path: '/hr/attendance', iconKey: 'reports', labelAr: 'الحضور والانصراف', labelEn: 'Attendance' },
             { key: 'leaves', path: '/hr/leaves', iconKey: 'reports', labelAr: 'إدارة الإجازات', labelEn: 'Leave Management' },
             { key: 'payroll', path: '/hr/payroll', iconKey: 'accounting', labelAr: 'مسيرات الرواتب', labelEn: 'Payroll' },
+            { key: 'penalties', path: '/hr/penalties', iconKey: 'hr', labelAr: 'الجزاءات والتأخير', labelEn: 'Penalties & Late' },
         ],
     },
 ];
 
 const SINGLE_ITEMS: SingleItem[] = [
+    { key: 'tasks', path: '/tasks', iconKey: 'reports', labelAr: 'المهام والمتابعة', labelEn: 'Tasks', badge: { text: 'New', color: '#6366f1' } },
     { key: 'reports', path: '/reports', iconKey: 'reports', labelAr: 'التقارير الشاملة', labelEn: 'Reports' },
     { key: 'financialReports', path: '/reports/financial', iconKey: 'reports', labelAr: 'التقارير المالية (P&L, KPIs)', labelEn: 'Financial Reports (P&L)' },
     { key: 'advancedReports', path: '/reports/advanced', iconKey: 'reports', labelAr: 'تقارير متقدمة (أعمار الديون)', labelEn: 'Advanced Reports (Aging)' },
-    { key: 'analytics', path: '/analytics', iconKey: 'reports', labelAr: 'ذكاء اصطناعي وتوقعات الذكاء', labelEn: 'AI Analytics & Forecasting',
+    { key: 'zakatReport', path: '/reports/zakat', iconKey: 'zatca', labelAr: 'حساب زكاة المال', labelEn: 'Zakat Al-Mal Calculator',
+        badge: { text: 'New', color: '#10b981' } as any,
+    },
+    { key: 'analytics', path: '/analytics/ai-assistant', iconKey: 'reports', labelAr: 'المساعد المالي (AI)', labelEn: 'AI Financial Assistant',
         badge: { text: 'AI', color: '#7c3aed' } as any,
     },
     { key: 'branches', path: '/branches', iconKey: 'branches', labelAr: 'الفروع', labelEn: 'Branches' },
     { key: 'users', path: '/users', iconKey: 'users', labelAr: 'المستخدمون', labelEn: 'Users' },
-    { key: 'settings', path: '/settings', iconKey: 'settings', labelAr: 'الإعدادات', labelEn: 'Settings' },
+    { key: 'roles', path: '/settings/roles', iconKey: 'users', labelAr: 'الأدوار والصلاحيات', labelEn: 'Roles & Permissions' },
+    { key: 'data', path: '/settings/data', iconKey: 'settings', labelAr: 'إدارة البيانات (استيراد)', labelEn: 'Data Management' },
+    { key: 'settings', path: '/settings', iconKey: 'settings', labelAr: 'الإعدادات العامة', labelEn: 'General Settings' },
     { key: 'approvals', path: '/approvals', iconKey: 'reports', labelAr: 'الموافقات', labelEn: 'Approvals' },
     { key: 'deliveries', path: '/deliveries', iconKey: 'transfers', labelAr: 'التوصيل', labelEn: 'Deliveries' },
     { key: 'expenses', path: '/expenses', iconKey: 'accounting', labelAr: 'المصروفات', labelEn: 'Expenses' },

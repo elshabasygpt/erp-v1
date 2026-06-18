@@ -29,7 +29,7 @@ final class UpdateInvoiceDTO
     public static function fromRequest(string $id, array $data): self
     {
         $items = array_map(
-            fn(array $item) => InvoiceItemDTO::fromArray($item),
+            fn (array $item) => InvoiceItemDTO::fromArray($item),
             $data['items'] ?? []
         );
 

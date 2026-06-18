@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Factories;
 
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
@@ -11,12 +12,12 @@ class PurchaseInvoiceFactory extends Factory
     public function definition(): array
     {
         return [
-            
+
             'invoice_number' => $this->faker->unique()->numerify('PI-#####'),
-            'supplier_id'  => 1,
+            'supplier_id' => 1,
             'invoice_date' => $this->faker->date(),
-            'total'        => $this->faker->numberBetween(100, 10000),
-            'status'       => 'draft',
+            'total' => $this->faker->numberBetween(100, 10000),
+            'status' => 'draft',
         ];
     }
 }

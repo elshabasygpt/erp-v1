@@ -18,16 +18,20 @@ class GetCustomerStatementUseCase
                 DB::raw("'invoice' as type"),
                 'invoice_number as reference',
                 'total as debit',
-                DB::raw("0 as credit"),
-                'notes as description'
+                DB::raw('0 as credit'),
+                'notes as description',
             ])
             ->where('tenant_id', $tenantId)
             ->where('customer_id', $customerId)
             ->where('type', 'credit')
             ->where('status', 'confirmed');
 
-        if ($fromDate) $invoicesQuery->whereDate('invoice_date', '>=', $fromDate);
-        if ($toDate) $invoicesQuery->whereDate('invoice_date', '<=', $toDate);
+        if ($fromDate) {
+            $invoicesQuery->whereDate('invoice_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $invoicesQuery->whereDate('invoice_date', '<=', $toDate);
+        }
 
         // Get all payments
         $paymentsQuery = DB::table('customer_payments')->where('tenant_id', $tenantId)
@@ -36,16 +40,20 @@ class GetCustomerStatementUseCase
                 'payment_date as date',
                 DB::raw("'payment' as type"),
                 'reference_number as reference',
-                DB::raw("0 as debit"),
+                DB::raw('0 as debit'),
                 'amount as credit',
-                'notes as description'
+                'notes as description',
             ])
             ->where('tenant_id', $tenantId)
             ->where('customer_id', $customerId)
             ->where('status', 'completed');
 
-        if ($fromDate) $paymentsQuery->whereDate('payment_date', '>=', $fromDate);
-        if ($toDate) $paymentsQuery->whereDate('payment_date', '<=', $toDate);
+        if ($fromDate) {
+            $paymentsQuery->whereDate('payment_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $paymentsQuery->whereDate('payment_date', '<=', $toDate);
+        }
 
         $unionQuery = $invoicesQuery->union($paymentsQuery)->orderBy('date');
 

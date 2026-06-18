@@ -2,21 +2,22 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Domain\Sales\Services\ZatcaPhase1Service;
-use App\Infrastructure\Zatca\UblXmlGenerator;
 use App\Domain\Sales\Entities\Invoice;
 use App\Domain\Sales\Entities\InvoiceItem;
+use App\Domain\Sales\Services\ZatcaPhase1Service;
+use App\Infrastructure\Zatca\UblXmlGenerator;
+use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 class TestZatcaCommand extends Command
 {
     protected $signature = 'app:test-zatca';
+
     protected $description = 'Test ZATCA Phase 1 (QR) and Phase 2 (XML Hash)';
 
     public function handle(ZatcaPhase1Service $zatca1Service)
     {
-        $this->info("🚀 Starting ZATCA System Test...");
+        $this->info('🚀 Starting ZATCA System Test...');
 
         // 1. Create a dummy Invoice domain entity
         $invoice = new Invoice(
@@ -29,7 +30,7 @@ class TestZatcaCommand extends Command
             discountAmount: 0.00,
             total: 1150.00,
             status: 'confirmed',
-            invoiceDate: new \DateTimeImmutable()
+            invoiceDate: new \DateTimeImmutable
         );
 
         $invoice->addItem(new InvoiceItem(
@@ -53,10 +54,10 @@ class TestZatcaCommand extends Command
                 $invoice->getTotal(),
                 $invoice->getVatAmount()
             );
-            $this->info("✅ Phase 1 Success!");
-            $this->line("QR Base64: " . $qrCode);
+            $this->info('✅ Phase 1 Success!');
+            $this->line('QR Base64: '.$qrCode);
         } catch (\Exception $e) {
-            $this->error("❌ Phase 1 Failed: " . $e->getMessage());
+            $this->error('❌ Phase 1 Failed: '.$e->getMessage());
         }
 
         // 3. Test Phase 2: UBL XML & Hashing
@@ -69,15 +70,15 @@ class TestZatcaCommand extends Command
                 '310122393500003',
                 $zatcaUuid
             );
-            
+
             $xmlHash = base64_encode(hash('sha256', $xml, true));
-            $this->info("✅ Phase 2 Success!");
-            $this->line("ZATCA UUID: " . $zatcaUuid);
-            $this->line("XML SHA-256 Hash: " . $xmlHash);
-            $this->line("XML Snippet:");
-            $this->line(substr($xml, 0, 300) . "...\n</Invoice>");
+            $this->info('✅ Phase 2 Success!');
+            $this->line('ZATCA UUID: '.$zatcaUuid);
+            $this->line('XML SHA-256 Hash: '.$xmlHash);
+            $this->line('XML Snippet:');
+            $this->line(substr($xml, 0, 300)."...\n</Invoice>");
         } catch (\Exception $e) {
-            $this->error("❌ Phase 2 Failed: " . $e->getMessage());
+            $this->error('❌ Phase 2 Failed: '.$e->getMessage());
         }
 
         $this->info("\n🎉 ZATCA Integration Test Completed!");

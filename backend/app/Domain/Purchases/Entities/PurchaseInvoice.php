@@ -28,22 +28,73 @@ final class PurchaseInvoice extends Entity
         private ?float $exchangeRate = null,
     ) {
         parent::__construct($id);
-        $this->invoiceDate = $invoiceDate ?? new \DateTimeImmutable();
+        $this->invoiceDate = $invoiceDate ?? new \DateTimeImmutable;
     }
 
-    public function getInvoiceNumber(): string { return $this->invoiceNumber; }
-    public function getSupplierId(): string { return $this->supplierId; }
-    public function getSubtotal(): float { return $this->subtotal; }
-    public function getVatAmount(): float { return $this->vatAmount; }
-    public function getTotal(): float { return $this->total; }
-    public function getStatus(): string { return $this->status; }
-    public function getNotes(): ?string { return $this->notes; }
-    public function getWarehouseId(): ?string { return $this->warehouseId; }
-    public function getInvoiceDate(): \DateTimeImmutable { return $this->invoiceDate; }
-    public function getItems(): array { return $this->items; }
-    public function getCostCenterId(): ?string { return $this->costCenterId; }
-    public function getCurrencyId(): ?string { return $this->currencyId; }
-    public function getExchangeRate(): ?float { return $this->exchangeRate; }
+    public function getInvoiceNumber(): string
+    {
+        return $this->invoiceNumber;
+    }
+
+    public function getSupplierId(): string
+    {
+        return $this->supplierId;
+    }
+
+    public function getSubtotal(): float
+    {
+        return $this->subtotal;
+    }
+
+    public function getVatAmount(): float
+    {
+        return $this->vatAmount;
+    }
+
+    public function getTotal(): float
+    {
+        return $this->total;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function getWarehouseId(): ?string
+    {
+        return $this->warehouseId;
+    }
+
+    public function getInvoiceDate(): \DateTimeImmutable
+    {
+        return $this->invoiceDate;
+    }
+
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+
+    public function getCostCenterId(): ?string
+    {
+        return $this->costCenterId;
+    }
+
+    public function getCurrencyId(): ?string
+    {
+        return $this->currencyId;
+    }
+
+    public function getExchangeRate(): ?float
+    {
+        return $this->exchangeRate;
+    }
 
     public function setItems(array $items): void
     {

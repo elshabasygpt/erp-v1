@@ -3,16 +3,14 @@
 namespace Tests\Feature\Accounting;
 
 use App\Application\Accounting\Services\AccountingService;
-use App\Infrastructure\Eloquent\Models\Accounting\AccountModel;
-use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryModel;
-use App\Infrastructure\Eloquent\Models\Accounting\JournalEntryLineModel;
-
+use App\Infrastructure\Eloquent\Models\AccountModel;
+use App\Infrastructure\Eloquent\Models\JournalEntryLineModel;
+use App\Infrastructure\Eloquent\Models\JournalEntryModel;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AccountingServiceTest extends TestCase
 {
-    
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -23,56 +21,62 @@ class AccountingServiceTest extends TestCase
     {
         // 1. Create Accounts
         $revenueAccount = AccountModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
+            'tenant_id' => '00000000-0000-0000-0000-000000000001',
             'code' => '4000',
-            'name' => 'Sales Revenue',
-            'type' => 'Revenue',
+            'name' => 'Sales Revenue', 'name_ar' => 'Sales Revenue',
+            'name_ar' => 'إيرادات المبيعات',
+            'type' => 'revenue',
             'is_active' => true,
         ]);
 
         $expenseAccount = AccountModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
+            'tenant_id' => 'tenant-1',
             'code' => '5000',
-            'name' => 'COGS',
-            'type' => 'Expense',
+            'name' => 'COGS', 'name_ar' => 'COGS',
+            'name_ar' => 'تكلفة البضاعة المباعة',
+            'type' => 'expense',
             'is_active' => true,
         ]);
 
         // 2. Create Journal Entry (Revenue: 1000 Credit, Expense: 400 Debit)
         $entry = JournalEntryModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
+            'tenant_id' => 'tenant-1',
             'entry_number' => 'JE-001',
-            'entry_date' => now(),
+            'date' => now(),
             'description' => 'Test Sales',
-            'status' => 'posted'
+            'is_posted' => true,
         ]);
 
         JournalEntryLineModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'journal_entry_id' => $entry->id,
             'account_id' => $revenueAccount->id,
             'debit' => 0,
-            'credit' => 1000
+            'credit' => 1000,
         ]);
 
         JournalEntryLineModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'journal_entry_id' => $entry->id,
             'account_id' => $expenseAccount->id,
             'debit' => 400,
-            'credit' => 0
+            'credit' => 0,
         ]);
 
         // 3. Run Accounting Service
         $service = app(AccountingService::class);
-        $startDate = now()->subDays(1)->format('Y-m-d');
-        $endDate = now()->addDays(1)->format('Y-m-d');
-
-        $incomeStatement = $service->generateIncomeStatement($startDate, $endDate);
+        $incomeStatement = $service->generateIncomeStatement(
+            new \DateTimeImmutable(now()->subMonth()->toDateTimeString()),
+            new \DateTimeImmutable(now()->addMonth()->toDateTimeString()),
+            '00000000-0000-0000-0000-000000000001'
+        );
 
         // 4. Assertions
-        $this->assertEquals(1000, $incomeStatement['totals']['total_revenue']);
-        $this->assertEquals(400, $incomeStatement['totals']['total_expenses']);
-        $this->assertEquals(600, $incomeStatement['totals']['net_income']);
+        $this->assertEquals(1000, $incomeStatement['total_revenue']);
+        $this->assertEquals(400, $incomeStatement['total_expenses']);
+        $this->assertEquals(600, $incomeStatement['net_income']);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
+use App\Models\User;
+
 class DeliveryStatusLogModel extends BaseModel
 {
     protected $table = 'delivery_status_logs';
@@ -10,7 +12,7 @@ class DeliveryStatusLogModel extends BaseModel
         'delivery_id',
         'status',
         'notes',
-        'created_by'
+        'created_by',
     ];
 
     public function delivery()
@@ -20,6 +22,6 @@ class DeliveryStatusLogModel extends BaseModel
 
     public function creator()
     {
-        return $this->belongsTo(\App\Models\User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

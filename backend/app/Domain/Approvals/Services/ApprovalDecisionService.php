@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Domain\Approvals\Services;
 
 use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
@@ -13,7 +14,7 @@ class ApprovalDecisionService
     public function approve(int $requestId, int $approverId, ?string $notes = null): void
     {
         $request = $this->repo->findById($requestId);
-        if (!$request) {
+        if (! $request) {
             throw new InvalidArgumentException('Approval request not found');
         }
         if ($request->status !== 'pending') {
@@ -25,7 +26,7 @@ class ApprovalDecisionService
     public function reject(int $requestId, int $rejectorId, ?string $notes = null): void
     {
         $request = $this->repo->findById($requestId);
-        if (!$request) {
+        if (! $request) {
             throw new InvalidArgumentException('Approval request not found');
         }
         if ($request->status !== 'pending') {

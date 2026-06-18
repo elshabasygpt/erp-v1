@@ -22,7 +22,7 @@ abstract class BaseTenantController extends BaseController
         Request $request,
         string $column = 'tenant_id'
     ): void {
-        if (!$model) {
+        if (! $model) {
             abort(404, 'Resource not found.');
         }
 

@@ -24,13 +24,13 @@ final class CreateInvoiceDTO
         public readonly array $installments = [],
         public readonly ?string $costCenterId = null,
         public readonly ?string $currencyId = null,
-        public readonly ?float $exchangeRate = null,
+        public readonly ?float $exchangeRate = 1.0,
     ) {}
 
     public static function fromRequest(array $data): self
     {
         $items = array_map(
-            fn(array $item) => InvoiceItemDTO::fromArray($item),
+            fn (array $item) => InvoiceItemDTO::fromArray($item),
             $data['items'] ?? []
         );
 
@@ -52,7 +52,7 @@ final class CreateInvoiceDTO
             installments: $data['installments'] ?? [],
             costCenterId: $data['cost_center_id'] ?? null,
             currencyId: $data['currency_id'] ?? null,
-            exchangeRate: isset($data['exchange_rate']) ? (float) $data['exchange_rate'] : null,
+            exchangeRate: isset($data['exchange_rate']) ? (float) $data['exchange_rate'] : 1.0,
         );
     }
 }

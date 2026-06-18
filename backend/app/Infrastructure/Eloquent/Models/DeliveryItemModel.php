@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace App\Infrastructure\Eloquent\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DeliveryItemModel extends Model
 {
     use SoftDeletes;
 
     protected $table = 'delivery_items';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

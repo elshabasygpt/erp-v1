@@ -1,4 +1,5 @@
 <?php
+
 $content = file_get_contents('app/Presentation/Controllers/API/Inventory/AdjustmentController.php');
 
 $content = str_replace(

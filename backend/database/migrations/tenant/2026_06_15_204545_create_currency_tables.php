@@ -30,7 +30,7 @@ return new class extends Migration
             $table->uuid('created_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->unique(['tenant_id', 'currency_id', 'date']);
         });
     }

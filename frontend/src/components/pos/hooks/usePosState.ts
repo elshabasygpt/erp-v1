@@ -6,6 +6,7 @@ export interface CartItem {
     product: any;
     qty: number;
     discount: number;
+    coreReturned?: boolean;
 }
 
 export interface PosSession {

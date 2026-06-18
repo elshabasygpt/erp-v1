@@ -11,8 +11,11 @@ class PartnerProfitShareModel extends BaseModel
     use HasUuids;
 
     protected $connection = 'tenant';
+
     protected $table = 'partner_profit_shares';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

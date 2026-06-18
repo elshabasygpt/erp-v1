@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Infrastructure\Eloquent\Repositories\HR;
 
 use App\Domain\HR\Entities\Attendance;
@@ -9,29 +10,29 @@ class EloquentAttendanceRepository implements AttendanceRepositoryInterface
 {
     public function findByEmployee(int $employeeId, array $filters = []): array
     {
-        $query = AttendanceModel::where('employee_id', $employeeId);
+        $query = AttendanceModel::query()->where('employee_id', $employeeId);
 
-        if (!empty($filters['from'])) {
+        if (! empty($filters['from'])) {
             $query->whereDate('check_in', '>=', $filters['from']);
         }
-        if (!empty($filters['to'])) {
+        if (! empty($filters['to'])) {
             $query->whereDate('check_in', '<=', $filters['to']);
         }
 
-        return $query->get()->map(fn(AttendanceModel $m) => $this->toEntity($m))->toArray();
+        return $query->get()->map(fn (AttendanceModel $m) => $this->toEntity($m))->toArray();
     }
 
     public function findAll(int $tenantId, array $filters = []): array
     {
-        return AttendanceModel::whereHas('employee', fn($q) => $q->where('tenant_id', $tenantId))
+        return AttendanceModel::whereHas('employee', fn ($q) => $q->where('tenant_id', $tenantId))
             ->get()
-            ->map(fn(AttendanceModel $m) => $this->toEntity($m))
+            ->map(fn (AttendanceModel $m) => $this->toEntity($m))
             ->toArray();
     }
 
     public function findActiveCheckIn(int $employeeId): ?Attendance
     {
-        $model = AttendanceModel::where('employee_id', $employeeId)
+        $model = AttendanceModel::query()->where('employee_id', $employeeId)
             ->whereNull('check_out')
             ->latest()
             ->first();
@@ -41,12 +42,12 @@ class EloquentAttendanceRepository implements AttendanceRepositoryInterface
 
     public function save(Attendance $attendance): Attendance
     {
-        $model = new AttendanceModel();
+        $model = new AttendanceModel;
         $model->fill([
             'employee_id' => $attendance->employeeId,
-            'check_in'    => $attendance->checkIn,
-            'check_out'   => $attendance->checkOut,
-            'status'      => $attendance->status,
+            'check_in' => $attendance->checkIn,
+            'check_out' => $attendance->checkOut,
+            'status' => $attendance->status,
         ])->save();
 
         return $this->toEntity($model);
@@ -54,8 +55,9 @@ class EloquentAttendanceRepository implements AttendanceRepositoryInterface
 
     public function update(int $id, array $data): Attendance
     {
-        $model = AttendanceModel::findOrFail($id);
+        $model = AttendanceModel::query()->findOrFail($id);
         $model->update($data);
+
         return $this->toEntity($model->fresh());
     }
 

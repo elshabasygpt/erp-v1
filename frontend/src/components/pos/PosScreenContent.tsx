@@ -16,6 +16,7 @@ import PosTabs from './PosTabs';
 import BasicPosProductGrid from './BasicPosProductGrid';
 import PosCartSidebar from './PosCartSidebar';
 import PosPaymentModal from './PosPaymentModal';
+import { PosAlternativesModal } from './PosAlternativesModal';
 
 export default function PosScreenContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -43,6 +44,7 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
     const [showHoldModal, setShowHoldModal] = useState(false);
     const [holdNote, setHoldNote] = useState('');
     const [showRecallList, setShowRecallList] = useState(false);
+    const [alternativesProduct, setAlternativesProduct] = useState<any>(null);
 
     const { successMsg, setSuccessMsg, handleCompletePurchase } = usePosPayment(
         activeSession, sessions, setSessions, setActiveIdx, activeIdx, createEmptySession,
@@ -163,6 +165,7 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
                 <BasicPosProductGrid 
                     isRTL={isRTL} successMsg={successMsg} filteredProducts={filteredProducts}
                     activeSession={activeSession} addToCart={addToCart}
+                    onShowAlternatives={setAlternativesProduct}
                 />
             </div>
 
@@ -179,6 +182,15 @@ export default function PosScreenContent({ dict, locale }: { dict: any; locale: 
                     isRTL={isRTL} activeSession={activeSession} updateActiveSession={updateActiveSession}
                     cartTotal={cartTotal} change={change} totalPaidCNum={totalPaidCNum} totalPaidCardNum={totalPaidCardNum}
                     setShowPayment={setShowPayment} handleCompletePurchase={handleCompletePurchase}
+                />
+            )}
+
+            {alternativesProduct && (
+                <PosAlternativesModal 
+                    product={alternativesProduct} 
+                    isRTL={isRTL} 
+                    onClose={() => setAlternativesProduct(null)} 
+                    onAddAlternative={addToCart} 
                 />
             )}
 

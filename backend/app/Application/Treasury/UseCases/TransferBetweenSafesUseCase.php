@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Application\Treasury\UseCases;
 
-use App\Infrastructure\Eloquent\Models\SafeModel;
-use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
+use App\Application\Accounting\Services\ExchangeRateService;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Services\AccountMappingService;
-use App\Application\Accounting\Services\ExchangeRateService;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use DomainException;
 
 final class TransferBetweenSafesUseCase
 {
@@ -27,18 +27,18 @@ final class TransferBetweenSafesUseCase
     {
         DB::connection('tenant')->transaction(function () use ($tenantId, $fromId, $toId, $amount, $userId, $date, $description) {
             if ($amount <= 0) {
-                throw new DomainException("Transfer amount must be positive.");
+                throw new DomainException('Transfer amount must be positive.');
             }
 
             if ($fromId === $toId) {
-                throw new DomainException("Source and destination safes must be different.");
+                throw new DomainException('Source and destination safes must be different.');
             }
 
-            $fromSafe = SafeModel::where('tenant_id', $tenantId)->find($fromId);
-            $toSafe = SafeModel::where('tenant_id', $tenantId)->find($toId);
+            $fromSafe = SafeModel::query()->where('tenant_id', $tenantId)->find($fromId);
+            $toSafe = SafeModel::query()->where('tenant_id', $tenantId)->find($toId);
 
-            if (!$fromSafe || !$toSafe) {
-                throw new DomainException("Source or destination safe not found.");
+            if (! $fromSafe || ! $toSafe) {
+                throw new DomainException('Source or destination safe not found.');
             }
 
             if ($fromSafe->balance < $amount) {
@@ -48,10 +48,10 @@ final class TransferBetweenSafesUseCase
             // Cross-Currency Logic
             $fromCurrencyId = $fromSafe->currency_id;
             $toCurrencyId = $toSafe->currency_id;
-            
+
             $fromRate = 1.0;
             $toRate = 1.0;
-            
+
             if ($fromCurrencyId) {
                 $fromRate = $this->exchangeRateService->getRate($tenantId, $fromCurrencyId, $date);
             }
@@ -71,33 +71,31 @@ final class TransferBetweenSafesUseCase
             $toSafe->save();
 
             // Log Source Transaction
-            SafeTransactionModel::create([
+            SafeTransactionModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'safe_id' => $fromId,
-                'type' => 'transfer',
+                'type' => 'transfer_out',
                 'amount' => $amount,
                 'exchange_rate' => $fromRate,
-                'description' => "Transfer to {$toSafe->name}" . ($description ? " - $description" : ""),
+                'description' => "Transfer to {$toSafe->name}".($description ? " - $description" : ''),
                 'reference_type' => 'transfer',
                 'reference_id' => $toId, // the other safe ID
                 'created_by' => $userId,
                 'transaction_date' => $date,
-                'cost_center_id' => $data['cost_center_id'] ?? null,
             ]);
 
             // Log Destination Transaction
-            $destinationTx = SafeTransactionModel::create([
+            $destinationTx = SafeTransactionModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'safe_id' => $toId,
-                'type' => 'transfer',
+                'type' => 'transfer_in',
                 'amount' => $destinationAmount,
                 'exchange_rate' => $toRate,
-                'description' => "Transfer from {$fromSafe->name}" . ($description ? " - $description" : ""),
+                'description' => "Transfer from {$fromSafe->name}".($description ? " - $description" : ''),
                 'reference_type' => 'transfer',
                 'reference_id' => $fromId, // the other safe ID
                 'created_by' => $userId,
                 'transaction_date' => $date,
-                'cost_center_id' => $data['cost_center_id'] ?? null,
             ]);
 
             // Create Journal Entry
@@ -106,7 +104,7 @@ final class TransferBetweenSafesUseCase
                 id: null,
                 entryNumber: $entryNumber,
                 date: new \DateTimeImmutable($date),
-                description: "Transfer from {$fromSafe->name} to {$toSafe->name}" . ($description ? " - $description" : ""),
+                description: "Transfer from {$fromSafe->name} to {$toSafe->name}".($description ? " - $description" : ''),
                 transactionCurrencyId: $fromCurrencyId,
                 exchangeRate: $fromRate,
                 isPosted: true,
@@ -129,7 +127,6 @@ final class TransferBetweenSafesUseCase
                 transactionDebit: $destinationAmount,
                 transactionCredit: 0.0,
                 description: "Transfer In to {$toSafe->name}",
-                costCenterId: $data['cost_center_id'] ?? null,
             ));
 
             // Credit: Source Safe
@@ -142,7 +139,6 @@ final class TransferBetweenSafesUseCase
                 transactionDebit: 0.0,
                 transactionCredit: $amount,
                 description: "Transfer Out from {$fromSafe->name}",
-                costCenterId: $data['cost_center_id'] ?? null,
             ));
 
             $this->journalEntryRepository->create($journalEntry);

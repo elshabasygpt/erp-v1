@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Infrastructure\Eloquent\Repositories\HR;
 
 use App\Domain\HR\Entities\Employee;
@@ -9,35 +10,36 @@ class EloquentEmployeeRepository implements EmployeeRepositoryInterface
 {
     public function findById(int $id): ?Employee
     {
-        $model = EmployeeModel::find($id);
+        $model = EmployeeModel::query()->find($id);
+
         return $model ? $this->toEntity($model) : null;
     }
 
     public function findAll(int $tenantId, array $filters = []): array
     {
-        $query = EmployeeModel::where('tenant_id', $tenantId);
+        $query = EmployeeModel::query()->where('tenant_id', $tenantId);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        return $query->get()->map(fn(EmployeeModel $m) => $this->toEntity($m))->toArray();
+        return $query->get()->map(fn (EmployeeModel $m) => $this->toEntity($m))->toArray();
     }
 
     public function save(Employee $employee): Employee
     {
         $model = $employee->id
-            ? EmployeeModel::findOrFail($employee->id)
-            : new EmployeeModel();
+            ? EmployeeModel::query()->findOrFail($employee->id)
+            : new EmployeeModel;
 
         $model->fill([
-            'tenant_id'   => $employee->tenantId,
-            'name'        => $employee->name,
-            'email'       => $employee->email,
-            'job_title'   => $employee->jobTitle,
+            'tenant_id' => $employee->tenantId,
+            'name' => $employee->name,
+            'email' => $employee->email,
+            'job_title' => $employee->jobTitle,
             'base_salary' => $employee->baseSalary,
-            'status'      => $employee->status,
-            'hired_at'    => $employee->hiredAt,
+            'status' => $employee->status,
+            'hired_at' => $employee->hiredAt,
         ])->save();
 
         return $this->toEntity($model);
@@ -45,7 +47,7 @@ class EloquentEmployeeRepository implements EmployeeRepositoryInterface
 
     public function delete(int $id): void
     {
-        EmployeeModel::findOrFail($id)->delete();
+        EmployeeModel::query()->findOrFail($id)->delete();
     }
 
     private function toEntity(EmployeeModel $model): Employee

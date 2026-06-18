@@ -25,7 +25,7 @@ class StockLedgerModel extends BaseModel
         'balance_quantity',
         'balance_value',
         'average_cost',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

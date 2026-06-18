@@ -2,6 +2,7 @@
 
 namespace App\Presentation\Resources;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class InvoiceResource extends JsonResource
@@ -9,7 +10,7 @@ class InvoiceResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @return array
      */
     public function toArray($request)
@@ -26,11 +27,11 @@ class InvoiceResource extends JsonResource
             'status' => $this->status,
             'total_amount' => $this->total_amount,
             'tax_amount' => $this->tax_amount,
-            
+
             // Field-Level Security: Only return these if the user's role explicitly allows it
             'cost_amount' => $this->when($canViewCost, $this->cost_amount),
             'profit_margin' => $this->when($canViewProfit, $this->profit_margin),
-            
+
             'branch_id' => $this->branch_id,
             'cost_center_id' => $this->cost_center_id,
             'currency_id' => $this->currency_id,

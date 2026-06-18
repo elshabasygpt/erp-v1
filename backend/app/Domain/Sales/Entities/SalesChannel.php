@@ -5,15 +5,25 @@ namespace App\Domain\Sales\Entities;
 class SalesChannel
 {
     private string $id;
+
     private string $name;
+
     private string $code;
+
     private string $type;
+
     private string $pricingMethod;
+
     private float $markupPercentage;
+
     private float $fixedMarkup;
+
     private bool $applyBeforeTax;
+
     private bool $isActive;
+
     private int $sortOrder;
+
     private ?string $logoUrl;
 
     public function __construct(
@@ -102,7 +112,7 @@ class SalesChannel
         if ($this->pricingMethod === 'percentage') {
             return $basePrice * ($this->markupPercentage / 100);
         }
-        
+
         if ($this->pricingMethod === 'fixed') {
             return $this->fixedMarkup;
         }

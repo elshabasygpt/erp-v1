@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Sales\Services;
 
+use App\Application\Services\InventoryService;
 use App\Infrastructure\Eloquent\Models\DeliveryModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Application\Services\InventoryService;
-use Illuminate\Support\Facades\DB;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 class DeliveryService
 {
@@ -22,18 +22,18 @@ class DeliveryService
      */
     public function dispatchDelivery(string $tenantId, string $deliveryId, string $userId): DeliveryModel
     {
-        $delivery = DeliveryModel::where('tenant_id', $tenantId)->with('salesOrder.items')->find($deliveryId);
+        $delivery = DeliveryModel::query()->where('tenant_id', $tenantId)->with('salesOrder.items')->find($deliveryId);
 
-        if (!$delivery) {
-            throw new DomainException("Delivery not found");
+        if (! $delivery) {
+            throw new DomainException('Delivery not found');
         }
 
         if ($delivery->status === 'dispatched' || $delivery->status === 'delivered') {
-            throw new DomainException("Delivery is already dispatched or delivered.");
+            throw new DomainException('Delivery is already dispatched or delivered.');
         }
 
-        if ($delivery->order_type !== 'sales_order' || !$delivery->salesOrder) {
-            throw new DomainException("Dispatch is currently only supported for Sales Orders.");
+        if ($delivery->order_type !== 'sales_order' || ! $delivery->salesOrder) {
+            throw new DomainException('Dispatch is currently only supported for Sales Orders.');
         }
 
         DB::beginTransaction();
@@ -44,19 +44,19 @@ class DeliveryService
             foreach ($delivery->items as $delItem) {
                 // Find matching SO item
                 $item = $order->items->firstWhere('product_id', $delItem->product_id);
-                if (!$item) {
+                if (! $item) {
                     throw new DomainException("Product {$delItem->product_id} not found in Sales Order.");
                 }
 
                 $qtyToDispatch = $delItem->quantity;
-                    $wp = WarehouseProductModel::where('warehouse_id', $order->warehouse_id)
-                        ->where('product_id', $item->product_id)
-                        ->lockForUpdate()
-                        ->first();
+                $wp = WarehouseProductModel::query()->where('warehouse_id', $order->warehouse_id)
+                    ->where('product_id', $item->product_id)
+                    ->lockForUpdate()
+                    ->first();
 
-                    if (!$wp) {
-                        throw new DomainException("Product {$item->product_id} not found in warehouse.");
-                    }
+                if (! $wp) {
+                    throw new DomainException("Product {$item->product_id} not found in warehouse.");
+                }
 
                 if ($wp->reserved_quantity < $qtyToDispatch) {
                     throw new DomainException("Reserved quantity is less than dispatch quantity for product {$item->product_id}");
@@ -93,6 +93,7 @@ class DeliveryService
             $delivery->save();
 
             DB::commit();
+
             return $delivery;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -105,14 +106,14 @@ class DeliveryService
      */
     public function cancelDelivery(string $tenantId, string $deliveryId, string $userId): DeliveryModel
     {
-        $delivery = DeliveryModel::where('tenant_id', $tenantId)->with('salesOrder.items', 'items')->find($deliveryId);
+        $delivery = DeliveryModel::query()->where('tenant_id', $tenantId)->with('salesOrder.items', 'items')->find($deliveryId);
 
-        if (!$delivery) {
-            throw new DomainException("Delivery not found");
+        if (! $delivery) {
+            throw new DomainException('Delivery not found');
         }
 
         if ($delivery->status === 'returned' || $delivery->status === 'cancelled') {
-            throw new DomainException("Delivery is already cancelled or returned.");
+            throw new DomainException('Delivery is already cancelled or returned.');
         }
 
         DB::beginTransaction();
@@ -126,7 +127,7 @@ class DeliveryService
                     if ($item) {
                         $qtyToReverse = $delItem->quantity;
 
-                        $wp = WarehouseProductModel::where('warehouse_id', $order->warehouse_id)
+                        $wp = WarehouseProductModel::query()->where('warehouse_id', $order->warehouse_id)
                             ->where('product_id', $item->product_id)
                             ->lockForUpdate()
                             ->first();
@@ -165,6 +166,7 @@ class DeliveryService
             $delivery->save();
 
             DB::commit();
+
             return $delivery;
         } catch (\Exception $e) {
             DB::rollBack();

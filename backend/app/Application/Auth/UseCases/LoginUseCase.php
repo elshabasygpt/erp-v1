@@ -17,11 +17,11 @@ final class LoginUseCase
     {
         $user = $this->userRepository->findByEmail($dto->email);
 
-        if (!$user) {
+        if (! $user) {
             throw new \DomainException('Invalid credentials.');
         }
 
-        if (!$user->isActive()) {
+        if (! $user->isActive()) {
             throw new \DomainException('Account is deactivated.');
         }
 

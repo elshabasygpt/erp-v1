@@ -4,30 +4,30 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use App\Infrastructure\Eloquent\Models\WarrantyModel;
 use App\Infrastructure\Eloquent\Models\WarrantyClaimModel;
+use App\Infrastructure\Eloquent\Models\WarrantyModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class WarrantyController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
-        
+
         // Dynamically update expired warranties
-        WarrantyModel::where('tenant_id', $tenantId)
+        WarrantyModel::query()->where('tenant_id', $tenantId)
             ->where('status', 'active')
             ->where('expiry_date', '<', Carbon::today())
             ->update(['status' => 'expired']);
 
-        $query = WarrantyModel::with([
-            'product:id,name,name_ar,sku,brand', 
-            'customer:id,name,phone', 
-            'invoice:id,invoice_number,invoice_date'
+        $query = WarrantyModel::query()->with([
+            'product:id,name,name_ar,sku,brand',
+            'customer:id,name,phone',
+            'invoice:id,invoice_number,invoice_date',
         ])->orderBy('expiry_date', 'asc');
 
         if ($request->has('status') && $request->status !== 'all') {
@@ -46,41 +46,42 @@ class WarrantyController extends BaseTenantController
             $days = (int) $request->expiring_in_days;
             $targetDate = Carbon::today()->addDays($days);
             $query->where('status', 'active')
-                  ->where('expiry_date', '<=', $targetDate)
-                  ->where('expiry_date', '>=', Carbon::today());
+                ->where('expiry_date', '<=', $targetDate)
+                ->where('expiry_date', '>=', Carbon::today());
         }
 
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('warranty_number', 'ILIKE', "%{$search}%")
-                  ->orWhereHas('customer', function ($cq) use ($search) {
-                      $cq->where('name', 'ILIKE', "%{$search}%");
-                  });
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('name', 'ILIKE', "%{$search}%");
+                    });
             });
         }
 
         $perPage = $request->input('per_page', 15);
+
         return $this->success($query->paginate($perPage), 'Warranties retrieved successfully');
     }
 
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'invoice_id'       => 'required|uuid|exists:invoices,id',
-            'invoice_item_id'  => 'required|uuid|exists:invoice_items,id',
-            'product_id'       => 'required|uuid|exists:products,id',
-            'customer_id'      => 'required|uuid|exists:customers,id',
-            'quantity'         => 'required|numeric|min:0.01',
-            'sale_date'        => 'required|date',
-            'warranty_months'  => 'required|integer|min:1|max:120',
-            'notes'            => 'nullable|string',
+            'invoice_id' => 'required|uuid|exists:invoices,id',
+            'invoice_item_id' => 'required|uuid|exists:invoice_items,id',
+            'product_id' => 'required|uuid|exists:products,id',
+            'customer_id' => 'required|uuid|exists:customers,id',
+            'quantity' => 'required|numeric|min:0.01',
+            'sale_date' => 'required|date',
+            'warranty_months' => 'required|integer|min:1|max:120',
+            'notes' => 'nullable|string',
         ]);
 
         $expiryDate = Carbon::parse($validated['sale_date'])->addMonths($validated['warranty_months']);
         $lastWarranty = WarrantyModel::latest('created_at')->first();
         $lastNum = $lastWarranty ? ((int) str_replace('WRN-', '', $lastWarranty->warranty_number)) : 0;
-        $warrantyNumber = 'WRN-' . str_pad((string)($lastNum + 1), 6, '0', STR_PAD_LEFT);
+        $warrantyNumber = 'WRN-'.str_pad((string) ($lastNum + 1), 6, '0', STR_PAD_LEFT);
 
         $warranty = new WarrantyModel($validated);
         $warranty->tenant_id = $this->getTenantId($request);
@@ -95,11 +96,11 @@ class WarrantyController extends BaseTenantController
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $warranty = WarrantyModel::with(['product', 'customer', 'invoice.items', 'claims.replacementInvoice'])
+        $warranty = WarrantyModel::query()->with(['product', 'customer', 'invoice.items', 'claims.replacementInvoice'])
             ->where('tenant_id', $this->getTenantId($request))
             ->find($id);
 
-        if (!$warranty) {
+        if (! $warranty) {
             return $this->error('Warranty not found', 404);
         }
 
@@ -110,18 +111,18 @@ class WarrantyController extends BaseTenantController
     {
         $validated = $request->validate([
             'status' => 'required|in:active,void',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ]);
 
-        $warranty = WarrantyModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $warranty = WarrantyModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$warranty) {
+        if (! $warranty) {
             return $this->error('Warranty not found', 404);
         }
 
         $warranty->status = $validated['status'];
-        if ($validated['status'] === 'void' && !empty($validated['notes'])) {
-            $warranty->notes = $warranty->notes ? $warranty->notes . "\nVoid reason: " . $validated['notes'] : "Void reason: " . $validated['notes'];
+        if ($validated['status'] === 'void' && ! empty($validated['notes'])) {
+            $warranty->notes = $warranty->notes ? $warranty->notes."\nVoid reason: ".$validated['notes'] : 'Void reason: '.$validated['notes'];
         }
         $warranty->save();
 
@@ -131,25 +132,26 @@ class WarrantyController extends BaseTenantController
     public function storeClaim(Request $request, string $warrantyId): JsonResponse
     {
         $validated = $request->validate([
-            'claim_type'  => 'required|string|in:replacement,repair,refund',
-            'complaint'   => 'required|string|max:1000',
-            'claim_date'  => 'required|date',
+            'claim_type' => 'required|string|in:replacement,repair,refund',
+            'complaint' => 'required|string|max:1000',
+            'claim_date' => 'required|date',
         ]);
 
-        $warranty = WarrantyModel::where('tenant_id', $this->getTenantId($request))->find($warrantyId);
-        
-        if (!$warranty || $warranty->status !== 'active') {
+        $warranty = WarrantyModel::query()->where('tenant_id', $this->getTenantId($request))->find($warrantyId);
+
+        if (! $warranty || $warranty->status !== 'active') {
             return $this->error('الضمان غير صالح أو منتهي', 422);
         }
-        
+
         if ($warranty->expiry_date < now()) {
             $warranty->update(['status' => 'expired']);
-            return $this->error('انتهت مدة الضمان في ' . $warranty->expiry_date->format('Y-m-d'), 422);
+
+            return $this->error('انتهت مدة الضمان في '.$warranty->expiry_date->format('Y-m-d'), 422);
         }
 
         $lastClaim = WarrantyClaimModel::latest('created_at')->first();
         $lastClaimNum = $lastClaim ? ((int) str_replace('CLM-', '', $lastClaim->claim_number)) : 0;
-        $claimNumber = 'CLM-' . str_pad((string)($lastClaimNum + 1), 6, '0', STR_PAD_LEFT);
+        $claimNumber = 'CLM-'.str_pad((string) ($lastClaimNum + 1), 6, '0', STR_PAD_LEFT);
 
         $claim = DB::connection('tenant')->transaction(function () use ($validated, $warranty, $claimNumber, $request) {
             $newClaim = new WarrantyClaimModel($validated);
@@ -158,8 +160,9 @@ class WarrantyController extends BaseTenantController
             $newClaim->claim_number = $claimNumber;
             $newClaim->warranty_id = $warranty->id;
             $newClaim->save();
-            
+
             $warranty->update(['status' => 'claimed']);
+
             return $newClaim;
         });
 
@@ -169,13 +172,13 @@ class WarrantyController extends BaseTenantController
     public function updateClaim(Request $request, string $warrantyId, string $claimId): JsonResponse
     {
         $validated = $request->validate([
-            'status'      => 'sometimes|string|in:open,in_progress,resolved,rejected',
-            'resolution'  => 'nullable|string',
+            'status' => 'sometimes|string|in:open,in_progress,resolved,rejected',
+            'resolution' => 'nullable|string',
             'replacement_invoice_id' => 'nullable|uuid|exists:invoices,id',
         ]);
 
-        $claim = WarrantyClaimModel::where('tenant_id', $this->getTenantId($request))->where('warranty_id', $warrantyId)->find($claimId);
-        if (!$claim) {
+        $claim = WarrantyClaimModel::query()->where('tenant_id', $this->getTenantId($request))->where('warranty_id', $warrantyId)->find($claimId);
+        if (! $claim) {
             return $this->error('Claim not found', 404);
         }
 
@@ -185,20 +188,24 @@ class WarrantyController extends BaseTenantController
                 $claim->resolved_at = now();
             }
         }
-        
-        if (array_key_exists('resolution', $validated)) $claim->resolution = $validated['resolution'];
-        if (array_key_exists('replacement_invoice_id', $validated)) $claim->replacement_invoice_id = $validated['replacement_invoice_id'];
-        
+
+        if (array_key_exists('resolution', $validated)) {
+            $claim->resolution = $validated['resolution'];
+        }
+        if (array_key_exists('replacement_invoice_id', $validated)) {
+            $claim->replacement_invoice_id = $validated['replacement_invoice_id'];
+        }
+
         $claim->save();
 
         if ($claim->status === 'rejected') {
-            $otherOpenClaims = WarrantyClaimModel::where('warranty_id', $warrantyId)
+            $otherOpenClaims = WarrantyClaimModel::query()->where('warranty_id', $warrantyId)
                 ->whereIn('status', ['open', 'in_progress'])
                 ->where('id', '!=', $claim->id)
                 ->exists();
-                
-            if (!$otherOpenClaims) {
-                WarrantyModel::where('id', $warrantyId)->update(['status' => 'active']);
+
+            if (! $otherOpenClaims) {
+                WarrantyModel::query()->where('id', $warrantyId)->update(['status' => 'active']);
             }
         }
 
@@ -208,28 +215,28 @@ class WarrantyController extends BaseTenantController
     public function report(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
-        
+
         // Dynamically update expired warranties
-        WarrantyModel::where('tenant_id', $tenantId)
+        WarrantyModel::query()->where('tenant_id', $tenantId)
             ->where('status', 'active')
             ->where('expiry_date', '<', Carbon::today())
             ->update(['status' => 'expired']);
-        
-        $totalActive = WarrantyModel::where('tenant_id', $tenantId)->where('status', 'active')->count();
-        $expiringThisMonth = WarrantyModel::where('tenant_id', $tenantId)
+
+        $totalActive = WarrantyModel::query()->where('tenant_id', $tenantId)->where('status', 'active')->count();
+        $expiringThisMonth = WarrantyModel::query()->where('tenant_id', $tenantId)
             ->where('status', 'active')
             ->whereBetween('expiry_date', [Carbon::today(), Carbon::today()->endOfMonth()])
             ->count();
-            
-        $expiredUnclaimed = WarrantyModel::where('tenant_id', $tenantId)
+
+        $expiredUnclaimed = WarrantyModel::query()->where('tenant_id', $tenantId)
             ->where('status', 'expired')
             ->count();
-            
-        $openClaims = WarrantyClaimModel::where('tenant_id', $tenantId)
+
+        $openClaims = WarrantyClaimModel::query()->where('tenant_id', $tenantId)
             ->whereIn('status', ['open', 'in_progress'])
             ->count();
-            
-        $expiringSoon = WarrantyModel::with(['product:id,name,name_ar', 'customer:id,name'])
+
+        $expiringSoon = WarrantyModel::query()->with(['product:id,name,name_ar', 'customer:id,name'])
             ->where('tenant_id', $tenantId)
             ->where('status', 'active')
             ->where('expiry_date', '>=', Carbon::today())
@@ -242,15 +249,15 @@ class WarrantyController extends BaseTenantController
                 'total_active' => $totalActive,
                 'expiring_this_month' => $expiringThisMonth,
                 'expired_unclaimed' => $expiredUnclaimed,
-                'open_claims' => $openClaims
+                'open_claims' => $openClaims,
             ],
-            'expiring_soon' => $expiringSoon
+            'expiring_soon' => $expiringSoon,
         ], 'Warranty report generated successfully');
     }
 
     public function checkByInvoice(Request $request, string $invoiceId): JsonResponse
     {
-        $warranties = WarrantyModel::with(['product:id,name,name_ar'])
+        $warranties = WarrantyModel::query()->with(['product:id,name,name_ar'])
             ->where('tenant_id', $this->getTenantId($request))
             ->where('invoice_id', $invoiceId)
             ->get();

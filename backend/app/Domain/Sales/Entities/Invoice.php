@@ -45,50 +45,179 @@ final class Invoice extends Entity
         private ?float $exchangeRate = null,
     ) {
         parent::__construct($id);
-        $this->invoiceDate = $invoiceDate ?? new \DateTimeImmutable();
+        $this->invoiceDate = $invoiceDate ?? new \DateTimeImmutable;
     }
 
     // Getters
-    public function getInvoiceNumber(): string { return $this->invoiceNumber; }
-    public function getCustomerId(): ?string { return $this->customerId; }
-    public function getType(): string { return $this->type; }
-    public function getSubtotal(): float { return $this->subtotal; }
-    public function getVatAmount(): float { return $this->vatAmount; }
-    public function getDiscountAmount(): float { return $this->discountAmount; }
-    public function getTotal(): float { return $this->total; }
-    public function getStatus(): string { return $this->status; }
-    public function getNotes(): ?string { return $this->notes; }
-    public function getWarehouseId(): ?string { return $this->warehouseId; }
-    public function getCreatedBy(): ?string { return $this->createdBy; }
-    public function getInvoiceDate(): \DateTimeImmutable { return $this->invoiceDate; }
-    public function getItems(): array { return $this->items; }
-    public function getSalesChannelId(): ?string { return $this->salesChannelId; }
-    public function getSalesChannelName(): ?string { return $this->salesChannelName; }
-    public function getPricingAdjustmentType(): ?string { return $this->pricingAdjustmentType; }
-    public function getPricingAdjustmentValue(): ?float { return $this->pricingAdjustmentValue; }
-    public function getDueDate(): ?\DateTimeImmutable { return $this->dueDate; }
-    public function getInternalNotes(): ?string { return $this->internalNotes; }
-    public function getReferenceNo(): ?string { return $this->referenceNo; }
-    public function getPaidAmount(): float { return $this->paidAmount; }
-    public function getSalespersonId(): ?string { return $this->salespersonId; }
-    public function getCostCenterId(): ?string { return $this->costCenterId; }
-    public function getCurrencyId(): ?string { return $this->currencyId; }
-    public function getExchangeRate(): ?float { return $this->exchangeRate; }
-    
-    public function getZatcaQrCode(): ?string { return $this->zatcaQrCode; }
-    public function getZatcaXml(): ?string { return $this->zatcaXml; }
-    public function getZatcaHash(): ?string { return $this->zatcaHash; }
-    public function getZatcaUuid(): ?string { return $this->zatcaUuid; }
-    public function getZatcaStatus(): string { return $this->zatcaStatus; }
-    public function getZatcaErrorMessage(): ?string { return $this->zatcaErrorMessage; }
+    public function getInvoiceNumber(): string
+    {
+        return $this->invoiceNumber;
+    }
 
-    public function setZatcaQrCode(?string $qrCode): void { $this->zatcaQrCode = $qrCode; }
-    public function setZatcaPhase2Data(?string $xml, ?string $hash, ?string $uuid): void {
+    public function getCustomerId(): ?string
+    {
+        return $this->customerId;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function getSubtotal(): float
+    {
+        return $this->subtotal;
+    }
+
+    public function getVatAmount(): float
+    {
+        return $this->vatAmount;
+    }
+
+    public function getDiscountAmount(): float
+    {
+        return $this->discountAmount;
+    }
+
+    public function getTotal(): float
+    {
+        return $this->total;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function getWarehouseId(): ?string
+    {
+        return $this->warehouseId;
+    }
+
+    public function getCreatedBy(): ?string
+    {
+        return $this->createdBy;
+    }
+
+    public function getInvoiceDate(): \DateTimeImmutable
+    {
+        return $this->invoiceDate;
+    }
+
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+
+    public function getSalesChannelId(): ?string
+    {
+        return $this->salesChannelId;
+    }
+
+    public function getSalesChannelName(): ?string
+    {
+        return $this->salesChannelName;
+    }
+
+    public function getPricingAdjustmentType(): ?string
+    {
+        return $this->pricingAdjustmentType;
+    }
+
+    public function getPricingAdjustmentValue(): ?float
+    {
+        return $this->pricingAdjustmentValue;
+    }
+
+    public function getDueDate(): ?\DateTimeImmutable
+    {
+        return $this->dueDate;
+    }
+
+    public function getInternalNotes(): ?string
+    {
+        return $this->internalNotes;
+    }
+
+    public function getReferenceNo(): ?string
+    {
+        return $this->referenceNo;
+    }
+
+    public function getPaidAmount(): float
+    {
+        return $this->paidAmount;
+    }
+
+    public function getSalespersonId(): ?string
+    {
+        return $this->salespersonId;
+    }
+
+    public function getCostCenterId(): ?string
+    {
+        return $this->costCenterId;
+    }
+
+    public function getCurrencyId(): ?string
+    {
+        return $this->currencyId;
+    }
+
+    public function getExchangeRate(): ?float
+    {
+        return $this->exchangeRate;
+    }
+
+    public function getZatcaQrCode(): ?string
+    {
+        return $this->zatcaQrCode;
+    }
+
+    public function getZatcaXml(): ?string
+    {
+        return $this->zatcaXml;
+    }
+
+    public function getZatcaHash(): ?string
+    {
+        return $this->zatcaHash;
+    }
+
+    public function getZatcaUuid(): ?string
+    {
+        return $this->zatcaUuid;
+    }
+
+    public function getZatcaStatus(): string
+    {
+        return $this->zatcaStatus;
+    }
+
+    public function getZatcaErrorMessage(): ?string
+    {
+        return $this->zatcaErrorMessage;
+    }
+
+    public function setZatcaQrCode(?string $qrCode): void
+    {
+        $this->zatcaQrCode = $qrCode;
+    }
+
+    public function setZatcaPhase2Data(?string $xml, ?string $hash, ?string $uuid): void
+    {
         $this->zatcaXml = $xml;
         $this->zatcaHash = $hash;
         $this->zatcaUuid = $uuid;
     }
-    public function updateZatcaStatus(string $status, ?string $errorMessage = null): void {
+
+    public function updateZatcaStatus(string $status, ?string $errorMessage = null): void
+    {
         $this->zatcaStatus = $status;
         $this->zatcaErrorMessage = $errorMessage;
     }
@@ -111,6 +240,15 @@ final class Invoice extends Entity
             throw new \DomainException('Only draft invoices can be confirmed.');
         }
         $this->status = 'confirmed';
+    }
+
+    public function setStatus(string $status): void
+    {
+        $validStatuses = ['draft', 'pending_approval', 'confirmed', 'cancelled', 'returned'];
+        if (! in_array($status, $validStatuses)) {
+            throw new \DomainException("Invalid invoice status: {$status}");
+        }
+        $this->status = $status;
     }
 
     public function cancel(): void
@@ -165,7 +303,7 @@ final class Invoice extends Entity
             'cost_center_id' => $this->costCenterId,
             'currency_id' => $this->currencyId,
             'exchange_rate' => $this->exchangeRate,
-            'items' => array_map(fn(InvoiceItem $item) => $item->toArray(), $this->items),
+            'items' => array_map(fn (InvoiceItem $item) => $item->toArray(), $this->items),
         ];
     }
 }

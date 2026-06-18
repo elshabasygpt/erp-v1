@@ -2,10 +2,10 @@
 
 namespace App\Presentation\Controllers\API\Reports;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Reports\Services\ReportingService;
-use Illuminate\Http\Request;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ReportController extends BaseTenantController
 {
@@ -13,7 +13,7 @@ class ReportController extends BaseTenantController
     {
         $request->validate([
             'start_date' => 'sometimes|date',
-            'end_date'   => 'sometimes|date|after_or_equal:start_date',
+            'end_date' => 'sometimes|date|after_or_equal:start_date',
         ]);
 
         $service = new ReportingService(
@@ -91,4 +91,3 @@ class ReportController extends BaseTenantController
         return $this->success($data);
     }
 }
-

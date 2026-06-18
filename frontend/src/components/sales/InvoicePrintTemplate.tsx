@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { generateZatcaQRDataURI, formatSAR } from '@/lib/zatca-qr';
 
 interface InvoiceItem {
@@ -61,6 +61,33 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
     const isRTL = locale === 'ar';
     const printRef = useRef<HTMLDivElement>(null);
 
+    const [settings, setSettings] = useState({
+        invoice_default_size: 'A4',
+        invoice_show_logo: true,
+        invoice_show_buyer: true,
+        invoice_show_qr: true,
+        invoice_footer_text: '',
+    });
+
+    useEffect(() => {
+        const { settingsApi } = require('@/lib/api');
+        settingsApi.getSettings().then((res: any) => {
+            const data = res.data?.data || res.data || {};
+            if (data.invoice_settings) {
+                try {
+                    const parsed = JSON.parse(data.invoice_settings);
+                    setSettings({
+                        invoice_default_size: parsed.invoice_default_size || 'A4',
+                        invoice_show_logo: parsed.invoice_show_logo ?? true,
+                        invoice_show_buyer: parsed.invoice_show_buyer ?? true,
+                        invoice_show_qr: parsed.invoice_show_qr ?? true,
+                        invoice_footer_text: parsed.invoice_footer_text || '',
+                    });
+                } catch(e) {}
+            }
+        }).catch(() => {});
+    }, []);
+
     // Calculate totals
     const lines = invoice.items.map((item) => {
         const exclVat = item.qty * item.price;
@@ -85,6 +112,8 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
     const typeLabel = TYPE_LABELS[invoice.type]?.[isRTL ? 'ar' : 'en'] || invoice.type;
     const payLabel = PAYMENT_LABELS[invoice.paymentType]?.[isRTL ? 'ar' : 'en'] || invoice.paymentType;
 
+    const isThermal = settings.invoice_default_size === '80mm';
+
     return (
         <>
             {/* Print CSS */}
@@ -93,6 +122,12 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                     body > * { display: none !important; }
                     #zatca-print-root { display: block !important; }
                     #zatca-print-actions { display: none !important; }
+                    ${isThermal ? `
+                        @page { size: 80mm auto; margin: 0; }
+                        body { margin: 0; padding: 0; }
+                    ` : `
+                        @page { size: A4; margin: 10mm; }
+                    `}
                 }
                 #zatca-print-root { font-family: 'Arial', sans-serif; direction: ${isRTL ? 'rtl' : 'ltr'}; }
             `}</style>
@@ -125,25 +160,119 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                         </div>
                     </div>
 
-                    {/* A4 Invoice */}
+                    {/* Invoice Wrapper */}
                     <div
                         id="zatca-print-root"
                         ref={printRef}
                         style={{
                             background: '#fff',
-                            color: '#111',
-                            padding: '32px',
-                            borderRadius: '12px',
+                            color: '#000',
+                            padding: isThermal ? '10px' : '32px',
+                            margin: '0 auto',
+                            borderRadius: isThermal ? '0' : '12px',
+                            width: isThermal ? '80mm' : 'auto',
                             direction: isRTL ? 'rtl' : 'ltr',
-                            fontFamily: 'Arial, sans-serif',
+                            fontFamily: isThermal ? 'monospace, Arial, sans-serif' : 'Arial, sans-serif',
+                            fontSize: isThermal ? '12px' : '14px',
+                            boxSizing: 'border-box'
                         }}
                     >
-                        {/* ── Top: Logo + Invoice Title ── */}
+                        {isThermal ? (
+                            // ── THERMAL 80mm LAYOUT ──
+                            <div style={{ textAlign: 'center' }}>
+                                {settings.invoice_show_logo && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+                                        <div style={{ width: 40, height: 40, borderRadius: 8, background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 20 }}>
+                                            $
+                                        </div>
+                                    </div>
+                                )}
+                                <h2 style={{ fontWeight: 700, fontSize: 16, margin: '0 0 5px 0' }}>{invoice.seller.name}</h2>
+                                <div style={{ fontSize: 11, marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '10px' }}>
+                                    <div>{isRTL ? 'الرقم الضريبي: ' : 'VAT: '}{invoice.seller.vatNumber}</div>
+                                    <div>{isRTL ? 'السجل التجاري: ' : 'CR: '}{invoice.seller.crNumber}</div>
+                                    <div>{invoice.seller.address}</div>
+                                    <div>{isRTL ? 'هاتف: ' : 'Tel: '}{invoice.seller.phone}</div>
+                                </div>
+                                
+                                <div style={{ fontSize: 11, textAlign: isRTL ? 'right' : 'left', marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '10px' }}>
+                                    <div style={{ fontWeight: 'bold', textAlign: 'center', fontSize: 13, marginBottom: 5 }}>{typeLabel}</div>
+                                    <div>{isRTL ? 'رقم الفاتورة: ' : 'Inv #: '}{invoice.id}</div>
+                                    <div>{isRTL ? 'التاريخ: ' : 'Date: '}{invoice.date} {invoice.time}</div>
+                                    <div>{isRTL ? 'الدفع: ' : 'Pay: '}{payLabel}</div>
+                                </div>
+
+                                {settings.invoice_show_buyer && invoice.buyer && (
+                                    <div style={{ fontSize: 11, textAlign: isRTL ? 'right' : 'left', marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '10px' }}>
+                                        <div style={{ fontWeight: 'bold', marginBottom: 2 }}>{isRTL ? 'بيانات المشتري:' : 'Buyer:'}</div>
+                                        <div>{invoice.buyer.name}</div>
+                                        {invoice.buyer.vatNumber && <div>{isRTL ? 'الرقم الضريبي: ' : 'VAT: '}{invoice.buyer.vatNumber}</div>}
+                                    </div>
+                                )}
+
+                                <table style={{ width: '100%', fontSize: 11, marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '5px' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px dashed #000' }}>
+                                            <th style={{ textAlign: isRTL ? 'right' : 'left', paddingBottom: 4 }}>{isRTL ? 'الصنف' : 'Item'}</th>
+                                            <th style={{ textAlign: 'center', paddingBottom: 4 }}>{isRTL ? 'الكمية' : 'Qty'}</th>
+                                            <th style={{ textAlign: 'right', paddingBottom: 4 }}>{isRTL ? 'المجموع' : 'Total'}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {lines.map((line, i) => (
+                                            <tr key={i}>
+                                                <td style={{ padding: '4px 0', textAlign: isRTL ? 'right' : 'left' }}>
+                                                    <div style={{ fontWeight: 'bold' }}>{line.name}</div>
+                                                    <div style={{ fontSize: 9 }}>{formatSAR(line.price)}</div>
+                                                </td>
+                                                <td style={{ padding: '4px 0', textAlign: 'center' }}>{line.qty}</td>
+                                                <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 'bold' }}>{formatSAR(line.inclVat)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                                <div style={{ fontSize: 11, textAlign: 'right', marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '10px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>{isRTL ? 'المجموع قبل الضريبة' : 'Subtotal'}</span>
+                                        <span>{formatSAR(subtotalExcl)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>{isRTL ? 'الضريبة (15%)' : 'VAT'}</span>
+                                        <span>{formatSAR(totalVat)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>
+                                        <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
+                                        <span>{formatSAR(grandTotal)}</span>
+                                    </div>
+                                </div>
+
+                                {settings.invoice_show_qr && qrDataURI && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+                                        <img src={qrDataURI} alt="ZATCA QR" style={{ width: 100, height: 100 }} />
+                                    </div>
+                                )}
+
+                                {settings.invoice_footer_text && (
+                                    <div style={{ fontSize: 10, marginTop: 10, textAlign: 'center', whiteSpace: 'pre-line' }}>
+                                        {settings.invoice_footer_text}
+                                    </div>
+                                )}
+                                <div style={{ fontSize: 9, marginTop: 5, textAlign: 'center' }}>
+                                    {isRTL ? 'شكراً لتعاملكم معنا' : 'Thank you!'}
+                                </div>
+                            </div>
+                        ) : (
+                            // ── A4 LAYOUT ──
+                            <div>
+                                {/* ── Top: Logo + Invoice Title ── */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #4f46e5' }}>
                             <div>
-                                <div style={{ width: 56, height: 56, borderRadius: 12, background: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 24 }}>$</span>
-                                </div>
+                                {settings.invoice_show_logo && (
+                                    <div style={{ width: 56, height: 56, borderRadius: 12, background: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                                        <span style={{ color: '#fff', fontWeight: 700, fontSize: 24 }}>$</span>
+                                    </div>
+                                )}
                                 <h2 style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>{invoice.seller.name}</h2>
                                 <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0' }}>{isRTL ? 'الرقم الضريبي: ' : 'VAT: '}{invoice.seller.vatNumber}</p>
                                 <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0' }}>{isRTL ? 'السجل التجاري: ' : 'CR: '}{invoice.seller.crNumber}</p>
@@ -184,7 +313,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                         </div>
 
                         {/* ── Buyer Info (B2B) ── */}
-                        {invoice.buyer && (
+                        {settings.invoice_show_buyer && invoice.buyer && (
                             <div style={{ marginBottom: 20, padding: 12, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
                                 <p style={{ fontWeight: 700, marginBottom: 6, fontSize: 13 }}>{isRTL ? 'بيانات المشتري' : 'Buyer Information'}</p>
                                 <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', fontSize: 12 }}>
@@ -243,12 +372,14 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 24 }}>
                             {/* QR Code */}
                             <div style={{ textAlign: 'center' }}>
-                                {qrDataURI ? (
-                                    <img src={qrDataURI} alt="ZATCA QR" style={{ width: 110, height: 110, border: '1px solid #e2e8f0', borderRadius: 8 }} />
-                                ) : (
-                                    <div style={{ width: 110, height: 110, border: '2px dashed #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 11 }}>
-                                        QR Code
-                                    </div>
+                                {settings.invoice_show_qr && (
+                                    qrDataURI ? (
+                                        <img src={qrDataURI} alt="ZATCA QR" style={{ width: 110, height: 110, border: '1px solid #e2e8f0', borderRadius: 8 }} />
+                                    ) : (
+                                        <div style={{ width: 110, height: 110, border: '2px dashed #e2e8f0', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 11 }}>
+                                            QR Code
+                                        </div>
+                                    )
                                 )}
                                 <p style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>
                                     {isRTL ? 'امسح للتحقق' : 'Scan to verify'}
@@ -287,9 +418,11 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
 
                         {/* ── Footer ── */}
                         <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8' }}>
-                            <span>{isRTL ? 'شكراً لتعاملكم معنا' : 'Thank you for your business'}</span>
+                            <span>{settings.invoice_footer_text || (isRTL ? 'شكراً لتعاملكم معنا' : 'Thank you for your business')}</span>
                             <span>{isRTL ? 'هذه فاتورة إلكترونية معتمدة' : 'This is a ZATCA Phase 1 compliant e-invoice'}</span>
                         </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

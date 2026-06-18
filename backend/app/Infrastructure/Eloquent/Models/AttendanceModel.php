@@ -2,8 +2,8 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 
 class AttendanceModel extends Model
 {
@@ -18,7 +18,7 @@ class AttendanceModel extends Model
         'check_out',
         'late_minutes',
         'status',
-        'notes'
+        'notes',
     ];
 
     public function employee()

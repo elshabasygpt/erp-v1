@@ -83,6 +83,7 @@ export default function AttendancePage() {
                             <th className="px-6 py-4">{d.hr?.checkIn || 'Check In'}</th>
                             <th className="px-6 py-4">{d.hr?.checkOut || 'Check Out'}</th>
                             <th className="px-6 py-4">{d.hr?.status || 'Status'}</th>
+                            <th className="px-6 py-4">الجزاء</th>
                             <th className="px-6 py-4 text-center">{d.hr?.actions || 'Actions'}</th>
                         </tr>
                     </thead>
@@ -113,6 +114,20 @@ export default function AttendancePage() {
                                             <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-700">
                                                 {d.hr?.absent || 'Absent'}
                                             </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4" style={{ textAlign: isRTL ? 'right' : 'left' }}>
+                                        {att?.penalty_amount > 0 ? (
+                                            <div>
+                                                <span className="text-red-600 font-bold">
+                                                    {att.penalty_amount.toFixed(2)} {isRTL ? 'ريال' : 'SAR'}
+                                                </span>
+                                                <p className="text-xs text-slate-400 mt-0.5">{att.penalty_rule_label}</p>
+                                            </div>
+                                        ) : att?.late_minutes > 0 ? (
+                                            <span className="text-green-600 text-xs">ضمن السماح</span>
+                                        ) : (
+                                            <span className="text-slate-300">—</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-center space-x-2 space-x-reverse">

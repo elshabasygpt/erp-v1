@@ -12,19 +12,21 @@ final class EloquentUserRepository implements UserRepositoryInterface
 {
     public function findById(string $id): ?User
     {
-        $model = UserModel::find($id);
+        $model = UserModel::query()->find($id);
+
         return $model ? $this->toDomain($model) : null;
     }
 
     public function findByEmail(string $email): ?User
     {
-        $model = UserModel::where('email', $email)->first();
+        $model = UserModel::query()->where('email', $email)->first();
+
         return $model ? $this->toDomain($model) : null;
     }
 
     public function create(User $user): User
     {
-        $model = UserModel::create([
+        $model = UserModel::query()->create([
             'id' => $user->getId(),
             'name' => $user->getName(),
             'email' => $user->getEmail(),
@@ -35,12 +37,13 @@ final class EloquentUserRepository implements UserRepositoryInterface
             'locale' => $user->getLocale(),
             'created_by' => $user->getCreatedBy(),
         ]);
+
         return $this->toDomain($model);
     }
 
     public function update(User $user): User
     {
-        UserModel::where('id', $user->getId())->update([
+        UserModel::query()->where('id', $user->getId())->update([
             'name' => $user->getName(),
             'email' => $user->getEmail(),
             'role_id' => $user->getRoleId(),
@@ -49,23 +52,25 @@ final class EloquentUserRepository implements UserRepositoryInterface
             'locale' => $user->getLocale(),
             'updated_by' => $user->getUpdatedBy(),
         ]);
+
         return $this->findById($user->getId());
     }
 
     public function delete(string $id): bool
     {
-        return UserModel::where('id', $id)->delete() > 0;
+        return UserModel::query()->where('id', $id)->delete() > 0;
     }
 
     public function paginate(int $perPage = 15, array $filters = []): array
     {
-        $query = UserModel::with('role');
-        if (!empty($filters['search'])) {
+        $query = UserModel::query()->with('role');
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('email', 'ilike', "%{$filters['search']}%");
+                    ->orWhere('email', 'ilike', "%{$filters['search']}%");
             });
         }
+
         return $query->orderBy('created_at', 'desc')->paginate($perPage)->toArray();
     }
 

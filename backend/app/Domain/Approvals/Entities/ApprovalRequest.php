@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Domain\Approvals\Entities;
 
 class ApprovalRequest

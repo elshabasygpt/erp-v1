@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Subscription\UseCases;
 
-use App\Domain\Subscription\Entities\Tenant;
 use App\Domain\Subscription\Entities\Subscription;
+use App\Domain\Subscription\Entities\Tenant;
 use App\Domain\Subscription\Repositories\PlanRepositoryInterface;
 use App\Infrastructure\Services\TenantDatabaseManager;
 
@@ -20,12 +20,12 @@ final class CreateTenantUseCase
     {
         // 1. Get plan
         $plan = $this->planRepository->findBySlug($planSlug);
-        if (!$plan) {
+        if (! $plan) {
             throw new \DomainException("Plan not found: {$planSlug}");
         }
 
         // 2. Generate database name
-        $databaseName = config('tenancy.database_prefix') . str_replace(['-', '.', ' '], '_', strtolower($domain));
+        $databaseName = config('tenancy.database_prefix').str_replace(['-', '.', ' '], '_', strtolower($domain));
 
         // 3. Create tenant entity
         $trialDays = $plan->getTrialDays() ?? config('tenancy.trial_days', 14);
@@ -39,7 +39,7 @@ final class CreateTenantUseCase
         );
 
         // 4. Create subscription
-        $now = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable;
         $subscription = new Subscription(
             id: null,
             tenantId: $tenant->getId(),

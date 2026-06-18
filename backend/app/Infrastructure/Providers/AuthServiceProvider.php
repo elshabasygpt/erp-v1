@@ -2,16 +2,18 @@
 
 namespace App\Infrastructure\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Policies\InvoicePolicy;
+use Illuminate\Auth\Access\Events\GateEvaluated;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Auth\Access\Events\GateEvaluated;
-use Spatie\Activitylog\Models\Activity;
+use Illuminate\Support\ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        \App\Infrastructure\Eloquent\Models\InvoiceModel::class => \App\Policies\InvoicePolicy::class,
+        InvoiceModel::class => InvoicePolicy::class,
     ];
 
     public function boot()
@@ -23,18 +25,19 @@ class AuthServiceProvider extends ServiceProvider
 
         // Listen to authorization events to provide full audit logging of decisions
         Event::listen(function (GateEvaluated $event) {
-            $isDenied = $event->result === false || 
-                        $event->result === null || 
-                        ($event->result instanceof \Illuminate\Auth\Access\Response && !$event->result->allowed());
+            $isDenied = $event->result === false ||
+                        $event->result === null ||
+                        ($event->result instanceof Response && ! $event->result->allowed());
 
             if ($isDenied) {
                 $user = $event->user;
                 $ability = $event->ability;
-                
+
                 $arguments = collect($event->arguments)->map(function ($arg) {
                     if (is_object($arg) && method_exists($arg, 'getKey')) {
-                        return get_class($arg) . ':' . $arg->getKey();
+                        return get_class($arg).':'.$arg->getKey();
                     }
+
                     return is_scalar($arg) ? $arg : 'complex_argument';
                 })->implode(', ');
 

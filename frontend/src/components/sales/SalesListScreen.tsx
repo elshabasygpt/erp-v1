@@ -64,10 +64,10 @@ export default function SalesListScreen() {
         sort_by: sortBy,
         sort_desc: sortDesc
       };
-      const res = await api.get('/invoices', { params });
-      setInvoices(res.data.data.data);
-      setTotalPages(res.data.data.last_page);
-      setTotalItems(res.data.data.total);
+      const res = await api.get('/sales/invoices', { params });
+      setInvoices(res.data.data || []);
+      setTotalPages(res.data.meta?.last_page || 1);
+      setTotalItems(res.data.meta?.total || 0);
     } catch (error) {
       console.error('Failed to fetch invoices', error);
     } finally {

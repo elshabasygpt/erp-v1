@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Infrastructure\Zatca\ZatcaOnboardingService;
+use App\Presentation\Controllers\API\BaseTenantController;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ZatcaOnboardingController extends BaseTenantController
 {
@@ -21,11 +21,12 @@ class ZatcaOnboardingController extends BaseTenantController
     public function submitOtp(Request $request): JsonResponse
     {
         $request->validate([
-            'otp' => 'required|string|min:4'
+            'otp' => 'required|string|min:4',
         ]);
 
         try {
             $result = $this->onboardingService->issueComplianceCSID($request->get('otp'));
+
             return $this->success($result, 'ZATCA Onboarding phase 1 completed.');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 422);
@@ -38,11 +39,9 @@ class ZatcaOnboardingController extends BaseTenantController
     public function status(): JsonResponse
     {
         $status = $this->onboardingService->getTenantSetting('zatca_status') ?? 'not_enrolled';
-        
+
         return $this->success([
-            'zatca_status' => $status
+            'zatca_status' => $status,
         ]);
     }
 }
-
-

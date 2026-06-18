@@ -19,7 +19,7 @@ class SupplierFactory extends Factory
             'tax_number' => $this->faker->numerify('TAX-#########'),
             'balance' => 0,
             'is_active' => true,
-            
+
         ];
     }
 }

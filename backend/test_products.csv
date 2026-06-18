@@ -1,0 +1,4 @@
+name,sku,barcode,description,price,cost,type
+Test Product 1,SKU001,1234567890123,Description 1,100,50,standard
+Test Product 2,SKU002,1234567890124,Description 2,200,100,standard
+Test Product 3,SKU003,1234567890125,Description 3,300,150,standard

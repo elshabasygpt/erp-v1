@@ -15,7 +15,7 @@ class BranchScope implements Scope
     {
         if (Auth::hasUser()) {
             $user = Auth::user();
-            
+
             // If the user has a branch assigned, restrict data to that branch.
             // If they don't have a branch_id (e.g., they are a super-admin), they see everything.
             if ($user->branch_id) {

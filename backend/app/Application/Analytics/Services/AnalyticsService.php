@@ -2,8 +2,8 @@
 
 namespace App\Application\Analytics\Services;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class AnalyticsService
 {
@@ -16,7 +16,8 @@ class AnalyticsService
     private function getCacheKey(string $reportName, array $params): string
     {
         ksort($params);
-        return "analytics_{$reportName}_" . md5(json_encode($params)) . "_tenant_{$this->tenantId}";
+
+        return "analytics_{$reportName}_".md5(json_encode($params))."_tenant_{$this->tenantId}";
     }
 
     public function getSalesPerformance(array $filters = []): array
@@ -28,10 +29,11 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('sales_performance', $filters);
 
         $data = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate, $interval) {
-            $dateFormat = match($interval) {
-                'month' => "TO_CHAR(invoice_date, 'YYYY-MM')",
-                'week' => "TO_CHAR(DATE_TRUNC('week', invoice_date), 'YYYY-MM-DD')",
-                default => "TO_CHAR(invoice_date, 'YYYY-MM-DD')"
+            $driver = DB::connection('tenant')->getDriverName();
+            $dateFormat = match ($interval) {
+                'month' => $driver === 'sqlite' ? "strftime('%Y-%m', invoice_date)" : "TO_CHAR(invoice_date, 'YYYY-MM')",
+                'week' => $driver === 'sqlite' ? "strftime('%Y-%W', invoice_date)" : "TO_CHAR(DATE_TRUNC('week', invoice_date), 'YYYY-MM-DD')",
+                default => $driver === 'sqlite' ? "strftime('%Y-%m-%d', invoice_date)" : "TO_CHAR(invoice_date, 'YYYY-MM-DD')"
             };
 
             return DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
@@ -60,7 +62,7 @@ class AnalyticsService
         $cacheKey = $this->getCacheKey('profitability', $filters);
 
         $data = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate, $dimension) {
-            $query = DB::connection('tenant')->table('invoice_items')->where('tenant_id', $this->tenantId)
+            $query = DB::connection('tenant')->table('invoice_items')->where('invoice_items.tenant_id', $this->tenantId)
                 ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
                 ->where('invoices.status', 'confirmed')
                 ->whereBetween('invoices.invoice_date', [$startDate, $endDate]);
@@ -165,10 +167,10 @@ class AnalyticsService
             $returnRate = $totalSales > 0 ? ($totalReturned / $totalSales) * 100 : 0;
 
             return [
-                'total_sales' => (float)$totalSales,
-                'total_returned' => (float)$totalReturned,
+                'total_sales' => (float) $totalSales,
+                'total_returned' => (float) $totalReturned,
                 'return_rate_percent' => round($returnRate, 2),
-                'breakdown_by_reason' => $returns
+                'breakdown_by_reason' => $returns,
             ];
         });
     }
@@ -190,15 +192,15 @@ class AnalyticsService
 
             $totalCustomers = $metrics->total_customers ?? 0;
             if ($totalCustomers == 0) {
-                return ['clv' => 0, 'average_order_value' => 0, 'purchase_frequency' => 0];
+                return ['historical_clv' => 0, 'average_order_value' => 0, 'purchase_frequency' => 0, 'top_lifetime_customers' => []];
             }
 
             $averageOrderValue = $metrics->total_revenue / $metrics->total_orders;
             $purchaseFrequency = $metrics->total_orders / $totalCustomers;
-            
+
             $historicalClv = $averageOrderValue * $purchaseFrequency;
 
-            $topCustomers = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
+            $topCustomers = DB::connection('tenant')->table('invoices')->where('invoices.tenant_id', $this->tenantId)
                 ->join('customers', 'invoices.customer_id', '=', 'customers.id')
                 ->where('invoices.status', 'confirmed')
                 ->select(
@@ -214,10 +216,10 @@ class AnalyticsService
                 ->get();
 
             return [
-                'average_order_value' => round((float)$averageOrderValue, 2),
-                'purchase_frequency' => round((float)$purchaseFrequency, 2),
-                'historical_clv' => round((float)$historicalClv, 2),
-                'top_lifetime_customers' => $topCustomers
+                'average_order_value' => round((float) $averageOrderValue, 2),
+                'purchase_frequency' => round((float) $purchaseFrequency, 2),
+                'historical_clv' => round((float) $historicalClv, 2),
+                'top_lifetime_customers' => $topCustomers,
             ];
         });
     }
@@ -239,11 +241,11 @@ class AnalyticsService
                 )
                 ->first();
 
-            $grossSales = (float)($metrics->gross_sales ?? 0);
-            $totalDiscounts = (float)($metrics->total_discounts ?? 0);
+            $grossSales = (float) ($metrics->gross_sales ?? 0);
+            $totalDiscounts = (float) ($metrics->total_discounts ?? 0);
             $discountRate = $grossSales > 0 ? ($totalDiscounts / $grossSales) * 100 : 0;
 
-            $discountsBySalesperson = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
+            $discountsBySalesperson = DB::connection('tenant')->table('invoices')->where('invoices.tenant_id', $this->tenantId)
                 ->join('users', 'invoices.salesperson_id', '=', 'users.id')
                 ->where('invoices.status', 'confirmed')
                 ->whereBetween('invoices.invoice_date', [$startDate, $endDate])
@@ -262,7 +264,7 @@ class AnalyticsService
                 'gross_sales' => $grossSales,
                 'total_discounts' => $totalDiscounts,
                 'average_discount_rate_percent' => round($discountRate, 2),
-                'discounts_by_salesperson' => $discountsBySalesperson
+                'discounts_by_salesperson' => $discountsBySalesperson,
             ];
         });
     }
@@ -277,13 +279,14 @@ class AnalyticsService
         $data = Cache::remember($cacheKey, self::CACHE_TTL, function () use ($startDate, $endDate) {
             $revenueSql = 'invoice_items.quantity * invoice_items.unit_price * (1 - COALESCE(invoice_items.discount_percent, 0) / 100)';
 
-            return DB::connection('tenant')->table('invoice_items')->where('tenant_id', $this->tenantId)
+            return DB::connection('tenant')->table('invoice_items')->where('invoice_items.tenant_id', $this->tenantId)
                 ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
                 ->join('products', 'invoice_items.product_id', '=', 'products.id')
+                ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
                 ->where('invoices.status', 'confirmed')
                 ->whereBetween('invoices.invoice_date', [$startDate, $endDate])
                 ->select(
-                    DB::raw("COALESCE(products.type, 'Standard') as product_type"),
+                    DB::raw("COALESCE(categories.name, 'Standard') as product_type"),
                     DB::raw("SUM($revenueSql) as revenue"),
                     DB::raw('SUM(invoice_items.quantity) as units_sold')
                 )
@@ -314,7 +317,7 @@ class AnalyticsService
 
             $convertedInvoices = DB::connection('tenant')->table('invoices')->where('tenant_id', $this->tenantId)
                 ->whereBetween('invoice_date', [$startDate, $endDate])
-                ->whereNotNull('reference_no') 
+                ->whereNotNull('reference_no')
                 ->count();
 
             return [
@@ -322,7 +325,7 @@ class AnalyticsService
                 'total_sales_orders' => $salesOrders,
                 'converted_to_invoice' => $convertedInvoices,
                 'quotation_to_so_conversion_rate' => $quotations > 0 ? round(($salesOrders / $quotations) * 100, 2) : 0,
-                'so_to_invoice_conversion_rate' => $salesOrders > 0 ? round(($convertedInvoices / $salesOrders) * 100, 2) : 0
+                'so_to_invoice_conversion_rate' => $salesOrders > 0 ? round(($convertedInvoices / $salesOrders) * 100, 2) : 0,
             ];
         });
     }

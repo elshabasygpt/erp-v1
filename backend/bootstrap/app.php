@@ -1,11 +1,18 @@
 <?php
 
+use App\Http\Middleware\PartnerAuth;
+use App\Presentation\Middleware\RolePermissionMiddleware;
+use App\Presentation\Middleware\SubscriptionActiveMiddleware;
+use App\Presentation\Middleware\TenantMiddleware;
+use App\Providers\AppServiceProvider;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Presentation\Middleware\TenantMiddleware;
-use App\Presentation\Middleware\SubscriptionActiveMiddleware;
-use App\Presentation\Middleware\RolePermissionMiddleware;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,52 +20,52 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: 'api',
     )
     ->withProviders([
-        \App\Providers\AppServiceProvider::class,
+        AppServiceProvider::class,
     ])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'tenant' => TenantMiddleware::class,
             'subscription.active' => SubscriptionActiveMiddleware::class,
             'role' => RolePermissionMiddleware::class,
-            'partner.auth' => \App\Http\Middleware\PartnerAuth::class,
+            'partner.auth' => PartnerAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated.', 'data' => null], 401);
         });
 
-        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (ValidationException $e, Request $request) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Validation error', 
-                'data' => $e->errors()
+                'success' => false,
+                'message' => 'Validation error',
+                'data' => $e->errors(),
             ], 422);
         });
 
-        $exceptions->render(function (\DomainException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (DomainException $e, Request $request) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-                'data' => null
+                'data' => null,
             ], 400);
         });
 
-        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (Throwable $e, Request $request) {
             if (app()->environment('local')) {
                 return false; // let Laravel handle it
             }
 
-            $statusCode = $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface ? $e->getStatusCode() : 500;
-            
+            $statusCode = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500;
+
             return response()->json([
                 'success' => false,
                 'message' => 'An unexpected error occurred.',
-                'data' => null
+                'data' => null,
             ], $statusCode);
         });
     })
-    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+    ->withSchedule(function (Schedule $schedule) {
         $schedule->command('approvals:escalate')->hourly();
     })
     ->create();

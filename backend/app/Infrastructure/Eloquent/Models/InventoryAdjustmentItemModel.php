@@ -9,6 +9,7 @@ class InventoryAdjustmentItemModel extends BaseModel
     use HasUuids;
 
     protected $table = 'inventory_adjustment_items';
+
     protected $connection = 'tenant';
 
     protected $fillable = [

@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -73,7 +73,7 @@ return new class extends Migration
     {
         Schema::connection('tenant')->table($table, function (Blueprint $blueprint) use ($table, $indexes) {
             foreach ($indexes as $idx) {
-                if (!$this->indexExists($table, $idx['name'])) {
+                if (! $this->indexExists($table, $idx['name'])) {
                     $blueprint->index($idx['columns'], $idx['name']);
                 }
             }
@@ -86,11 +86,13 @@ return new class extends Migration
         if ($driver === 'sqlite') {
             $result = DB::connection('tenant')
                 ->select("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?", [$indexName]);
-            return !empty($result);
+
+            return ! empty($result);
         }
 
         $result = DB::connection('tenant')
-            ->select("SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?", [$table, $indexName]);
-        return !empty($result);
+            ->select('SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?', [$table, $indexName]);
+
+        return ! empty($result);
     }
 };

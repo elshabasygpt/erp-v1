@@ -21,7 +21,7 @@ class BankTransactionModel extends BaseModel
         'is_reconciled',
         'reconciliation_id',
         'journal_entry_id',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

@@ -8,7 +8,7 @@ use App\Domain\Accounting\Entities\JournalEntryLine;
 
 /**
  * FXGainLossService
- * 
+ *
  * Handles Realized FX Gain/Loss calculations and generates corresponding journal entry lines
  * in accordance with IFRS standards.
  */
@@ -20,11 +20,11 @@ class FXGainLossService
 
     /**
      * Calculate Realized FX Gain/Loss and generate journal entry lines.
-     * 
-     * @param float $invoiceRate The historical exchange rate of the invoice.
-     * @param float $paymentRate The current exchange rate at the time of payment.
-     * @param float $foreignAmount The amount being settled in foreign currency.
-     * @param string $type 'ar' for Accounts Receivable, 'ap' for Accounts Payable.
+     *
+     * @param  float  $invoiceRate  The historical exchange rate of the invoice.
+     * @param  float  $paymentRate  The current exchange rate at the time of payment.
+     * @param  float  $foreignAmount  The amount being settled in foreign currency.
+     * @param  string  $type  'ar' for Accounts Receivable, 'ap' for Accounts Payable.
      * @return array{fx_lines: JournalEntryLine[], fx_amount: float}
      */
     public function calculateAndGenerateLines(
@@ -63,7 +63,7 @@ class FXGainLossService
                     credit: $absoluteFxAmount,
                     transactionDebit: 0.0,
                     transactionCredit: 0.0,
-                    description: "Realized FX Gain"
+                    description: 'Realized FX Gain'
                 );
             } else {
                 // Loss (Debit)
@@ -75,7 +75,7 @@ class FXGainLossService
                     credit: 0,
                     transactionDebit: 0.0,
                     transactionCredit: 0.0,
-                    description: "Realized FX Loss"
+                    description: 'Realized FX Loss'
                 );
             }
         }

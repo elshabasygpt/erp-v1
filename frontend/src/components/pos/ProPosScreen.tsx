@@ -18,11 +18,13 @@ import Link from 'next/link';
 import { PosSidebar } from './PosSidebar';
 import { PosProductGrid } from './PosProductGrid';
 import { VehicleSearchPanel } from './VehicleSearchPanel';
+import { PosAlternativesModal } from './PosAlternativesModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CartItem {
     id: string; product: any; quantity: number; price: number;
     note?: string; discount?: number; maxReturnQty?: number;
+    coreReturned?: boolean;
 }
 interface InvoiceTab {
     id: string; label: string; cart: CartItem[]; customer: any | null;
@@ -30,7 +32,7 @@ interface InvoiceTab {
     orderDiscount: number; orderTax: number; createdAt: Date;
     warehouseId: string | null; isRefundMode?: boolean;
     invoiceId?: string; originalInvoiceNumber?: string;
-    salesChannelId?: string;
+    salesChannelId?: string; selectedVehicleId?: string;
 }
 type PriceLevel = 'retail' | 'half_wholesale' | 'wholesale';
 interface HeldOrder { 
@@ -129,6 +131,21 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     const [returnSearchQuery, setReturnSearchQuery] = useState('');
     const [isSearchingReturn, setIsSearchingReturn] = useState(false);
     
+    const [customerVehicles, setCustomerVehicles] = useState<any[]>([]);
+    const [alternativesProduct, setAlternativesProduct] = useState<any>(null);
+    
+    useEffect(() => {
+        const customer = activeTab?.customer;
+        if (!customer?.id) {
+            setCustomerVehicles([]);
+            if (activeTab?.selectedVehicleId) updateTab('selectedVehicleId', undefined);
+            return;
+        }
+        crmApi.getCustomerVehicles(customer.id)
+            .then(res => setCustomerVehicles(res.data?.data || []))
+            .catch(() => setCustomerVehicles([]));
+    }, [activeTab?.customer?.id]);
+
     // Vehicle Search Panel
     const [showVehicleSearch, setShowVehicleSearch] = useState(false);
     
@@ -358,11 +375,17 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 ? basePrice * (activeChannel.markup_percentage / 100) 
                 : activeChannel.fixed_markup;
         }
+        let coreCharge = 0;
+        if (i.product?.has_core_charge && i.coreReturned === false) {
+            coreCharge = parseFloat(i.product.core_charge_amount) || 0;
+        }
+
         return {
             ...i,
             basePrice,
             markup,
-            adjustedPrice: basePrice + markup
+            coreCharge,
+            adjustedPrice: basePrice + markup + coreCharge
         };
     });
 
@@ -438,6 +461,8 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     base_unit_price: i.basePrice, 
                     adjusted_unit_price: i.adjustedPrice, 
                     adjustment_amount: i.markup,
+                    core_charge_applied: i.coreCharge > 0,
+                    core_charge_amount: i.coreCharge,
                     discount: i.discount || 0, 
                     total_price: ((i.adjustedPrice || 0) * i.quantity) - (i.discount || 0) 
                 })),
@@ -504,7 +529,23 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 if (isRefund) {
                     await salesApi.createReturn(payload);
                 } else {
-                    await salesApi.createInvoice(payload);
+                    const invoiceResult = await salesApi.createInvoice(payload);
+                    if (activeTab?.selectedVehicleId && invoiceResult?.data?.data?.id) {
+                        try {
+                            await crmApi.addVehicleService(
+                                activeTab.customer.id,
+                                activeTab.selectedVehicleId,
+                                {
+                                    invoice_id: invoiceResult.data.data.id,
+                                    service_date: new Date().toISOString().split('T')[0],
+                                    service_type: 'parts_replacement',
+                                    description: `فاتورة رقم ${invoiceResult.data.data.invoice_number}`,
+                                }
+                            );
+                        } catch (e) {
+                            console.warn('Failed to log service history', e);
+                        }
+                    }
                 }
             }
             setShowSuccess(true);
@@ -612,6 +653,25 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                        <button onClick={()=>setShowCustomerSearch(!showCustomerSearch)} className="w-full h-12 px-4 bg-white dark:bg-[#1a1a2e] rounded-xl border border-slate-200 dark:border-white/10 text-xs font-bold text-start truncate text-slate-800 dark:text-white/90 hover:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm">
                            {activeTab?.customer?.name || (isRTL ? 'إختر عملية لربط الفاتورة...' : 'Select Customer...')}
                        </button>
+                       {activeTab?.customer && customerVehicles.length > 0 && (
+                            <select
+                                className="w-full mt-2 h-10 px-3 text-xs font-bold rounded-xl border bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-white/10 text-slate-800 dark:text-white/90"
+                                value={activeTab.selectedVehicleId || ''}
+                                onChange={e => {
+                                    const vId = e.target.value;
+                                    updateTab('selectedVehicleId', vId);
+                                    if (vId) {
+                                        const v = customerVehicles.find(cv => cv.id === vId);
+                                        if (v?.vehicle_year_id) setShowVehicleSearch(true);
+                                    }
+                                }}
+                            >
+                                <option value="">{isRTL ? '🚗 إختر سيارة العميل (اختياري)...' : '🚗 Select vehicle (Optional)...'}</option>
+                                {customerVehicles.map(cv => (
+                                    <option key={cv.id} value={cv.id}>{cv.display_name}</option>
+                                ))}
+                            </select>
+                        )}
                        {showCustomerSearch && (
                            <div className="absolute top-full mt-2 w-full bg-white dark:bg-[#1a1a28] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                {!isAddingCustomer ? (
@@ -665,6 +725,19 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                                 </div>
                                 {item.note && <p className="text-[9px] text-slate-400 dark:text-white/40 mt-1 line-clamp-1 italic font-bold max-w-full"><span className="text-amber-500">Note:</span> {item.note}</p>}
                                 {item.discount ? <p className="text-[9px] text-red-500 dark:text-red-400 font-bold mt-0.5 max-w-full">-{item.discount} SAR Discount</p> : null}
+                                
+                                {item.product.has_core_charge && (
+                                    <div className="flex items-center gap-2 mt-2 bg-slate-100 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200 dark:border-white/10 w-fit" onClick={(e) => e.stopPropagation()}>
+                                        <input type="checkbox" id={`core-${item.id}`} checked={item.coreReturned || false} onChange={e => {
+                                            setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, cart: t.cart.map(i => i.id === item.id ? { ...i, coreReturned: e.target.checked } : i) } : t));
+                                        }} className="w-3.5 h-3.5 text-blue-600 rounded" />
+                                        <label htmlFor={`core-${item.id}`} className="text-[10px] font-bold text-slate-600 dark:text-white/70 whitespace-nowrap cursor-pointer">
+                                            {isRTL ? 'تجاوز رسوم التالف (تم الإرجاع)' : 'Core Returned?'}
+                                        </label>
+                                        {!item.coreReturned && <span className="text-[10px] font-black text-red-500">+{parseFloat(item.product.core_charge_amount || 0).toFixed(2)} SAR</span>}
+                                    </div>
+                                )}
+
                                 <p className="text-[13px] text-blue-600 dark:text-blue-400 font-black mt-2 tabular-nums">{(item.price).toFixed(2)} <span className="text-[9px] font-bold text-slate-400 dark:text-white/30">SAR</span></p>
                             </div>
                             <div className="flex flex-col gap-1 items-center justify-center">
@@ -771,6 +844,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                         addToCart={addToCart} 
                         activePriceLevel={activeTab?.priceLevel || 'retail'} 
                         isRTL={isRTL} 
+                        onShowAlternatives={setAlternativesProduct}
                     />
                 </div>
 

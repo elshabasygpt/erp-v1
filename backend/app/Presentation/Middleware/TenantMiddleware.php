@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Presentation\Middleware;
 
+use App\Infrastructure\Eloquent\Models\TenantModel;
+use App\Infrastructure\Services\TenantDatabaseManager;
 use Closure;
 use Illuminate\Http\Request;
-use App\Infrastructure\Services\TenantDatabaseManager;
-use App\Infrastructure\Eloquent\Models\TenantModel;
+use Illuminate\Support\Str;
 
 class TenantMiddleware
 {
@@ -19,18 +20,18 @@ class TenantMiddleware
     {
         $tenantId = $request->header(config('tenancy.header_name', 'X-Tenant-ID'));
 
-        if (!$tenantId) {
+        if (! $tenantId) {
             return response()->json([
                 'message' => 'Tenant identification required.',
                 'error' => 'missing_tenant',
             ], 400);
         }
 
-        $tenant = \Illuminate\Support\Str::isUuid($tenantId)
-            ? TenantModel::where('id', $tenantId)->orWhere('domain', $tenantId)->first()
-            : TenantModel::where('domain', $tenantId)->first();
+        $tenant = Str::isUuid($tenantId)
+            ? TenantModel::query()->where('id', $tenantId)->orWhere('domain', $tenantId)->first()
+            : TenantModel::query()->where('domain', $tenantId)->first();
 
-        if (!$tenant) {
+        if (! $tenant) {
             return response()->json([
                 'message' => 'Tenant not found.',
                 'error' => 'tenant_not_found',

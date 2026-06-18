@@ -2,14 +2,13 @@
 
 namespace Database\Seeders\Tenant;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
+use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
+use App\Infrastructure\Eloquent\Models\SupplierModel;
 use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\SupplierModel;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class SupermarketSeeder extends Seeder
 {
@@ -33,7 +32,7 @@ class SupermarketSeeder extends Seeder
         // 2. Create Customers
         CustomerModel::create(['id' => Str::uuid()->toString(), 'name' => 'عميل نقدي (كاش)', 'email' => 'cash@local.com', 'phone' => '0500000000']);
         CustomerModel::create(['id' => Str::uuid()->toString(), 'name' => 'أسواق التميمي - فرع الياسمين', 'email' => 'tamimi@local.com', 'phone' => '0501111111']);
-        
+
         // 3. Create Suppliers
         SupplierModel::create(['id' => Str::uuid()->toString(), 'name' => 'شركة المراعي', 'email' => 'sales@almarai.com', 'phone' => '0502222222']);
         SupplierModel::create(['id' => Str::uuid()->toString(), 'name' => 'شركة بيبسيكو (جمجوم)', 'email' => 'pepsi@local.com', 'phone' => '0503333333']);
@@ -51,7 +50,7 @@ class SupermarketSeeder extends Seeder
                 'stock_alert_level' => 50,
                 'unit_of_measure' => 'قطعة',
                 'units' => [
-                    ['unit_name' => 'كرتون (12 حبة)', 'conversion_factor' => 12, 'sell_price' => 70.00, 'barcode' => '6281000000011']
+                    ['unit_name' => 'كرتون (12 حبة)', 'conversion_factor' => 12, 'sell_price' => 70.00, 'barcode' => '6281000000011'],
                 ],
                 'stock_riyadh' => 200,
                 'stock_jeddah' => 150,
@@ -66,7 +65,7 @@ class SupermarketSeeder extends Seeder
                 'stock_alert_level' => 100,
                 'unit_of_measure' => 'قطعة',
                 'units' => [
-                    ['unit_name' => 'كرتون (40 حبة)', 'conversion_factor' => 40, 'sell_price' => 18.00, 'barcode' => '6281111000021']
+                    ['unit_name' => 'كرتون (40 حبة)', 'conversion_factor' => 40, 'sell_price' => 18.00, 'barcode' => '6281111000021'],
                 ],
                 'stock_riyadh' => 1000,
                 'stock_jeddah' => 800,
@@ -81,7 +80,7 @@ class SupermarketSeeder extends Seeder
                 'stock_alert_level' => 200,
                 'unit_of_measure' => 'قطعة',
                 'units' => [
-                    ['unit_name' => 'شدة (24 حبة)', 'conversion_factor' => 24, 'sell_price' => 55.00, 'barcode' => '6281222000031']
+                    ['unit_name' => 'شدة (24 حبة)', 'conversion_factor' => 24, 'sell_price' => 55.00, 'barcode' => '6281222000031'],
                 ],
                 'stock_riyadh' => 500,
                 'stock_jeddah' => 300,
@@ -109,7 +108,7 @@ class SupermarketSeeder extends Seeder
                 'stock_alert_level' => 15,
                 'unit_of_measure' => 'قطعة',
                 'units' => [
-                    ['unit_name' => 'كرتون (4 حبات)', 'conversion_factor' => 4, 'sell_price' => 210.00, 'barcode' => '6281444000051']
+                    ['unit_name' => 'كرتون (4 حبات)', 'conversion_factor' => 4, 'sell_price' => 210.00, 'barcode' => '6281444000051'],
                 ],
                 'stock_riyadh' => 80,
                 'stock_jeddah' => 40,
@@ -124,11 +123,11 @@ class SupermarketSeeder extends Seeder
                 'stock_alert_level' => 30,
                 'unit_of_measure' => 'قطعة',
                 'units' => [
-                    ['unit_name' => 'كرتون (48 حبة)', 'conversion_factor' => 48, 'sell_price' => 250.00, 'barcode' => '6281555000061']
+                    ['unit_name' => 'كرتون (48 حبة)', 'conversion_factor' => 48, 'sell_price' => 250.00, 'barcode' => '6281555000061'],
                 ],
                 'stock_riyadh' => 120,
                 'stock_jeddah' => 90,
-            ]
+            ],
         ];
 
         foreach ($products as $pData) {

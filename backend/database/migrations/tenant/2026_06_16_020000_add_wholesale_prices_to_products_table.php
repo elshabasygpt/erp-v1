@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -16,13 +16,13 @@ return new class extends Migration
 
         // بعد إضافة الأعمدة، احسب قيمة افتراضية للمنتجات الموجودة
         // wholesale = 80% من sell_price / semi_wholesale = 90% من sell_price
-        DB::connection('tenant')->statement("
+        DB::connection('tenant')->statement('
             UPDATE products
             SET
                 wholesale_price = ROUND(sell_price * 0.80, 2),
                 semi_wholesale_price = ROUND(sell_price * 0.90, 2)
             WHERE wholesale_price IS NULL AND sell_price > 0
-        ");
+        ');
     }
 
     public function down(): void

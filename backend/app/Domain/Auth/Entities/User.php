@@ -23,15 +23,50 @@ final class User extends Entity
         parent::__construct($id);
     }
 
-    public function getName(): string { return $this->name; }
-    public function getEmail(): string { return $this->email; }
-    public function getPassword(): string { return $this->password; }
-    public function getRoleId(): ?string { return $this->roleId; }
-    public function isActive(): bool { return $this->isActive; }
-    public function getPhone(): ?string { return $this->phone; }
-    public function getLocale(): ?string { return $this->locale; }
-    public function getCreatedBy(): ?string { return $this->createdBy; }
-    public function getUpdatedBy(): ?string { return $this->updatedBy; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function getRoleId(): ?string
+    {
+        return $this->roleId;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function getLocale(): ?string
+    {
+        return $this->locale;
+    }
+
+    public function getCreatedBy(): ?string
+    {
+        return $this->createdBy;
+    }
+
+    public function getUpdatedBy(): ?string
+    {
+        return $this->updatedBy;
+    }
 
     public function deactivate(): void
     {

@@ -2,17 +2,18 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 use App\Infrastructure\Eloquent\Traits\BranchScoped;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class WarehouseModel extends BaseModel
 {
+    use BranchScoped;
     use HasFactory;
 
-    use BranchScoped;
     protected $table = 'warehouses';
+
     protected $fillable = ['name', 'location', 'is_default', 'is_active', 'branch_id', 'created_by', 'updated_by'];
+
     protected $casts = ['is_default' => 'boolean', 'is_active' => 'boolean'];
 
     public function branch()

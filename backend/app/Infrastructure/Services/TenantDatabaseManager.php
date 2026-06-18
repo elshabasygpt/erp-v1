@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Services;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 
 final class TenantDatabaseManager
 {
@@ -15,7 +15,7 @@ final class TenantDatabaseManager
      */
     public function createDatabase(string $databaseName): void
     {
-        DB::connection('pgsql')->statement("CREATE DATABASE \"{$databaseName}\"");
+        DB::connection(env('DB_CONNECTION', 'pgsql'))->statement("CREATE DATABASE \"{$databaseName}\"");
     }
 
     /**
@@ -23,7 +23,7 @@ final class TenantDatabaseManager
      */
     public function dropDatabase(string $databaseName): void
     {
-        DB::connection('pgsql')->statement("DROP DATABASE IF EXISTS \"{$databaseName}\"");
+        DB::connection(env('DB_CONNECTION', 'pgsql'))->statement("DROP DATABASE IF EXISTS \"{$databaseName}\"");
     }
 
     /**
@@ -47,6 +47,28 @@ final class TenantDatabaseManager
      */
     public function switchToDatabase(string $databaseName): void
     {
+        if ($databaseName === ':memory:') {
+            return;
+        }
+
+        if (app()->environment('testing')) {
+            // dump("switchToDatabase called with $databaseName");
+        }
+
+        $driver = config('database.connections.tenant.driver');
+        if ($driver === 'sqlite') {
+            if ($databaseName === 'saas_accounting_central' || $databaseName === env('DB_DATABASE')) {
+                $databaseName = database_path('database.sqlite');
+            } else {
+                if (! str_ends_with($databaseName, '.sqlite') && ! str_contains($databaseName, DIRECTORY_SEPARATOR)) {
+                    $databaseName = database_path($databaseName.'.sqlite');
+                }
+            }
+            if (! file_exists($databaseName)) {
+                touch($databaseName);
+            }
+        }
+
         Config::set('database.connections.tenant.database', $databaseName);
         DB::purge('tenant');
         DB::reconnect('tenant');
@@ -58,9 +80,17 @@ final class TenantDatabaseManager
      */
     public function resetConnection(): void
     {
+        if (Config::get('database.connections.tenant.database') === ':memory:') {
+            return;
+        }
+
+        if (app()->environment('testing')) {
+            dump('resetConnection called! Purging tenant connection!');
+        }
+
         Config::set('database.connections.tenant.database', null);
         DB::purge('tenant');
-        DB::setDefaultConnection(config('tenancy.central_connection', 'pgsql'));
+        DB::setDefaultConnection(config('database.default'));
     }
 
     /**
@@ -68,10 +98,10 @@ final class TenantDatabaseManager
      */
     public function databaseExists(string $databaseName): bool
     {
-        $result = DB::connection('pgsql')
-            ->select("SELECT 1 FROM pg_database WHERE datname = ?", [$databaseName]);
+        $result = DB::connection(env('DB_CONNECTION', 'pgsql'))
+            ->select('SELECT 1 FROM pg_database WHERE datname = ?', [$databaseName]);
 
-        return !empty($result);
+        return ! empty($result);
     }
 
     /**

@@ -16,7 +16,7 @@ class WarrantyModel extends BaseModel
     protected $fillable = [
         'warranty_number', 'invoice_id', 'invoice_item_id', 'product_id', 'customer_id',
         'quantity', 'sale_date', 'warranty_months', 'expiry_date', 'status', 'notes',
-        'created_by', 'updated_by'
+        'created_by', 'updated_by',
     ];
 
     protected $casts = [

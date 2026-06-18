@@ -1,15 +1,19 @@
 <?php
+
 namespace App\Infrastructure\Eloquent\Repositories\Approvals;
 
 use App\Domain\Approvals\Entities\ApprovalRequest;
 use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
+use App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel;
 
 class EloquentApprovalRepository implements ApprovalRepositoryInterface
 {
     public function findById(string $id): ?ApprovalRequest
     {
-        $model = \App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel::find($id);
-        if (!$model) return null;
+        $model = ApprovalRequestModel::query()->find($id);
+        if (! $model) {
+            return null;
+        }
 
         return new ApprovalRequest(
             id: $model->id,
@@ -41,7 +45,7 @@ class EloquentApprovalRepository implements ApprovalRepositoryInterface
 
     public function updateStatus(string $id, string $status, string $userId, ?string $notes = null): ApprovalRequest
     {
-        $model = \App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel::findOrFail($id);
+        $model = ApprovalRequestModel::query()->findOrFail($id);
         $model->update([
             'status' => $status,
             'notes' => $notes,

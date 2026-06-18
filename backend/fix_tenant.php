@@ -1,10 +1,11 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
-$app = require_once __DIR__ . '/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+require __DIR__.'/vendor/autoload.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -15,12 +16,12 @@ if ($u) {
         ['id' => $tenantId],
         ['name' => 'Kimo Store', 'domain' => 'localhost', 'database_name' => DB::connection('tenant')->getDatabaseName(), 'created_at' => now(), 'updated_at' => now()]
     );
-    
+
     DB::connection('pgsql')->table('tenant_users')->updateOrInsert(
         ['email' => 'admin@company.com'],
-        ['id' => (string)Str::uuid(), 'tenant_id' => $tenantId, 'password' => $u->password, 'is_owner' => true, 'created_at' => now(), 'updated_at' => now()]
+        ['id' => (string) Str::uuid(), 'tenant_id' => $tenantId, 'password' => $u->password, 'is_owner' => true, 'created_at' => now(), 'updated_at' => now()]
     );
-    
+
     echo "Linked successfully.\n";
 } else {
     echo "User not found.\n";

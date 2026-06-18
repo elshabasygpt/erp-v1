@@ -22,13 +22,13 @@ class ShippingInvoiceModel extends BaseModel
         'shipping_address',
         'notes',
         'created_by',
-        'updated_by'
+        'updated_by',
     ];
 
     protected $casts = [
         'shipping_cost' => 'decimal:2',
         'shipped_at' => 'datetime',
-        'delivered_at' => 'datetime'
+        'delivered_at' => 'datetime',
     ];
 
     public function salesInvoice()

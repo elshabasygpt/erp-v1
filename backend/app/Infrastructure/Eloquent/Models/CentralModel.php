@@ -16,10 +16,11 @@ class CentralModel extends Model
     use HasUuids, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     public function getConnectionName()
     {
-        return 'pgsql'; // Central database
+        return env('DB_CONNECTION', 'pgsql'); // Central database
     }
 }

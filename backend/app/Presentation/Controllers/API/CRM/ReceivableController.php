@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Application\Sales\UseCases\CollectPaymentUseCase;
 use App\Application\Sales\UseCases\GetAgingReportUseCase;
 use App\Application\Sales\UseCases\GetCustomerStatementUseCase;
+use App\Presentation\Controllers\API\BaseTenantController;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ReceivableController extends BaseTenantController
 {
@@ -36,15 +36,16 @@ class ReceivableController extends BaseTenantController
 
         try {
             $payment = $this->collectPaymentUseCase->execute((string) $this->getTenantId($request), $validated, $request->user()->id);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Payment collected successfully',
-                'data' => $payment
+                'data' => $payment,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 400);
         }
     }
@@ -52,9 +53,10 @@ class ReceivableController extends BaseTenantController
     public function agingReport(Request $request): JsonResponse
     {
         $report = $this->getAgingReportUseCase->execute((string) $this->getTenantId($request));
+
         return response()->json([
             'status' => 'success',
-            'data' => $report
+            'data' => $report,
         ]);
     }
 
@@ -64,11 +66,10 @@ class ReceivableController extends BaseTenantController
         $toDate = $request->query('to_date');
 
         $statement = $this->getCustomerStatementUseCase->execute((string) $this->getTenantId($request), $customerId, $fromDate, $toDate);
+
         return response()->json([
             'status' => 'success',
-            'data' => $statement
+            'data' => $statement,
         ]);
     }
 }
-
-

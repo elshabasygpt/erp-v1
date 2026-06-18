@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\BankReconciliationService;
 use App\Infrastructure\Eloquent\Models\Accounting\BankAccountModel;
 use App\Infrastructure\Eloquent\Models\Accounting\ReconciliationModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,7 +19,8 @@ class BankAccountController extends BaseTenantController
 
     public function index(Request $request): JsonResponse
     {
-        $accounts = BankAccountModel::where('tenant_id', $this->getTenantId($request))->with('ledgerAccount')->get();
+        $accounts = BankAccountModel::query()->where('tenant_id', $this->getTenantId($request))->with('ledgerAccount')->get();
+
         return $this->success($accounts, 'Bank accounts retrieved successfully');
     }
 
@@ -52,9 +53,10 @@ class BankAccountController extends BaseTenantController
 
         try {
             $imported = $this->bankReconciliationService->importBankTransactions($id, $validated['transactions'], auth()->id() ?? '');
+
             return $this->success($imported, 'Transactions imported successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to import transactions: ' . $e->getMessage(), 422);
+            return $this->error('Failed to import transactions: '.$e->getMessage(), 422);
         }
     }
 
@@ -74,17 +76,19 @@ class BankAccountController extends BaseTenantController
                 (float) $validated['statement_balance'],
                 auth()->id() ?? ''
             );
+
             return $this->created($reconciliation, 'Reconciliation started successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to start reconciliation: ' . $e->getMessage(), 422);
+            return $this->error('Failed to start reconciliation: '.$e->getMessage(), 422);
         }
     }
 
     public function getReconciliations(string $id): JsonResponse
     {
-        $reconciliations = ReconciliationModel::where('tenant_id', $this->getTenantId($request))->where('bank_account_id', $id)
+        $reconciliations = ReconciliationModel::query()->where('tenant_id', $this->getTenantId($request))->where('bank_account_id', $id)
             ->orderBy('statement_date', 'desc')
             ->get();
+
         return $this->success($reconciliations, 'Reconciliations retrieved successfully');
     }
 
@@ -101,9 +105,10 @@ class BankAccountController extends BaseTenantController
                 $validated['bank_transaction_id'],
                 $validated['journal_entry_line_id']
             );
+
             return $this->success($line, 'Transaction matched successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to match transaction: ' . $e->getMessage(), 422);
+            return $this->error('Failed to match transaction: '.$e->getMessage(), 422);
         }
     }
 
@@ -111,11 +116,10 @@ class BankAccountController extends BaseTenantController
     {
         try {
             $reconciliation = $this->bankReconciliationService->completeReconciliation($reconciliationId, auth()->id() ?? '');
+
             return $this->success($reconciliation, 'Reconciliation completed successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to complete reconciliation: ' . $e->getMessage(), 422);
+            return $this->error('Failed to complete reconciliation: '.$e->getMessage(), 422);
         }
     }
 }
-
-

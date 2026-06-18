@@ -2,9 +2,7 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class ExpenseModel extends BaseModel
 {
@@ -22,7 +20,7 @@ class ExpenseModel extends BaseModel
         'expense_date',
         'status',
         'created_by',
-        'approved_by'
+        'approved_by',
     ];
 
     public function category()

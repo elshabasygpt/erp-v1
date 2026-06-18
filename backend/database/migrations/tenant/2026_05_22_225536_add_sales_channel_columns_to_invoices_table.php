@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('sales_channel_name')->nullable()->after('sales_channel_id');
             $table->string('pricing_adjustment_type')->nullable()->after('sales_channel_name');
             $table->decimal('pricing_adjustment_value', 15, 2)->nullable()->after('pricing_adjustment_type');
-            
+
             $table->foreign('sales_channel_id')->references('id')->on('sales_channels')->nullOnDelete();
         });
 

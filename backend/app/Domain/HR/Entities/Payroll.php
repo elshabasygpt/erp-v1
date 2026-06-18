@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Domain\HR\Entities;
 
 class Payroll

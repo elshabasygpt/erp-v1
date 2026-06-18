@@ -26,10 +26,10 @@ export default function ReportsContent({ dict, locale }: { dict: any, locale: st
                 reportsApi.getAccountsReport(),
                 reportsApi.getGeneralKpis()
             ]);
-            setPlData(pl.data);
-            setInvData(inv.data);
-            setAcctData(acct.data);
-            setKpiData(kpi.data);
+            setPlData(pl.data?.data);
+            setInvData(inv.data?.data);
+            setAcctData(acct.data?.data);
+            setKpiData(kpi.data?.data);
         } catch (e) {
             console.error('Failed to load reports', e);
         }

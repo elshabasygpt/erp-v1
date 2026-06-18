@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Application\Approvals\UseCases;
 
 use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
@@ -14,7 +15,7 @@ class ApproveRequestUseCase
     {
         $request = $this->repo->findById($requestId);
 
-        if (!$request) {
+        if (! $request) {
             throw new InvalidArgumentException('Approval request not found');
         }
 

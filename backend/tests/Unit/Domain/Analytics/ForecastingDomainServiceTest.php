@@ -1,4 +1,5 @@
 <?php
+
 namespace Tests\Unit\Domain\Analytics;
 
 use App\Domain\Analytics\Services\ForecastingDomainService;
@@ -10,7 +11,7 @@ class ForecastingDomainServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->service = new ForecastingDomainService();
+        $this->service = new ForecastingDomainService;
     }
 
     public function test_moving_average_returns_average_of_last_n_periods(): void

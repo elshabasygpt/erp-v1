@@ -6,7 +6,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class CreateInvoiceRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
@@ -22,6 +25,11 @@ class CreateInvoiceRequest extends FormRequest
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.discount_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'items.*.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'items.*.base_unit_price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.adjusted_unit_price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.adjustment_amount' => ['nullable', 'numeric'],
+            'items.*.core_charge_applied' => ['nullable', 'boolean'],
+            'items.*.core_charge_amount' => ['nullable', 'numeric', 'min:0'],
             'cost_center_id' => ['nullable', 'uuid', 'exists:tenant.cost_centers,id'],
             'currency_id' => ['nullable', 'uuid', 'exists:tenant.currencies,id'],
             'exchange_rate' => ['nullable', 'numeric', 'min:0.000001'],

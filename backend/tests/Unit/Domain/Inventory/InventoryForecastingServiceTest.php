@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Domain\Inventory;
 
-use PHPUnit\Framework\TestCase;
 use App\Domain\Inventory\Services\InventoryForecastingService;
 use Mockery;
+use PHPUnit\Framework\TestCase;
 
 class InventoryForecastingServiceTest extends TestCase
 {
@@ -16,7 +16,7 @@ class InventoryForecastingServiceTest extends TestCase
 
     public function test_service_initialization()
     {
-        $service = new InventoryForecastingService();
+        $service = new InventoryForecastingService;
         $this->assertInstanceOf(InventoryForecastingService::class, $service);
         $this->assertTrue(method_exists($service, 'getLowStockForecasts'));
     }

@@ -1,7 +1,10 @@
 'use client';
-import { useState, memo } from 'react';
+import { useState, memo, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api';
+import Barcode from 'react-barcode';
+import { QRCodeSVG } from 'qrcode.react';
+import { renderToString } from 'react-dom/server';
 
 // ── Types ──
 export interface MainGroup { id: string; name: string; nameAr: string; subGroups: SubGroup[]; imageUrl?: string; discount?: number; }
@@ -480,53 +483,154 @@ export const PrintBarcodeModal = memo(function PrintBarcodeModal({ dict, locale,
     const isRTL = locale === 'ar';
     const inv = dict.inventory;
     const [count, setCount] = useState(1);
+    const [type, setType] = useState<'1D' | 'QR'>('1D');
+    const [size, setSize] = useState<'50x25' | '40x20' | '38x25' | 'A4'>('50x25');
+    
+    // Configurable options
+    const [showCompany, setShowCompany] = useState(true);
+    const [showPrice, setShowPrice] = useState(true);
+    const [showSku, setShowSku] = useState(true);
+    const [companyName, setCompanyName] = useState('');
+
+    useEffect(() => {
+        const { settingsApi } = require('@/lib/api');
+        settingsApi.getSettings().then((res: any) => {
+            const data = res.data?.data || res.data || {};
+            setCompanyName(data.company_name || '');
+            if (data.barcode_settings) {
+                try {
+                    const settings = JSON.parse(data.barcode_settings);
+                    if (settings.barcode_default_type) setType(settings.barcode_default_type);
+                    if (settings.barcode_default_size) setSize(settings.barcode_default_size);
+                    if (settings.barcode_show_company !== undefined) setShowCompany(settings.barcode_show_company);
+                    if (settings.barcode_show_price !== undefined) setShowPrice(settings.barcode_show_price);
+                    if (settings.barcode_show_sku !== undefined) setShowSku(settings.barcode_show_sku);
+                } catch(e) {}
+            }
+        }).catch(() => {});
+    }, []);
 
     const handlePrint = () => {
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
         if (!printWindow) return;
-        const barcodeLines = product.barcode.split('').map((c: string, i: number) => {
-            const w = parseInt(c, 10) % 4 + 1;
-            return `<div style="display:inline-block;width:${w}px;height:60px;background:${i % 2 === 0 ? '#000' : '#fff'}"></div>`;
-        }).join('');
-        let content = '';
-        for (let i = 0; i < count; i++) {
-            content += `<div style="border:1px dashed #ccc;padding:12px;margin:8px;text-align:center;width:250px;display:inline-block">
-                <div style="font-weight:bold;font-size:12px;margin-bottom:6px">${isRTL ? product.nameAr : product.name}</div>
-                <div style="margin:8px auto;overflow:hidden;white-space:nowrap">${barcodeLines}</div>
-                <div style="font-family:monospace;font-size:11px;letter-spacing:2px">${product.barcode}</div>
-                <div style="font-size:11px;margin-top:4px;font-weight:bold">${product.sellPrice} SAR</div>
-            </div>`;
+
+        let pageCSS = '';
+        
+        const isA4 = size === 'A4';
+        if (isA4) {
+            pageCSS = '@page { size: A4; margin: 10mm; }';
+        } else {
+            const [w, h] = size.split('x');
+            pageCSS = `@page { size: ${w}mm ${h}mm; margin: 0; } body { margin: 0; padding: 0; }`;
         }
-        printWindow.document.write(`<html><head><title>Barcode</title></head><body style="font-family:Arial;display:flex;flex-wrap:wrap;justify-content:center">${content}<script>setTimeout(()=>{window.print();window.close()},500)<\/script></body></html>`);
+
+        const labels = Array.from({ length: count }).map((_, i) => {
+            const labelStyle: React.CSSProperties = isA4 ? {
+                width: '180px', border: '1px dashed #ccc', padding: '10px', textAlign: 'center', boxSizing: 'border-box', pageBreakInside: 'avoid'
+            } : {
+                width: `${size.split('x')[0]}mm`, height: `${size.split('x')[1]}mm`, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', boxSizing: 'border-box', pageBreakAfter: 'always', padding: '2mm', overflow: 'hidden'
+            };
+
+            return (
+                <div key={i} style={labelStyle}>
+                    {showCompany && companyName && (
+                        <div style={{ fontSize: isA4 ? '10px' : '8px', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', color: '#555' }}>
+                            {companyName}
+                        </div>
+                    )}
+                    <div style={{ fontWeight: 'bold', fontSize: isA4 ? '12px' : '10px', marginBottom: '4px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                        {isRTL ? product.nameAr : product.name}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '2px' }}>
+                        {type === '1D' ? (
+                            <Barcode value={product.barcode} width={isA4 ? 1.5 : 1.2} height={isA4 ? 40 : 25} displayValue={false} margin={0} />
+                        ) : (
+                            <QRCodeSVG value={product.barcode} size={isA4 ? 64 : 45} />
+                        )}
+                    </div>
+                    {showSku && <div style={{ fontFamily: 'monospace', fontSize: '10px' }}>{product.barcode}</div>}
+                    {showPrice && <div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>{product.sellPrice} SAR</div>}
+                </div>
+            );
+        });
+
+        const containerStyle: React.CSSProperties = isA4 ? { display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'flex-start' } : { display: 'flex', flexDirection: 'column' };
+        
+        const content = renderToString(<div style={containerStyle}>{labels}</div>);
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print Barcode</title>
+                    <style>
+                        ${pageCSS}
+                        @media print {
+                            body { -webkit-print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                    <script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script>
+                </body>
+            </html>
+        `);
         printWindow.document.close();
     };
-
-    const barcodeVisual = product.barcode.split('').map((c: string, i: number) => (
-        <div key={i} style={{ display: 'inline-block', width: `${parseInt(c, 10) % 4 + 1}px`, height: '50px', background: i % 2 === 0 ? 'var(--text-primary)' : 'transparent' }} />
-    ));
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
             <div className="modal-content !max-w-md">
                 <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
-                    <div className="flex items-center gap-2"><span className="text-xl">🏷️</span><h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{inv.printBarcode}</h2></div>
+                    <div className="flex items-center gap-2"><span className="text-xl">🏷️</span><h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'طباعة الباركود' : 'Print Barcode'}</h2></div>
                     <button onClick={onClose} className="btn-icon"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
+                
                 <div className="p-5 space-y-4">
-                    <div className="glass-card p-6 text-center">
+                    <div className="glass-card p-6 text-center flex flex-col items-center">
+                        {showCompany && companyName && (
+                            <p className="text-xs text-surface-500 mb-1">{companyName}</p>
+                        )}
                         <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>{isRTL ? product.nameAr : product.name}</p>
-                        <div className="flex justify-center mb-2 overflow-hidden">{barcodeVisual}</div>
-                        <p className="font-mono text-sm tracking-[3px]" style={{ color: 'var(--text-secondary)' }}>{product.barcode}</p>
-                        <p className="text-sm font-bold mt-2 text-primary-400">{product.sellPrice} SAR</p>
+                        <div className="flex justify-center mb-2 overflow-hidden bg-white p-2 rounded-lg">
+                            {type === '1D' ? (
+                                <Barcode value={product.barcode} width={1.5} height={40} displayValue={false} margin={0} />
+                            ) : (
+                                <QRCodeSVG value={product.barcode} size={80} />
+                            )}
+                        </div>
+                        {showSku && <p className="font-mono text-sm tracking-[3px]" style={{ color: 'var(--text-secondary)' }}>{product.barcode}</p>}
+                        {showPrice && <p className="text-sm font-bold mt-2 text-primary-400">{product.sellPrice} SAR</p>}
                     </div>
-                    <div className="flex items-center gap-3">
-                        <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{inv.printCount}</label>
-                        <input type="number" min="1" max="100" className="input-field py-2 text-sm w-24" value={count} onChange={e => setCount(Math.max(1, +e.target.value || 1))} />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'نوع الباركود' : 'Barcode Type'}</label>
+                            <select className="select-field py-2 text-sm w-full" value={type} onChange={e => setType(e.target.value as '1D' | 'QR')}>
+                                <option value="1D">1D (Code 128)</option>
+                                <option value="QR">2D (QR Code)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'مقاس الملصق' : 'Label Size'}</label>
+                            <select className="select-field py-2 text-sm w-full" value={size} onChange={e => setSize(e.target.value as any)}>
+                                <option value="50x25">50mm x 25mm</option>
+                                <option value="40x20">40mm x 20mm</option>
+                                <option value="38x25">38mm x 25mm</option>
+                                <option value="A4">A4 (ورق عادي)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
+                        <label className="text-sm font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'عدد الملصقات (النسخ)' : 'Number of Copies'}</label>
+                        <input type="number" min="1" max="500" className="input-field py-2 text-sm w-24 text-center" value={count} onChange={e => setCount(Math.max(1, +e.target.value || 1))} />
                     </div>
                 </div>
+
                 <div className="flex items-center justify-end gap-3 p-5 border-t" style={{ borderColor: 'var(--border-default)' }}>
                     <button onClick={onClose} className="btn-secondary">{dict.common.cancel}</button>
-                    <button onClick={handlePrint} className="btn-primary flex items-center gap-2">🖨️ {inv.print}</button>
+                    <button onClick={handlePrint} className="btn-primary flex items-center gap-2">🖨️ {isRTL ? 'طباعة' : 'Print'}</button>
                 </div>
             </div>
         </div>

@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\CRM;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\CRM\SalesFollowUpModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,7 +20,7 @@ class SalesFollowUpController extends BaseTenantController
         $userId = auth()->id() ?? ''; // fallback
         $status = $request->query('status', 'pending');
 
-        $query = SalesFollowUpModel::where('tenant_id', $this->getTenantId($request))->with('customer')
+        $query = SalesFollowUpModel::query()->where('tenant_id', $this->getTenantId($request))->with('customer')
             ->where('assigned_to', $userId)
             ->orderBy('due_date', 'asc');
 
@@ -40,7 +39,7 @@ class SalesFollowUpController extends BaseTenantController
     public function store(Request $request): JsonResponse
     {
         $validated['tenant_id'] = $this->getTenantId($request);
-        $task = SalesFollowUpModel::create([
+        $task = SalesFollowUpModel::query()->create([
             'tenant_id' => $this->getTenantId($request),
             'id' => Str::uuid()->toString(),
             'customer_id' => $validated['customer_id'],
@@ -60,9 +59,9 @@ class SalesFollowUpController extends BaseTenantController
      */
     public function markCompleted(Request $request, string $id): JsonResponse
     {
-        $task = SalesFollowUpModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $task = SalesFollowUpModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$task) {
+        if (! $task) {
             return $this->error('Follow-up task not found', 404);
         }
 
@@ -76,5 +75,3 @@ class SalesFollowUpController extends BaseTenantController
         return $this->success($task->toArray(), 'Task marked as completed');
     }
 }
-
-

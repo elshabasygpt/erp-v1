@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Infrastructure\Eloquent\Repositories\Treasury;
 
 use App\Domain\Treasury\Entities\SafeTransaction;
@@ -9,15 +10,15 @@ class EloquentSafeTransactionRepository implements SafeTransactionRepositoryInte
 {
     public function save(SafeTransaction $transaction): SafeTransaction
     {
-        $model = new SafeTransactionModel();
+        $model = new SafeTransactionModel;
         $model->fill([
-            'safe_id'          => $transaction->safeId,
-            'type'             => $transaction->type,
-            'amount'           => $transaction->amount,
-            'description'      => $transaction->description,
-            'related_safe_id'  => $transaction->relatedSafeId,
-            'reference_type'   => $transaction->referenceType,
-            'reference_id'     => $transaction->referenceId,
+            'safe_id' => $transaction->safeId,
+            'type' => $transaction->type,
+            'amount' => $transaction->amount,
+            'description' => $transaction->description,
+            'related_safe_id' => $transaction->relatedSafeId,
+            'reference_type' => $transaction->referenceType,
+            'reference_id' => $transaction->referenceId,
         ])->save();
 
         return $this->toEntity($model);
@@ -25,10 +26,10 @@ class EloquentSafeTransactionRepository implements SafeTransactionRepositoryInte
 
     public function findBySafe(int $safeId, array $filters = []): array
     {
-        return SafeTransactionModel::where('safe_id', $safeId)
+        return SafeTransactionModel::query()->where('safe_id', $safeId)
             ->latest()
             ->get()
-            ->map(fn(SafeTransactionModel $m) => $this->toEntity($m))
+            ->map(fn (SafeTransactionModel $m) => $this->toEntity($m))
             ->toArray();
     }
 

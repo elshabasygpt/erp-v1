@@ -12,12 +12,13 @@ interface InventoryCardGridProps {
     setShowMovements: (p: Product) => void;
     setShowBarcode: (p: Product) => void;
     openEdit: (p: Product) => void;
+    openDuplicate: (p: Product) => void;
     setShowDelete: (p: Product) => void;
 }
 
 const InventoryCardGrid = memo(function InventoryCardGrid({
     isRTL, inv, filtered, stockStatus, getGroupName, getUnitSymbol, formatCurrency,
-    setShowMovements, setShowBarcode, openEdit, setShowDelete
+    setShowMovements, setShowBarcode, openEdit, openDuplicate, setShowDelete
 }: InventoryCardGridProps) {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -62,11 +63,12 @@ const InventoryCardGrid = memo(function InventoryCardGrid({
                                 <div className={`h-full rounded-full transition-all ${statusColor}`} style={{ width: `${Math.min(p.minStock > 0 ? (p.stock / (p.minStock * 3)) * 100 : 100, 100)}%` }} />
                             </div>
                         </div>
-                        <div className="flex items-center gap-1 pt-2" style={{ borderTop: '1px solid var(--border-default)' }}>
-                            <button onClick={() => setShowMovements(p)} className="btn-icon text-xs flex-1 justify-center" style={{ color: 'var(--text-muted)' }}>📊</button>
-                            <button onClick={() => setShowBarcode(p)} className="btn-icon text-xs flex-1 justify-center" style={{ color: 'var(--text-muted)' }}>🏷️</button>
-                            <button onClick={() => openEdit(p)} className="btn-icon text-xs flex-1 justify-center" style={{ color: 'var(--text-muted)' }}>✏️</button>
-                            <button onClick={() => setShowDelete(p)} className="btn-icon text-xs flex-1 justify-center hover:!text-red-400" style={{ color: 'var(--text-muted)' }}>🗑️</button>
+                        {/* Actions */}
+                        <div className="grid grid-cols-4 gap-2 pt-4 border-t border-surface-100 dark:border-surface-800">
+                            <button onClick={() => setShowMovements(p)} className="flex items-center justify-center py-2 rounded-lg text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 transition-colors" title={inv.stockMovements}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2.243a2 2 0 011.897 1.368l1.371 4.113a1 1 0 001.897 0l3.184-9.551a1 1 0 011.897 0l1.371 4.113A2 2 0 0018.757 15H21" /></svg></button>
+                            <button onClick={() => setShowBarcode(p)} className="flex items-center justify-center py-2 rounded-lg text-teal-600 hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-900/30 transition-colors" title={inv.printBarcode}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg></button>
+                            <button onClick={() => openDuplicate(p)} className="flex items-center justify-center py-2 rounded-lg text-fuchsia-600 hover:bg-fuchsia-50 dark:text-fuchsia-400 dark:hover:bg-fuchsia-900/30 transition-colors" title={isRTL ? "نسخ وإضافة جديد" : "Duplicate"}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
+                            <button onClick={() => openEdit(p)} className="flex items-center justify-center py-2 rounded-lg text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/30 transition-colors" title="Edit"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
                         </div>
                     </div>
                 );

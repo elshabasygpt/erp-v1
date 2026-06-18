@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PartnerModel extends BaseModel
 {
     use HasFactory;
-
     use HasUuids, SoftDeletes;
 
     protected $connection = 'tenant';
+
     protected $table = 'partners';
+
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [

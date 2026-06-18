@@ -17,7 +17,7 @@ class CurrencyModel extends BaseModel
         'symbol',
         'is_base',
         'is_active',
-        'created_by'
+        'created_by',
     ];
 
     protected $casts = [

@@ -6,8 +6,8 @@ namespace App\Domain\Sales\Services;
 
 use App\Infrastructure\Eloquent\Models\SalesOrderModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use Illuminate\Support\Facades\DB;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 class SalesOrderService
 {
@@ -16,14 +16,14 @@ class SalesOrderService
      */
     public function cancelOrder(string $tenantId, string $orderId): SalesOrderModel
     {
-        $salesOrder = SalesOrderModel::where('tenant_id', $tenantId)->with('items')->find($orderId);
+        $salesOrder = SalesOrderModel::query()->where('tenant_id', $tenantId)->with('items')->find($orderId);
 
-        if (!$salesOrder) {
-            throw new DomainException("Sales Order not found");
+        if (! $salesOrder) {
+            throw new DomainException('Sales Order not found');
         }
 
         if (in_array($salesOrder->status, ['fulfilled', 'cancelled'])) {
-            throw new DomainException("Cannot cancel a fulfilled or already cancelled sales order.");
+            throw new DomainException('Cannot cancel a fulfilled or already cancelled sales order.');
         }
 
         DB::beginTransaction();
@@ -31,7 +31,7 @@ class SalesOrderService
             foreach ($salesOrder->items as $item) {
                 $unfulfilledQty = $item->quantity - $item->fulfilled_quantity;
                 if ($unfulfilledQty > 0) {
-                    $wp = WarehouseProductModel::where('warehouse_id', $salesOrder->warehouse_id)
+                    $wp = WarehouseProductModel::query()->where('warehouse_id', $salesOrder->warehouse_id)
                         ->where('product_id', $item->product_id)
                         ->lockForUpdate()
                         ->first();
@@ -47,6 +47,7 @@ class SalesOrderService
             $salesOrder->save();
 
             DB::commit();
+
             return $salesOrder;
         } catch (\Exception $e) {
             DB::rollBack();

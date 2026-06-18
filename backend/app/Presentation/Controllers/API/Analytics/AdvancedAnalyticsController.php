@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Analytics;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Analytics\Services\AnalyticsService;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -115,4 +115,3 @@ class AdvancedAnalyticsController extends BaseTenantController
         return $this->success($data, 'Conversion funnel metrics retrieved successfully');
     }
 }
-

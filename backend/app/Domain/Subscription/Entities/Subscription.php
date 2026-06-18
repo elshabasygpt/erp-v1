@@ -21,17 +21,40 @@ final class Subscription extends Entity
         parent::__construct($id);
     }
 
-    public function getTenantId(): string { return $this->tenantId; }
-    public function getPlanId(): string { return $this->planId; }
-    public function getStatus(): string { return $this->status; }
-    public function getStartsAt(): \DateTimeImmutable { return $this->startsAt; }
-    public function getEndsAt(): \DateTimeImmutable { return $this->endsAt; }
-    public function getTrialEndsAt(): ?\DateTimeImmutable { return $this->trialEndsAt; }
+    public function getTenantId(): string
+    {
+        return $this->tenantId;
+    }
+
+    public function getPlanId(): string
+    {
+        return $this->planId;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function getStartsAt(): \DateTimeImmutable
+    {
+        return $this->startsAt;
+    }
+
+    public function getEndsAt(): \DateTimeImmutable
+    {
+        return $this->endsAt;
+    }
+
+    public function getTrialEndsAt(): ?\DateTimeImmutable
+    {
+        return $this->trialEndsAt;
+    }
 
     public function cancel(): void
     {
         $this->status = 'cancelled';
-        $this->cancelledAt = new \DateTimeImmutable();
+        $this->cancelledAt = new \DateTimeImmutable;
     }
 
     public function renew(\DateTimeImmutable $newEndsAt): void
@@ -42,17 +65,17 @@ final class Subscription extends Entity
 
     public function isExpired(): bool
     {
-        return $this->endsAt < new \DateTimeImmutable();
+        return $this->endsAt < new \DateTimeImmutable;
     }
 
     public function isOnTrial(): bool
     {
-        return $this->trialEndsAt !== null && $this->trialEndsAt > new \DateTimeImmutable();
+        return $this->trialEndsAt !== null && $this->trialEndsAt > new \DateTimeImmutable;
     }
 
     public function isActive(): bool
     {
-        return $this->status === 'active' && !$this->isExpired();
+        return $this->status === 'active' && ! $this->isExpired();
     }
 
     public function toArray(): array

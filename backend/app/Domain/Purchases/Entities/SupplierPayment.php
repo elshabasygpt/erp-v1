@@ -20,16 +20,43 @@ final class SupplierPayment extends Entity
         private ?\DateTimeImmutable $paymentDate = null,
     ) {
         parent::__construct($id);
-        $this->paymentDate = $paymentDate ?? new \DateTimeImmutable();
+        $this->paymentDate = $paymentDate ?? new \DateTimeImmutable;
     }
 
-    public function getSupplierId(): string { return $this->supplierId; }
-    public function getPurchaseInvoiceId(): ?string { return $this->purchaseInvoiceId; }
-    public function getAmount(): float { return $this->amount; }
-    public function getPaymentMethod(): string { return $this->paymentMethod; }
-    public function getReference(): ?string { return $this->reference; }
-    public function getNotes(): ?string { return $this->notes; }
-    public function getPaymentDate(): \DateTimeImmutable { return $this->paymentDate; }
+    public function getSupplierId(): string
+    {
+        return $this->supplierId;
+    }
+
+    public function getPurchaseInvoiceId(): ?string
+    {
+        return $this->purchaseInvoiceId;
+    }
+
+    public function getAmount(): float
+    {
+        return $this->amount;
+    }
+
+    public function getPaymentMethod(): string
+    {
+        return $this->paymentMethod;
+    }
+
+    public function getReference(): ?string
+    {
+        return $this->reference;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function getPaymentDate(): \DateTimeImmutable
+    {
+        return $this->paymentDate;
+    }
 
     public function toArray(): array
     {

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders\Tenant;
 
-use Illuminate\Database\Seeder;
 use App\Infrastructure\Eloquent\Models\VehicleMakeModel;
 use App\Infrastructure\Eloquent\Models\VehicleModelModel;
 use App\Infrastructure\Eloquent\Models\VehicleYearModel;
+use Illuminate\Database\Seeder;
 
 class VehicleDataSeeder extends Seeder
 {
@@ -22,7 +22,7 @@ class VehicleDataSeeder extends Seeder
                         'years' => [
                             ['year_from' => 2018, 'year_to' => 2024, 'engine_size' => '2.5'],
                             ['year_from' => 2012, 'year_to' => 2017, 'engine_size' => '2.5'],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'Corolla',
@@ -30,9 +30,9 @@ class VehicleDataSeeder extends Seeder
                         'years' => [
                             ['year_from' => 2020, 'year_to' => 2024, 'engine_size' => '2.0'],
                             ['year_from' => 2014, 'year_to' => 2019, 'engine_size' => '1.6'],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'name' => 'Hyundai',
@@ -44,16 +44,16 @@ class VehicleDataSeeder extends Seeder
                         'years' => [
                             ['year_from' => 2021, 'year_to' => 2024, 'engine_size' => '2.0'],
                             ['year_from' => 2016, 'year_to' => 2020, 'engine_size' => '2.0'],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'Sonata',
                         'name_ar' => 'سوناتا',
                         'years' => [
                             ['year_from' => 2020, 'year_to' => 2024, 'engine_size' => '2.5'],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             [
                 'name' => 'Nissan',
@@ -64,17 +64,17 @@ class VehicleDataSeeder extends Seeder
                         'name_ar' => 'ألتيما',
                         'years' => [
                             ['year_from' => 2019, 'year_to' => 2024, 'engine_size' => '2.5'],
-                        ]
+                        ],
                     ],
                     [
                         'name' => 'Sunny',
                         'name_ar' => 'صني',
                         'years' => [
                             ['year_from' => 2020, 'year_to' => 2024, 'engine_size' => '1.6'],
-                        ]
-                    ]
-                ]
-            ]
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         foreach ($makes as $makeData) {

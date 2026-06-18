@@ -14,6 +14,9 @@ export interface Product {
     brand?: string;
     qualityGrade?: string;
     countryOfOrigin?: string;
+    isKit?: boolean;
+    binLocation?: string;
+    warehouseStocks?: any[];
 }
 
 export function useInventoryData() {
@@ -87,7 +90,10 @@ export function useInventoryData() {
                 partNumber: p.part_number || '',
                 brand: p.brand || '',
                 qualityGrade: p.quality_grade || '',
-                countryOfOrigin: p.country_of_origin || ''
+                countryOfOrigin: p.country_of_origin || '',
+                isKit: p.is_kit || false,
+                warehouseStocks: p.warehouseStocks || [],
+                binLocation: p.warehouseStocks && p.warehouseStocks.length > 0 ? p.warehouseStocks[0].bin_location : '',
             })) as Product[];
         }
     });

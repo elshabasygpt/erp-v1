@@ -16,6 +16,8 @@ final class Product extends Entity
         private ?string $barcode,
         private float $costPrice,
         private float $sellPrice,
+        private float $wholesalePrice = 0.0,
+        private float $semiWholesalePrice = 0.0,
         private float $vatRate,
         private int $stockAlertLevel,
         private bool $isActive = true,
@@ -29,19 +31,80 @@ final class Product extends Entity
         parent::__construct($id);
     }
 
-    public function getName(): string { return $this->name; }
-    public function getNameAr(): string { return $this->nameAr; }
-    public function getSku(): string { return $this->sku; }
-    public function getBarcode(): ?string { return $this->barcode; }
-    public function getCostPrice(): float { return $this->costPrice; }
-    public function getSellPrice(): float { return $this->sellPrice; }
-    public function getVatRate(): float { return $this->vatRate; }
-    public function getStockAlertLevel(): int { return $this->stockAlertLevel; }
-    public function isActive(): bool { return $this->isActive; }
-    public function getCategoryId(): ?string { return $this->categoryId; }
-    public function getUnitOfMeasure(): ?string { return $this->unitOfMeasure; }
-    public function getDescription(): ?string { return $this->description; }
-    public function getImageUrl(): ?string { return $this->imageUrl; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getNameAr(): string
+    {
+        return $this->nameAr;
+    }
+
+    public function getSku(): string
+    {
+        return $this->sku;
+    }
+
+    public function getBarcode(): ?string
+    {
+        return $this->barcode;
+    }
+
+    public function getCostPrice(): float
+    {
+        return $this->costPrice;
+    }
+
+    public function getSellPrice(): float
+    {
+        return $this->sellPrice;
+    }
+
+    public function getWholesalePrice(): float
+    {
+        return $this->wholesalePrice;
+    }
+
+    public function getSemiWholesalePrice(): float
+    {
+        return $this->semiWholesalePrice;
+    }
+
+    public function getVatRate(): float
+    {
+        return $this->vatRate;
+    }
+
+    public function getStockAlertLevel(): int
+    {
+        return $this->stockAlertLevel;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getCategoryId(): ?string
+    {
+        return $this->categoryId;
+    }
+
+    public function getUnitOfMeasure(): ?string
+    {
+        return $this->unitOfMeasure;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function getImageUrl(): ?string
+    {
+        return $this->imageUrl;
+    }
 
     public function updatePricing(float $costPrice, float $sellPrice): void
     {
@@ -52,8 +115,15 @@ final class Product extends Entity
         $this->sellPrice = $sellPrice;
     }
 
-    public function deactivate(): void { $this->isActive = false; }
-    public function activate(): void { $this->isActive = true; }
+    public function deactivate(): void
+    {
+        $this->isActive = false;
+    }
+
+    public function activate(): void
+    {
+        $this->isActive = true;
+    }
 
     public function getPriceWithVat(): float
     {
@@ -70,6 +140,8 @@ final class Product extends Entity
             'barcode' => $this->barcode,
             'cost_price' => $this->costPrice,
             'sell_price' => $this->sellPrice,
+            'wholesale_price' => $this->wholesalePrice,
+            'semi_wholesale_price' => $this->semiWholesalePrice,
             'vat_rate' => $this->vatRate,
             'stock_alert_level' => $this->stockAlertLevel,
             'is_active' => $this->isActive,

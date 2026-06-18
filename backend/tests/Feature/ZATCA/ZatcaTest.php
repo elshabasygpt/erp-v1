@@ -2,14 +2,11 @@
 
 namespace Tests\Feature\ZATCA;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
 
 class ZatcaTest extends TestCase
 {
-
-
     public function test_can_get_zatca_status(): void
     {
         $this->actingAsAuthenticatedUser();
@@ -36,7 +33,7 @@ class ZatcaTest extends TestCase
         Http::fake([
             'gw-fatoora.zatca.gov.sa/*' => Http::response([
                 'binarySecurityToken' => base64_encode('fake-csid-token'),
-                'secret'              => 'fake-secret',
+                'secret' => 'fake-secret',
             ], 200),
         ]);
 
@@ -53,10 +50,10 @@ class ZatcaTest extends TestCase
     {
         $this->actingAsAuthenticatedUser();
 
-        $response = $this->getJson('/api/reports/vat-report?' .
+        $response = $this->getJson('/api/reports/vat-report?'.
             http_build_query([
                 'from' => now()->startOfMonth()->toDateString(),
-                'to'   => now()->toDateString(),
+                'to' => now()->toDateString(),
             ])
         );
 

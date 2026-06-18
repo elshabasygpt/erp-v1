@@ -4,33 +4,28 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
+use App\Application\Sales\DTOs\CreateInvoiceDTO;
+use App\Application\Sales\DTOs\UpdateInvoiceDTO;
+use App\Application\Sales\UseCases\ConfirmInvoiceUseCase;
+use App\Application\Sales\UseCases\CreateInvoiceUseCase;
+use App\Application\Sales\UseCases\UpdateInvoiceUseCase;
+use App\Application\Services\Webhooks\WebhookService;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
-use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\SafeModel;
-use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
-use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Domain\Sales\Services\ZatcaPhase1Service;
-use App\Jobs\SubmitZatcaInvoiceJob;
+use App\Infrastructure\Eloquent\Models\WarrantyModel;
+use App\Presentation\Controllers\API\BaseTenantController;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use App\Application\Sales\DTOs\CreateInvoiceDTO;
-use App\Application\Sales\UseCases\CreateInvoiceUseCase;
-use App\Application\Sales\DTOs\UpdateInvoiceDTO;
-use App\Application\Sales\UseCases\UpdateInvoiceUseCase;
 
 class InvoiceController extends BaseTenantController
 {
     public function __construct(
         private readonly CreateInvoiceUseCase $createInvoiceUseCase,
         private readonly UpdateInvoiceUseCase $updateInvoiceUseCase,
-    ) {
-    }
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
@@ -45,14 +40,14 @@ class InvoiceController extends BaseTenantController
         $sortBy = $request->query('sort_by', 'invoice_date');
         $sortDesc = $request->query('sort_desc', 'true') === 'true';
 
-        $query = InvoiceModel::where('tenant_id', $this->getTenantId($request))->select([
+        $query = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->select([
             'id',
             'invoice_number',
             'customer_id',
             'total',
             'status',
             'invoice_date',
-            'created_at'
+            'created_at',
         ])->with(['customer:id,name', 'items.product']);
 
         if ($status && $status !== 'all') {
@@ -89,6 +84,15 @@ class InvoiceController extends BaseTenantController
 
     public function store(Request $request): JsonResponse
     {
+        if (empty($request->input('warehouse_id'))) {
+            $defaultWarehouse = \App\Infrastructure\Eloquent\Models\WarehouseModel::query()
+                ->where('tenant_id', $this->getTenantId($request))
+                ->first();
+            if ($defaultWarehouse) {
+                $request->merge(['warehouse_id' => $defaultWarehouse->id]);
+            }
+        }
+
         $validated = $request->validate([
             'customer_id' => 'nullable|uuid|exists:customers,id',
             'warehouse_id' => 'required|uuid|exists:warehouses,id',
@@ -113,18 +117,22 @@ class InvoiceController extends BaseTenantController
         try {
             $validated['tenant_id'] = $this->getTenantId($request);
             $dto = CreateInvoiceDTO::fromRequest($validated);
+            \Log::info('Tenant transaction level: '.\DB::connection('tenant')->transactionLevel().' spl: '.spl_object_id(\DB::connection('tenant')));
             $invoice = $this->createInvoiceUseCase->execute($dto, auth()->id() ?? '');
 
             if ($validated['status'] === 'confirmed') {
+                $confirmUseCase = app(ConfirmInvoiceUseCase::class);
+                $confirmUseCase->execute($invoice->getId(), auth()->id() ?? '');
                 $this->_createWarrantiesForInvoice($invoice->getId());
             }
 
-            return $this->created(['id' => $invoice->getId()], 'Sales Invoice created successfully');
+            return $this->success(['id' => $invoice->getId()], 'Sales Invoice created successfully', 201);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Invoice creation failed: ' . $e->getMessage());
-            return $this->error('Failed to create invoice: ' . $e->getMessage(), 500);
+            \Log::error('Invoice creation failed: '.$e->getMessage());
+
+            return $this->error('Failed to create invoice: '.$e->getMessage().' Trace: '.$e->getTraceAsString(), 500);
         }
     }
 
@@ -160,15 +168,16 @@ class InvoiceController extends BaseTenantController
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Invoice update exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return $this->error('Failed to update sales invoice: ' . $e->getMessage(), 500);
+            \Log::error('Invoice update exception: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            return $this->error('Failed to update sales invoice: '.$e->getMessage(), 500);
         }
     }
 
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $invoice = InvoiceModel::where('tenant_id', $this->getTenantId($request))->find($id);
-        if (!$invoice) {
+        $invoice = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $invoice) {
             return $this->error('Sales invoice not found', 404);
         }
 
@@ -186,14 +195,14 @@ class InvoiceController extends BaseTenantController
 
         if ($invoice->status !== 'confirmed' && $validated['status'] === 'confirmed') {
             try {
-                $confirmUseCase = app(\App\Application\Sales\UseCases\ConfirmInvoiceUseCase::class);
+                $confirmUseCase = app(ConfirmInvoiceUseCase::class);
                 $confirmUseCase->execute($invoice->id, auth()->id() ?? '');
                 // The use case changes status to confirmed and persists.
                 $invoice->refresh();
 
                 $this->_createWarrantiesForInvoice($invoice->id);
 
-                \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
+                WebhookService::dispatchForTenant(
                     $this->getTenantId($request),
                     'invoice.confirmed',
                     ['invoice_id' => $invoice->id, 'status' => 'confirmed']
@@ -201,15 +210,16 @@ class InvoiceController extends BaseTenantController
 
                 return $this->success($invoice->toArray(), 'Sales invoice confirmed successfully');
             } catch (\Exception $e) {
-                \Log::error('Confirmation failed: ' . $e->getMessage());
-                return $this->error('Failed to confirm invoice: ' . $e->getMessage(), 500);
+                \Log::error('Confirmation failed: '.$e->getMessage());
+
+                return $this->error('Failed to confirm invoice: '.$e->getMessage(), 500);
             }
         } else {
             $invoice->update(['status' => $validated['status']]);
         }
 
         if ($validated['status'] === 'cancelled') {
-            \App\Application\Services\Webhooks\WebhookService::dispatchForTenant(
+            WebhookService::dispatchForTenant(
                 $this->getTenantId($request),
                 'invoice.cancelled',
                 ['invoice_id' => $invoice->id, 'status' => 'cancelled']
@@ -221,10 +231,11 @@ class InvoiceController extends BaseTenantController
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $invoice = InvoiceModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'items.product', 'shippingInvoices'])->find($id);
-        if (!$invoice) {
+        $invoice = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->with(['customer', 'items.product', 'shippingInvoices'])->find($id);
+        if (! $invoice) {
             return $this->error('Sales invoice not found', 404);
         }
+
         return $this->success($invoice->toArray());
     }
 
@@ -238,7 +249,7 @@ class InvoiceController extends BaseTenantController
 
         foreach ($validated['invoices'] as $index => $invoiceData) {
             try {
-                $req = new Request();
+                $req = new Request;
                 $req->replace($invoiceData);
                 $req->headers->replace($request->headers->all());
                 $req->setUserResolver($request->getUserResolver());
@@ -264,7 +275,7 @@ class InvoiceController extends BaseTenantController
         $from = $request->query('from', now()->startOfMonth()->toDateString());
         $to = $request->query('to', now()->endOfMonth()->toDateString());
 
-        $query = InvoiceModel::where('tenant_id', $this->getTenantId($request))
+        $query = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))
             ->whereBetween('invoice_date', [$from, $to])
             ->where('status', '!=', 'cancelled');
 
@@ -277,7 +288,7 @@ class InvoiceController extends BaseTenantController
                 ->select(DB::raw('DATE(invoice_date) as date'), DB::raw('SUM(total) as total'))
                 ->groupBy('date')
                 ->orderBy('date')
-                ->get()
+                ->get(),
         ];
 
         return $this->success($report, 'Sales report generated');
@@ -285,22 +296,24 @@ class InvoiceController extends BaseTenantController
 
     private function _createWarrantiesForInvoice(string $invoiceId): void
     {
-        $invoice = InvoiceModel::with('items.product')->find($invoiceId);
-        if (!$invoice) return;
+        $invoice = InvoiceModel::query()->with('items.product')->find($invoiceId);
+        if (! $invoice) {
+            return;
+        }
 
         foreach ($invoice->items as $item) {
             $product = $item->product;
             if ($product && $product->warranty_months > 0) {
-                $exists = \App\Infrastructure\Eloquent\Models\WarrantyModel::where('invoice_id', $invoice->id)
-                            ->where('product_id', $product->id)
-                            ->exists();
-                
-                if (!$exists) {
-                    $lastWarranty = \App\Infrastructure\Eloquent\Models\WarrantyModel::latest('created_at')->first();
-                    $lastNum = $lastWarranty ? ((int) str_replace('WRN-', '', $lastWarranty->warranty_number)) : 0;
-                    $warrantyNumber = 'WRN-' . str_pad((string)($lastNum + 1), 6, '0', STR_PAD_LEFT);
+                $exists = WarrantyModel::query()->where('invoice_id', $invoice->id)
+                    ->where('product_id', $product->id)
+                    ->exists();
 
-                    \App\Infrastructure\Eloquent\Models\WarrantyModel::create([
+                if (! $exists) {
+                    $lastWarranty = WarrantyModel::latest('created_at')->first();
+                    $lastNum = $lastWarranty ? ((int) str_replace('WRN-', '', $lastWarranty->warranty_number)) : 0;
+                    $warrantyNumber = 'WRN-'.str_pad((string) ($lastNum + 1), 6, '0', STR_PAD_LEFT);
+
+                    WarrantyModel::query()->create([
                         'id' => Str::uuid()->toString(),
                         'tenant_id' => $invoice->tenant_id,
                         'warranty_number' => $warrantyNumber,
@@ -309,7 +322,7 @@ class InvoiceController extends BaseTenantController
                         'product_id' => $product->id,
                         'sale_date' => $invoice->invoice_date,
                         'warranty_months' => $product->warranty_months,
-                        'expiry_date' => \Carbon\Carbon::parse($invoice->invoice_date)->addMonths($product->warranty_months),
+                        'expiry_date' => Carbon::parse($invoice->invoice_date)->addMonths($product->warranty_months),
                         'status' => 'active',
                         'created_by' => auth()->id() ?? $invoice->created_by,
                     ]);
@@ -318,4 +331,3 @@ class InvoiceController extends BaseTenantController
         }
     }
 }
-

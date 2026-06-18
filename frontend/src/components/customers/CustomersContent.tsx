@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DeleteConfirmModal, ViewAccountModal, CustomerGroupsModal, ImportCustomersModal } from './CustomerModals';
+import { FollowUpsModal } from './FollowUpsModal';
 import { exportTableToPDF } from '@/lib/pdf-export';
 import { crmApi } from '@/lib/api';
 
@@ -47,6 +48,7 @@ export default function CustomersContent({ dict, locale }: Props) {
     const [showAccount, setShowAccount] = useState<Customer | null>(null);
     const [showGroups, setShowGroups] = useState(false);
     const [showImport, setShowImport] = useState(false);
+    const [showFollowUps, setShowFollowUps] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -178,6 +180,7 @@ export default function CustomersContent({ dict, locale }: Props) {
     const handleAction = (key: string) => {
         switch (key) {
             case 'add': openAdd(); break;
+            case 'followups': setShowFollowUps(true); break;
             case 'import': setShowImport(true); break;
             case 'export': exportCSV(); break;
             case 'report': {
@@ -232,6 +235,7 @@ export default function CustomersContent({ dict, locale }: Props) {
     ];
 
     const actionBtns = [
+        { key: 'followups', label: isRTL ? 'المتابعة' : 'Follow-ups', icon: '📌' },
         { key: 'import', label: c.importCustomers, icon: '📥' },
         { key: 'export', label: c.exportCustomers, icon: '📤' },
         { key: 'report', label: c.customerReport, icon: '📊' },
@@ -414,6 +418,7 @@ export default function CustomersContent({ dict, locale }: Props) {
             {showAccount && <ViewAccountModal dict={dict} locale={locale} customer={showAccount} onClose={() => setShowAccount(null)} formatCurrency={formatCurrency} />}
             {showGroups && <CustomerGroupsModal dict={dict} locale={locale} customers={customers} onClose={() => setShowGroups(false)} />}
             {showImport && <ImportCustomersModal dict={dict} locale={locale} onClose={() => setShowImport(false)} />}
+            {showFollowUps && <FollowUpsModal locale={locale} onClose={() => setShowFollowUps(false)} />}
         </div>
     );
 }

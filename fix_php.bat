@@ -12,4 +12,4 @@ if '%errorlevel%' NEQ '0' (
 
 :gotAdmin
     if exist "%temp%\getadmin.vbs" ( del "%temp%\getadmin.vbs" )
-    powershell -Command "(Get-Content -Path 'C:\Program Files\PHP\current\php.ini') -replace ';extension=fileinfo', 'extension=fileinfo' | Set-Content -Path 'C:\Program Files\PHP\current\php.ini'"
+    powershell -Command "$c = Get-Content -Path 'C:\Program Files\PHP\current\php.ini'; $c = $c -replace ';extension=fileinfo', 'extension=fileinfo' -replace ';extension=openssl', 'extension=openssl' -replace ';extension=curl', 'extension=curl' -replace ';extension=exif', 'extension=exif'; Set-Content -Path 'C:\Program Files\PHP\current\php.ini' -Value $c"

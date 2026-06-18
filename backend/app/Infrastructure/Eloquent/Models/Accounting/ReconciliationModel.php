@@ -23,7 +23,7 @@ class ReconciliationModel extends BaseModel
         'status',
         'created_by',
         'completed_by',
-        'completed_at'
+        'completed_at',
     ];
 
     protected $casts = [

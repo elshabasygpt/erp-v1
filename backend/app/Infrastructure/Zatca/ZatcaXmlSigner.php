@@ -12,7 +12,7 @@ class ZatcaXmlSigner
     public function hashXml(string $xml): string
     {
         // Canonicalize XML before hashing (C14N)
-        $doc = new \DOMDocument();
+        $doc = new \DOMDocument;
         $doc->loadXML($xml);
         $canonicalized = $doc->C14N(true, false);
 
@@ -26,7 +26,7 @@ class ZatcaXmlSigner
     {
         $privateKey = openssl_pkey_get_private($privateKeyPem);
 
-        if (!$privateKey) {
+        if (! $privateKey) {
             throw new \RuntimeException('Invalid private key for ZATCA signing');
         }
 
@@ -38,8 +38,8 @@ class ZatcaXmlSigner
             OPENSSL_ALGO_SHA256
         );
 
-        if (!$result) {
-            throw new \RuntimeException('Failed to sign XML: ' . openssl_error_string());
+        if (! $result) {
+            throw new \RuntimeException('Failed to sign XML: '.openssl_error_string());
         }
 
         return base64_encode($signature);
@@ -50,7 +50,7 @@ class ZatcaXmlSigner
      */
     public function embedSignature(string $xml, string $signature, string $xmlHash, string $certificatePem): string
     {
-        $doc = new \DOMDocument();
+        $doc = new \DOMDocument;
         $doc->loadXML($xml);
 
         $certificateBase64 = base64_encode($certificatePem);
@@ -93,7 +93,7 @@ class ZatcaXmlSigner
 XML;
 
         // Insert before closing Invoice tag
-        $xml = str_replace('</Invoice>', $signatureBlock . '</Invoice>', $xml);
+        $xml = str_replace('</Invoice>', $signatureBlock.'</Invoice>', $xml);
 
         return $xml;
     }

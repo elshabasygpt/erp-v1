@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('tax_amount', 12, 2)->default(0);
             $table->string('status')->default('draft'); // draft, completed, cancelled
             $table->text('notes')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes();
 

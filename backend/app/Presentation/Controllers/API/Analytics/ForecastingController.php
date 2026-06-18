@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Analytics;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Inventory\Services\InventoryForecastingService;
 use App\Domain\Partnerships\Services\PartnerForecastingService;
 use App\Domain\Purchases\Services\SmartPurchaseDrafter;
-use Illuminate\Http\Request;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ForecastingController extends BaseTenantController
 {
@@ -26,14 +26,14 @@ class ForecastingController extends BaseTenantController
 
         return $this->success([
             'alerts_count' => count($forecasts),
-            'forecasts' => $forecasts
+            'forecasts' => $forecasts,
         ]);
     }
 
     public function autoDraftPurchaseOrder(Request $request): JsonResponse
     {
         $request->validate([
-            'warehouse_id' => 'required|uuid'
+            'warehouse_id' => 'required|uuid',
         ]);
 
         try {
@@ -48,15 +48,14 @@ class ForecastingController extends BaseTenantController
         }
     }
 
-    public function getPartnerForecast(): JsonResponse
+    public function getPartnerForecast(Request $request): JsonResponse
     {
         try {
-            $projections = $this->partnerForecaster->getEndOfYearProjections();
+            $projections = $this->partnerForecaster->getEndOfYearProjections((string) $this->getTenantId($request));
+
             return $this->success($projections);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
         }
     }
 }
-
-

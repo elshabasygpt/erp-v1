@@ -24,14 +24,45 @@ final class Account extends Entity
         $this->validateType($type);
     }
 
-    public function getCode(): string { return $this->code; }
-    public function getName(): string { return $this->name; }
-    public function getNameAr(): string { return $this->nameAr; }
-    public function getType(): string { return $this->type; }
-    public function getParentId(): ?string { return $this->parentId; }
-    public function isActive(): bool { return $this->isActive; }
-    public function getDescription(): ?string { return $this->description; }
-    public function getLevel(): int { return $this->level; }
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getNameAr(): string
+    {
+        return $this->nameAr;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function getParentId(): ?string
+    {
+        return $this->parentId;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function getLevel(): int
+    {
+        return $this->level;
+    }
 
     public function isDebitNormal(): bool
     {
@@ -46,8 +77,8 @@ final class Account extends Entity
     private function validateType(string $type): void
     {
         $allowed = ['asset', 'liability', 'equity', 'revenue', 'expense'];
-        if (!in_array($type, $allowed)) {
-            throw new \InvalidArgumentException("Invalid account type: {$type}. Allowed: " . implode(', ', $allowed));
+        if (! in_array($type, $allowed)) {
+            throw new \InvalidArgumentException("Invalid account type: {$type}. Allowed: ".implode(', ', $allowed));
         }
     }
 

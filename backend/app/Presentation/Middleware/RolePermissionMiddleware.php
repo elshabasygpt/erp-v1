@@ -13,7 +13,7 @@ class RolePermissionMiddleware
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
@@ -25,7 +25,7 @@ class RolePermissionMiddleware
         $userPermissions = $user->role?->permissions?->pluck('name')->toArray() ?? [];
 
         foreach ($permissions as $permission) {
-            if (!in_array($permission, $userPermissions)) {
+            if (! in_array($permission, $userPermissions)) {
                 return response()->json([
                     'message' => "You do not have permission: {$permission}",
                     'error' => 'insufficient_permissions',

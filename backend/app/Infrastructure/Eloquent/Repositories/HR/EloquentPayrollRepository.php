@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Infrastructure\Eloquent\Repositories\HR;
 
 use App\Domain\HR\Entities\Payroll;
@@ -9,24 +10,24 @@ class EloquentPayrollRepository implements PayrollRepositoryInterface
 {
     public function findAll(int $tenantId, array $filters = []): array
     {
-        return PayrollModel::whereHas('employee', fn($q) => $q->where('tenant_id', $tenantId))
+        return PayrollModel::whereHas('employee', fn ($q) => $q->where('tenant_id', $tenantId))
             ->get()
-            ->map(fn(PayrollModel $m) => $this->toEntity($m))
+            ->map(fn (PayrollModel $m) => $this->toEntity($m))
             ->toArray();
     }
 
     public function save(Payroll $payroll): Payroll
     {
-        $model = new PayrollModel();
+        $model = new PayrollModel;
         $model->fill([
-            'employee_id'  => $payroll->employeeId,
+            'employee_id' => $payroll->employeeId,
             'period_start' => $payroll->periodStart,
-            'period_end'   => $payroll->periodEnd,
+            'period_end' => $payroll->periodEnd,
             'basic_salary' => $payroll->basicSalary,
-            'deductions'   => $payroll->deductions,
-            'bonuses'      => $payroll->bonuses,
-            'net_salary'   => $payroll->netSalary,
-            'status'       => $payroll->status,
+            'deductions' => $payroll->deductions,
+            'bonuses' => $payroll->bonuses,
+            'net_salary' => $payroll->netSalary,
+            'status' => $payroll->status,
         ])->save();
 
         return $this->toEntity($model);
@@ -34,8 +35,9 @@ class EloquentPayrollRepository implements PayrollRepositoryInterface
 
     public function markAsPaid(int $id): Payroll
     {
-        $model = PayrollModel::findOrFail($id);
+        $model = PayrollModel::query()->findOrFail($id);
         $model->update(['status' => 'paid']);
+
         return $this->toEntity($model->fresh());
     }
 

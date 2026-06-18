@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { settingsApi } from '@/lib/api';
 import ZatcaSettingsSection from '@/components/settings/ZatcaSettingsSection';
 import SalesChannelsSettings from '@/components/settings/SalesChannelsSettings';
+import BarcodeSettingsSection from '@/components/settings/BarcodeSettingsSection';
+import InvoiceSettingsSection from '@/components/settings/InvoiceSettingsSection';
 import { useSidebar, type SidebarMode } from '@/providers/SidebarProvider';
 
 export default function SettingsPage() {
@@ -21,6 +23,8 @@ export default function SettingsPage() {
         email: '',
         website: '',
     });
+    const [hrEmail, setHrEmail] = useState('');
+    const [savingHr, setSavingHr] = useState(false);
 
     useEffect(() => {
         import(`@/i18n/dictionaries/${locale}.json`).then(m => setDict(m.default));
@@ -37,6 +41,7 @@ export default function SettingsPage() {
                     email: data.email || 'info@company.com',
                     website: data.website || 'www.company.com',
                 });
+                setHrEmail(data.hr_manager_email || '');
             })
             .catch(() => {
                 // Backend not available — use defaults
@@ -48,6 +53,18 @@ export default function SettingsPage() {
                 });
             });
     }, [isRTL]);
+
+    const saveHrEmail = async () => {
+        try {
+            setSavingHr(true);
+            await settingsApi.updateHrManagerEmail(hrEmail);
+            alert(isRTL ? 'تم حفظ إيميل المسؤول بنجاح' : 'HR Manager Email saved successfully');
+        } catch (e) {
+            alert(isRTL ? 'حدث خطأ' : 'Error saving email');
+        } finally {
+            setSavingHr(false);
+        }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -147,11 +164,47 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
+                {/* ── HR Settings ── */}
+                <div className="glass-card p-6">
+                    <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-heading)' }}>
+                        {isRTL ? 'إعدادات الموارد البشرية' : 'HR Settings'}
+                    </h3>
+                    <div>
+                        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                            {isRTL ? 'إيميل مسؤول الموارد البشرية' : 'HR Manager Email'}
+                        </label>
+                        <p className="text-xs text-gray-500 mb-2">
+                            {isRTL
+                                ? 'هذا الإيميل يستقبل تنبيهات التأخير فور تسجيل الموظف حضوره'
+                                : 'This email receives late attendance alerts instantly'}
+                        </p>
+                        <div className="flex gap-2">
+                            <input 
+                                type="email" 
+                                className="input-field w-full max-w-md" 
+                                value={hrEmail} 
+                                onChange={e => setHrEmail(e.target.value)} 
+                                placeholder="manager@company.com" 
+                                dir="ltr"
+                            />
+                            <button className="btn-primary" onClick={saveHrEmail} disabled={savingHr}>
+                                {savingHr ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 {/* ── Sales Channels ── */}
                 <SalesChannelsSettings isRTL={isRTL} />
 
                 {/* ── ZATCA / e-Invoicing ── */}
                 <ZatcaSettingsSection dict={dict} locale={locale as any} />
+
+                {/* ── Barcode Settings ── */}
+                <BarcodeSettingsSection dict={dict} locale={locale} />
+
+                {/* ── Invoice Settings ── */}
+                <InvoiceSettingsSection dict={dict} locale={locale} />
 
                 {/* ── Sidebar Style ── */}
                 <div className="glass-card p-6">

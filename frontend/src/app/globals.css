@@ -545,10 +545,41 @@
    PRINT STYLES
    ══════════════════════════════════════════════════════ */
 @media print {
-    body { background: white !important; color: black !important; }
-    .sidebar-link, aside, header, .btn-primary, .btn-secondary { display: none !important; }
-    .glass-card { box-shadow: none !important; border: 1px solid #ddd !important; }
-    main { margin: 0 !important; }
+    @page {
+        margin: 0.5cm;
+        size: auto;
+    }
+    body { background: white !important; color: black !important; font-size: 12px; }
+    .sidebar-link, aside, header, nav, .btn-primary, .btn-secondary, .btn-icon, .btn-danger, .hide-on-print { display: none !important; }
+    
+    .glass-card { 
+        box-shadow: none !important; 
+        border: 1px solid #ddd !important; 
+        background: transparent !important;
+        backdrop-filter: none !important;
+        break-inside: avoid;
+    }
+    
+    .modal-overlay {
+        background: none !important;
+        backdrop-filter: none !important;
+        position: static !important;
+    }
+    .modal-content {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    main { margin: 0 !important; padding: 0 !important; }
+    
+    .page-break { page-break-before: always; }
+    
+    /* Ensure tables border prints */
+    table { border-collapse: collapse !important; }
+    th, td { border: 1px solid #ccc !important; }
 }
 /* ── Mobile Responsive Fixes ── */
 

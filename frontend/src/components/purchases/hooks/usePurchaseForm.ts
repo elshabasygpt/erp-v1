@@ -115,7 +115,7 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
     const handleCompleteReturn = async (id: string, warehouse_id: string) => {
         if(!warehouse_id) return alert('Warehouse is required to complete return');
         try {
-            await purchaseReturnsApi.updateStatus(id, { status: 'completed', warehouse_id });
+            await purchaseReturnsApi.updateReturnStatus(id, { status: 'completed', notes: warehouse_id });
             fetchReturns();
             setSelectedReturn(null);
         } catch (error) {

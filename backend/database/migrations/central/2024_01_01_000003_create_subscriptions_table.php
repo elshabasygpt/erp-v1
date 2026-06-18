@@ -12,7 +12,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('tenant_id');
             $table->uuid('plan_id');
-            $table->string('status') /* changed from enum for testing */->default('active');
+            $table->string('status') /* changed from enum for testing */ ->default('active');
             $table->timestamp('starts_at');
             $table->timestamp('ends_at');
             $table->timestamp('trial_ends_at')->nullable();

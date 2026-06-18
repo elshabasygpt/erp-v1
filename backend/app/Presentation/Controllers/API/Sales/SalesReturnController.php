@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Application\Sales\DTOs\Returns\ProcessSalesReturnDTO;
 use App\Application\Sales\UseCases\Returns\ProcessSalesReturnUseCase;
 use App\Infrastructure\Eloquent\Models\SalesReturnModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class SalesReturnController extends BaseTenantController
 {
@@ -23,8 +22,8 @@ class SalesReturnController extends BaseTenantController
         $limit = $request->query('limit', '15');
         $status = $request->query('status');
 
-        $query = SalesReturnModel::where('tenant_id', $this->getTenantId($request))->with(['customer', 'invoice', 'items.product', 'creator'])->orderBy('return_date', 'desc');
-        
+        $query = SalesReturnModel::query()->where('tenant_id', $this->getTenantId($request))->with(['customer', 'invoice', 'items.product', 'creator'])->orderBy('return_date', 'desc');
+
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
@@ -58,42 +57,41 @@ class SalesReturnController extends BaseTenantController
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
-            \Log::error('Sales Return failed: ' . $e->getMessage());
-            return $this->error('Failed to process sales return: ' . $e->getMessage(), 500);
+            \Log::error('Sales Return failed: '.$e->getMessage());
+
+            return $this->error('Failed to process sales return: '.$e->getMessage(), 500);
         }
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $salesReturn = SalesReturnModel::where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer', 'invoice', 'creator'])->find($id);
+        $salesReturn = SalesReturnModel::query()->where('tenant_id', $this->getTenantId($request))->with(['items.product', 'customer', 'invoice', 'creator'])->find($id);
 
-        if (!$salesReturn) {
+        if (! $salesReturn) {
             return $this->error('Sales return not found', 404);
         }
 
         return $this->success($salesReturn->toArray(), 'Sales return retrieved successfully');
     }
-    
+
     public function updateStatus(Request $request, string $id): JsonResponse
     {
-        $salesReturn = SalesReturnModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $salesReturn = SalesReturnModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
 
-        if (!$salesReturn) {
+        if (! $salesReturn) {
             return $this->error('Sales return not found', 404);
         }
-        
+
         if ($salesReturn->status === 'pending_approval' || $salesReturn->approval_status === 'pending') {
             return $this->error('Cannot manually update status. This return requires approval.', 403);
         }
-        
+
         $validated = $request->validate([
             'status' => 'required|string|in:draft,completed,cancelled',
         ]);
-        
+
         $salesReturn->update($validated);
-        
+
         return $this->success($salesReturn->toArray(), 'Sales return status updated successfully');
     }
 }
-
-

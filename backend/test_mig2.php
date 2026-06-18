@@ -1,20 +1,26 @@
 <?php
+
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+
 require 'vendor/autoload.php';
 $app = require_once 'bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-\Illuminate\Support\Facades\Config::set('database.connections.sqlite.database', ':memory:');
+Config::set('database.connections.sqlite.database', ':memory:');
 
-\Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--database' => 'sqlite']);
-echo \Illuminate\Support\Facades\Artisan::output();
+Artisan::call('migrate:fresh', ['--database' => 'sqlite']);
+echo Artisan::output();
 
-\Illuminate\Support\Facades\Artisan::call('migrate', [
-    '--path'     => 'database/migrations/central',
+Artisan::call('migrate', [
+    '--path' => 'database/migrations/central',
     '--database' => 'sqlite',
-    '--force'    => true,
+    '--force' => true,
 ]);
-echo \Illuminate\Support\Facades\Artisan::output();
+echo Artisan::output();
 
-$tables = \Illuminate\Support\Facades\DB::connection('sqlite')->select("SELECT name FROM sqlite_master WHERE type='table'");
+$tables = DB::connection('sqlite')->select("SELECT name FROM sqlite_master WHERE type='table'");
 print_r($tables);

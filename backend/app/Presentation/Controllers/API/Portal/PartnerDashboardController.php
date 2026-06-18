@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Portal;
 
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
-use App\Infrastructure\Eloquent\Models\PartnerModel;
-use App\Infrastructure\Eloquent\Models\PartnerWithdrawalModel;
-use App\Infrastructure\Eloquent\Models\PartnerProfitShareModel;
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Partnerships\Services\PartnerForecastingService;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Infrastructure\Eloquent\Models\PartnerProfitShareModel;
+use App\Infrastructure\Eloquent\Models\PartnerWithdrawalModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class PartnerDashboardController extends BaseTenantController
 {
@@ -37,12 +37,12 @@ class PartnerDashboardController extends BaseTenantController
         $yesterday = Carbon::yesterday();
 
         // Today's total sales
-        $todaySales = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)
+        $todaySales = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)
             ->where('status', 'confirmed')
             ->whereDate('invoice_date', $today)
             ->sum('total');
 
-        $yesterdaySales = InvoiceModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)
+        $yesterdaySales = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)
             ->where('status', 'confirmed')
             ->whereDate('invoice_date', $yesterday)
             ->sum('total');
@@ -62,7 +62,7 @@ class PartnerDashboardController extends BaseTenantController
             ->selectRaw('SUM((invoice_items.unit_price - products.cost_price) * invoice_items.quantity) as gross')
             ->value('gross') ?? 0;
 
-        $partnerTodayProfit = (float)$todayProfit * ($partner->profit_share_percentage / 100);
+        $partnerTodayProfit = (float) $todayProfit * ($partner->profit_share_percentage / 100);
 
         // Monthly
         $monthStart = Carbon::now()->startOfMonth();
@@ -76,18 +76,18 @@ class PartnerDashboardController extends BaseTenantController
             ->selectRaw('SUM((invoice_items.unit_price - products.cost_price) * invoice_items.quantity) as gross')
             ->value('gross') ?? 0;
 
-        $partnerMonthProfit = (float)$monthProfit * ($partner->profit_share_percentage / 100);
+        $partnerMonthProfit = (float) $monthProfit * ($partner->profit_share_percentage / 100);
 
         return $this->success([
             'kpis' => [
-                'today_sales'           => round((float)$todaySales, 2),
-                'yesterday_sales'       => round((float)$yesterdaySales, 2),
-                'sales_growth_pct'      => round($growth, 1),
-                'partner_today_profit'  => round($partnerTodayProfit, 2),
-                'partner_month_profit'  => round($partnerMonthProfit, 2),
-                'total_pending'         => (float)$partner->total_pending,
-                'total_withdrawn'       => (float)$partner->total_withdrawn,
-                'profit_share_pct'      => (float)$partner->profit_share_percentage,
+                'today_sales' => round((float) $todaySales, 2),
+                'yesterday_sales' => round((float) $yesterdaySales, 2),
+                'sales_growth_pct' => round($growth, 1),
+                'partner_today_profit' => round($partnerTodayProfit, 2),
+                'partner_month_profit' => round($partnerMonthProfit, 2),
+                'total_pending' => (float) $partner->total_pending,
+                'total_withdrawn' => (float) $partner->total_withdrawn,
+                'profit_share_pct' => (float) $partner->profit_share_percentage,
             ],
         ]);
     }
@@ -103,7 +103,7 @@ class PartnerDashboardController extends BaseTenantController
 
         $start = $period === 'year' ? Carbon::now()->startOfYear() : Carbon::now()->startOfMonth();
         $prevStart = $period === 'year' ? Carbon::now()->subYear()->startOfYear() : Carbon::now()->subMonth()->startOfMonth();
-        $prevEnd   = $period === 'year' ? Carbon::now()->subYear()->endOfYear() : Carbon::now()->subMonth()->endOfMonth();
+        $prevEnd = $period === 'year' ? Carbon::now()->subYear()->endOfYear() : Carbon::now()->subMonth()->endOfMonth();
 
         $calcProfit = function ($from, $to = null) use ($tenantId) {
             $q = DB::connection('tenant')
@@ -113,14 +113,17 @@ class PartnerDashboardController extends BaseTenantController
                 ->where('invoices.tenant_id', $tenantId)
                 ->where('invoices.status', 'confirmed')
                 ->where('invoices.invoice_date', '>=', $from);
-            if ($to) $q->where('invoices.invoice_date', '<=', $to);
-            return (float)($q->selectRaw('SUM((invoice_items.unit_price - products.cost_price) * invoice_items.quantity) as gross')->value('gross') ?? 0);
+            if ($to) {
+                $q->where('invoices.invoice_date', '<=', $to);
+            }
+
+            return (float) ($q->selectRaw('SUM((invoice_items.unit_price - products.cost_price) * invoice_items.quantity) as gross')->value('gross') ?? 0);
         };
 
-        $currentProfit  = $calcProfit($start);
+        $currentProfit = $calcProfit($start);
         $previousProfit = $calcProfit($prevStart, $prevEnd);
 
-        $partnerCurrent  = $currentProfit * ($partner->profit_share_percentage / 100);
+        $partnerCurrent = $currentProfit * ($partner->profit_share_percentage / 100);
         $partnerPrevious = $previousProfit * ($partner->profit_share_percentage / 100);
 
         $growth = $partnerPrevious > 0
@@ -131,22 +134,22 @@ class PartnerDashboardController extends BaseTenantController
         $chartData = [];
         for ($i = 5; $i >= 0; $i--) {
             $mStart = Carbon::now()->subMonths($i)->startOfMonth();
-            $mEnd   = Carbon::now()->subMonths($i)->endOfMonth();
+            $mEnd = Carbon::now()->subMonths($i)->endOfMonth();
             $mProfit = $calcProfit($mStart, $mEnd);
             $chartData[] = [
-                'month'          => $mStart->format('M Y'),
-                'month_ar'       => $mStart->locale('ar')->isoFormat('MMM YYYY'),
-                'system_profit'  => round($mProfit, 2),
+                'month' => $mStart->format('M Y'),
+                'month_ar' => $mStart->locale('ar')->isoFormat('MMM YYYY'),
+                'system_profit' => round($mProfit, 2),
                 'partner_profit' => round($mProfit * ($partner->profit_share_percentage / 100), 2),
             ];
         }
 
         return $this->success([
-            'period'           => $period,
-            'current_profit'   => round($partnerCurrent, 2),
-            'previous_profit'  => round($partnerPrevious, 2),
-            'growth_pct'       => round($growth, 1),
-            'chart_data'       => $chartData,
+            'period' => $period,
+            'current_profit' => round($partnerCurrent, 2),
+            'previous_profit' => round($partnerPrevious, 2),
+            'growth_pct' => round($growth, 1),
+            'chart_data' => $chartData,
         ]);
     }
 
@@ -159,27 +162,27 @@ class PartnerDashboardController extends BaseTenantController
         $tenantId = $this->getPartnerTenantId($request);
 
         // Profit shares (credits)
-        $profitShares = PartnerProfitShareModel::where('tenant_id', $this->getTenantId($request))->with('distribution')
+        $profitShares = PartnerProfitShareModel::query()->where('tenant_id', $this->getTenantId($request))->with('distribution')
             ->where('tenant_id', $tenantId)
             ->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn($s) => [
-                'type'        => 'credit',
-                'date'        => $s->created_at?->toDateString(),
-                'description' => 'توزيع أرباح - ' . ($s->distribution?->created_at?->format('Y-m-d') ?? 'توزيع'),
-                'amount'      => (float)$s->amount,
+            ->map(fn ($s) => [
+                'type' => 'credit',
+                'date' => $s->created_at?->toDateString(),
+                'description' => 'توزيع أرباح - '.($s->distribution?->created_at?->format('Y-m-d') ?? 'توزيع'),
+                'amount' => (float) $s->amount,
             ]);
 
         // Withdrawals (debits)
-        $withdrawals = PartnerWithdrawalModel::where('tenant_id', $this->getTenantId($request))->where('partner_id', $partner->id)
+        $withdrawals = PartnerWithdrawalModel::query()->where('tenant_id', $this->getTenantId($request))->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn($w) => [
-                'type'        => 'debit',
-                'date'        => $w->created_at?->toDateString(),
+            ->map(fn ($w) => [
+                'type' => 'debit',
+                'date' => $w->created_at?->toDateString(),
                 'description' => $w->notes ?? 'سحب أرباح',
-                'amount'      => (float)$w->amount,
+                'amount' => (float) $w->amount,
             ]);
 
         // Merge and sort chronologically for correct running balance
@@ -191,6 +194,7 @@ class PartnerDashboardController extends BaseTenantController
         $runningBalance = 0;
         $entries = $allEntries->map(function ($entry) use (&$runningBalance) {
             $runningBalance += $entry['type'] === 'credit' ? $entry['amount'] : -$entry['amount'];
+
             return array_merge($entry, ['balance' => round($runningBalance, 2)]);
         });
 
@@ -198,17 +202,17 @@ class PartnerDashboardController extends BaseTenantController
         $entries = $entries->reverse()->values();
 
         return $this->success([
-            'partner'         => [
-                'name'            => $partner->name,
-                'total_pending'   => (float)$partner->total_pending,
-                'total_withdrawn' => (float)$partner->total_withdrawn,
-                'net_profit'      => round((float)$partner->total_pending + (float)$partner->total_withdrawn, 2),
+            'partner' => [
+                'name' => $partner->name,
+                'total_pending' => (float) $partner->total_pending,
+                'total_withdrawn' => (float) $partner->total_withdrawn,
+                'net_profit' => round((float) $partner->total_pending + (float) $partner->total_withdrawn, 2),
             ],
-            'entries'         => $entries,
-            'summary'         => [
-                'total_credited'  => round($profitShares->sum('amount'), 2),
+            'entries' => $entries,
+            'summary' => [
+                'total_credited' => round($profitShares->sum('amount'), 2),
                 'total_withdrawn' => round($withdrawals->sum('amount'), 2),
-                'current_balance' => (float)$partner->total_pending,
+                'current_balance' => (float) $partner->total_pending,
             ],
         ]);
     }
@@ -220,7 +224,7 @@ class PartnerDashboardController extends BaseTenantController
     {
         $tenantId = $this->getPartnerTenantId($request);
         $limit = (int) $request->get('limit', 10);
-        $from  = $request->get('from', Carbon::now()->startOfMonth()->toDateString());
+        $from = $request->get('from', Carbon::now()->startOfMonth()->toDateString());
 
         $products = DB::connection('tenant')
             ->table('invoice_items')
@@ -252,15 +256,15 @@ class PartnerDashboardController extends BaseTenantController
     {
         $partner = $request->attributes->get('partner');
         $tenantId = $this->getPartnerTenantId($request);
-        
-        $full    = $this->forecastingService->getEndOfYearProjections($tenantId);
+
+        $full = $this->forecastingService->getEndOfYearProjections($tenantId);
 
         // Filter to only this partner's projection
         $partnerProjection = collect($full['partner_projections'])
             ->firstWhere('partner_id', $partner->id);
 
         return $this->success([
-            'metrics'    => $full['metrics'],
+            'metrics' => $full['metrics'],
             'projection' => $partnerProjection,
         ]);
     }
@@ -268,19 +272,19 @@ class PartnerDashboardController extends BaseTenantController
     /**
      * GET /api/portal/statement/pdf — Export statement as PDF (plain HTML response for browser printing)
      */
-    public function exportPdf(Request $request): \Illuminate\Http\Response
+    public function exportPdf(Request $request): Response
     {
         $partner = $request->attributes->get('partner');
         $tenantId = $this->getPartnerTenantId($request);
 
         // Get statement data
-        $sharesQuery = PartnerProfitShareModel::where('tenant_id', $this->getTenantId($request))->with('distribution')
+        $sharesQuery = PartnerProfitShareModel::query()->where('tenant_id', $this->getTenantId($request))->with('distribution')
             ->where('tenant_id', $tenantId)
             ->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $withdrawalsQuery = PartnerWithdrawalModel::where('tenant_id', $this->getTenantId($request))->where('partner_id', $partner->id)
+        $withdrawalsQuery = PartnerWithdrawalModel::query()->where('tenant_id', $this->getTenantId($request))->where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -292,4 +296,3 @@ class PartnerDashboardController extends BaseTenantController
         return response($html, 200)->header('Content-Type', 'text/html');
     }
 }
-

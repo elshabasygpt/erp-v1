@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
+import AddPayrollItemModal from '@/components/hr/AddPayrollItemModal';
+import PayslipModal from '@/components/hr/PayslipModal';
 
 export default function PayrollPage() {
     const { d, isRTL } = useLanguage();
@@ -11,6 +13,15 @@ export default function PayrollPage() {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+    const [showAddItem, setShowAddItem] = useState(false);
+    const [showPayslip, setShowPayslip] = useState(false);
+    const [selectedPayroll, setSelectedPayroll] = useState<any>(null);
+    const [employees, setEmployees] = useState<any[]>([]);
+
+    useEffect(() => {
+        hrApi.getEmployees({ limit: 1000 }).then(res => setEmployees(res.data?.data || []));
+    }, []);
     const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 3500);
@@ -205,6 +216,22 @@ export default function PayrollPage() {
                                                     {isRTL ? 'تم التسجيل كـ مصروف' : 'Expense Recorded'}
                                                 </span>
                                             )}
+                                            
+                                            <button
+                                                onClick={() => { setSelectedPayroll(pr); setShowAddItem(true); }}
+                                                className="btn-secondary py-1.5 px-3 text-xs flex items-center justify-center gap-1 mx-auto mt-2 w-full"
+                                                title={isRTL ? 'إضافة بند' : 'Add Item'}
+                                            >
+                                                ➕ {isRTL ? 'بند' : 'Item'}
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setSelectedPayroll(pr); setShowPayslip(true); }}
+                                                className="btn-secondary py-1.5 px-3 text-xs flex items-center justify-center gap-1 mx-auto mt-1 w-full"
+                                                title={isRTL ? 'قسيمة الراتب' : 'Payslip'}
+                                            >
+                                                🖨️ {isRTL ? 'قسيمة' : 'Payslip'}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -228,6 +255,24 @@ export default function PayrollPage() {
                     </div>
                 )}
             </div>
+
+            {showAddItem && selectedPayroll && (
+                <AddPayrollItemModal
+                    payroll={{ ...selectedPayroll, employee: selectedPayroll.employee }}
+                    employees={employees}
+                    isRTL={isRTL}
+                    onClose={() => setShowAddItem(false)}
+                    onSuccess={() => { setShowAddItem(false); fetchData(); }}
+                />
+            )}
+
+            {showPayslip && selectedPayroll && (
+                <PayslipModal
+                    payrollId={selectedPayroll.id}
+                    isRTL={isRTL}
+                    onClose={() => setShowPayslip(false)}
+                />
+            )}
         </div>
     );
 }

@@ -13,13 +13,13 @@ class UpdateInvoiceRequest extends FormRequest
     public function authorize(): bool
     {
         $invoice = $this->route('invoice'); // Assuming the parameter is bound
-        
+
         // This leverages the dynamic InvoicePolicy we just created!
         // It checks Row-Level (Branch & Ownership) automatically via Gate.
         if ($invoice) {
             return Gate::check('update', $invoice);
         }
-        
+
         return true;
     }
 
@@ -60,7 +60,7 @@ class UpdateInvoiceRequest extends FormRequest
         $meta = $user ? ($user->role->meta_attributes ?? []) : [];
         $canEditDiscount = $meta['can_edit_discount'] ?? true;
 
-        if (!$canEditDiscount && ($this->has('discount_amount') || $this->has('discount_pct'))) {
+        if (! $canEditDiscount && ($this->has('discount_amount') || $this->has('discount_pct'))) {
             // Strip the unauthorized fields gracefully before validation
             $this->request->remove('discount_amount');
             $this->request->remove('discount_pct');

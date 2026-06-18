@@ -2,8 +2,8 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 
 class SafeTransactionModel extends Model
 {
@@ -22,7 +22,7 @@ class SafeTransactionModel extends Model
         'created_by',
         'cost_center_id',
         'currency_id',
-        'exchange_rate'
+        'exchange_rate',
     ];
 
     public function safe()

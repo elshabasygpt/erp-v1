@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Domain\HR\Services;
 
 class PayrollCalculationService
@@ -14,18 +15,18 @@ class PayrollCalculationService
             $workingDaysInMonth = 30;
         }
 
-        $dailyRate  = $basicSalary / $workingDaysInMonth;
+        $dailyRate = $basicSalary / $workingDaysInMonth;
         $deductions = round(($dailyRate * $absentDays) + $extraDeductions, 2);
-        $netSalary  = round(max($basicSalary - $deductions + $bonuses, 0), 2);
+        $netSalary = round(max($basicSalary - $deductions + $bonuses, 0), 2);
 
         return [
-            'basic_salary'           => $basicSalary,
-            'daily_rate'             => round($dailyRate, 2),
-            'absent_days'            => $absentDays,
-            'working_days_in_month'  => $workingDaysInMonth,
-            'deductions'             => $deductions,
-            'bonuses'                => $bonuses,
-            'net_salary'             => $netSalary,
+            'basic_salary' => $basicSalary,
+            'daily_rate' => round($dailyRate, 2),
+            'absent_days' => $absentDays,
+            'working_days_in_month' => $workingDaysInMonth,
+            'deductions' => $deductions,
+            'bonuses' => $bonuses,
+            'net_salary' => $netSalary,
         ];
     }
 }

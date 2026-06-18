@@ -2,18 +2,17 @@
 
 namespace App\Presentation\Controllers\API\HR;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use App\Infrastructure\Eloquent\Models\AttendanceModel;
+use App\Infrastructure\Eloquent\Models\EmployeeModel;
+use App\Infrastructure\Eloquent\Models\ExpenseCategoryModel;
+use App\Infrastructure\Eloquent\Models\ExpenseModel;
 use App\Infrastructure\Eloquent\Models\LeaveModel;
 use App\Infrastructure\Eloquent\Models\PayrollModel;
-use App\Infrastructure\Eloquent\Models\ExpenseModel;
 use App\Infrastructure\Eloquent\Models\SafeModel;
 use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
-use App\Infrastructure\Eloquent\Models\ExpenseCategoryModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class HrController extends BaseTenantController
@@ -22,6 +21,7 @@ class HrController extends BaseTenantController
     public function getEmployees()
     {
         $data = EmployeeModel::all();
+
         return $this->success($data);
     }
 
@@ -29,17 +29,19 @@ class HrController extends BaseTenantController
     {
         $validated['tenant_id'] = $this->getTenantId($request);
         $validated['tenant_id'] = $this->getTenantId($request);
-        $employee = EmployeeModel::create($validated);
+        $employee = EmployeeModel::query()->create($validated);
+
         return $this->success($employee, 'Employee created', 201);
     }
 
     // --- ATTENDANCE ---
     public function getAttendances(Request $request)
     {
-        $query = AttendanceModel::where('tenant_id', $this->getTenantId($request))->with('employee')->orderBy('date', 'desc');
+        $query = AttendanceModel::query()->where('tenant_id', $this->getTenantId($request))->with('employee')->orderBy('date', 'desc');
         if ($request->employee_id) {
             $query->where('employee_id', $request->employee_id);
         }
+
         return $this->success($query->get());
     }
 
@@ -47,14 +49,16 @@ class HrController extends BaseTenantController
     {
         $validated['tenant_id'] = $this->getTenantId($request);
         $validated['tenant_id'] = $this->getTenantId($request);
-        $leave = LeaveModel::create($validated);
+        $leave = LeaveModel::query()->create($validated);
+
         return $this->success($leave, 'Leave applied successfully', 201);
     }
 
     // --- PAYROLL ---
     public function getPayrolls(Request $request)
     {
-        $payrolls = PayrollModel::where('tenant_id', $this->getTenantId($request))->with(['employee', 'expense'])->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+        $payrolls = PayrollModel::query()->where('tenant_id', $this->getTenantId($request))->with(['employee', 'expense'])->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
+
         return $this->success($payrolls);
     }
 
@@ -66,10 +70,10 @@ class HrController extends BaseTenantController
             'year' => 'required|integer|min:2000',
         ]);
 
-        $employee = EmployeeModel::where('tenant_id', $this->getTenantId($request))->find($validated['employee_id']);
-        
+        $employee = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->find($validated['employee_id']);
+
         // Calculate late minutes in this month
-        $lateMinutes = AttendanceModel::where('tenant_id', $this->getTenantId($request))->where('employee_id', $employee->id)
+        $lateMinutes = AttendanceModel::query()->where('tenant_id', $this->getTenantId($request))->where('employee_id', $employee->id)
             ->whereMonth('date', $validated['month'])
             ->whereYear('date', $validated['year'])
             ->sum('late_minutes');
@@ -77,26 +81,26 @@ class HrController extends BaseTenantController
         // Hypothetical deduction: 1 monetary unit per minute late (could be parameterized)
         $minuteRate = ($employee->base_salary / 30 / 8 / 60); // assumes 30 days, 8 hrs
         $deductions = round($minuteRate * $lateMinutes, 2);
-        
+
         // Unpaid leaves
-        $unpaidDays = LeaveModel::where('tenant_id', $this->getTenantId($request))->where('employee_id', $employee->id)
+        $unpaidDays = LeaveModel::query()->where('tenant_id', $this->getTenantId($request))->where('employee_id', $employee->id)
             ->where('type', 'unpaid')
             ->where('status', 'approved')
             ->whereMonth('start_date', $validated['month'])
             ->count();
-            
+
         $dayRate = $employee->base_salary / 30;
         $deductions += round($unpaidDays * $dayRate, 2);
 
         $net = $employee->base_salary - $deductions;
 
-        $payroll = PayrollModel::updateOrCreate(
+        $payroll = PayrollModel::query()->updateOrCreate(
             ['employee_id' => $employee->id, 'month' => $validated['month'], 'year' => $validated['year']],
             [
                 'base_salary' => $employee->base_salary,
                 'deductions' => $deductions,
                 'net_salary' => $net,
-                'status' => 'draft'
+                'status' => 'draft',
             ]
         );
 
@@ -106,17 +110,17 @@ class HrController extends BaseTenantController
     public function payPayroll(Request $request, $id)
     {
         $validated = $request->validate([
-            'safe_id' => 'required|exists:tenant.safes,id'
+            'safe_id' => 'required|exists:tenant.safes,id',
         ]);
 
         return DB::transaction(function () use ($id, $validated) {
-            $payroll = PayrollModel::where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+            $payroll = PayrollModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
             if ($payroll->status === 'paid') {
                 return $this->error('Payroll already paid', 400);
             }
 
-            $safe = SafeModel::lockForUpdate()->findOrFail($validated['safe_id']);
-            if ((float)$safe->balance < (float)$payroll->net_salary) {
+            $safe = SafeModel::query()->lockForUpdate()->findOrFail($validated['safe_id']);
+            if ((float) $safe->balance < (float) $payroll->net_salary) {
                 return $this->error('Insufficient safe balance', 400);
             }
 
@@ -125,42 +129,40 @@ class HrController extends BaseTenantController
             $safe->save();
 
             // Find or create category 'Salaries'
-            $cat = ExpenseCategoryModel::firstOrCreate(
+            $cat = ExpenseCategoryModel::query()->firstOrCreate(
                 ['is_advance_or_salary' => true],
                 ['name' => 'Salaries', 'name_ar' => 'رواتب']
             );
 
             // Record Expense
-            $expense = ExpenseModel::create([
-            'tenant_id' => $this->getTenantId($request),
+            $expense = ExpenseModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
                 'category_id' => $cat->id,
                 'safe_id' => $safe->id,
                 'amount' => $payroll->net_salary,
                 'description' => "راتب الموظف في شهر {$payroll->month}/{$payroll->year}",
-                'expense_date' => now()
+                'expense_date' => now(),
             ]);
 
             // Transaction
-            SafeTransactionModel::create([
-            'tenant_id' => $this->getTenantId($request),
+            SafeTransactionModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'safe_id' => $safe->id,
                 'type' => 'withdrawal',
                 'amount' => $payroll->net_salary,
-                'description' => "دفع راتب (HR)",
+                'description' => 'دفع راتب (HR)',
                 'reference_type' => 'expense',
                 'reference_id' => $expense->id,
-                'transaction_date' => now()
+                'transaction_date' => now(),
             ]);
 
             $payroll->update([
                 'status' => 'paid',
-                'expense_id' => $expense->id
+                'expense_id' => $expense->id,
             ]);
 
             return $this->success($payroll, 'Payroll paid via Treasury successfully');
         });
     }
 }
-
-

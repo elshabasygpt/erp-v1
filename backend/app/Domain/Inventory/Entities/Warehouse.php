@@ -19,10 +19,25 @@ final class Warehouse extends Entity
         parent::__construct($id);
     }
 
-    public function getName(): string { return $this->name; }
-    public function getLocation(): ?string { return $this->location; }
-    public function isDefault(): bool { return $this->isDefault; }
-    public function isActive(): bool { return $this->isActive; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getLocation(): ?string
+    {
+        return $this->location;
+    }
+
+    public function isDefault(): bool
+    {
+        return $this->isDefault;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
+    }
 
     public function toArray(): array
     {

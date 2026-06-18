@@ -2,9 +2,7 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class ExpenseCategoryModel extends BaseModel
 {
@@ -17,7 +15,7 @@ class ExpenseCategoryModel extends BaseModel
         'name',
         'name_ar',
         'is_advance_or_salary',
-        'account_id'
+        'account_id',
     ];
 
     public function expenses()

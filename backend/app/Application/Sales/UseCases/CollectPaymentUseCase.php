@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 namespace App\Application\Sales\UseCases;
 
-use App\Infrastructure\Eloquent\Models\CustomerPaymentModel;
-use App\Infrastructure\Eloquent\Models\PaymentAllocationModel;
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
-use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Application\Accounting\Services\ExchangeRateService;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
 use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Services\AccountMappingService;
 use App\Domain\Accounting\Services\FXGainLossService;
-use App\Application\Accounting\Services\ExchangeRateService;
+use App\Infrastructure\Eloquent\Models\CustomerModel;
+use App\Infrastructure\Eloquent\Models\CustomerPaymentModel;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Infrastructure\Eloquent\Models\PaymentAllocationModel;
+use App\Infrastructure\Eloquent\Models\SafeModel;
+use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -29,7 +31,7 @@ class CollectPaymentUseCase
     public function execute(string $tenantId, array $data, string $userId): CustomerPaymentModel
     {
         return DB::transaction(function () use ($tenantId, $data, $userId) {
-            $customer = CustomerModel::findOrFail($data['customer_id']);
+            $customer = CustomerModel::query()->findOrFail($data['customer_id']);
 
             // 1. Determine Payment Currency and Exchange Rate
             $currencyId = $data['currency_id'] ?? null;
@@ -42,9 +44,9 @@ class CollectPaymentUseCase
             }
 
             // 2. Create Payment Record
-            $payment = CustomerPaymentModel::create([
+            $payment = CustomerPaymentModel::query()->create([
                 'id' => Str::uuid()->toString(),
-                'reference_number' => 'REC-' . Date('YmdHis'),
+                'reference_number' => 'REC-'.date('YmdHis'),
                 'customer_id' => $customer->id,
                 'currency_id' => $currencyId,
                 'exchange_rate' => $exchangeRate,
@@ -65,17 +67,19 @@ class CollectPaymentUseCase
             $fxGainLoss = 0.0;
 
             foreach ($allocations as $allocation) {
-                $invoice = InvoiceModel::findOrFail($allocation['invoice_id']);
+                $invoice = InvoiceModel::query()->findOrFail($allocation['invoice_id']);
                 $allocAmount = (float) $allocation['amount'];
 
                 if ($allocAmount > $remainingAmount) {
-                    throw new \DomainException("Allocation amount exceeds available payment amount.");
+                    throw new \DomainException('Allocation amount exceeds available payment amount.');
                 }
 
-                if ($allocAmount <= 0) continue;
+                if ($allocAmount <= 0) {
+                    continue;
+                }
 
                 // Create Allocation
-                PaymentAllocationModel::create([
+                PaymentAllocationModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'payment_id' => $payment->id,
                     'invoice_id' => $invoice->id,
@@ -90,7 +94,7 @@ class CollectPaymentUseCase
                 // Update Invoice Paid Amount
                 $invoice->paid_amount += $allocAmount;
                 $dueAmount = $invoice->total - $invoice->paid_amount;
-                
+
                 if ($dueAmount <= 0) {
                     $invoice->payment_status = 'paid';
                 } else {
@@ -125,26 +129,26 @@ class CollectPaymentUseCase
             ->where('user_id', $userId)
             ->where('is_primary', true)
             ->value('safe_id');
-        
-        if (!$safeId) {
+
+        if (! $safeId) {
             // Fallback: if cash payment, get first cash safe. Else get first bank safe.
             $safeType = $payment->payment_method === 'cash' ? 'cash' : 'bank';
-            $safeId = \App\Infrastructure\Eloquent\Models\SafeModel::where('tenant_id', $tenantId)->where('type', $safeType)->value('id');
+            $safeId = SafeModel::query()->where('tenant_id', $tenantId)->where('type', $safeType)->value('id');
         }
 
         if ($safeId) {
-            $safe = \App\Infrastructure\Eloquent\Models\SafeModel::find($safeId);
+            $safe = SafeModel::query()->find($safeId);
             if ($safe) {
                 $safe->balance += $payment->amount;
                 $safe->save();
 
-                \App\Infrastructure\Eloquent\Models\SafeTransactionModel::create([
+                SafeTransactionModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'safe_id' => $safe->id,
                     'type' => 'deposit',
                     'amount' => $payment->amount,
                     'exchange_rate' => $payment->exchange_rate,
-                    'description' => 'تحصيل دفعة من العميل: ' . ($payment->customer->name ?? ''),
+                    'description' => 'تحصيل دفعة من العميل: '.($payment->customer->name ?? ''),
                     'reference_type' => 'customer_payment',
                     'reference_id' => $payment->id,
                     'transaction_date' => now(),
@@ -167,7 +171,7 @@ class CollectPaymentUseCase
             date: new \DateTimeImmutable($payment->payment_date->format('Y-m-d')),
             description: "Customer Payment Receipt: {$payment->reference_number}",
             transactionCurrencyId: $payment->currency_id,
-            exchangeRate: $payment->exchange_rate,
+            exchangeRate: (float) $payment->exchange_rate,
             isPosted: true,
             referenceType: 'customer_payment',
             referenceId: $payment->id,
@@ -187,7 +191,7 @@ class CollectPaymentUseCase
             accountId: $debitAccountId,
             debit: $baseAmount,
             credit: 0,
-            transactionDebit: $payment->amount,
+            transactionDebit: (float) $payment->amount,
             transactionCredit: 0.0,
             description: "Payment received via {$payment->payment_method}",
             costCenterId: $costCenterId,
@@ -203,14 +207,14 @@ class CollectPaymentUseCase
             debit: 0,
             credit: round($arCreditBase, 2),
             transactionDebit: 0.0,
-            transactionCredit: $payment->amount,
-            description: "Decrease in Accounts Receivable for customer",
+            transactionCredit: (float) $payment->amount,
+            description: 'Decrease in Accounts Receivable for customer',
             costCenterId: $costCenterId,
         ));
 
         // FX Gain/Loss
         // Instead of calculating it again, we should pass the generated lines from FXGainLossService.
-        // Wait, since we aggregated fxGainLoss across all allocations, we can just call calculateAndGenerateLines 
+        // Wait, since we aggregated fxGainLoss across all allocations, we can just call calculateAndGenerateLines
         // with the aggregated amount or reconstruct it. Let's just generate the lines directly for the aggregate.
         if (round($fxGainLoss, 2) != 0.0) {
             // Re-use logic for aggregated fx difference
@@ -222,10 +226,10 @@ class CollectPaymentUseCase
             );
             // Actually, calculateAndGenerateLines expects rates.
             // Since we already know the total fxGainLoss, we can just generate the line.
-                foreach ($fxData['fx_lines'] as $line) {
-                    $journalEntry->addLine($line);
-                }
+            foreach ($fxData['fx_lines'] as $line) {
+                $journalEntry->addLine($line);
             }
+        }
 
         $this->journalEntryRepository->create($journalEntry);
     }

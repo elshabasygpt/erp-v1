@@ -2,13 +2,14 @@
 
 namespace App\Presentation\Controllers\API\Treasury;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Infrastructure\Eloquent\Models\ExpenseCategoryModel;
 use App\Infrastructure\Eloquent\Models\ExpenseModel;
 use App\Infrastructure\Eloquent\Models\SafeModel;
 use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ExpenseController extends BaseTenantController
 {
@@ -16,7 +17,8 @@ class ExpenseController extends BaseTenantController
     public function getCategories(Request $request)
     {
         $tenantId = $this->getTenantId($request);
-        $categories = ExpenseCategoryModel::where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->get();
+        $categories = ExpenseCategoryModel::query()->where('tenant_id', $this->getTenantId($request))->where('tenant_id', $tenantId)->get();
+
         return response()->json(['status' => 'success', 'data' => $categories]);
     }
 
@@ -26,14 +28,15 @@ class ExpenseController extends BaseTenantController
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'name_ar' => 'nullable|string|max:255',
-            'is_advance_or_salary' => 'boolean'
+            'is_advance_or_salary' => 'boolean',
         ]);
 
         $data['tenant_id'] = $this->getTenantId($request);
-        $data['id'] = \Illuminate\Support\Str::uuid()->toString();
+        $data['id'] = Str::uuid()->toString();
 
         $data['tenant_id'] = $this->getTenantId($request);
-        $category = ExpenseCategoryModel::create($data);
+        $category = ExpenseCategoryModel::query()->create($data);
+
         return response()->json(['status' => 'success', 'data' => $category], 201);
     }
 
@@ -41,7 +44,8 @@ class ExpenseController extends BaseTenantController
     public function index(Request $request)
     {
         $tenantId = $this->getTenantId($request);
-        $expenses = ExpenseModel::where('tenant_id', $this->getTenantId($request))->with(['category', 'safe'])->where('tenant_id', $tenantId)->orderBy('expense_date', 'desc')->get();
+        $expenses = ExpenseModel::query()->where('tenant_id', $this->getTenantId($request))->with(['category', 'safe'])->where('tenant_id', $tenantId)->orderBy('expense_date', 'desc')->get();
+
         return response()->json(['status' => 'success', 'data' => $expenses]);
     }
 
@@ -53,16 +57,16 @@ class ExpenseController extends BaseTenantController
             'safe_id' => 'required|uuid|exists:tenant.safes,id',
             'amount' => 'required|numeric|min:0.01',
             'description' => 'nullable|string',
-            'expense_date' => 'nullable|date'
+            'expense_date' => 'nullable|date',
         ]);
 
         $tenantId = $this->getTenantId($request);
 
         return DB::transaction(function () use ($data, $tenantId, $request) {
-            $safe = SafeModel::lockForUpdate()->findOrFail($data['safe_id']);
+            $safe = SafeModel::query()->lockForUpdate()->findOrFail($data['safe_id']);
             $this->assertBelongsToTenant($safe, $request);
 
-            if ((float)$safe->balance < (float)$data['amount']) {
+            if ((float) $safe->balance < (float) $data['amount']) {
                 abort(400, 'Insufficient balance in safe to pay this expense.');
             }
 
@@ -71,9 +75,9 @@ class ExpenseController extends BaseTenantController
             $safe->save();
 
             // Create Expense record
-            $expense = ExpenseModel::create([
-            'tenant_id' => $this->getTenantId($request),
-                'id' => \Illuminate\Support\Str::uuid()->toString(),
+            $expense = ExpenseModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
+                'id' => Str::uuid()->toString(),
                 'tenant_id' => $tenantId,
                 'category_id' => $data['category_id'],
                 'safe_id' => $safe->id,
@@ -83,20 +87,18 @@ class ExpenseController extends BaseTenantController
             ]);
 
             // Register transaction
-            SafeTransactionModel::create([
-            'tenant_id' => $this->getTenantId($request),
+            SafeTransactionModel::query()->create([
+                'tenant_id' => $this->getTenantId($request),
                 'safe_id' => $safe->id,
                 'type' => 'withdrawal',
                 'amount' => $validated['amount'],
-                'description' => 'Expense: ' . ($validated['description'] ?? ''),
+                'description' => 'Expense: '.($validated['description'] ?? ''),
                 'reference_type' => 'expense',
                 'reference_id' => $expense->id,
-                'transaction_date' => $expense->expense_date
+                'transaction_date' => $expense->expense_date,
             ]);
 
             return response()->json(['status' => 'success', 'data' => $expense], 201);
         });
     }
 }
-
-

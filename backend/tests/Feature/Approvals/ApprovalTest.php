@@ -1,13 +1,11 @@
 <?php
+
 namespace Tests\Feature\Approvals;
 
 use Tests\TestCase;
 
-
 class ApprovalTest extends TestCase
 {
-    
-
     public function test_can_list_approval_inbox(): void
     {
         $this->actingAsAuthenticatedUser();
@@ -15,7 +13,7 @@ class ApprovalTest extends TestCase
         $response = $this->getJson('/api/approvals/inbox');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_can_approve_pending_request(): void
@@ -62,16 +60,16 @@ class ApprovalTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $this->postJson('/api/approvals/rules', [
-            'entity_type'          => 'invoice',
-            'trigger_type'         => 'high_discount',
-            'threshold'            => 1000,
-            'required_role'        => 'manager',
+            'entity_type' => 'invoice',
+            'trigger_type' => 'high_discount',
+            'threshold' => 1000,
+            'required_role' => 'manager',
             'escalate_after_hours' => 24,
-            'is_active'            => true,
+            'is_active' => true,
         ])->assertStatus(200);
 
         $this->getJson('/api/approvals/rules')
-             ->assertStatus(200)
-             ->assertJsonStructure(['data']);
+            ->assertStatus(200)
+            ->assertJsonStructure(['data']);
     }
 }

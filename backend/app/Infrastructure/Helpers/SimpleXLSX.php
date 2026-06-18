@@ -1,4 +1,6 @@
-<?php /** @noinspection MultiAssignmentUsageInspection */
+<?php
+
+/** @noinspection MultiAssignmentUsageInspection */
 
 namespace App\Infrastructure\Helpers;
 
@@ -11,7 +13,7 @@ use SimpleXMLElement;
  * Copyright (c) 2012 - 2022 SimpleXLSX
  *
  * @category   SimpleXLSX
- * @package    SimpleXLSX
+ *
  * @copyright  Copyright (c) 2012 - 2022 SimpleXLSX (https://github.com/shuchkin/simplexlsx/)
  * @license    MIT
  */
@@ -128,25 +130,37 @@ class SimpleXLSX
         69 => 't# ?/?',
         70 => 't# ??/??',
     ];
+
     public $nf = []; // number formats
+
     public $cellFormats = []; // cellXfs
+
     public $datetimeFormat = 'Y-m-d H:i:s';
+
     public $debug;
+
     public $activeSheet = 0;
+
     public $rowsExReader;
 
     /* @var SimpleXMLElement[] $sheets */
     public $sheets;
+
     public $sheetFiles = [];
+
     public $sheetMetaData = [];
+
     public $sheetRels = [];
+
     // scheme
     public $styles;
+
     /* @var array[] $package */
     public $package;
-    public $sharedstrings;
-    public $date1904 = 0;
 
+    public $sharedstrings;
+
+    public $date1904 = 0;
 
     /*
         private $date_formats = array(
@@ -187,12 +201,13 @@ class SimpleXLSX
         // }}}
     */
     public $errno = 0;
+
     public $error = false;
+
     /**
      * @var false|SimpleXMLElement
      */
     public $theme;
-
 
     public function __construct($filename = null, $is_data = null, $debug = null)
     {
@@ -204,7 +219,7 @@ class SimpleXLSX
             'mtime' => 0,
             'size' => 0,
             'comment' => '',
-            'entries' => []
+            'entries' => [],
         ];
         if ($filename && $this->unzip($filename, $is_data)) {
             $this->parseEntries();
@@ -221,8 +236,8 @@ class SimpleXLSX
 
             $vZ = $filename;
         } else {
-            if (!is_readable($filename)) {
-                $this->error(1, 'File not found ' . $filename);
+            if (! is_readable($filename)) {
+                $this->error(1, 'File not found '.$filename);
 
                 return false;
             }
@@ -276,12 +291,12 @@ class SimpleXLSX
             $aI['E'] = 0;
             $aI['EM'] = '';
             // Retrieving local file header information
-//          $aP = unpack('v1VN/v1GPF/v1CM/v1FT/v1FD/V1CRC/V1CS/V1UCS/v1FNL', $vZ);
+            //          $aP = unpack('v1VN/v1GPF/v1CM/v1FT/v1FD/V1CRC/V1CS/V1UCS/v1FNL', $vZ);
             $aP = unpack('v1VN/v1GPF/v1CM/v1FT/v1FD/V1CRC/V1CS/V1UCS/v1FNL/v1EFL', $vZ);
 
             // Check if data is encrypted
-//          $bE = ($aP['GPF'] && 0x0001) ? TRUE : FALSE;
-//          $bE = false;
+            //          $bE = ($aP['GPF'] && 0x0001) ? TRUE : FALSE;
+            //          $bE = false;
             $nF = $aP['FNL'];
             $mF = $aP['EFL'];
 
@@ -315,61 +330,61 @@ class SimpleXLSX
 
             $vZ = self::substr($vZ, 26 + $nF + $mF);
 
-            if ($aP['CS'] > 0 && (self::strlen($vZ) !== (int)$aP['CS'])) { // check only if availabled
+            if ($aP['CS'] > 0 && (self::strlen($vZ) !== (int) $aP['CS'])) { // check only if availabled
                 $aI['E'] = 1;
                 $aI['EM'] = 'Compressed size is not equal with the value in header information.';
             }
-//          } elseif ( $bE ) {
-//              $aI['E']  = 5;
-//              $aI['EM'] = 'File is encrypted, which is not supported from this class.';
-/*            } else {
-                switch ($aP['CM']) {
-                    case 0: // Stored
-                        // Here is nothing to do, the file ist flat.
-                        break;
-                    case 8: // Deflated
-                        $vZ = gzinflate($vZ);
-                        break;
-                    case 12: // BZIP2
-                        if (extension_loaded('bz2')) {
-                            $vZ = bzdecompress($vZ);
-                        } else {
-                            $aI['E'] = 7;
-                            $aI['EM'] = 'PHP BZIP2 extension not available.';
+            //          } elseif ( $bE ) {
+            //              $aI['E']  = 5;
+            //              $aI['EM'] = 'File is encrypted, which is not supported from this class.';
+            /*            } else {
+                            switch ($aP['CM']) {
+                                case 0: // Stored
+                                    // Here is nothing to do, the file ist flat.
+                                    break;
+                                case 8: // Deflated
+                                    $vZ = gzinflate($vZ);
+                                    break;
+                                case 12: // BZIP2
+                                    if (extension_loaded('bz2')) {
+                                        $vZ = bzdecompress($vZ);
+                                    } else {
+                                        $aI['E'] = 7;
+                                        $aI['EM'] = 'PHP BZIP2 extension not available.';
+                                    }
+                                    break;
+                                default:
+                                    $aI['E'] = 6;
+                                    $aI['EM'] = "De-/Compression method {$aP['CM']} is not supported.";
+                            }
+                            if (!$aI['E']) {
+                                if ($vZ === false) {
+                                    $aI['E'] = 2;
+                                    $aI['EM'] = 'Decompression of data failed.';
+                                } elseif ($this->_strlen($vZ) !== (int)$aP['UCS']) {
+                                    $aI['E'] = 3;
+                                    $aI['EM'] = 'Uncompressed size is not equal with the value in header information.';
+                                } elseif (crc32($vZ) !== $aP['CRC']) {
+                                    $aI['E'] = 4;
+                                    $aI['EM'] = 'CRC32 checksum is not equal with the value in header information.';
+                                }
+                            }
                         }
-                        break;
-                    default:
-                        $aI['E'] = 6;
-                        $aI['EM'] = "De-/Compression method {$aP['CM']} is not supported.";
-                }
-                if (!$aI['E']) {
-                    if ($vZ === false) {
-                        $aI['E'] = 2;
-                        $aI['EM'] = 'Decompression of data failed.';
-                    } elseif ($this->_strlen($vZ) !== (int)$aP['UCS']) {
-                        $aI['E'] = 3;
-                        $aI['EM'] = 'Uncompressed size is not equal with the value in header information.';
-                    } elseif (crc32($vZ) !== $aP['CRC']) {
-                        $aI['E'] = 4;
-                        $aI['EM'] = 'CRC32 checksum is not equal with the value in header information.';
-                    }
-                }
-            }
-*/
+            */
 
             // DOS to UNIX timestamp
             $aI['T'] = mktime(
-                ($aP['FT'] & 0xf800) >> 11,
-                ($aP['FT'] & 0x07e0) >> 5,
-                ($aP['FT'] & 0x001f) << 1,
-                ($aP['FD'] & 0x01e0) >> 5,
-                $aP['FD'] & 0x001f,
-                (($aP['FD'] & 0xfe00) >> 9) + 1980
+                ($aP['FT'] & 0xF800) >> 11,
+                ($aP['FT'] & 0x07E0) >> 5,
+                ($aP['FT'] & 0x001F) << 1,
+                ($aP['FD'] & 0x01E0) >> 5,
+                $aP['FD'] & 0x001F,
+                (($aP['FD'] & 0xFE00) >> 9) + 1980
             );
 
             $this->package['entries'][] = [
                 'data' => $vZ,
-                'ucs' => (int)$aP['UCS'], // ucompresses size
+                'ucs' => (int) $aP['UCS'], // ucompresses size
                 'cm' => $aP['CM'], // compressed method
                 'cs' => isset($aP['CS']) ? (int) $aP['CS'] : 0, // compresses size
                 'crc' => $aP['CRC'],
@@ -377,13 +392,12 @@ class SimpleXLSX
                 'error_msg' => $aI['EM'],
                 'name' => $aI['N'],
                 'path' => $aI['P'],
-                'time' => $aI['T']
+                'time' => $aI['T'],
             ];
         } // end for each entries
 
         return true;
     }
-
 
     public function error($num = null, $str = null)
     {
@@ -391,7 +405,7 @@ class SimpleXLSX
             $this->errno = $num;
             $this->error = $str;
             if ($this->debug) {
-                trigger_error(__CLASS__ . ': ' . $this->error, E_USER_WARNING);
+                trigger_error(__CLASS__.': '.$this->error, E_USER_WARNING);
             }
         }
 
@@ -403,13 +417,13 @@ class SimpleXLSX
         // Document data holders
         $this->sharedstrings = [];
         $this->sheets = [];
-//      $this->styles = array();
-//        $m1 = 0; // memory_get_peak_usage( true );
+        //      $this->styles = array();
+        //        $m1 = 0; // memory_get_peak_usage( true );
         // Read relations and search for officeDocument
         if ($relations = $this->getEntryXML('_rels/.rels')) {
             foreach ($relations->Relationship as $rel) {
-                $rel_type = basename(trim((string)$rel['Type'])); // officeDocument
-                $rel_target = self::getTarget('', (string)$rel['Target']); // /xl/workbook.xml or xl/workbook.xml
+                $rel_type = basename(trim((string) $rel['Type'])); // officeDocument
+                $rel_target = self::getTarget('', (string) $rel['Target']); // /xl/workbook.xml or xl/workbook.xml
 
                 if ($rel_type === 'officeDocument'
                     && $workbook = $this->getEntryXML($rel_target)
@@ -420,34 +434,33 @@ class SimpleXLSX
                     foreach ($workbook->sheets->sheet as $s) {
                         $a = [];
                         foreach ($s->attributes() as $k => $v) {
-                            $a[(string)$k] = (string)$v;
+                            $a[(string) $k] = (string) $v;
                         }
                         $this->sheetMetaData[$index] = $a;
-                        $index_rId[$index] = (string)$s['id'];
+                        $index_rId[$index] = (string) $s['id'];
                         $index++;
                     }
-                    if ((int)$workbook->workbookPr['date1904'] === 1) {
+                    if ((int) $workbook->workbookPr['date1904'] === 1) {
                         $this->date1904 = 1;
                     }
 
-
-                    if ($workbookRelations = $this->getEntryXML(dirname($rel_target) . '/_rels/workbook.xml.rels')) {
+                    if ($workbookRelations = $this->getEntryXML(dirname($rel_target).'/_rels/workbook.xml.rels')) {
                         // Loop relations for workbook and extract sheets...
                         foreach ($workbookRelations->Relationship as $workbookRelation) {
-                            $wrel_type = basename(trim((string)$workbookRelation['Type'])); // worksheet
-                            $wrel_target = self::getTarget(dirname($rel_target), (string)$workbookRelation['Target']);
-                            if (!$this->entryExists($wrel_target)) {
+                            $wrel_type = basename(trim((string) $workbookRelation['Type'])); // worksheet
+                            $wrel_target = self::getTarget(dirname($rel_target), (string) $workbookRelation['Target']);
+                            if (! $this->entryExists($wrel_target)) {
                                 continue;
                             }
 
                             if ($wrel_type === 'worksheet') { // Sheets
                                 if ($sheet = $this->getEntryXML($wrel_target)) {
-                                    $index = array_search((string)$workbookRelation['Id'], $index_rId, true);
+                                    $index = array_search((string) $workbookRelation['Id'], $index_rId, true);
                                     $this->sheets[$index] = $sheet;
                                     $this->sheetFiles[$index] = $wrel_target;
                                     $srel_d = dirname($wrel_target);
                                     $srel_f = basename($wrel_target);
-                                    $srel_file = $srel_d . '/_rels/' . $srel_f  . '.rels';
+                                    $srel_file = $srel_d.'/_rels/'.$srel_f.'.rels';
                                     if ($this->entryExists($srel_file)) {
                                         $this->sheetRels[$index] = $this->getEntryXML($srel_file);
                                     }
@@ -456,7 +469,7 @@ class SimpleXLSX
                                 if ($sharedStrings = $this->getEntryXML($wrel_target)) {
                                     foreach ($sharedStrings->si as $val) {
                                         if (isset($val->t)) {
-                                            $this->sharedstrings[] = (string)$val->t;
+                                            $this->sharedstrings[] = (string) $val->t;
                                         } elseif (isset($val->r)) {
                                             $this->sharedstrings[] = self::parseRichText($val);
                                         }
@@ -469,7 +482,7 @@ class SimpleXLSX
                                 $this->nf = [];
                                 if (isset($this->styles->numFmts->numFmt)) {
                                     foreach ($this->styles->numFmts->numFmt as $v) {
-                                        $this->nf[(int)$v['numFmtId']] = (string)$v['formatCode'];
+                                        $this->nf[(int) $v['numFmtId']] = (string) $v['formatCode'];
                                     }
                                 }
 
@@ -477,10 +490,10 @@ class SimpleXLSX
                                 if (isset($this->styles->cellXfs->xf)) {
                                     foreach ($this->styles->cellXfs->xf as $v) {
                                         $x = [
-                                            'format' => null
+                                            'format' => null,
                                         ];
                                         foreach ($v->attributes() as $k1 => $v1) {
-                                            $x[ $k1 ] = (int) $v1;
+                                            $x[$k1] = (int) $v1;
                                         }
                                         if (isset($x['numFmtId'])) {
                                             if (isset($this->nf[$x['numFmtId']])) {
@@ -498,13 +511,13 @@ class SimpleXLSX
                             }
                         }
 
-//                        break;
+                        //                        break;
                     }
                     // reptile hack :: find active sheet from workbook.xml
                     if ($workbook->bookViews->workbookView) {
                         foreach ($workbook->bookViews->workbookView as $v) {
-                            if (!empty($v['activeTab'])) {
-                                $this->activeSheet = (int)$v['activeTab'];
+                            if (! empty($v['activeTab'])) {
+                                $this->activeSheet = (int) $v['activeTab'];
                             }
                         }
                     }
@@ -514,8 +527,8 @@ class SimpleXLSX
             }
         }
 
-//        $m2 = memory_get_peak_usage(true);
-//        echo __FUNCTION__.' M='.round( ($m2-$m1) / 1048576, 2).'MB'.PHP_EOL;
+        //        $m2 = memory_get_peak_usage(true);
+        //        echo __FUNCTION__.' M='.round( ($m2-$m1) / 1048576, 2).'MB'.PHP_EOL;
 
         if (count($this->sheets)) {
             // Sort sheets
@@ -557,11 +570,11 @@ class SimpleXLSX
                     $entry_xml = preg_replace('/<dimension[^\/]+\/>/', '', $entry_xml);
                     $entry_xml .= ' ';
                 }
-//              file_put_contents( basename( $name ), $entry_xml ); // @to do comment!!!
+                //              file_put_contents( basename( $name ), $entry_xml ); // @to do comment!!!
             }
             $entry_xml = trim($entry_xml);
 
-//            $m1 = memory_get_usage();
+            //            $m1 = memory_get_usage();
             // XML External Entity (XXE) Prevention, libxml_disable_entity_loader deprecated in PHP 8
             if (LIBXML_VERSION < 20900 && function_exists('libxml_disable_entity_loader')) {
                 $_old = libxml_disable_entity_loader();
@@ -578,18 +591,18 @@ class SimpleXLSX
                 libxml_disable_entity_loader($_old);
             }
 
-//            $m2 = memory_get_usage();
-//            echo round( ($m2-$m1) / (1024 * 1024), 2).' MB'.PHP_EOL;
+            //            $m2 = memory_get_usage();
+            //            echo round( ($m2-$m1) / (1024 * 1024), 2).' MB'.PHP_EOL;
 
             if ($entry_xmlobj) {
                 return $entry_xmlobj;
             }
             $e = libxml_get_last_error();
             if ($e) {
-                $this->error(3, 'XML-entry ' . $name . ' parser error ' . $e->message . ' line ' . $e->line);
+                $this->error(3, 'XML-entry '.$name.' parser error '.$e->message.' line '.$e->line);
             }
         } else {
-            $this->error(4, 'XML-entry not found ' . $name);
+            $this->error(4, 'XML-entry not found '.$name);
         }
 
         return false;
@@ -627,12 +640,12 @@ class SimpleXLSX
                         $entry['error'] = 6;
                         $entry['error_msg'] = 'De-/Compression method '.$entry['cm'].' is not supported.';
                 }
-                if (!$entry['error'] && $entry['cm'] > -1) {
+                if (! $entry['error'] && $entry['cm'] > -1) {
                     $entry['cm'] = -1;
                     if ($entry['data'] === false) {
                         $entry['error'] = 2;
                         $entry['error_msg'] = 'Decompression of data failed.';
-                    } elseif ($entry['ucs'] > 0 && (self::strlen($entry['data']) !== (int)$entry['ucs'])) {
+                    } elseif ($entry['ucs'] > 0 && (self::strlen($entry['data']) !== (int) $entry['ucs'])) {
                         $entry['error'] = 3;
                         $entry['error_msg'] = 'Uncompressed size is not equal with the value in header information.';
                     } elseif (crc32($entry['data']) !== $entry['crc']) {
@@ -645,10 +658,11 @@ class SimpleXLSX
             }
         }
         unset($entry);
-        $this->error(5, 'Entry not found ' . ($dir ? $dir . '/' : '') . $name);
+        $this->error(5, 'Entry not found '.($dir ? $dir.'/' : '').$name);
 
         return false;
     }
+
     public function deleteEntry($name)
     {
         $name = ltrim(str_replace('\\', '/', $name), '/');
@@ -657,9 +671,11 @@ class SimpleXLSX
         foreach ($this->package['entries'] as $k => $entry) {
             if (self::strtoupper($entry['path']) === $dir && self::strtoupper($entry['name']) === $name) {
                 unset($this->package['entries'][$k]);
+
                 return true;
             }
         }
+
         return false;
     }
 
@@ -675,7 +691,7 @@ class SimpleXLSX
 
     public function entryExists($name)
     {
- // 0.6.6
+        // 0.6.6
         $dir = self::strtoupper(dirname($name));
         $name = self::strtoupper(basename($name));
         foreach ($this->package['entries'] as $entry) {
@@ -694,7 +710,7 @@ class SimpleXLSX
 
     public static function parse($filename, $is_data = false, $debug = false)
     {
-        $xlsx = new self();
+        $xlsx = new self;
         $xlsx->debug = $debug;
         if ($xlsx->unzip($filename, $is_data)) {
             $xlsx->parseEntries();
@@ -710,7 +726,7 @@ class SimpleXLSX
 
     public function success()
     {
-        return !$this->error;
+        return ! $this->error;
     }
 
     // https://github.com/shuchkin/simplexlsx#gets-extend-cell-info-by--rowsex
@@ -739,14 +755,12 @@ class SimpleXLSX
         return self::parse($data, true, $debug);
     }
 
-
-
     public function worksheet($worksheetIndex = 0)
     {
         if (isset($this->sheets[$worksheetIndex])) {
             return $this->sheets[$worksheetIndex];
         }
-        $this->error(6, 'Worksheet not found ' . $worksheetIndex);
+        $this->error(6, 'Worksheet not found '.$worksheetIndex);
 
         return false;
     }
@@ -754,8 +768,7 @@ class SimpleXLSX
     /**
      * returns [numCols,numRows] of worksheet
      *
-     * @param int $worksheetIndex
-     *
+     * @param  int  $worksheetIndex
      * @return array
      */
     public function dimension($worksheetIndex = 0)
@@ -766,7 +779,7 @@ class SimpleXLSX
         }
         /* @var SimpleXMLElement $ws */
 
-        $ref = (string)$ws->dimension['ref'];
+        $ref = (string) $ws->dimension['ref'];
 
         if (self::strpos($ref, ':') !== false) {
             $d = explode(':', $ref);
@@ -790,7 +803,7 @@ class SimpleXLSX
             $iC = -1;
             foreach ($row->c as $c) {
                 $iC++;
-                $idx = $this->getIndex((string)$c['r']);
+                $idx = $this->getIndex((string) $c['r']);
                 $x = $idx[0];
                 $y = $idx[1];
                 if ($x > -1) {
@@ -832,7 +845,7 @@ class SimpleXLSX
             return [$index - 1, $row - 1];
         }
 
-//      $this->error( 'Invalid cell index ' . $cell );
+        //      $this->error( 'Invalid cell index ' . $cell );
 
         return [-1, -1];
     }
@@ -840,10 +853,10 @@ class SimpleXLSX
     public function value($cell)
     {
         // Determine data type
-        $dataType = (string)$cell['t'];
+        $dataType = (string) $cell['t'];
 
         if ($dataType === '' || $dataType === 'n') { // number
-            $s = (int)$cell['s'];
+            $s = (int) $cell['s'];
             if ($s > 0 && isset($this->cellFormats[$s])) {
                 if (array_key_exists('format', $this->cellFormats[$s])) {
                     $format = $this->cellFormats[$s]['format'];
@@ -861,20 +874,20 @@ class SimpleXLSX
         switch ($dataType) {
             case 's':
                 // Value is a shared string
-                if ((string)$cell->v !== '') {
-                    $value = $this->sharedstrings[(int)$cell->v];
+                if ((string) $cell->v !== '') {
+                    $value = $this->sharedstrings[(int) $cell->v];
                 }
                 break;
 
             case 'str': // formula?
-                if ((string)$cell->v !== '') {
-                    $value = (string)$cell->v;
+                if ((string) $cell->v !== '') {
+                    $value = (string) $cell->v;
                 }
                 break;
 
             case 'b':
                 // Value is boolean
-                $value = self::boolean((string)$cell->v);
+                $value = self::boolean((string) $cell->v);
 
                 break;
 
@@ -886,37 +899,37 @@ class SimpleXLSX
 
             case 'e':
                 // Value is an error message
-                if ((string)$cell->v !== '') {
-                    $value = (string)$cell->v;
+                if ((string) $cell->v !== '') {
+                    $value = (string) $cell->v;
                 }
                 break;
 
             case 'D':
                 // Date as float
-                if (!empty($cell->v)) {
+                if (! empty($cell->v)) {
                     $value = $this->datetimeFormat ?
-                        gmdate($this->datetimeFormat, $this->unixstamp((float)$cell->v)) : (float)$cell->v;
+                        gmdate($this->datetimeFormat, $this->unixstamp((float) $cell->v)) : (float) $cell->v;
                 }
                 break;
 
             case 'd':
                 // Date as ISO YYYY-MM-DD
-                if ((string)$cell->v !== '') {
-                    $value = (string)$cell->v;
+                if ((string) $cell->v !== '') {
+                    $value = (string) $cell->v;
                 }
                 break;
 
             default:
                 // Value is a string
-                $value = (string)$cell->v;
+                $value = (string) $cell->v;
 
                 // Check for numeric values
                 if (is_numeric($value)) {
                     /** @noinspection TypeUnsafeComparisonInspection */
-                    if ($value == (int)$value) {
-                        $value = (int)$value;
-                    } /** @noinspection TypeUnsafeComparisonInspection */ elseif ($value == (float)$value) {
-                        $value = (float)$value;
+                    if ($value == (int) $value) {
+                        $value = (int) $value;
+                    } /** @noinspection TypeUnsafeComparisonInspection */ elseif ($value == (float) $value) {
+                        $value = (float) $value;
                     }
                 }
         }
@@ -936,7 +949,7 @@ class SimpleXLSX
 
         $t = (abs($d) > 0) ? ($d - 25569) * 86400 + round($t * 86400) : round($t * 86400);
 
-        return (int)$t;
+        return (int) $t;
     }
 
     public function toHTML($worksheetIndex = 0)
@@ -945,7 +958,7 @@ class SimpleXLSX
         foreach ($this->readRows($worksheetIndex) as $r) {
             $s .= '<tr>';
             foreach ($r as $c) {
-                $s .= '<td nowrap>' . ($c === '' ? '&nbsp' : htmlspecialchars($c, ENT_QUOTES)) . '</td>';
+                $s .= '<td nowrap>'.($c === '' ? '&nbsp' : htmlspecialchars($c, ENT_QUOTES)).'</td>';
             }
             $s .= "</tr>\r\n";
         }
@@ -953,6 +966,7 @@ class SimpleXLSX
 
         return $s;
     }
+
     public function toHTMLEx($worksheetIndex = 0)
     {
         $s = '<table class=excel>';
@@ -972,7 +986,7 @@ class SimpleXLSX
                     $css .= 'height: '.round($c['height'] * 1.3333).'px;';
                 }
                 $s .= '<'.$tag.' style="'.$css.'" nowrap>'
-                    . ($c['value'] === '' ? '&nbsp' : htmlspecialchars($c['value'], ENT_QUOTES)) . '</'.$tag.'>';
+                    .($c['value'] === '' ? '&nbsp' : htmlspecialchars($c['value'], ENT_QUOTES)).'</'.$tag.'>';
                 $x++;
             }
             $s .= "</tr>\r\n";
@@ -982,14 +996,14 @@ class SimpleXLSX
 
         return $s;
     }
+
     public function rows($worksheetIndex = 0, $limit = 0)
     {
         return iterator_to_array($this->readRows($worksheetIndex, $limit), false);
     }
+
     // thx Gonzo
     /**
-     * @param $worksheetIndex
-     * @param $limit
      * @return \Generator
      */
     public function readRows($worksheetIndex = 0, $limit = 0)
@@ -1015,7 +1029,7 @@ class SimpleXLSX
             $curC = 0;
             foreach ($row->c as $c) {
                 // detect skipped cols
-                $idx = $this->getIndex((string)$c['r']);
+                $idx = $this->getIndex((string) $c['r']);
                 $x = $idx[0];
                 $y = $idx[1];
 
@@ -1055,18 +1069,18 @@ class SimpleXLSX
     {
         return iterator_to_array($this->readRowsEx($worksheetIndex, $limit), false);
     }
+
     // https://github.com/shuchkin/simplexlsx#gets-extend-cell-info-by--rowsex
-     /**
-     * @param $worksheetIndex
-     * @param $limit
+    /**
      * @return \Generator|null
-      */
+     */
     public function readRowsEx($worksheetIndex = 0, $limit = 0)
     {
-        if (!$this->rowsExReader) {
-            require_once __DIR__ . '/SimpleXLSXEx.php';
+        if (! $this->rowsExReader) {
+            require_once __DIR__.'/SimpleXLSXEx.php';
             $this->rowsExReader = new SimpleXLSXEx($this);
         }
+
         return $this->rowsExReader->readRowsEx($worksheetIndex, $limit);
     }
 
@@ -1074,9 +1088,8 @@ class SimpleXLSX
      * Returns cell value
      * VERY SLOW! Use ->rows() or ->rowsEx()
      *
-     * @param int $worksheetIndex
-     * @param string|array $cell ref or coords, D12 or [3,12]
-     *
+     * @param  int  $worksheetIndex
+     * @param  string|array  $cell  ref or coords, D12 or [3,12]
      * @return mixed Returns NULL if not found
      */
     public function getCell($worksheetIndex = 0, $cell = 'A1')
@@ -1086,10 +1099,10 @@ class SimpleXLSX
             return false;
         }
         if (is_array($cell)) {
-            $cell = self::num2name($cell[0]) . $cell[1];// [3,21] -> D21
+            $cell = self::num2name($cell[0]).$cell[1]; // [3,21] -> D21
         }
         if (is_string($cell)) {
-            $result = $ws->sheetData->xpath("row/c[@r='" . $cell . "']");
+            $result = $ws->sheetData->xpath("row/c[@r='".$cell."']");
             if (count($result)) {
                 return $this->value($result[0]);
             }
@@ -1124,15 +1137,19 @@ class SimpleXLSX
         foreach ($this->sheetMetaData as $k => $v) {
             $a[$k] = $v['name'];
         }
+
         return $a;
     }
+
     public function sheetMeta($worksheetIndex = null)
     {
         if ($worksheetIndex === null) {
             return $this->sheetMetaData;
         }
+
         return isset($this->sheetMetaData[$worksheetIndex]) ? $this->sheetMetaData[$worksheetIndex] : false;
     }
+
     public function isHiddenSheet($worksheetIndex)
     {
         return isset($this->sheetMetaData[$worksheetIndex]['state'])
@@ -1160,20 +1177,21 @@ class SimpleXLSX
         if (strpos($target, '/') === 0) {
             return self::substr($target, 1);
         }
-        $target = ($base ? $base . '/' : '') . $target;
+        $target = ($base ? $base.'/' : '').$target;
         // a/b/../c -> a/c
         $parts = explode('/', $target);
         $abs = [];
         foreach ($parts as $p) {
-            if ('.' === $p) {
+            if ($p === '.') {
                 continue;
             }
-            if ('..' === $p) {
+            if ($p === '..') {
                 array_pop($abs);
             } else {
                 $abs[] = $p;
             }
         }
+
         return implode('/', $abs);
     }
 
@@ -1182,10 +1200,10 @@ class SimpleXLSX
         $value = [];
 
         if (isset($is->t)) {
-            $value[] = (string)$is->t;
+            $value[] = (string) $is->t;
         } elseif (isset($is->r)) {
             foreach ($is->r as $run) {
-                $value[] = (string)$run->t;
+                $value[] = (string) $run->t;
             }
         }
 
@@ -1196,10 +1214,11 @@ class SimpleXLSX
     {
         $numeric = ($num - 1) % 26;
         $letter = chr(65 + $numeric);
-        $num2 = (int)(($num - 1) / 26);
+        $num2 = (int) (($num - 1) / 26);
         if ($num2 > 0) {
-            return self::num2name($num2) . $letter;
+            return self::num2name($num2).$letter;
         }
+
         return $letter;
     }
 
@@ -1220,6 +1239,7 @@ class SimpleXLSX
         return (ini_get('mbstring.func_overload') & 2) ?
             mb_strpos($haystack, $needle, $offset, '8bit') : strpos($haystack, $needle, $offset);
     }
+
     public static function boolean($value)
     {
         if (is_numeric($value)) {

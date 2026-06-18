@@ -2,12 +2,8 @@
 
 namespace Tests\Feature\Analytics;
 
-use Tests\TestCase;
 use App\Infrastructure\Eloquent\Models\UserModel;
-use App\Infrastructure\Eloquent\Models\TenantModel;
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
-
-use Illuminate\Support\Str;
+use Tests\TestCase;
 
 class AdvancedAnalyticsTest extends TestCase
 {
@@ -23,9 +19,7 @@ class AdvancedAnalyticsTest extends TestCase
 
     private function authenticate()
     {
-        $user = UserModel::first() ?? UserModel::factory()->create();
-        $this->actingAs($user, 'api');
-        return $user;
+        return $this->actingAsAuthenticatedUser();
     }
 
     public function test_sales_performance_endpoint_returns_valid_structure()
@@ -42,10 +36,10 @@ class AdvancedAnalyticsTest extends TestCase
                         'period',
                         'revenue',
                         'invoices_count',
-                        'total_discount'
-                    ]
+                        'total_discount',
+                    ],
                 ],
-                'message'
+                'message',
             ]);
     }
 
@@ -65,10 +59,10 @@ class AdvancedAnalyticsTest extends TestCase
                         'units_sold',
                         'revenue',
                         'cogs',
-                        'gross_profit'
-                    ]
+                        'gross_profit',
+                    ],
                 ],
-                'message'
+                'message',
             ]);
     }
 
@@ -85,10 +79,10 @@ class AdvancedAnalyticsTest extends TestCase
                     '*' => [
                         'channel',
                         'revenue',
-                        'orders_count'
-                    ]
+                        'orders_count',
+                    ],
                 ],
-                'message'
+                'message',
             ]);
     }
 
@@ -105,9 +99,9 @@ class AdvancedAnalyticsTest extends TestCase
                     'total_sales',
                     'total_returned',
                     'return_rate_percent',
-                    'breakdown_by_reason'
+                    'breakdown_by_reason',
                 ],
-                'message'
+                'message',
             ]);
     }
 
@@ -124,9 +118,9 @@ class AdvancedAnalyticsTest extends TestCase
                     'average_order_value',
                     'purchase_frequency',
                     'historical_clv',
-                    'top_lifetime_customers'
+                    'top_lifetime_customers',
                 ],
-                'message'
+                'message',
             ]);
     }
 
@@ -143,9 +137,9 @@ class AdvancedAnalyticsTest extends TestCase
                     'gross_sales',
                     'total_discounts',
                     'average_discount_rate_percent',
-                    'discounts_by_salesperson'
+                    'discounts_by_salesperson',
                 ],
-                'message'
+                'message',
             ]);
     }
 
@@ -162,10 +156,10 @@ class AdvancedAnalyticsTest extends TestCase
                     '*' => [
                         'product_type',
                         'revenue',
-                        'units_sold'
-                    ]
+                        'units_sold',
+                    ],
                 ],
-                'message'
+                'message',
             ]);
     }
 
@@ -183,9 +177,9 @@ class AdvancedAnalyticsTest extends TestCase
                     'total_sales_orders',
                     'converted_to_invoice',
                     'quotation_to_so_conversion_rate',
-                    'so_to_invoice_conversion_rate'
+                    'so_to_invoice_conversion_rate',
                 ],
-                'message'
+                'message',
             ]);
     }
 }

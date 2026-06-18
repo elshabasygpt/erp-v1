@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import type { Product } from './useInventoryData';
 
 export function useProductForm(products: Product[], setProducts: any, groups: any[], setGroups: any, units: any[], setUnits: any, isRTL: boolean) {
-    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', qualityGrade: '', countryOfOrigin: '', warrantyMonths: 0 };
+    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', qualityGrade: '', countryOfOrigin: '', warrantyMonths: 0, hasCoreCharge: false, coreChargeAmount: 0, isKit: false, binLocation: '' };
     const [form, setForm] = useState(emptyForm);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -20,9 +20,16 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
 
     const openEdit = useCallback((p: Product) => {
         setEditingProduct(p);
-        setForm({ code: p.code, name: p.name, nameAr: p.nameAr, barcode: p.barcode, mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '', warrantyMonths: (p as any).warranty_months || 0 });
+        setForm({ code: p.code, name: p.name, nameAr: p.nameAr, barcode: p.barcode, mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '', warrantyMonths: (p as any).warranty_months || 0, hasCoreCharge: (p as any).has_core_charge || false, coreChargeAmount: parseFloat((p as any).core_charge_amount || 0), isKit: p.isKit || false, binLocation: p.binLocation || '' });
         setShowAddEdit(true);
     }, []);
+
+    const openDuplicate = useCallback((p: Product) => {
+        setEditingProduct(null);
+        const nextCode = String(Math.max(...products.map(pr => parseInt(pr.code) || 0), 1000) + 1);
+        setForm({ code: nextCode, name: `${p.name} (Copy)`, nameAr: `${p.nameAr} (نسخة)`, barcode: generateBarcode(), mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '', warrantyMonths: (p as any).warranty_months || 0, hasCoreCharge: (p as any).has_core_charge || false, coreChargeAmount: parseFloat((p as any).core_charge_amount || 0), isKit: p.isKit || false, binLocation: p.binLocation || '' });
+        setShowAddEdit(true);
+    }, [products]);
 
     const saveProduct = useCallback(async () => {
         if (!form.name && !form.nameAr) return;
@@ -50,11 +57,19 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                 quality_grade: form.qualityGrade || null,
                 country_of_origin: form.countryOfOrigin || null,
                 warranty_months: form.warrantyMonths || 0,
+                has_core_charge: form.hasCoreCharge || false,
+                core_charge_amount: form.coreChargeAmount || 0,
+                is_kit: form.isKit || false,
             };
 
             if (editingProduct) {
                 const res = await inventoryApi.updateProduct(editingProduct.id, payload);
                 const updated = res.data?.data;
+                
+                if (form.binLocation !== (editingProduct.binLocation || '')) {
+                    await inventoryApi.updateBinLocation(editingProduct.id, { warehouse_id: '', bin_location: form.binLocation });
+                }
+
                 if (updated) {
                     setProducts((prev:any) => prev.map((p:any) => p.id === editingProduct.id ? {
                         ...p,
@@ -77,11 +92,20 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                         brand: updated.brand || form.brand,
                         qualityGrade: updated.quality_grade || form.qualityGrade,
                         countryOfOrigin: updated.country_of_origin || form.countryOfOrigin,
+                        hasCoreCharge: updated.has_core_charge || form.hasCoreCharge,
+                        coreChargeAmount: parseFloat(updated.core_charge_amount || form.coreChargeAmount),
+                        isKit: updated.is_kit || form.isKit,
+                        binLocation: form.binLocation,
                     } : p));
                 }
             } else {
                 const res = await inventoryApi.createProduct(payload);
                 const created = res.data?.data;
+                
+                if (created && form.binLocation) {
+                    await inventoryApi.updateBinLocation(created.id, { warehouse_id: '', bin_location: form.binLocation });
+                }
+
                 if (created) {
                     setProducts((prev:any) => [{
                         id: created.id,
@@ -96,9 +120,6 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                         sellPrice: parseFloat(created.sell_price || form.sellPrice),
                         wholesalePrice: created.wholesale_price !== null && created.wholesale_price !== undefined ? parseFloat(created.wholesale_price) : parseFloat(created.sell_price || form.sellPrice) * 0.9,
                         semiWholesalePrice: created.semi_wholesale_price !== null && created.semi_wholesale_price !== undefined ? parseFloat(created.semi_wholesale_price) : parseFloat(created.sell_price || form.sellPrice) * 0.95,
-                        profitPercent: 0,
-                        discount: 0,
-                        stock: 0,
                         minStock: created.stock_alert_level || form.minStock,
                         description: created.description || form.description,
                         imageUrl: created.image_url || form.imageUrl,
@@ -107,6 +128,9 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                         brand: created.brand || form.brand,
                         qualityGrade: created.quality_grade || form.qualityGrade,
                         countryOfOrigin: created.country_of_origin || form.countryOfOrigin,
+                        hasCoreCharge: created.has_core_charge || form.hasCoreCharge,
+                        coreChargeAmount: parseFloat(created.core_charge_amount || form.coreChargeAmount),
+                        isKit: created.is_kit || form.isKit,
                     }, ...prev]);
                 }
             }
@@ -143,6 +167,6 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
 
     return {
         form, setForm, editingProduct, setEditingProduct, showAddEdit, setShowAddEdit,
-        promptModal, setPromptModal, openAdd, openEdit, saveProduct, handlePromptSubmit, updateCostAndProfit, generateBarcode
+        promptModal, setPromptModal, openAdd, openEdit, openDuplicate, saveProduct, handlePromptSubmit, updateCostAndProfit, generateBarcode
     };
 }

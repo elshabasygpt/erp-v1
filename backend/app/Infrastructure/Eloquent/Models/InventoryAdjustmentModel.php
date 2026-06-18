@@ -10,6 +10,7 @@ class InventoryAdjustmentModel extends BaseModel
     use HasUuids, SoftDeletes;
 
     protected $table = 'inventory_adjustments';
+
     protected $connection = 'tenant';
 
     protected $fillable = [

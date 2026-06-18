@@ -17,8 +17,8 @@ class UpdateSalesChannelUseCase
     {
         $existingChannel = $this->repository->findById($id);
 
-        if (!$existingChannel) {
-            throw new InvalidArgumentException("Sales channel not found.");
+        if (! $existingChannel) {
+            throw new InvalidArgumentException('Sales channel not found.');
         }
 
         $channel = new SalesChannel(

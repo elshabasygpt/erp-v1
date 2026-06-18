@@ -2,6 +2,7 @@
 const nextConfig = {
     // Enable React Strict Mode for better development experience
     reactStrictMode: true,
+    output: 'standalone',
 
     // i18n is handled via app router [locale] segments
     // so no next.config i18n needed

@@ -10,12 +10,8 @@ class UblXmlGenerator
 {
     /**
      * Generate UBL 2.1 standard XML for an invoice according to ZATCA rules.
-     * 
-     * @param Invoice $invoice
-     * @param string $sellerName
-     * @param string $vatNumber
-     * @param string $uuid (Zatca specific Hash/UUID)
-     * @return string
+     *
+     * @param  string  $uuid  (Zatca specific Hash/UUID)
      */
     public static function generateInvoiceXml(
         Invoice $invoice,
@@ -80,7 +76,7 @@ XML;
             $itemQty = number_format($item->getQuantity(), 2, '.', '');
             $itemPrice = number_format($item->getUnitPrice(), 2, '.', '');
             $itemName = htmlspecialchars($item->getProductName() ?? 'Product');
-            
+
             $xml .= <<<XML
     
     <cac:InvoiceLine>

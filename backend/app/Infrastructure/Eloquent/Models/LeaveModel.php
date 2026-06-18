@@ -2,8 +2,8 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 
 class LeaveModel extends Model
 {
@@ -17,7 +17,7 @@ class LeaveModel extends Model
         'end_date',
         'type', // annual, sick, unpaid, other
         'status', // pending, approved, rejected
-        'reason'
+        'reason',
     ];
 
     public function employee()

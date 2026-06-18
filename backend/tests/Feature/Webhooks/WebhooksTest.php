@@ -2,14 +2,11 @@
 
 namespace Tests\Feature\Webhooks;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Infrastructure\Eloquent\Models\WebhookEndpointModel;
+use Tests\TestCase;
 
 class WebhooksTest extends TestCase
 {
-
-
     public function test_can_list_webhooks(): void
     {
         $this->actingAsAuthenticatedUser();
@@ -17,7 +14,7 @@ class WebhooksTest extends TestCase
         $response = $this->getJson('/api/webhooks');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_can_create_webhook(): void
@@ -25,13 +22,13 @@ class WebhooksTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/webhooks', [
-            'url'       => 'https://example.com/webhook',
-            'events'    => ['invoice.confirmed'],
+            'url' => 'https://example.com/webhook',
+            'events' => ['invoice.confirmed'],
             'is_active' => true,
         ]);
 
         $response->assertStatus(201)
-                 ->assertJsonPath('data.url', 'https://example.com/webhook');
+            ->assertJsonPath('data.url', 'https://example.com/webhook');
     }
 
     public function test_can_update_webhook(): void
@@ -39,15 +36,15 @@ class WebhooksTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $webhook = WebhookEndpointModel::factory()->create([
-            
-            'url'       => 'https://old.example.com/webhook',
-            'events'    => ['invoice.confirmed'],
+
+            'url' => 'https://old.example.com/webhook',
+            'events' => ['invoice.confirmed'],
             'is_active' => true,
         ]);
 
         $response = $this->putJson("/api/webhooks/{$webhook->id}", [
-            'url'       => 'https://new.example.com/webhook',
-            'events'    => ['invoice.confirmed', 'purchase.confirmed'],
+            'url' => 'https://new.example.com/webhook',
+            'events' => ['invoice.confirmed', 'purchase.confirmed'],
             'is_active' => true,
         ]);
 
@@ -59,8 +56,8 @@ class WebhooksTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $webhook = WebhookEndpointModel::factory()->create([
-            
-            'events'    => ['invoice.confirmed'],
+
+            'events' => ['invoice.confirmed'],
         ]);
 
         $response = $this->deleteJson("/api/webhooks/{$webhook->id}");
@@ -73,8 +70,8 @@ class WebhooksTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $webhook = WebhookEndpointModel::factory()->create([
-            
-            'events'    => ['invoice.confirmed'],
+
+            'events' => ['invoice.confirmed'],
         ]);
 
         $response = $this->getJson("/api/webhooks/{$webhook->id}/logs");
@@ -87,7 +84,7 @@ class WebhooksTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/webhooks', [
-            'url'    => 'not-a-valid-url',
+            'url' => 'not-a-valid-url',
             'events' => ['invoice.confirmed'],
         ]);
 
@@ -99,7 +96,7 @@ class WebhooksTest extends TestCase
         $this->actingAsAuthenticatedUser();
 
         $response = $this->postJson('/api/webhooks', [
-            'url'    => 'https://example.com/webhook',
+            'url' => 'https://example.com/webhook',
             'events' => ['invalid.event'],
         ]);
 

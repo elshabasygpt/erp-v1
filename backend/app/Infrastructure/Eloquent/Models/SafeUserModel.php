@@ -11,6 +11,6 @@ class SafeUserModel extends Pivot
     protected $fillable = [
         'safe_id',
         'user_id',
-        'is_primary'
+        'is_primary',
     ];
 }

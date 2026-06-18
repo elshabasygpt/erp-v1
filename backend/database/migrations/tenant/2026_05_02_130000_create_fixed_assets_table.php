@@ -25,7 +25,7 @@ return new class extends Migration
             $table->uuid('created_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->foreign('account_id')->references('id')->on('accounts')->onDelete('set null');
         });
     }

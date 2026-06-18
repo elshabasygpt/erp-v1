@@ -15,7 +15,7 @@ return new class extends Migration
             $table->text('content');
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('customer_id');
         });
 
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->timestamp('interaction_date');
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('customer_id');
         });
 
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, completed, cancelled
             $table->timestamps();
             $table->softDeletes();
-            
+
             $table->index('assigned_to');
             $table->index('customer_id');
             $table->index('status');

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Accounting;
 
-use App\Presentation\Controllers\API\BaseTenantController;
 use App\Domain\Accounting\Services\AccountMappingService;
 use App\Domain\Accounting\Services\FiscalPeriodService;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,21 +27,22 @@ class AccountingSettingsController extends BaseTenantController
     public function updateAccountMappings(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'cash'        => 'nullable|uuid',
-            'ar'          => 'nullable|uuid',
-            'ap'          => 'nullable|uuid',
-            'revenue'     => 'nullable|uuid',
-            'cogs'        => 'nullable|uuid',
-            'inventory'   => 'nullable|uuid',
+            'cash' => 'nullable|uuid',
+            'ar' => 'nullable|uuid',
+            'ap' => 'nullable|uuid',
+            'revenue' => 'nullable|uuid',
+            'cogs' => 'nullable|uuid',
+            'inventory' => 'nullable|uuid',
             'vat_payable' => 'nullable|uuid',
-            'vat_input'   => 'nullable|uuid',
-            'discount'    => 'nullable|uuid',
-            'bank'        => 'nullable|uuid',
+            'vat_input' => 'nullable|uuid',
+            'discount' => 'nullable|uuid',
+            'bank' => 'nullable|uuid',
         ]);
 
         try {
-            $mappings = array_filter($validated, fn($v) => $v !== null);
+            $mappings = array_filter($validated, fn ($v) => $v !== null);
             $this->accountMapping->saveMappings($mappings);
+
             return $this->success($this->accountMapping->getAllMappings(), 'Account mappings updated successfully');
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
@@ -58,9 +59,9 @@ class AccountingSettingsController extends BaseTenantController
     public function createFiscalPeriod(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'       => 'required|string|max:100',
+            'name' => 'required|string|max:100',
             'start_date' => 'required|date',
-            'end_date'   => 'required|date|after_or_equal:start_date',
+            'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
         try {
@@ -69,6 +70,7 @@ class AccountingSettingsController extends BaseTenantController
                 $validated['start_date'],
                 $validated['end_date']
             );
+
             return $this->created(['id' => $id], 'Fiscal period created successfully');
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
@@ -83,6 +85,7 @@ class AccountingSettingsController extends BaseTenantController
 
         try {
             $this->fiscalPeriodService->closePeriod($id, auth()->id() ?? '', $validated['notes'] ?? null);
+
             return $this->success(null, 'Fiscal period closed successfully');
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
@@ -93,11 +96,10 @@ class AccountingSettingsController extends BaseTenantController
     {
         try {
             $this->fiscalPeriodService->reopenPeriod($id, auth()->id() ?? '');
+
             return $this->success(null, 'Fiscal period reopened successfully');
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         }
     }
 }
-
-

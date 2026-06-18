@@ -39,7 +39,7 @@ class InvoicePolicy
     {
         // Example Row-Level Ownership Check via meta_attributes
         $meta = $user->role->meta_attributes ?? [];
-        
+
         if (isset($meta['can_only_edit_own']) && $meta['can_only_edit_own'] === true) {
             return $user->id === $invoiceModel->created_by;
         }
@@ -54,7 +54,7 @@ class InvoicePolicy
     public function approveDiscount(UserModel $user, InvoiceModel $invoiceModel, float $requestedDiscountPct): Response
     {
         $meta = $user->role->meta_attributes ?? [];
-        
+
         $maxDiscount = $meta['max_discount_pct'] ?? 0;
 
         if ($requestedDiscountPct > $maxDiscount) {

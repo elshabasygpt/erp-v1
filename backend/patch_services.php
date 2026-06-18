@@ -1,7 +1,8 @@
 <?php
+
 $files = [
     'app/Application/Reports/Services/ReportingService.php',
-    'app/Application/Analytics/Services/AnalyticsService.php'
+    'app/Application/Analytics/Services/AnalyticsService.php',
 ];
 
 foreach ($files as $file) {

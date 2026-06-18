@@ -27,7 +27,7 @@ class SalesReturnModel extends BaseModel
         'notes',
         'commission_amount',
         'created_by',
-        'updated_by'
+        'updated_by',
     ];
 
     protected $casts = [
@@ -35,7 +35,7 @@ class SalesReturnModel extends BaseModel
         'vat_amount' => 'decimal:2',
         'total' => 'decimal:2',
         'commission_amount' => 'decimal:2',
-        'return_date' => 'datetime'
+        'return_date' => 'datetime',
     ];
 
     public function items()

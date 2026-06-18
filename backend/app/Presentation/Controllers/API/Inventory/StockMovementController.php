@@ -4,27 +4,24 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
-use App\Presentation\Controllers\API\BaseTenantController;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Application\Services\InventoryService;
+use App\Infrastructure\Eloquent\Models\StockMovementModel;
+use App\Presentation\Controllers\API\BaseTenantController;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class StockMovementController extends BaseTenantController
 {
-    public function __construct(private InventoryService $inventoryService)
-    {
-    }
+    public function __construct(private InventoryService $inventoryService) {}
+
     /**
      * GET /api/inventory/movements
      * List stock movements with optional filters.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = StockMovementModel::where('tenant_id', $this->getTenantId($request))->with(['product', 'warehouse', 'creator'])
+        $query = StockMovementModel::query()->where('tenant_id', $this->getTenantId($request))->with(['product', 'warehouse', 'creator'])
             ->orderBy('created_at', 'desc');
 
         // Filters
@@ -55,7 +52,7 @@ class StockMovementController extends BaseTenantController
      */
     public function show(Request $request, string $id): JsonResponse
     {
-        $movement = StockMovementModel::where('tenant_id', $this->getTenantId($request))->with(['product', 'warehouse', 'creator'])
+        $movement = StockMovementModel::query()->where('tenant_id', $this->getTenantId($request))->with(['product', 'warehouse', 'creator'])
             ->findOrFail($id);
 
         return $this->success($movement, 'Movement retrieved');
@@ -68,28 +65,28 @@ class StockMovementController extends BaseTenantController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'product_id'    => [
+            'product_id' => [
                 'required',
                 'uuid',
-                Rule::exists('tenant.products', 'id')->where('tenant_id', $this->getTenantId($request))
+                Rule::exists('tenant.products', 'id')->where('tenant_id', $this->getTenantId($request)),
             ],
-            'warehouse_id'  => [
+            'warehouse_id' => [
                 'nullable',
                 'uuid',
-                Rule::exists('tenant.warehouses', 'id')->where('tenant_id', $this->getTenantId($request))
+                Rule::exists('tenant.warehouses', 'id')->where('tenant_id', $this->getTenantId($request)),
             ],
-            'type'          => 'required|in:incoming,outgoing,adjustment,return,transfer',
-            'quantity'      => 'required|numeric|min:0.01',
+            'type' => 'required|in:incoming,outgoing,adjustment,return,transfer',
+            'quantity' => 'required|numeric|min:0.01',
             'cost_per_unit' => 'nullable|numeric|min:0',
-            'reference_type'=> 'nullable|string|max:50',
-            'reference_id'  => 'nullable|uuid',
-            'notes'         => 'nullable|string|max:500',
+            'reference_type' => 'nullable|string|max:50',
+            'reference_id' => 'nullable|uuid',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         $validated['created_by'] = auth()->id();
 
         $validated['tenant_id'] = $this->getTenantId($request);
-        $movement = StockMovementModel::create($validated);
+        $movement = StockMovementModel::query()->create($validated);
 
         // Update product stock (for manual adjustments)
         if (in_array($validated['type'], ['incoming', 'return'])) {
@@ -116,7 +113,7 @@ class StockMovementController extends BaseTenantController
      */
     public function summary(Request $request): JsonResponse
     {
-        $query = StockMovementModel::where('tenant_id', $this->getTenantId($request));
+        $query = StockMovementModel::query()->where('tenant_id', $this->getTenantId($request));
 
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
@@ -126,16 +123,13 @@ class StockMovementController extends BaseTenantController
         }
 
         $summary = [
-            'total_incoming'   => (clone $query)->where('type', 'incoming')->sum('quantity'),
-            'total_outgoing'   => (clone $query)->where('type', 'outgoing')->sum('quantity'),
-            'total_adjustments'=> (clone $query)->where('type', 'adjustment')->count(),
-            'total_returns'    => (clone $query)->where('type', 'return')->sum('quantity'),
-            'total_movements'  => $query->count(),
+            'total_incoming' => (clone $query)->where('type', 'incoming')->sum('quantity'),
+            'total_outgoing' => (clone $query)->where('type', 'outgoing')->sum('quantity'),
+            'total_adjustments' => (clone $query)->where('type', 'adjustment')->count(),
+            'total_returns' => (clone $query)->where('type', 'return')->sum('quantity'),
+            'total_movements' => $query->count(),
         ];
 
         return $this->success($summary, 'Summary retrieved');
     }
-
 }
-
-

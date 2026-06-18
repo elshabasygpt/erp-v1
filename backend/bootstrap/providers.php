@@ -1,6 +1,9 @@
 <?php
 
+use App\Infrastructure\Providers\AuthServiceProvider;
+use App\Infrastructure\Providers\RepositoryServiceProvider;
+
 return [
-    App\Infrastructure\Providers\RepositoryServiceProvider::class,
-    App\Infrastructure\Providers\AuthServiceProvider::class,
+    RepositoryServiceProvider::class,
+    AuthServiceProvider::class,
 ];

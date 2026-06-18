@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Application\Inventory\UseCases;
 
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Application\Services\InventoryService;
-use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Entities\JournalEntry;
 use App\Domain\Accounting\Entities\JournalEntryLine;
+use App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface;
 use App\Domain\Accounting\Services\AccountMappingService;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use Illuminate\Support\Facades\DB;
+use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use DomainException;
+use Illuminate\Support\Facades\DB;
 
 final class InventoryWriteOffUseCase
 {
@@ -26,19 +26,19 @@ final class InventoryWriteOffUseCase
     {
         DB::connection('tenant')->transaction(function () use ($tenantId, $warehouseId, $productId, $quantityToWriteOff, $reason, $userId) {
             if ($quantityToWriteOff <= 0) {
-                throw new DomainException("Quantity to write off must be greater than zero.");
+                throw new DomainException('Quantity to write off must be greater than zero.');
             }
 
-            $currentStock = WarehouseProductModel::where('tenant_id', $tenantId)
+            $currentStock = WarehouseProductModel::query()->where('tenant_id', $tenantId)
                 ->where('warehouse_id', $warehouseId)
                 ->where('product_id', $productId)
                 ->first();
 
-            if (!$currentStock || $currentStock->quantity < $quantityToWriteOff) {
-                throw new DomainException("Insufficient stock to write off.");
+            if (! $currentStock || $currentStock->quantity < $quantityToWriteOff) {
+                throw new DomainException('Insufficient stock to write off.');
             }
 
-            $product = ProductModel::where('tenant_id', $tenantId)->findOrFail($productId);
+            $product = ProductModel::query()->where('tenant_id', $tenantId)->findOrFail($productId);
             $unitCost = $product->cost_price;
 
             // Reduce stock
@@ -65,7 +65,7 @@ final class InventoryWriteOffUseCase
                 $entry = new JournalEntry(
                     id: null,
                     entryNumber: $this->journalEntryRepository->getNextEntryNumber(),
-                    date: new \DateTimeImmutable(),
+                    date: new \DateTimeImmutable,
                     description: "Inventory Write-Off: {$reason}",
                     isPosted: true,
                     referenceType: 'inventory_write_off',

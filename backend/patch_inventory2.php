@@ -1,4 +1,5 @@
 <?php
+
 $content = file_get_contents('tests/Feature/Inventory/InventoryTest.php');
 
 $content = str_replace(

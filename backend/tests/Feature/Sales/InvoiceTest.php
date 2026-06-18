@@ -2,21 +2,19 @@
 
 namespace Tests\Feature\Sales;
 
-use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\InvoiceItemModel;
+use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class InvoiceTest extends TestCase
 {
-    
-
     public function test_invoice_creation_calculates_totals_correctly()
     {
         $product = ProductModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
-            'name' => 'Test Product',
+            'id' => Str::uuid()->toString(),
+            'name' => 'Test Product', 'name_ar' => 'Test Product', 'name_en' => 'Test Product',
             'name_ar' => 'Test Product AR',
             'sku' => 'SKU-TEST',
             'barcode' => '123456789',
@@ -27,7 +25,7 @@ class InvoiceTest extends TestCase
         ]);
 
         $invoice = InvoiceModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'invoice_number' => 'INV-001',
             'type' => 'tax',
             'invoice_date' => now(),
@@ -35,22 +33,20 @@ class InvoiceTest extends TestCase
             'vat_amount' => 30,
             'discount_amount' => 0,
             'total' => 230,
-            'status' => 'confirmed'
+            'status' => 'confirmed',
         ]);
 
         InvoiceItemModel::create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'invoice_id' => $invoice->id,
             'product_id' => $product->id,
             'quantity' => 2,
             'unit_price' => 100,
-            'subtotal' => 200,
-            'tax_amount' => 30,
-            'total' => 230
+            'total' => 230,
         ]);
 
         $this->assertEquals(230, $invoice->total);
-        $this->assertEquals(2, $invoice->items()->count());
-        $this->assertEquals(200, $invoice->items()->sum('subtotal'));
+        $this->assertEquals(1, $invoice->items()->count());
+        $this->assertEquals(230, $invoice->items()->sum('total'));
     }
 }

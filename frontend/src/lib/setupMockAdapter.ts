@@ -48,4 +48,10 @@ export function setupMockHandlers() {
 
     // Users
     mockInstance.onGet(/\/users/).reply(200, { data: mockData.users.data });
+
+    // Tasks
+    mockInstance.onGet(/\/tasks\/dashboard/).reply(200, { data: mockData.tasksDashboard });
+    mockInstance.onGet(/\/tasks\/categories/).reply(200, { data: mockData.tasksDashboard.categories });
+    mockInstance.onGet(/\/tasks/).reply(200, { data: { data: mockData.tasks.data, current_page: 1, last_page: 1, total: mockData.tasks.data.length } });
+    mockInstance.onPost(/\/tasks/).reply(201, { success: true });
 }

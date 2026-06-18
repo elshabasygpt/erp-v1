@@ -1,4 +1,5 @@
 <?php
+
 namespace Database\Factories;
 
 use App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel;
@@ -11,13 +12,13 @@ class ApprovalRequestFactory extends Factory
     public function definition(): array
     {
         return [
-            'entity_type'  => 'PurchaseInvoice',
-            'entity_id'    => $this->faker->uuid(),
+            'entity_type' => 'PurchaseInvoice',
+            'entity_id' => $this->faker->uuid(),
             'trigger_type' => 'high_discount',
             'requested_by' => $this->faker->uuid(),
-            'status'       => 'pending',
-            'resolved_by'  => null,
-            'notes'        => null,
+            'status' => 'pending',
+            'resolved_by' => null,
+            'notes' => null,
         ];
     }
 }

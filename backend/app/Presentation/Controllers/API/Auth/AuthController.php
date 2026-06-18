@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Auth;
 
-use App\Presentation\Controllers\API\BaseController;
 use App\Application\Auth\DTOs\LoginDTO;
 use App\Application\Auth\DTOs\RegisterDTO;
 use App\Application\Auth\UseCases\LoginUseCase;
 use App\Application\Auth\UseCases\RegisterUseCase;
+use App\Infrastructure\Eloquent\Models\UserModel;
+use App\Presentation\Controllers\API\BaseController;
 use App\Presentation\Requests\Auth\LoginRequest;
 use App\Presentation\Requests\Auth\RegisterRequest;
-use App\Infrastructure\Eloquent\Models\UserModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends BaseController
@@ -34,16 +35,15 @@ class AuthController extends BaseController
         }
 
         // Verify password via Eloquent model (tenant DB)
-        $userModel = UserModel::where('email', $dto->email)->first();
-        if (!$userModel || !Hash::check($dto->password, $userModel->password)) {
+        $userModel = UserModel::query()->where('email', $dto->email)->first();
+        if (! $userModel || ! Hash::check($dto->password, $userModel->password)) {
             return $this->error('Invalid credentials.', 401);
         }
 
         $token = $userModel->createToken('auth-token')->plainTextToken;
 
         // Look up tenant from central tenant_users table
-        $tenantUser = \Illuminate\Support\Facades\DB::connection('pgsql')
-            ->table('tenant_users')
+        $tenantUser = DB::table('tenant_users')
             ->where('email', $dto->email)
             ->first();
 
@@ -67,7 +67,7 @@ class AuthController extends BaseController
             return $this->error($e->getMessage(), 422);
         }
 
-        $userModel = UserModel::find($user->getId());
+        $userModel = UserModel::query()->find($user->getId());
         $token = $userModel->createToken('auth-token')->plainTextToken;
 
         return $this->success([
@@ -87,6 +87,7 @@ class AuthController extends BaseController
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
+
         return $this->success(null, 'Logged out successfully.');
     }
 }

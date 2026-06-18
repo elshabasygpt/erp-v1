@@ -18,11 +18,11 @@ class WebhookService
     public function dispatch(string $event, array $payload): void
     {
         try {
-            $webhooks = WebhookEndpointModel::where('tenant_id', $this->tenantId)
+            $webhooks = WebhookEndpointModel::query()->where('tenant_id', $this->tenantId)
                 ->where('is_active', true)
                 ->where(function ($q) use ($event) {
                     $q->whereJsonContains('events', $event)
-                      ->orWhereJsonContains('events', '*');
+                        ->orWhereJsonContains('events', '*');
                 })
                 ->get();
 
@@ -39,9 +39,9 @@ class WebhookService
                 );
 
                 Log::info('Webhook job dispatched', [
-                    'tenant_id'  => $this->tenantId,
+                    'tenant_id' => $this->tenantId,
                     'webhook_id' => $webhook->id,
-                    'event'      => $event,
+                    'event' => $event,
                 ]);
             }
 
@@ -49,8 +49,8 @@ class WebhookService
             // لو فشل الـ dispatch — سجّل بس ولا توقف الـ Request
             Log::error('Failed to dispatch webhook jobs', [
                 'tenant_id' => $this->tenantId,
-                'event'     => $event,
-                'error'     => $e->getMessage(),
+                'event' => $event,
+                'error' => $e->getMessage(),
             ]);
         }
     }

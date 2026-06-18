@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
-use App\Presentation\Controllers\API\BaseTenantController;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
+use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Infrastructure\Eloquent\Models\VehicleMakeModel;
 use App\Infrastructure\Eloquent\Models\VehicleModelModel;
 use App\Infrastructure\Eloquent\Models\VehicleYearModel;
-use App\Infrastructure\Eloquent\Models\ProductModel;
+use App\Presentation\Controllers\API\BaseTenantController;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class VehicleController extends BaseTenantController
 {
     public function getMakes(Request $request): JsonResponse
     {
-        $makes = VehicleMakeModel::where('is_active', true)
+        $makes = VehicleMakeModel::query()->where('is_active', true)
             ->withCount('models')
             ->get(['id', 'name', 'name_ar', 'logo_url']);
 
@@ -26,11 +27,11 @@ class VehicleController extends BaseTenantController
 
     public function getModels(Request $request, string $makeId): JsonResponse
     {
-        $models = VehicleModelModel::where('make_id', $makeId)
+        $models = VehicleModelModel::query()->where('make_id', $makeId)
             ->where('is_active', true)
             ->with(['years' => function ($q) {
                 $q->where('is_active', true)
-                  ->orderBy('year_from', 'desc');
+                    ->orderBy('year_from', 'desc');
             }])
             ->get(['id', 'name', 'name_ar', 'body_type', 'image_url']);
 
@@ -39,7 +40,7 @@ class VehicleController extends BaseTenantController
 
     public function getYears(Request $request, string $modelId): JsonResponse
     {
-        $years = VehicleYearModel::where('model_id', $modelId)
+        $years = VehicleYearModel::query()->where('model_id', $modelId)
             ->where('is_active', true)
             ->orderBy('year_from', 'desc')
             ->get(['id', 'year_from', 'year_to', 'engine_size', 'engine_code', 'fuel_type', 'engine_image_url']);
@@ -58,11 +59,13 @@ class VehicleController extends BaseTenantController
 
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes');
-            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes');
+            if (! file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
             $file->move($destinationPath, $filename);
-            $validated['logo_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes/' . $filename;
+            $validated['logo_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes/'.$filename;
         }
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -70,6 +73,7 @@ class VehicleController extends BaseTenantController
             $make->tenant_id = $this->getTenantId($request);
             $make->created_by = $request->user()?->id;
             $make->save();
+
             return $make;
         });
 
@@ -86,18 +90,20 @@ class VehicleController extends BaseTenantController
             'image' => 'nullable|file|max:2048',
         ]);
 
-        $make = VehicleMakeModel::find($validated['make_id']);
-        if (!$make) {
+        $make = VehicleMakeModel::query()->find($validated['make_id']);
+        if (! $make) {
             return $this->error('Make not found', 404);
         }
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models');
-            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/models');
+            if (! file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
             $file->move($destinationPath, $filename);
-            $validated['image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models/' . $filename;
+            $validated['image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/models/'.$filename;
         }
 
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -105,6 +111,7 @@ class VehicleController extends BaseTenantController
             $modelRecord->tenant_id = $this->getTenantId($request);
             $modelRecord->created_by = $request->user()?->id;
             $modelRecord->save();
+
             return $modelRecord;
         });
 
@@ -123,18 +130,20 @@ class VehicleController extends BaseTenantController
             'engine_image' => 'nullable|file|max:2048',
         ]);
 
-        $modelRec = VehicleModelModel::find($validated['model_id']);
-        if (!$modelRec) {
+        $modelRec = VehicleModelModel::query()->find($validated['model_id']);
+        if (! $modelRec) {
             return $this->error('Model not found', 404);
         }
 
         if ($request->hasFile('engine_image')) {
             $file = $request->file('engine_image');
-            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years');
-            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/years');
+            if (! file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
             $file->move($destinationPath, $filename);
-            $validated['engine_image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years/' . $filename;
+            $validated['engine_image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/years/'.$filename;
         }
 
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -142,6 +151,7 @@ class VehicleController extends BaseTenantController
             $yearRecord->tenant_id = $this->getTenantId($request);
             $yearRecord->created_by = $request->user()?->id;
             $yearRecord->save();
+
             return $yearRecord;
         });
 
@@ -156,19 +166,24 @@ class VehicleController extends BaseTenantController
             'logo' => 'nullable|file|max:2048',
         ]);
 
-        $make = VehicleMakeModel::find($id);
-        if (!$make) return $this->error('Make not found', 404);
+        $make = VehicleMakeModel::query()->find($id);
+        if (! $make) {
+            return $this->error('Make not found', 404);
+        }
 
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes');
-            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes');
+            if (! file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
             $file->move($destinationPath, $filename);
-            $validated['logo_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/makes/' . $filename;
+            $validated['logo_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes/'.$filename;
         }
 
         $make->update($validated);
+
         return $this->success($make, 'Vehicle make updated successfully', 200);
     }
 
@@ -181,19 +196,24 @@ class VehicleController extends BaseTenantController
             'image' => 'nullable|file|max:2048',
         ]);
 
-        $modelRec = VehicleModelModel::find($id);
-        if (!$modelRec) return $this->error('Model not found', 404);
+        $modelRec = VehicleModelModel::query()->find($id);
+        if (! $modelRec) {
+            return $this->error('Model not found', 404);
+        }
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models');
-            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/models');
+            if (! file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
             $file->move($destinationPath, $filename);
-            $validated['image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/models/' . $filename;
+            $validated['image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/models/'.$filename;
         }
 
         $modelRec->update($validated);
+
         return $this->success($modelRec, 'Vehicle model updated successfully', 200);
     }
 
@@ -208,19 +228,24 @@ class VehicleController extends BaseTenantController
             'engine_image' => 'nullable|file|max:2048',
         ]);
 
-        $yearRec = VehicleYearModel::find($id);
-        if (!$yearRec) return $this->error('Year not found', 404);
+        $yearRec = VehicleYearModel::query()->find($id);
+        if (! $yearRec) {
+            return $this->error('Year not found', 404);
+        }
 
         if ($request->hasFile('engine_image')) {
             $file = $request->file('engine_image');
-            $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years');
-            if (!file_exists($destinationPath)) { mkdir($destinationPath, 0755, true); }
+            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
+            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/years');
+            if (! file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
             $file->move($destinationPath, $filename);
-            $validated['engine_image_url'] = '/uploads/tenant_' . $this->getTenantId($request) . '/vehicles/years/' . $filename;
+            $validated['engine_image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/years/'.$filename;
         }
 
         $yearRec->update($validated);
+
         return $this->success($yearRec, 'Vehicle year updated successfully', 200);
     }
 
@@ -233,7 +258,7 @@ class VehicleController extends BaseTenantController
 
         $tenantId = $this->getTenantId($request);
 
-        $productsQuery = ProductModel::where('products.is_active', true)
+        $productsQuery = ProductModel::query()->where('products.is_active', true)
             ->whereHas('compatibleVehicles', function ($q) use ($makeId, $modelId, $year, $tenantId) {
                 // Ensure the pivot table is isolated by tenant
                 $q->where('product_vehicle_compatibility.tenant_id', $tenantId);
@@ -245,14 +270,14 @@ class VehicleController extends BaseTenantController
                         $modelQ->where('make_id', $makeId);
                     });
                 }
-                
+
                 if ($year) {
                     $yearInt = (int) $year;
                     $q->where('vehicle_years.year_from', '<=', $yearInt)
-                      ->where(function ($yearQ) use ($yearInt) {
-                          $yearQ->whereNull('vehicle_years.year_to')
+                        ->where(function ($yearQ) use ($yearInt) {
+                            $yearQ->whereNull('vehicle_years.year_to')
                                 ->orWhere('vehicle_years.year_to', '>=', $yearInt);
-                      });
+                        });
                 }
             })
             ->leftJoin('warehouse_products', function ($join) use ($warehouseId) {
@@ -265,12 +290,12 @@ class VehicleController extends BaseTenantController
                 'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
                 'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
                 'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url', 'products.warranty_months',
-                DB::raw('COALESCE(SUM(warehouse_products.quantity), 0) as stock_quantity')
+                DB::raw('COALESCE(SUM(warehouse_products.quantity), 0) as stock_quantity'),
             ])
             ->groupBy([
                 'products.id', 'products.name', 'products.name_ar', 'products.sku', 'products.barcode',
                 'products.oem_number', 'products.part_number', 'products.brand', 'products.quality_grade',
-                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url', 'products.warranty_months'
+                'products.sell_price', 'products.wholesale_price', 'products.semi_wholesale_price', 'products.cost_price', 'products.vat_rate', 'products.image_url', 'products.warranty_months',
             ]);
 
         $products = $productsQuery->get();
@@ -280,11 +305,11 @@ class VehicleController extends BaseTenantController
 
     public function getProductCompatibility(Request $request, string $productId): JsonResponse
     {
-        $product = ProductModel::find($productId);
-        if (!$product) {
+        $product = ProductModel::query()->find($productId);
+        if (! $product) {
             return $this->error('Product not found', 404);
         }
-        
+
         $compatibleVehicles = $product->compatibleVehicles()->get()->map(function ($year) {
             return [
                 'vehicle_year_id' => $year->pivot->vehicle_year_id,
@@ -304,7 +329,7 @@ class VehicleController extends BaseTenantController
                     'year_from' => $year->year_from,
                     'year_to' => $year->year_to,
                     'engine_size' => $year->engine_size,
-                ]
+                ],
             ];
         });
 
@@ -318,13 +343,13 @@ class VehicleController extends BaseTenantController
             'notes' => 'nullable|string|max:255',
         ]);
 
-        $year = VehicleYearModel::find($validated['vehicle_year_id']);
-        if (!$year) {
+        $year = VehicleYearModel::query()->find($validated['vehicle_year_id']);
+        if (! $year) {
             return $this->error('Vehicle year not found', 404);
         }
 
-        $product = ProductModel::find($productId);
-        if (!$product) {
+        $product = ProductModel::query()->find($productId);
+        if (! $product) {
             return $this->error('Product not found', 404);
         }
 
@@ -340,18 +365,18 @@ class VehicleController extends BaseTenantController
                 ->where('tenant_id', $this->getTenantId($request))
                 ->update([
                     'notes' => $validated['notes'] ?? null,
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ]);
         } else {
             DB::connection('tenant')->table('product_vehicle_compatibility')->insert([
-                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'id' => Str::uuid()->toString(),
                 'tenant_id' => $this->getTenantId($request),
                 'product_id' => $productId,
                 'vehicle_year_id' => $validated['vehicle_year_id'],
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => $request->user()?->id,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
         }
 
@@ -360,11 +385,11 @@ class VehicleController extends BaseTenantController
 
     public function detachVehicle(Request $request, string $productId, string $vehicleYearId): JsonResponse
     {
-        $product = ProductModel::find($productId);
-        if (!$product) {
+        $product = ProductModel::query()->find($productId);
+        if (! $product) {
             return $this->error('Product not found', 404);
         }
-        
+
         $product->compatibleVehicles()->detach($vehicleYearId);
 
         return $this->success(null, 'Vehicle detached successfully');
@@ -380,18 +405,20 @@ class VehicleController extends BaseTenantController
 
         $terms = explode(' ', strtolower(trim($q)));
 
-        $years = VehicleYearModel::with(['vehicleModel.make'])
+        $years = VehicleYearModel::query()->with(['vehicleModel.make'])
             ->where('is_active', true)
             ->whereHas('vehicleModel', function ($modelQ) use ($terms) {
                 foreach ($terms as $term) {
-                    if (empty(trim($term))) continue;
+                    if (empty(trim($term))) {
+                        continue;
+                    }
                     $modelQ->where(function ($subQ) use ($term) {
                         $subQ->where(DB::raw('LOWER(name)'), 'LIKE', "%{$term}%")
-                             ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$term}%")
-                             ->orWhereHas('make', function ($makeQ) use ($term) {
-                                 $makeQ->where(DB::raw('LOWER(name)'), 'LIKE', "%{$term}%")
-                                       ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$term}%");
-                             });
+                            ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$term}%")
+                            ->orWhereHas('make', function ($makeQ) use ($term) {
+                                $makeQ->where(DB::raw('LOWER(name)'), 'LIKE', "%{$term}%")
+                                    ->orWhere(DB::raw('LOWER(name_ar)'), 'LIKE', "%{$term}%");
+                            });
                     });
                 }
             })
@@ -403,9 +430,9 @@ class VehicleController extends BaseTenantController
             $makeNameAr = $year->vehicleModel->make->name_ar;
             $modelName = $year->vehicleModel->name;
             $modelNameAr = $year->vehicleModel->name_ar;
-            
-            $yearTo = $year->year_to ? "-{$year->year_to}" : "-Present";
-            $engine = $year->engine_size ? " ({$year->engine_size})" : "";
+
+            $yearTo = $year->year_to ? "-{$year->year_to}" : '-Present';
+            $engine = $year->engine_size ? " ({$year->engine_size})" : '';
 
             return [
                 'vehicle_year_id' => $year->id,
@@ -421,22 +448,25 @@ class VehicleController extends BaseTenantController
 
     public function destroyMake($id): JsonResponse
     {
-        $make = VehicleMakeModel::findOrFail($id);
+        $make = VehicleMakeModel::query()->findOrFail($id);
         $make->delete();
+
         return $this->success(null, 'Make deleted successfully');
     }
 
     public function destroyModel($id): JsonResponse
     {
-        $model = VehicleModelModel::findOrFail($id);
+        $model = VehicleModelModel::query()->findOrFail($id);
         $model->delete();
+
         return $this->success(null, 'Model deleted successfully');
     }
 
     public function destroyYear($id): JsonResponse
     {
-        $year = VehicleYearModel::findOrFail($id);
+        $year = VehicleYearModel::query()->findOrFail($id);
         $year->delete();
+
         return $this->success(null, 'Year deleted successfully');
     }
 }
