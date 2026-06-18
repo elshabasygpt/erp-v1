@@ -1,4 +1,5 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
+import PriceCompareModal from './PriceCompareModal';
 
 interface PurchasesModalsProps {
     isRTL: boolean;
@@ -36,6 +37,8 @@ const PurchasesModals = memo(function PurchasesModals({
     newReturn, setNewReturn, handleSaveReturn, handleCompleteReturn,
     statusConfig, getStatusLabel, formatCurrency
 }: PurchasesModalsProps) {
+    const [comparingProductId, setComparingProductId] = useState<string | null>(null);
+
     return (
         <>
             {showOrderModal && newOrder && (
@@ -114,6 +117,16 @@ const PurchasesModals = memo(function PurchasesModals({
                                                         <option value="">{isRTL ? 'اختر منتج...' : 'Select product...'}</option>
                                                         {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                     </select>
+                                                    {it.product_id && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => { e.preventDefault(); setComparingProductId(it.product_id); }}
+                                                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                                                            title={isRTL ? 'مقارنة أسعار الموردين' : 'Compare supplier prices'}
+                                                        >
+                                                            📊 {isRTL ? 'مقارنة الأسعار' : 'Compare prices'}
+                                                        </button>
+                                                    )}
                                                 </td>
                                                 <td className="py-2 px-3">
                                                     <input type="number" min="1" className="input-field py-2 w-24 text-center bg-transparent border-transparent hover:border-surface-300 dark:hover:border-surface-600 focus:bg-white dark:focus:bg-surface-900 mx-auto" value={it.qty} onChange={e => {
@@ -407,6 +420,26 @@ const PurchasesModals = memo(function PurchasesModals({
                         </div>
                     </div>
                 </div>
+            )}
+            {comparingProductId && (
+                <PriceCompareModal
+                    productId={comparingProductId}
+                    productName={products.find(p => p.id === comparingProductId)?.name || ''}
+                    isRTL={isRTL}
+                    onClose={() => setComparingProductId(null)}
+                    onSelectSupplier={(supplierId, price) => {
+                        setNewOrder((prev: any) => ({
+                            ...prev,
+                            supplier_id: supplierId,
+                            items: prev.items.map((item: any) =>
+                                item.product_id === comparingProductId
+                                    ? { ...item, unit_price: price }
+                                    : item
+                            )
+                        }));
+                        setComparingProductId(null);
+                    }}
+                />
             )}
         </>
     );

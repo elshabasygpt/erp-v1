@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { accountingApiNew, settingsApi, treasuryApi } from '@/lib/api';
+import { accountingApi, settingsApi, treasuryApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 export default function ZakatReportPage() {
@@ -32,7 +32,7 @@ export default function ZakatReportPage() {
 
   useEffect(() => {
     // Fetch chart of accounts
-    accountingApiNew.getChartOfAccounts()
+    accountingApi.getChartOfAccounts()
       .then((res) => {
         const flat: any[] = [];
         const flatten = (nodes: any[]) => {
@@ -87,7 +87,7 @@ export default function ZakatReportPage() {
   const handleGenerate = async () => {
     setIsLoading(true);
     try {
-      const res = await accountingApiNew.getZakatReport({
+      const res = await accountingApi.getZakatReport({
         as_of: asOf,
         rate: parseFloat(rate),
         method,
@@ -110,7 +110,7 @@ export default function ZakatReportPage() {
   const handlePostEntry = async () => {
     if (!report || report.zakat_amount <= 0) return;
     try {
-      await accountingApiNew.postZakatEntry({
+      await accountingApi.postZakatEntry({
         date: asOf,
         zakat_amount: report.zakat_amount,
       });
@@ -123,7 +123,7 @@ export default function ZakatReportPage() {
   const handlePayZakat = async () => {
       if (!selectedSafe || !report) return toast.error('يرجى اختيار الخزينة للخصم منها');
       try {
-          await accountingApiNew.payZakat({
+          await accountingApi.payZakat({
               date: asOf,
               amount: report.zakat_amount,
               safe_account_id: selectedSafe,

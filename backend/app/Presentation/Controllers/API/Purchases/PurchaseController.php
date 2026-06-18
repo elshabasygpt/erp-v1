@@ -13,6 +13,7 @@ use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Infrastructure\Eloquent\Models\SupplierPriceListModel;
 
 class PurchaseController extends BaseTenantController
 {
@@ -60,6 +61,14 @@ class PurchaseController extends BaseTenantController
             $validated['tenant_id'] = $this->getTenantId($request);
             $dto = CreatePurchaseDTO::fromRequest($validated);
             $purchase = $this->createPurchaseUseCase->execute($dto, auth()->id() ?? '');
+
+            // تحديث last_purchase_date في supplier_price_lists تلقائياً
+            foreach ($purchase->items as $item) {
+                SupplierPriceListModel::where('tenant_id', $this->getTenantId($request))
+                    ->where('supplier_id', $purchase->supplier_id)
+                    ->where('product_id', $item->product_id)
+                    ->update(['last_purchase_date' => $purchase->invoice_date->toDateString()]);
+            }
 
             return $this->success($purchase, 'Purchase invoice created successfully', 201);
         } catch (\DomainException $e) {

@@ -392,6 +392,54 @@ export const purchasesApi = {
     getPurchaseOrders: (params?: Record<string, any>) => api.get('/purchases/orders', { params }),
     createPurchaseOrder: (data: any) => api.post('/purchases/orders', data),
     updatePurchaseOrderStatus: (id: string, data: any) => api.put(`/purchases/orders/${id}/status`, data),
+
+    // Supplier Price Lists
+    getSupplierPrices: (params?: {
+        supplier_id?: string;
+        product_id?: string;
+        search?: string;
+        active_only?: boolean;
+        limit?: number;
+    }) => api.get('/purchases/supplier-prices', { params }),
+
+    compareSupplierPrices: (productId: string) =>
+        api.get(`/purchases/supplier-prices/compare/${productId}`),
+
+    addSupplierPrice: (data: {
+        supplier_id: string;
+        product_id: string;
+        unit_price: number;
+        currency_code?: string;
+        min_quantity?: number;
+        supplier_sku?: string;
+        notes?: string;
+        valid_from?: string;
+        valid_until?: string;
+        lead_time_days?: number;
+    }) => api.post('/purchases/supplier-prices', data),
+
+    updateSupplierPrice: (id: string, data: Partial<{
+        unit_price: number;
+        currency_code: string;
+        min_quantity: number;
+        supplier_sku: string;
+        notes: string;
+        valid_from: string;
+        valid_until: string;
+        lead_time_days: number;
+        is_active: boolean;
+    }>) => api.put(`/purchases/supplier-prices/${id}`, data),
+
+    deleteSupplierPrice: (id: string) =>
+        api.delete(`/purchases/supplier-prices/${id}`),
+
+    getSupplierPriceHistory: (id: string) =>
+        api.get(`/purchases/supplier-prices/${id}/history`),
+
+    bulkImportSupplierPrices: (data: {
+        supplier_id: string;
+        items: { product_id: string; unit_price: number; supplier_sku?: string; min_quantity?: number }[];
+    }) => api.post('/purchases/supplier-prices/bulk', data),
 };
 
 export const purchaseReturnsApi = {
@@ -434,6 +482,12 @@ export const accountingApi = {
         api.get('/accounting/reports/balance-sheet', { params: { as_of: asOf } }),
     getGeneralLedger: (params?: { from?: string; to?: string }) =>
         api.get('/accounting/reports/general-ledger', { params }),
+    getZakatReport: (params?: Record<string, any>) =>
+        api.get('/accounting/reports/zakat', { params }),
+    postZakatEntry: (data: { date: string; zakat_amount: number }) =>
+        api.post('/accounting/reports/zakat/post', data),
+    payZakat: (data: { date: string; amount: number; safe_account_id: string; reference_number?: string }) =>
+        api.post('/accounting/reports/zakat/pay', data),
 };
 
 export const fixedAssetsApi = {

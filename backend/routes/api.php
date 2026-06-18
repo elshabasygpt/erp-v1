@@ -45,6 +45,7 @@ use App\Presentation\Controllers\API\Purchases\PurchaseController;
 use App\Presentation\Controllers\API\Purchases\PurchaseReturnController;
 use App\Presentation\Controllers\API\Purchases\SupplierPaymentAllocationController;
 use App\Presentation\Controllers\API\Purchases\ProcurementController;
+use App\Presentation\Controllers\API\Purchases\SupplierPriceListController;
 use App\Presentation\Controllers\API\Reports\ReportController;
 use App\Presentation\Controllers\API\Reports\AutoPartsReportController;
 use App\Presentation\Controllers\API\Sales\AdvancedSalesReportController;
@@ -372,6 +373,17 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         // Supplier Payment Allocations
         Route::get('/payments/{paymentId}/allocations', [SupplierPaymentAllocationController::class, 'index']);
         Route::post('/payments/{paymentId}/allocations', [SupplierPaymentAllocationController::class, 'store']);
+
+        // Supplier Price Lists
+        Route::prefix('supplier-prices')->group(function () {
+            Route::get('/compare/{productId}',  [SupplierPriceListController::class, 'compareByProduct']);
+            Route::post('/bulk',                [SupplierPriceListController::class, 'bulkImport']);
+            Route::get('/',                     [SupplierPriceListController::class, 'index']);
+            Route::post('/',                    [SupplierPriceListController::class, 'store']);
+            Route::put('/{id}',                 [SupplierPriceListController::class, 'update']);
+            Route::delete('/{id}',              [SupplierPriceListController::class, 'destroy']);
+            Route::get('/{id}/history',         [SupplierPriceListController::class, 'getHistory']);
+        });
     });
 
     // ZATCA Integration onboarding

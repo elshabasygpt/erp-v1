@@ -117,6 +117,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'purchaseOrders', path: '/purchases/orders', iconKey: 'purchases', labelAr: 'أوامر الشراء (PO)', labelEn: 'Purchase Orders' },
             { key: 'purchases', path: '/purchases', iconKey: 'purchases', labelAr: 'فواتير الشراء', labelEn: 'Purchase Invoices' },
             { key: 'suppliers', path: '/suppliers', iconKey: 'suppliers', labelAr: 'الموردين', labelEn: 'Suppliers' },
+            { key: 'supplierPrices', path: '/purchases/supplier-prices', iconKey: 'purchases', labelAr: 'قوائم أسعار الموردين', labelEn: 'Supplier Price Lists' },
         ],
     },
     {

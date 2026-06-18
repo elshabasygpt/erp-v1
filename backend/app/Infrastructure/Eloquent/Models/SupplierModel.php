@@ -28,4 +28,9 @@ class SupplierModel extends BaseModel
     {
         return $this->hasMany(VoucherModel::class, 'supplier_id');
     }
+
+    public function priceList()
+    {
+        return $this->hasMany(SupplierPriceListModel::class, 'supplier_id');
+    }
 }
