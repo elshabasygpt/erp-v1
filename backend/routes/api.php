@@ -24,6 +24,7 @@ use App\Presentation\Controllers\API\HR\LeaveController;
 use App\Presentation\Controllers\API\HR\PayrollController;
 use App\Presentation\Controllers\API\HR\PayrollItemController;
 use App\Presentation\Controllers\API\HR\LateAttendancePenaltyController;
+use App\Presentation\Controllers\API\HR\EmployeeLoanController;
 use App\Presentation\Controllers\API\Inventory\AdjustmentController;
 use App\Presentation\Controllers\API\Inventory\AssemblyController;
 use App\Presentation\Controllers\API\Inventory\BranchController;
@@ -479,6 +480,14 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::put('/penalty-rules/{id}',  [LateAttendancePenaltyController::class, 'updateRule']);
         Route::delete('/penalty-rules/{id}',[LateAttendancePenaltyController::class, 'destroyRule']);
         Route::get('/penalty-report',      [LateAttendancePenaltyController::class, 'getPenaltyReport']);
+
+        // Employee Loans
+        Route::get('/loans/summary',                    [EmployeeLoanController::class, 'getSummary']);
+        Route::get('/loans',                            [EmployeeLoanController::class, 'index']);
+        Route::post('/loans',                           [EmployeeLoanController::class, 'store']);
+        Route::get('/loans/{id}',                       [EmployeeLoanController::class, 'show']);
+        Route::put('/loans/{id}/status',                [EmployeeLoanController::class, 'updateStatus']);
+        Route::put('/loan-installments/{id}/skip',      [EmployeeLoanController::class, 'skipInstallment']);
     });
 
     // Data Import & Export

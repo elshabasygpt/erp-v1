@@ -18,6 +18,7 @@ class PayrollModel extends Model
         'base_salary',
         'bonuses',
         'deductions',
+        'loan_deductions',
         'net_salary',
         'status', // draft, paid
         'expense_id',
@@ -30,6 +31,7 @@ class PayrollModel extends Model
         'deductions_breakdown'  => 'array',
         'bonuses_breakdown'     => 'array',
         'advances_breakdown'    => 'array',
+        'loan_deductions'       => 'decimal:2',
     ];
 
     public function employee()

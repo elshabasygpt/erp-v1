@@ -317,6 +317,51 @@ export const crmApi = {
     exportSuppliers: () => api.get('/crm/suppliers/export', { responseType: 'blob' }).then(res => res.data),
     importSuppliers: (formData: FormData) => api.post('/crm/suppliers/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(res => res.data),
     getSupplierStatement: (id: string) => api.get(`/crm/suppliers/${id}/statement`).then(res => res.data),
+
+    // ── Customer Vehicles ──────────────────────────────────────────────────
+    getCustomerVehicles: (customerId: string) =>
+        api.get(`/crm/customers/${customerId}/vehicles`),
+
+    addCustomerVehicle: (customerId: string, data: {
+        vehicle_year_id: string;
+        plate_number?: string;
+        plate_number_en?: string;
+        color?: string;
+        mileage?: number;
+        purchase_year?: number;
+        vin?: string;
+        notes?: string;
+    }) => api.post(`/crm/customers/${customerId}/vehicles`, data),
+
+    updateCustomerVehicle: (customerId: string, vehicleId: string, data: {
+        vehicle_year_id?: string;
+        plate_number?: string;
+        plate_number_en?: string;
+        color?: string;
+        mileage?: number;
+        purchase_year?: number;
+        vin?: string;
+        notes?: string;
+    }) => api.put(`/crm/customers/${customerId}/vehicles/${vehicleId}`, data),
+
+    deleteCustomerVehicle: (customerId: string, vehicleId: string) =>
+        api.delete(`/crm/customers/${customerId}/vehicles/${vehicleId}`),
+
+    getVehicleServiceHistory: (customerId: string, vehicleId: string) =>
+        api.get(`/crm/customers/${customerId}/vehicles/${vehicleId}/service-history`),
+
+    addVehicleService: (customerId: string, vehicleId: string, data: {
+        invoice_id?: string;
+        service_date: string;
+        service_type: 'parts_replacement' | 'maintenance' | 'inspection' | 'other';
+        mileage_at_service?: number;
+        description?: string;
+        next_service_mileage?: number;
+        next_service_date?: string;
+    }) => api.post(`/crm/customers/${customerId}/vehicles/${vehicleId}/service-history`, data),
+
+    searchVehicleByPlate: (plate: string) =>
+        api.get('/crm/customers/vehicles/search', { params: { plate } }),
 };
 
 // Convenience aliases used by some pages
@@ -509,6 +554,37 @@ export const hrApi = {
 
     recordSignature: (payrollId: string, data: { signature_url?: string; notes?: string }) =>
         api.post(`/hr/payroll/${payrollId}/sign`, data),
+
+    // Employee Loans
+    getLoansSummary: () =>
+        api.get('/hr/loans/summary'),
+
+    getLoans: (params?: {
+        employee_id?: string;
+        status?: 'active' | 'completed' | 'cancelled' | 'paused';
+        limit?: number;
+    }) => api.get('/hr/loans', { params }),
+
+    getLoan: (id: string) =>
+        api.get(`/hr/loans/${id}`),
+
+    createLoan: (data: {
+        employee_id: string;
+        total_amount: number;
+        installments_count: number;
+        start_month: number;
+        start_year: number;
+        reason?: string;
+        notes?: string;
+    }) => api.post('/hr/loans', data),
+
+    updateLoanStatus: (id: string, data: {
+        status: 'active' | 'paused' | 'cancelled';
+        notes?: string;
+    }) => api.put(`/hr/loans/${id}/status`, data),
+
+    skipInstallment: (installmentId: string, notes?: string) =>
+        api.put(`/hr/loan-installments/${installmentId}/skip`, { notes }),
 };
 
 

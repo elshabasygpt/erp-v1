@@ -31,7 +31,18 @@ class EmployeeModel extends Model
 
     public function attendances()
     {
-        return $this->hasMany(AttendanceModel::class, 'employee_id');
+        return $this->hasMany(EmployeeAttendanceModel::class, 'employee_id');
+    }
+
+    public function loans()
+    {
+        return $this->hasMany(EmployeeLoanModel::class, 'employee_id');
+    }
+
+    public function activeLoans()
+    {
+        return $this->hasMany(EmployeeLoanModel::class, 'employee_id')
+                    ->where('status', 'active');
     }
 
     public function leaves()

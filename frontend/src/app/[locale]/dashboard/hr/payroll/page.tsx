@@ -129,11 +129,12 @@ export default function PayrollPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 {[
                     { label: isRTL ? 'إجمالي الرواتب' : 'Total Amount', value: totalSalary.toFixed(2), icon: '💰', gradient: 'from-blue-500/20 to-blue-600/5', color: 'text-blue-500' },
                     { label: isRTL ? 'الرواتب المدفوعة' : 'Paid', value: payrolls.filter(p => p.status === 'paid').reduce((s, p) => s + parseFloat(p.net_salary), 0).toFixed(2), icon: '✅', gradient: 'from-emerald-500/20 to-emerald-600/5', color: 'text-emerald-500' },
                     { label: isRTL ? 'الرواتب المعلقة' : 'Pending Drafts', value: payrolls.filter(p => p.status === 'draft').reduce((s, p) => s + parseFloat(p.net_salary), 0).toFixed(2), icon: '⏳', gradient: 'from-orange-500/20 to-orange-600/5', color: 'text-orange-500' },
+                    { label: isRTL ? 'خصم السلف' : 'Loan Deductions', value: payrolls.reduce((s, p) => s + parseFloat(p.loan_deductions || 0), 0).toFixed(2), icon: '💳', gradient: 'from-purple-500/20 to-purple-600/5', color: 'text-purple-500' },
                 ].map((st, i) => (
                     <div key={i} className="stat-card relative overflow-hidden group">
                         <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${st.gradient} opacity-50 transition-opacity group-hover:opacity-100`} />
@@ -169,6 +170,7 @@ export default function PayrollPage() {
                                     <th>{d.hr?.employeeName || (isRTL ? 'اسم الموظف' : 'Name')}</th>
                                     <th>{d.hr?.baseSalary || (isRTL ? 'الراتب الأساسي' : 'Base Salary')}</th>
                                     <th>{d.hr?.deductions || (isRTL ? 'الخصومات' : 'Deductions')}</th>
+                                    <th className="text-center">{isRTL ? 'خصم السلف' : 'Loan Ded.'}</th>
                                     <th>{d.hr?.bonuses || (isRTL ? 'البدلات/المكافآت' : 'Bonuses')}</th>
                                     <th>{d.hr?.netSalary || (isRTL ? 'صافي الراتب' : 'Net Salary')}</th>
                                     <th>{d.hr?.status || (isRTL ? 'الحالة' : 'Status')}</th>
@@ -184,6 +186,7 @@ export default function PayrollPage() {
                                         </td>
                                         <td className="font-medium" style={{ color: 'var(--text-secondary)' }}>{parseFloat(pr.base_salary).toFixed(2)}</td>
                                         <td className="text-red-500 font-medium bg-red-50/30 dark:bg-red-900/10">{parseFloat(pr.deductions).toFixed(2)}</td>
+                                        <td className="text-center text-purple-600 font-medium">{parseFloat(pr.loan_deductions || 0).toFixed(2)}</td>
                                         <td className="text-emerald-500 font-medium bg-emerald-50/30 dark:bg-emerald-900/10">{parseFloat(pr.bonuses).toFixed(2)}</td>
                                         <td className="font-black text-primary-600 dark:text-primary-400 bg-primary-50/30 dark:bg-primary-900/10 text-lg">
                                             {parseFloat(pr.net_salary).toFixed(2)}

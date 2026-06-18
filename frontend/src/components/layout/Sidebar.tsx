@@ -168,6 +168,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'leaves', path: '/hr/leaves', iconKey: 'reports', labelAr: 'إدارة الإجازات', labelEn: 'Leave Management' },
             { key: 'payroll', path: '/hr/payroll', iconKey: 'accounting', labelAr: 'مسيرات الرواتب', labelEn: 'Payroll' },
             { key: 'penalties', path: '/hr/penalties', iconKey: 'hr', labelAr: 'الجزاءات والتأخير', labelEn: 'Penalties & Late' },
+            { key: 'loans', path: '/hr/loans', iconKey: 'accounting', labelAr: 'السلف والتقسيط', labelEn: 'Loans & Installments' },
         ],
     },
 ];

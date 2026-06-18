@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use App\Infrastructure\Eloquent\Models\PayrollModel;
+use App\Infrastructure\Eloquent\Models\EmployeeLoanInstallmentModel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -84,7 +85,22 @@ class GeneratePayrollJob implements ShouldQueue
 
                 $totalDeductions = $lateDeductions + $manualDeductions;
                 $totalBonuses    = $manualBonuses;
-                $netSalary       = max(0, $baseSalary + $totalBonuses - $totalDeductions);
+
+                // ── خصم أقساط السلف المستحقة هذا الشهر ────────────────────────
+                $loanInstallments = EmployeeLoanInstallmentModel::where('tenant_id', $this->tenantId)
+                    ->where('month', $this->month)
+                    ->where('year', $this->year)
+                    ->where('status', 'pending')
+                    ->whereHas('loan', fn($q) => $q
+                        ->where('employee_id', $employee->id)
+                        ->where('status', 'active')
+                    )
+                    ->get();
+
+                $loanDeductionsTotal = (float) $loanInstallments->sum('amount');
+
+                // أعد حساب netSalary بعد خصم السلف
+                $netSalary = max(0, $baseSalary + $totalBonuses - $totalDeductions - $loanDeductionsTotal);
 
                 // بناء الـ breakdown
                 $deductionsBreakdown = [];
@@ -111,6 +127,7 @@ class GeneratePayrollJob implements ShouldQueue
                     'base_salary'          => $baseSalary,
                     'bonuses'              => $totalBonuses,
                     'deductions'           => $totalDeductions,
+                    'loan_deductions'      => $loanDeductionsTotal,
                     'net_salary'           => $netSalary,
                     'status'               => 'draft',
                     'deductions_breakdown' => $deductionsBreakdown,
@@ -120,6 +137,24 @@ class GeneratePayrollJob implements ShouldQueue
 
                 // ربط البنود اليدوية بالـ payroll الجديد
                 $payrollItems->each(fn($item) => $item->update(['payroll_id' => $payroll->id]));
+
+                // ── ربط الأقساط بالراتب وتحديث السلفة ─────────────────────────
+                foreach ($loanInstallments as $installment) {
+                    $installment->update([
+                        'status'       => 'deducted',
+                        'payroll_id'   => $payroll->id,
+                        'deducted_at'  => now(),
+                    ]);
+
+                    // قلّل remaining_amount في السلفة
+                    $loan = $installment->loan;
+                    $loan->decrement('remaining_amount', (float) $installment->amount);
+
+                    // لو اكتملت السلفة
+                    if ((float) $loan->fresh()->remaining_amount <= 0) {
+                        $loan->update(['status' => 'completed', 'remaining_amount' => 0]);
+                    }
+                }
 
                 $generatedCount++;
             }
