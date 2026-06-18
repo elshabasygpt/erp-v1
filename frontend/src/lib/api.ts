@@ -464,6 +464,33 @@ export const reportsApi = {
         api.get('/reports/vat-report', { params }),
     getAgingReport: (type: 'receivable' | 'payable') => 
         api.get('/reports/aging', { params: { type } }),
+        
+    // Auto Parts Reports
+    getSlowMovingParts: (params?: {
+        days?: number;
+        warehouse_id?: string;
+        category_id?: string;
+        min_stock?: number;
+        limit?: number;
+    }) => api.get('/reports/auto-parts/slow-moving', { params }),
+
+    getTopPartsByMake: (params?: {
+        date_from?: string;
+        date_to?: string;
+        make_id?: string;
+        limit?: number;
+    }) => api.get('/reports/auto-parts/top-by-make', { params }),
+
+    getMissingParts: (params?: {
+        warehouse_id?: string;
+        make_id?: string;
+    }) => api.get('/reports/auto-parts/missing-parts', { params }),
+
+    getProfitByBrand: (params?: {
+        date_from?: string;
+        date_to?: string;
+        group_by?: 'brand' | 'quality_grade';
+    }) => api.get('/reports/auto-parts/profit-by-brand', { params }),
 };
 
 export const settingsApi = {

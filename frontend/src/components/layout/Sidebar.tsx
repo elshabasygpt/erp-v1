@@ -178,6 +178,14 @@ const SINGLE_ITEMS: SingleItem[] = [
     { key: 'reports', path: '/reports', iconKey: 'reports', labelAr: 'التقارير الشاملة', labelEn: 'Reports' },
     { key: 'financialReports', path: '/reports/financial', iconKey: 'reports', labelAr: 'التقارير المالية (P&L, KPIs)', labelEn: 'Financial Reports (P&L)' },
     { key: 'advancedReports', path: '/reports/advanced', iconKey: 'reports', labelAr: 'تقارير متقدمة (أعمار الديون)', labelEn: 'Advanced Reports (Aging)' },
+    {
+        key: 'autoPartsReports',
+        path: '/reports/auto-parts',
+        iconKey: 'reports',
+        labelAr: 'تقارير قطع الغيار',
+        labelEn: 'Auto Parts Reports',
+        badge: { text: 'قطع غيار', color: '#f59e0b' }
+    },
     { key: 'zakatReport', path: '/reports/zakat', iconKey: 'zatca', labelAr: 'حساب زكاة المال', labelEn: 'Zakat Al-Mal Calculator',
         badge: { text: 'New', color: '#10b981' } as any,
     },

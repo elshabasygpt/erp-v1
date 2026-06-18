@@ -46,6 +46,7 @@ use App\Presentation\Controllers\API\Purchases\PurchaseReturnController;
 use App\Presentation\Controllers\API\Purchases\SupplierPaymentAllocationController;
 use App\Presentation\Controllers\API\Purchases\ProcurementController;
 use App\Presentation\Controllers\API\Reports\ReportController;
+use App\Presentation\Controllers\API\Reports\AutoPartsReportController;
 use App\Presentation\Controllers\API\Sales\AdvancedSalesReportController;
 use App\Presentation\Controllers\API\Sales\DeliveryController;
 use App\Presentation\Controllers\API\Sales\InvoiceController;
@@ -194,6 +195,14 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/kpis', [ReportController::class, 'getGeneralKpis']);
         Route::get('/vat-report', [ReportController::class, 'getVatReport']);
         Route::get('/aging', [ReportController::class, 'getAgingReport']);
+
+        // Auto Parts Specialized Reports
+        Route::prefix('auto-parts')->group(function () {
+            Route::get('/slow-moving',    [AutoPartsReportController::class, 'slowMovingParts']);
+            Route::get('/top-by-make',    [AutoPartsReportController::class, 'topPartsByMake']);
+            Route::get('/missing-parts',  [AutoPartsReportController::class, 'missingParts']);
+            Route::get('/profit-by-brand',[AutoPartsReportController::class, 'profitByBrand']);
+        });
     });
 
     // Advanced Analytics
