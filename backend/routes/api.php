@@ -51,6 +51,7 @@ use App\Presentation\Controllers\API\Reports\AutoPartsReportController;
 use App\Presentation\Controllers\API\Sales\AdvancedSalesReportController;
 use App\Presentation\Controllers\API\Sales\DeliveryController;
 use App\Presentation\Controllers\API\Sales\InvoiceController;
+use App\Presentation\Controllers\API\Sales\PosShiftController;
 use App\Presentation\Controllers\API\Sales\QuotationController;
 use App\Presentation\Controllers\API\Sales\SalesChannelController;
 use App\Presentation\Controllers\API\Sales\SalesOrderController;
@@ -111,6 +112,11 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::put('/invoices/{id}', [InvoiceController::class, 'update'])->middleware('throttle:60,1');
         Route::put('/invoices/{id}/status', [InvoiceController::class, 'updateStatus']);
         Route::get('/reports/sales', [InvoiceController::class, 'salesReport']);
+
+        // POS Shifts
+        Route::get('/pos/shifts/current', [PosShiftController::class, 'current']);
+        Route::post('/pos/shifts/open', [PosShiftController::class, 'open']);
+        Route::post('/pos/shifts/close', [PosShiftController::class, 'close']);
 
         // Advanced Sales Reports
         Route::get('/advanced-reports/kpis', [AdvancedSalesReportController::class, 'getDashboardKPIs']);

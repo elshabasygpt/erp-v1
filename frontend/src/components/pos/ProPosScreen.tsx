@@ -12,7 +12,7 @@ import {
     Building2, ArrowRightLeft, Activity, Undo2, ShoppingBag,
     Calculator, UserCheck, Briefcase, Store, Car
 } from 'lucide-react';
-import { inventoryApi, salesApi, crmApi } from '@/lib/api';
+import { inventoryApi, salesApi, crmApi, posApi } from '@/lib/api';
 import clsx from 'clsx';
 import Link from 'next/link';
 import { PosSidebar } from './PosSidebar';
@@ -20,6 +20,8 @@ import { PosProductGrid } from './PosProductGrid';
 import { VehicleSearchPanel } from './VehicleSearchPanel';
 import { PosAlternativesModal } from './PosAlternativesModal';
 import toast from 'react-hot-toast';
+import { ShiftManagementModal } from './ShiftManagementModal';
+import { cacheProducts, cacheCustomers, getCachedProducts, getCachedCustomers, searchCachedCustomers, enqueueOfflineAction, getSyncQueue, removeFromQueue } from '@/lib/offline-store';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CartItem {
@@ -132,6 +134,10 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     const [returnSearchQuery, setReturnSearchQuery] = useState('');
     const [isSearchingReturn, setIsSearchingReturn] = useState(false);
     
+    // Shift Management
+    const [currentShift, setCurrentShift] = useState<any>(null);
+    const [showShiftModal, setShowShiftModal] = useState(false);
+
     const [customerVehicles, setCustomerVehicles] = useState<any[]>([]);
     const [alternativesProduct, setAlternativesProduct] = useState<any>(null);
     
@@ -173,9 +179,31 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
 
                 const cats = Array.from(new Set(prods.map((p: any) => p.category_name || p.category_id).filter(Boolean))) as string[];
                 setCategories(['all', ...cats]);
-            } catch (e) {  } finally { setLoading(false); }
+                
+                // Cache data
+                if (prods.length > 0) cacheProducts(prods);
+                if (customers.length > 0) cacheCustomers(customers);
+            } catch (e) {
+                // Offline fallback
+                const cachedProds = await getCachedProducts();
+                const cachedCusts = await getCachedCustomers();
+                if (cachedProds.length > 0) {
+                    setProducts(cachedProds);
+                    const cats = Array.from(new Set(cachedProds.map((p: any) => p.category_name || p.category_id).filter(Boolean))) as string[];
+                    setCategories(['all', ...cats]);
+                }
+                if (cachedCusts.length > 0) setCustomers(cachedCusts);
+            } finally { setLoading(false); }
         })();
         
+        posApi.getCurrentShift().then(res => {
+            if (!res.data?.data) {
+                setShowShiftModal(true);
+            } else {
+                setCurrentShift(res.data.data);
+            }
+        }).catch(() => setShowShiftModal(true));
+
         const isDarkEnv = document.documentElement.classList.contains('dark');
         setIsDark(isDarkEnv);
     }, []);
@@ -194,8 +222,14 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     const newCustomers = fetched.filter((c: any) => !existingIds.has(c.id));
                     return [...newCustomers, ...prev];
                 });
+                cacheCustomers(fetched);
             } catch (e) {
-
+                const offlineHits = await searchCachedCustomers(customerQuery);
+                setCustomers(prev => {
+                    const existingIds = new Set(prev.map(c => c.id));
+                    const newCustomers = offlineHits.filter((c: any) => !existingIds.has(c.id));
+                    return [...newCustomers, ...prev];
+                });
             } finally {
                 setIsSearchingCustomer(false);
             }
@@ -207,27 +241,25 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     // Offline Sync Listener
     useEffect(() => {
         const handleOnline = async () => {
-            const queue = JSON.parse(localStorage.getItem('posOfflineQueue') || '[]');
+            const queue = await getSyncQueue();
             if (queue.length === 0) return;
             let success = 0;
-            const failedQueue = [];
             for (const q of queue) {
                 try {
-                    if (q.isRefundMode) await salesApi.createReturn(q);
-                    else if (q.type === 'quotation') await salesApi.createQuotation(q);
-                    else await salesApi.createInvoice(q);
+                    if (q.type === 'return') await salesApi.createReturn(q.payload);
+                    else if (q.type === 'quotation') await salesApi.createQuotation(q.payload);
+                    else await salesApi.createInvoice(q.payload);
+                    await removeFromQueue(q.id as number);
                     success++;
                 } catch (e: any) {
                     if (e.response?.status === 428) {
-                        success++; // Count as success since it's saved as pending
+                        await removeFromQueue(q.id as number);
+                        success++;
                         toast.success(isRTL ? 'تم حفظ إحدى الفواتير للموافقة.' : 'An offline invoice was sent for approval.');
-                    } else {
-                        failedQueue.push(q);
                     }
                 }
             }
             if (success > 0) {
-                localStorage.setItem('posOfflineQueue', JSON.stringify(queue.slice(success)));
                 toast.success(isRTL ? `تمت مزامنة ${success} من الفواتير المتأخرة بنجاح!` : `Successfully synced ${success} offline invoices!`);
             }
         };
@@ -322,6 +354,11 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     }, [activeTabId, salesChannels]);
 
     const addToCart = useCallback((product: any) => {
+        if (!currentShift) {
+            toast.error(isRTL ? 'يجب فتح وردية أولاً' : 'You must open a shift first');
+            setShowShiftModal(true);
+            return;
+        }
         setTabs(prev => prev.map(t => {
             if (t.id !== activeTabId) return t;
             const price = getProductPriceWithChannel(product, t.priceLevel, t.salesChannelId, salesChannels);
@@ -523,9 +560,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
             }
 
             if (typeof navigator !== 'undefined' && !navigator.onLine) {
-                const off = JSON.parse(localStorage.getItem('posOfflineQueue') || '[]');
-                off.push({ ...payload, isRefundMode: isRefund });
-                localStorage.setItem('posOfflineQueue', JSON.stringify(off));
+                await enqueueOfflineAction(isRefund ? 'return' : 'invoice', payload);
             } else {
                 if (isRefund) {
                     await salesApi.createReturn(payload);
@@ -582,6 +617,8 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
 
     return (
         <div className={clsx('flex h-screen overflow-hidden font-sans antialiased bg-slate-50 dark:bg-[#0a0a10]', isRTL ? 'flex-row-reverse' : 'flex-row')}>
+            
+            <ShiftManagementModal isOpen={showShiftModal} isRTL={isRTL} onShiftOpened={(s) => { setCurrentShift(s); setShowShiftModal(false); }} />
             
             {/* THIN APP SIDEBAR */}
             <PosSidebar locale={locale} isRTL={isRTL} />

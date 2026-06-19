@@ -921,3 +921,10 @@ export const dataApi = {
     importData: (type: string, data: any) => api.post(`/data/import/${type}`, data),
     downloadTemplate: (type: string) => api.get(`/data/template/${type}`),
 };
+
+// POS Shifts
+export const posApi = {
+    getCurrentShift: () => api.get('/sales/pos/shifts/current'),
+    openShift: (data: { opening_cash: number; notes?: string }) => api.post('/sales/pos/shifts/open', data),
+    closeShift: (data: { closing_cash: number; notes?: string }) => api.post('/sales/pos/shifts/close', data),
+};
