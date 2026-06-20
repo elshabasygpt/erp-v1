@@ -55,8 +55,8 @@ class PartnerForecastingService
                 'partner_id' => $partner->id,
                 'name' => $partner->name,
                 'profit_share_percentage' => (float) $partner->profit_share_percentage,
-                'current_accumulated_profit' => round($currentShare, 2),
-                'projected_eoy_profit' => round($expectedReturns, 2),
+                'current_accumulated_profit' => round($currentShare, 6),
+                'projected_eoy_profit' => round($expectedReturns, 6),
                 'trajectory_trend' => $dailyProfitVelocity > 0 ? 'up' : 'flat',
             ];
         }
@@ -68,9 +68,9 @@ class PartnerForecastingService
             'metrics' => [
                 'days_elapsed' => $daysElapsed,
                 'remaining_days' => $remainingDays,
-                'current_total_profit' => round($totalSystemProfit, 2),
-                'projected_total_profit' => round($totalExpectedYearlyProfit, 2),
-                'daily_profit_velocity' => round($dailyProfitVelocity, 2),
+                'current_total_profit' => round($totalSystemProfit, 6),
+                'projected_total_profit' => round($totalExpectedYearlyProfit, 6),
+                'daily_profit_velocity' => round($dailyProfitVelocity, 6),
             ],
             'partner_projections' => $projections,
         ];

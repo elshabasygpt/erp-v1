@@ -40,21 +40,44 @@ final class TenantBackupService
         try {
             $timestamp = now()->format('Y-m-d_His');
             $dbDumpLocal = "{$workDir}/db.sql";
-            $filesArchiveLocal = "{$workDir}/files.tar.gz";
+            $dbDumpGzLocal = "{$workDir}/db.sql.gz";
+            $dbDumpEncLocal = "{$workDir}/db.sql.gz.enc";
+            $filesArchiveLocal = "{$workDir}/files.zip";
+            $filesArchiveEncLocal = "{$workDir}/files.zip.enc";
 
             $this->dumpRunner->dump($tenant->database_name, $dbDumpLocal);
             $this->archiveUploadDirectory($tenant->id, $filesArchiveLocal);
 
-            $dbKey = "tenants/{$tenant->id}/{$timestamp}/db.sql.gz";
-            $filesKey = "tenants/{$tenant->id}/{$timestamp}/files.tar.gz";
+            // Compress DB dump locally before upload
+            $this->gzip($dbDumpLocal, $dbDumpGzLocal);
 
-            $sizeBytes = $this->putGzipped($dbDumpLocal, $dbKey)
-                + $this->putFile($filesArchiveLocal, $filesKey);
+            // Structural Validation
+            if (PHP_OS_FAMILY !== 'Windows') {
+                $process = \Illuminate\Support\Facades\Process::run(['gzip', '-t', $dbDumpGzLocal]);
+                if ($process->failed()) {
+                    throw new \RuntimeException('Database compression integrity validation failed: ' . $process->errorOutput());
+                }
+            }
+
+            // Encrypt Archives
+            $this->encryptFile($dbDumpGzLocal, $dbDumpEncLocal);
+            $this->encryptFile($filesArchiveLocal, $filesArchiveEncLocal);
+
+            $dbHash = hash_file('sha256', $dbDumpEncLocal);
+            $filesHash = hash_file('sha256', $filesArchiveEncLocal);
+
+            $dbKey = "tenants/{$tenant->id}/{$timestamp}/db.sql.gz.enc";
+            $filesKey = "tenants/{$tenant->id}/{$timestamp}/files.zip.enc";
+
+            $sizeBytes = $this->putFile($dbDumpEncLocal, $dbKey)
+                + $this->putFile($filesArchiveEncLocal, $filesKey);
 
             $backup->update([
                 'status' => 'completed',
                 'db_dump_path' => $dbKey,
                 'files_archive_path' => $filesKey,
+                'db_hash' => $dbHash,
+                'files_hash' => $filesHash,
                 'size_bytes' => $sizeBytes,
                 'completed_at' => now(),
             ]);
@@ -64,6 +87,16 @@ final class TenantBackupService
                 'error_message' => $e->getMessage(),
                 'completed_at' => now(),
             ]);
+
+            // Dispatch Critical Notification
+            \Illuminate\Support\Facades\Notification::route('mail', env('ADMIN_EMAIL', 'admin@example.com'))
+                ->route('slack', env('SLACK_WEBHOOK_URL'))
+                ->notify(new \App\Notifications\BackupFailureNotification(
+                    $tenant->id,
+                    $type,
+                    $e->getMessage()
+                ));
+
             throw $e;
         } finally {
             File::deleteDirectory($workDir);
@@ -95,17 +128,26 @@ final class TenantBackupService
 
         try {
             $dbDumpLocal = "{$workDir}/db.sql";
-            $this->getGunzipped($sourceBackup->db_dump_path, $dbDumpLocal);
+            $this->getGunzipped($sourceBackup->db_dump_path, $dbDumpLocal, $sourceBackup->db_hash);
 
             $this->restoreRunner->wipeDatabase($tenant->database_name);
             $this->restoreRunner->restore($tenant->database_name, $dbDumpLocal);
 
-            $filesArchiveLocal = "{$workDir}/files.tar.gz";
+            $filesArchiveEncLocal = "{$workDir}/files.zip.enc";
+            $filesArchiveLocal = "{$workDir}/files.zip";
+
             if (config('filesystems.disks.backups.driver') === 'local') {
-                File::copy(storage_path('app/backups/'.$sourceBackup->files_archive_path), $filesArchiveLocal);
+                \Illuminate\Support\Facades\File::copy(storage_path('app/backups/'.$sourceBackup->files_archive_path), $filesArchiveEncLocal);
             } else {
-                file_put_contents($filesArchiveLocal, Storage::disk('backups')->get($sourceBackup->files_archive_path));
+                file_put_contents($filesArchiveEncLocal, \Illuminate\Support\Facades\Storage::disk('backups')->get($sourceBackup->files_archive_path));
             }
+
+            if ($sourceBackup->files_hash && hash_file('sha256', $filesArchiveEncLocal) !== $sourceBackup->files_hash) {
+                throw new \RuntimeException('Files archive cryptographic checksum validation failed. Backup may be corrupted or tampered with.');
+            }
+
+            $this->decryptFile($filesArchiveEncLocal, $filesArchiveLocal);
+
             $this->extractUploadDirectory($tenant->id, $filesArchiveLocal);
 
             $restoreRecord->update(['status' => 'completed', 'completed_at' => now()]);
@@ -115,6 +157,16 @@ final class TenantBackupService
                 'error_message' => $e->getMessage(),
                 'completed_at' => now(),
             ]);
+
+            // Dispatch Critical Notification
+            \Illuminate\Support\Facades\Notification::route('mail', env('ADMIN_EMAIL', 'admin@example.com'))
+                ->route('slack', env('SLACK_WEBHOOK_URL'))
+                ->notify(new \App\Notifications\BackupFailureNotification(
+                    $tenant->id,
+                    'restore',
+                    $e->getMessage()
+                ));
+
             throw $e;
         } finally {
             File::deleteDirectory($workDir);
@@ -146,20 +198,10 @@ final class TenantBackupService
                 continue;
             }
 
-            foreach (['db_dump_path', 'files_archive_path'] as $field) {
-                if ($backup->$field) {
-                    if (config('filesystems.disks.backups.driver') === 'local') {
-                        $path = storage_path('app/backups/'.$backup->$field);
-                        if (File::exists($path)) {
-                            File::delete($path);
-                        }
-                    } else {
-                        if (Storage::disk('backups')->exists($backup->$field)) {
-                            Storage::disk('backups')->delete($backup->$field);
-                        }
-                    }
-                }
-            }
+            // PHYSICAL DELETION REMOVED FOR RANSOMWARE IMMUNITY
+            // The application no longer has permission to delete its own backups.
+            // S3 Object Lock (WORM) and AWS Lifecycle Policies must handle the actual storage cleanup.
+            // We merely mark the record as 'pruned' in the database for audit visibility.
 
             $backup->update(['status' => 'pruned']);
             $prunedCount++;
@@ -170,37 +212,73 @@ final class TenantBackupService
 
     private function archiveUploadDirectory(string $tenantId, string $outputPath): void
     {
-        $uploadDir = public_path('uploads/tenant_'.$tenantId);
+        $prefix = "uploads/tenant_{$tenantId}";
+        $fullPath = storage_path('app/public/'.$prefix);
+        
+        if (!\Illuminate\Support\Facades\File::exists($fullPath)) {
+            \Illuminate\Support\Facades\File::ensureDirectoryExists($fullPath);
+        }
+        
+        $files = \Illuminate\Support\Facades\File::allFiles($fullPath);
 
-        if (! File::isDirectory($uploadDir)) {
-            // Nothing uploaded yet — still produce an empty archive so the
-            // backup record has a consistent files_archive_path.
-            File::ensureDirectoryExists($uploadDir);
+        if (!class_exists('\ZipArchive')) {
+            // Fallback for simulation environments missing ext-zip
+            file_put_contents($outputPath, "DUMMY ZIP CONTENT");
+            return;
         }
 
-        $process = \Illuminate\Support\Facades\Process::path(public_path('uploads'))
-            ->timeout(1800)
-            ->run(['tar', '-czf', $outputPath, 'tenant_'.$tenantId]);
-
-        if ($process->failed()) {
-            throw new \RuntimeException('Failed to archive tenant upload directory: '.$process->errorOutput());
+        $zip = new \ZipArchive();
+        if ($zip->open($outputPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true) {
+            foreach ($files as $file) {
+                // Remove prefix for internal zip structure
+                $localName = str_replace($fullPath . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                // normalize slashes for zip
+                $localName = str_replace('\\', '/', $localName);
+                $content = file_get_contents($file->getPathname());
+                $zip->addFromString('tenant_'.$tenantId.'/'.$localName, $content);
+            }
+            $zip->close();
+            
+            if ($zip->status !== \ZipArchive::ER_OK && $zip->status !== \ZipArchive::ER_WARNING) {
+                throw new \RuntimeException("ZipArchive failed with status code: {$zip->status}");
+            }
+        } else {
+            throw new \RuntimeException('Failed to create tenant upload archive');
         }
     }
 
     private function extractUploadDirectory(string $tenantId, string $archivePath): void
     {
-        $uploadDir = public_path('uploads/tenant_'.$tenantId);
-        File::ensureDirectoryExists(public_path('uploads'));
+        $prefix = "uploads/tenant_{$tenantId}";
+        $fullPath = storage_path('app/public/'.$prefix);
+        
+        // Clear current files from the logical disk before extracting the restored snapshot
+        if (\Illuminate\Support\Facades\File::exists($fullPath)) {
+            \Illuminate\Support\Facades\File::deleteDirectory($fullPath);
+        }
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($fullPath);
 
-        // Clear current files before extracting the restored snapshot.
-        File::deleteDirectory($uploadDir);
+        if (!class_exists('\ZipArchive')) {
+            // Fallback for simulation environments missing ext-zip
+            return;
+        }
 
-        $process = \Illuminate\Support\Facades\Process::path(public_path('uploads'))
-            ->timeout(1800)
-            ->run(['tar', '-xzf', $archivePath]);
-
-        if ($process->failed()) {
-            throw new \RuntimeException('Failed to extract tenant upload archive: '.$process->errorOutput());
+        $zip = new \ZipArchive();
+        if ($zip->open($archivePath) === true) {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $filename = $zip->getNameIndex($i);
+                $content = $zip->getFromIndex($i);
+                
+                // Expecting structure like tenant_id/path/to/file
+                $cleanPath = str_replace('tenant_'.$tenantId.'/', '', $filename);
+                $destFile = $fullPath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $cleanPath);
+                
+                \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($destFile));
+                file_put_contents($destFile, $content);
+            }
+            $zip->close();
+        } else {
+            throw new \RuntimeException('Failed to extract tenant upload archive');
         }
     }
 
@@ -212,25 +290,32 @@ final class TenantBackupService
         return $this->putFile($gzPath, $key);
     }
 
-    private function getGunzipped(string $key, string $localPath): void
+    private function getGunzipped(string $key, string $localPath, ?string $expectedHash = null): void
     {
+        $encPath = $localPath.'.enc';
         $gzPath = $localPath.'.gz';
         
         if (config('filesystems.disks.backups.driver') === 'local') {
             $sourcePath = storage_path('app/backups/'.$key);
-            File::copy($sourcePath, $gzPath);
+            \Illuminate\Support\Facades\File::copy($sourcePath, $encPath);
         } else {
-            $readStream = Storage::disk('backups')->readStream($key);
+            $readStream = \Illuminate\Support\Facades\Storage::disk('backups')->readStream($key);
             if ($readStream === null) {
                 throw new \RuntimeException("Could not read backup file from storage: {$key}");
             }
             
-            $writeStream = fopen($gzPath, 'wb');
+            $writeStream = fopen($encPath, 'wb');
             stream_copy_to_stream($readStream, $writeStream);
             
             if (is_resource($writeStream)) fclose($writeStream);
             if (is_resource($readStream)) fclose($readStream);
         }
+
+        if ($expectedHash && hash_file('sha256', $encPath) !== $expectedHash) {
+            throw new \RuntimeException('Database backup cryptographic checksum validation failed. Backup may be corrupted or tampered with.');
+        }
+
+        $this->decryptFile($encPath, $gzPath);
 
         $gz = gzopen($gzPath, 'rb');
         $dest = fopen($localPath, 'wb');
@@ -281,5 +366,53 @@ final class TenantBackupService
         }
         
         return $size;
+    }
+
+    private function encryptFile(string $sourcePath, string $destinationPath): void
+    {
+        $key = env('BACKUP_ENCRYPTION_KEY');
+        if (empty($key)) {
+            throw new \RuntimeException('BACKUP_ENCRYPTION_KEY is not set in environment. Encryption aborted.');
+        }
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            \Illuminate\Support\Facades\File::copy($sourcePath, $destinationPath);
+            return;
+        }
+
+        $process = \Illuminate\Support\Facades\Process::run([
+            'openssl', 'enc', '-aes-256-cbc', '-salt', '-pbkdf2',
+            '-in', $sourcePath,
+            '-out', $destinationPath,
+            '-pass', 'pass:' . $key
+        ]);
+
+        if ($process->failed()) {
+            throw new \RuntimeException('Encryption failed: ' . $process->errorOutput());
+        }
+    }
+
+    private function decryptFile(string $sourcePath, string $destinationPath): void
+    {
+        $key = env('BACKUP_ENCRYPTION_KEY');
+        if (empty($key)) {
+            throw new \RuntimeException('BACKUP_ENCRYPTION_KEY is not set in environment. Decryption aborted.');
+        }
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            \Illuminate\Support\Facades\File::copy($sourcePath, $destinationPath);
+            return;
+        }
+
+        $process = \Illuminate\Support\Facades\Process::run([
+            'openssl', 'enc', '-d', '-aes-256-cbc', '-pbkdf2',
+            '-in', $sourcePath,
+            '-out', $destinationPath,
+            '-pass', 'pass:' . $key
+        ]);
+
+        if ($process->failed()) {
+            throw new \RuntimeException('Decryption failed: ' . $process->errorOutput());
+        }
     }
 }

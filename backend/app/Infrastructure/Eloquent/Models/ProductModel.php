@@ -12,6 +12,25 @@ class ProductModel extends BaseModel
 
     protected $table = 'products';
 
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::updated(function ($model) {
+            if ($model->isDirty('image_url') && $model->getOriginal('image_url')) {
+                $oldPath = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->getOriginal('image_url'));
+                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($oldPath, '/'));
+            }
+        });
+
+        static::forceDeleted(function ($model) {
+            if ($model->image_url) {
+                $path = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->image_url);
+                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($path, '/'));
+            }
+        });
+    }
+
     protected $fillable = [
         'name', 'name_ar', 'sku', 'barcode', 'cost_price',
         'sell_price', 'wholesale_price', 'semi_wholesale_price', 'vat_rate', 'stock_alert_level', 'is_active',

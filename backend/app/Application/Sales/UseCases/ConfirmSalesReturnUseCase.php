@@ -162,9 +162,9 @@ class ConfirmSalesReturnUseCase
             id: null,
             journalEntryId: '',
             accountId: $this->accountMapping->resolve('revenue'), // Ideally should map to 'sales_returns'
-            debit: round($netRevenue, 2),
+            debit: round($netRevenue, 6),
             credit: 0,
-            transactionDebit: round($netRevenue, 2),
+            transactionDebit: round($netRevenue, 6),
             transactionCredit: 0.0,
             description: 'Sales return',
         ));
@@ -175,9 +175,9 @@ class ConfirmSalesReturnUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('vat_payable'),
-                debit: round((float) $salesReturn->vat_amount, 2),
+                debit: round((float) $salesReturn->vat_amount, 6),
                 credit: 0,
-                transactionDebit: round((float) $salesReturn->vat_amount, 2),
+                transactionDebit: round((float) $salesReturn->vat_amount, 6),
                 transactionCredit: 0.0,
                 description: 'VAT return reversal',
             ));
@@ -197,9 +197,9 @@ class ConfirmSalesReturnUseCase
             journalEntryId: '',
             accountId: $creditAccount,
             debit: 0,
-            credit: round($refundAmount, 2),
+            credit: round($refundAmount, 6),
             transactionDebit: 0.0,
-            transactionCredit: round($refundAmount, 2),
+            transactionCredit: round($refundAmount, 6),
             description: 'Refund payment / Balance adjustment',
         ));
 
@@ -221,9 +221,9 @@ class ConfirmSalesReturnUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $inventoryAccountId,
-                debit: round($totalCogs, 2),
+                debit: round($totalCogs, 6),
                 credit: 0,
-                transactionDebit: round($totalCogs, 2),
+                transactionDebit: round($totalCogs, 6),
                 transactionCredit: 0.0,
                 description: $isCoreReturn ? 'Core return inventory' : 'Inventory return',
             ));
@@ -234,9 +234,9 @@ class ConfirmSalesReturnUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('cogs'),
                 debit: 0,
-                credit: round($totalCogs, 2),
+                credit: round($totalCogs, 6),
                 transactionDebit: 0.0,
-                transactionCredit: round($totalCogs, 2),
+                transactionCredit: round($totalCogs, 6),
                 description: $isCoreReturn ? 'Core charge reversal / COGS' : 'COGS reversal',
             ));
         }

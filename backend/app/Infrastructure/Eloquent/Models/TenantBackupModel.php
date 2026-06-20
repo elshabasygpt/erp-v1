@@ -7,9 +7,19 @@ class TenantBackupModel extends CentralModel
     protected $table = 'tenant_backups';
 
     protected $fillable = [
-        'tenant_id', 'type', 'status', 'db_dump_path', 'files_archive_path',
-        'size_bytes', 'restored_from_backup_id', 'error_message', 'created_by',
-        'started_at', 'completed_at',
+        'tenant_id',
+        'type',
+        'status',
+        'db_dump_path',
+        'files_archive_path',
+        'db_hash',
+        'files_hash',
+        'size_bytes',
+        'restored_from_backup_id',
+        'error_message',
+        'created_by',
+        'started_at',
+        'completed_at',
     ];
 
     protected $casts = [

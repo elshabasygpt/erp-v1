@@ -115,7 +115,7 @@ class AdvancedSalesReportController extends BaseTenantController
     private function calculateTrend($current, $previous)
     {
         if ($previous == 0) return $current > 0 ? 100 : 0;
-        return round((($current - $previous) / $previous) * 100, 2);
+        return round((($current - $previous) / $previous) * 100, 6);
     }
 
     public function getDashboardCharts(Request $request): JsonResponse
@@ -138,7 +138,7 @@ class AdvancedSalesReportController extends BaseTenantController
         $salesTrend = $salesTrendBase->map(function($item) use ($cogsTrend) {
             $cost = $cogsTrend[$item->date] ?? 0;
             $profit = $item->total - $cost;
-            $margin = $item->total > 0 ? round(($profit / $item->total) * 100, 2) : 0;
+            $margin = $item->total > 0 ? round(($profit / $item->total) * 100, 6) : 0;
             return [
                 'date' => $item->date,
                 'total' => (float) $item->total,

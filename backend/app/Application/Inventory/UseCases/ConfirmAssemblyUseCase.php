@@ -155,7 +155,7 @@ final class ConfirmAssemblyUseCase
             createdBy: $userId,
         );
 
-        $totalCost = round($totalCost, 2);
+        $totalCost = round($totalCost, 6);
 
         if ($isAssemble) {
             // Assemble: cost moves out of raw materials, into finished goods

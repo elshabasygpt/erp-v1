@@ -116,8 +116,8 @@ class PurchaseController extends BaseTenantController
             $subtotalAmount = 0;
             $taxAmount = 0;
             foreach ($dto->items as $item) {
-                $itemSub = round($item['quantity'] * $item['unit_price'], 2);
-                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 2);
+                $itemSub = round($item['quantity'] * $item['unit_price'], 6);
+                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
                 $subtotalAmount += $itemSub;
                 $taxAmount += $itemTax;
             }
@@ -126,16 +126,16 @@ class PurchaseController extends BaseTenantController
                 'supplier_id' => $dto->supplierId,
                 'warehouse_id' => $dto->warehouseId,
                 'invoice_date' => $dto->issueDate,
-                'subtotal' => round($subtotalAmount, 2),
-                'vat_amount' => round($taxAmount, 2),
-                'total' => round($subtotalAmount + $taxAmount, 2),
+                'subtotal' => round($subtotalAmount, 6),
+                'vat_amount' => round($taxAmount, 6),
+                'total' => round($subtotalAmount + $taxAmount, 6),
                 'status' => $dto->status === 'confirmed' ? 'draft' : $dto->status,
                 'notes' => $dto->notes,
             ]);
 
             foreach ($dto->items as $item) {
-                $itemSub = round($item['quantity'] * $item['unit_price'], 2);
-                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 2);
+                $itemSub = round($item['quantity'] * $item['unit_price'], 6);
+                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
 
                 $purchase->items()->create([
                     'id' => Str::uuid()->toString(),
@@ -143,7 +143,7 @@ class PurchaseController extends BaseTenantController
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'vat_rate' => $item['tax_rate'],
-                    'total' => round($itemSub + $itemTax, 2),
+                    'total' => round($itemSub + $itemTax, 6),
                 ]);
             }
 

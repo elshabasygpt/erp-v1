@@ -62,7 +62,7 @@
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
         },
-        "secure-http": false,
+        "secure-http": true,
         "policy": {
             "advisories": {
                 "block": false

@@ -182,7 +182,7 @@ class CollectPaymentUseCase
         $debitAccountId = $this->accountMapping->resolve($debitAccountKey);
         $arAccountId = $this->accountMapping->resolve('ar');
 
-        $baseAmount = round($payment->amount * $payment->exchange_rate, 2);
+        $baseAmount = round($payment->amount * $payment->exchange_rate, 6);
 
         // Debit: Cash or Bank
         $journalEntry->addLine(new JournalEntryLine(
@@ -205,7 +205,7 @@ class CollectPaymentUseCase
             journalEntryId: '',
             accountId: $arAccountId,
             debit: 0,
-            credit: round($arCreditBase, 2),
+            credit: round($arCreditBase, 6),
             transactionDebit: 0.0,
             transactionCredit: (float) $payment->amount,
             description: 'Decrease in Accounts Receivable for customer',
@@ -216,7 +216,7 @@ class CollectPaymentUseCase
         // Instead of calculating it again, we should pass the generated lines from FXGainLossService.
         // Wait, since we aggregated fxGainLoss across all allocations, we can just call calculateAndGenerateLines
         // with the aggregated amount or reconstruct it. Let's just generate the lines directly for the aggregate.
-        if (round($fxGainLoss, 2) != 0.0) {
+        if (round($fxGainLoss, 6) != 0.0) {
             // Re-use logic for aggregated fx difference
             $fxData = $this->fxGainLossService->calculateAndGenerateLines(
                 0.0, // Invoice Rate (Relative)

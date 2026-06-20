@@ -86,7 +86,7 @@ final class ConfirmPurchaseReturnUseCase
 
         $totalAmount = (float) $purchaseReturn->total_amount;
         $taxAmount = (float) $purchaseReturn->tax_amount;
-        $subtotal = round($totalAmount - $taxAmount, 2);
+        $subtotal = round($totalAmount - $taxAmount, 6);
 
         $journalEntry = new JournalEntry(
             id: null,
@@ -106,9 +106,9 @@ final class ConfirmPurchaseReturnUseCase
             id: null,
             journalEntryId: '',
             accountId: $this->accountMapping->resolve('ap'),
-            debit: round($totalAmount, 2),
+            debit: round($totalAmount, 6),
             credit: 0,
-            transactionDebit: round($totalAmount, 2),
+            transactionDebit: round($totalAmount, 6),
             transactionCredit: 0.0,
             description: 'Accounts Payable - Purchase return',
         ));
@@ -132,9 +132,9 @@ final class ConfirmPurchaseReturnUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('vat_input'),
                 debit: 0,
-                credit: round($taxAmount, 2),
+                credit: round($taxAmount, 6),
                 transactionDebit: 0.0,
-                transactionCredit: round($taxAmount, 2),
+                transactionCredit: round($taxAmount, 6),
                 description: 'Input VAT reversal on purchase return',
             ));
         }

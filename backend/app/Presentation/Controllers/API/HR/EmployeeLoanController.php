@@ -52,7 +52,7 @@ class EmployeeLoanController extends BaseTenantController
         if (!$employee) return $this->error('Employee not found', 404);
 
         // تحقق: القسط لا يتجاوز 50% من الراتب الأساسي
-        $installmentAmount = round($validated['total_amount'] / $validated['installments_count'], 2);
+        $installmentAmount = round($validated['total_amount'] / $validated['installments_count'], 6);
         $maxInstallment    = (float) $employee->base_salary * 0.5;
 
         if ($installmentAmount > $maxInstallment) {
@@ -97,7 +97,7 @@ class EmployeeLoanController extends BaseTenantController
             for ($i = 1; $i <= $validated['installments_count']; $i++) {
                 // القسط الأخير يأخذ الفارق لتصحيح التقريب
                 $amount = ($i === $validated['installments_count'])
-                    ? round($validated['total_amount'] - ($installmentAmount * ($validated['installments_count'] - 1)), 2)
+                    ? round($validated['total_amount'] - ($installmentAmount * ($validated['installments_count'] - 1)), 6)
                     : $installmentAmount;
 
                 $installments[] = [
@@ -191,9 +191,9 @@ class EmployeeLoanController extends BaseTenantController
         return $this->success([
             'total_loans'          => $loans->count(),
             'active_loans'         => $loans->where('status', 'active')->count(),
-            'total_given'          => round($loans->sum('total_amount'), 2),
-            'total_remaining'      => round($loans->sum('remaining_amount'), 2),
-            'total_collected'      => round($loans->sum('total_amount') - $loans->sum('remaining_amount'), 2),
+            'total_given'          => round($loans->sum('total_amount'), 6),
+            'total_remaining'      => round($loans->sum('remaining_amount'), 6),
+            'total_collected'      => round($loans->sum('total_amount') - $loans->sum('remaining_amount'), 6),
             'employees_with_loans' => $loans->where('status', 'active')->pluck('employee_id')->unique()->count(),
             'this_month_deductions' => round(
                 EmployeeLoanInstallmentModel::where('tenant_id', $tenantId)

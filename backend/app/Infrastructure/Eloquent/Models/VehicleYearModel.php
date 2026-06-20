@@ -11,6 +11,25 @@ class VehicleYearModel extends BaseModel
 {
     protected $table = 'vehicle_years';
 
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::updated(function ($model) {
+            if ($model->isDirty('engine_image_url') && $model->getOriginal('engine_image_url')) {
+                $oldPath = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->getOriginal('engine_image_url'));
+                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($oldPath, '/'));
+            }
+        });
+
+        static::forceDeleted(function ($model) {
+            if ($model->engine_image_url) {
+                $path = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->engine_image_url);
+                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($path, '/'));
+            }
+        });
+    }
+
     protected $fillable = [
         'model_id',
         'year_from',

@@ -11,7 +11,7 @@ class ForecastingDomainService
         }
         $slice = array_slice($values, -$periods);
 
-        return round(array_sum($slice) / count($slice), 2);
+        return round(array_sum($slice) / count($slice), 6);
     }
 
     public function daysUntilStockout(float $currentStock, float $dailyAvgSales): int

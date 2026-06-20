@@ -307,9 +307,9 @@ class ConfirmInvoiceUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $cashAccountId,
-                debit: round($paidAmount * $exchangeRate, 2),
+                debit: round($paidAmount * $exchangeRate, 6),
                 credit: 0,
-                transactionDebit: round($paidAmount, 2),
+                transactionDebit: round($paidAmount, 6),
                 transactionCredit: 0.0,
                 description: "Payment for sales ({$paymentMethod})",
             ));
@@ -321,24 +321,24 @@ class ConfirmInvoiceUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('ar'),
-                debit: round($dueAmount * $exchangeRate, 2),
+                debit: round($dueAmount * $exchangeRate, 6),
                 credit: 0,
-                transactionDebit: round($dueAmount, 2),
+                transactionDebit: round($dueAmount, 6),
                 transactionCredit: 0.0,
                 description: 'Credit sales - Accounts Receivable',
             ));
         }
 
         // Credit: Revenue (net of discount)
-        $netRevenue = round($invoice->getSubtotal() - $invoice->getDiscountAmount(), 2);
+        $netRevenue = round($invoice->getSubtotal() - $invoice->getDiscountAmount(), 6);
         $journalEntry->addLine(new JournalEntryLine(
             id: null,
             journalEntryId: '',
             accountId: $this->accountMapping->resolve('revenue'),
             debit: 0,
-            credit: round($netRevenue * $exchangeRate, 2),
+            credit: round($netRevenue * $exchangeRate, 6),
             transactionDebit: 0.0,
-            transactionCredit: round($netRevenue, 2),
+            transactionCredit: round($netRevenue, 6),
             description: 'Sales revenue',
             costCenterId: $costCenterId,
         ));
@@ -350,9 +350,9 @@ class ConfirmInvoiceUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('vat_payable'),
                 debit: 0,
-                credit: round($invoice->getVatAmount() * $exchangeRate, 2),
+                credit: round($invoice->getVatAmount() * $exchangeRate, 6),
                 transactionDebit: 0.0,
-                transactionCredit: round($invoice->getVatAmount(), 2),
+                transactionCredit: round($invoice->getVatAmount(), 6),
                 description: 'VAT payable',
             ));
         }
@@ -363,9 +363,9 @@ class ConfirmInvoiceUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('cogs'),
-                debit: round($totalCogs, 2),
+                debit: round($totalCogs, 6),
                 credit: 0,
-                transactionDebit: round($totalCogs, 2),
+                transactionDebit: round($totalCogs, 6),
                 transactionCredit: 0.0,
                 description: 'Cost of goods sold',
                 costCenterId: $costCenterId,
@@ -376,9 +376,9 @@ class ConfirmInvoiceUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('inventory'),
                 debit: 0,
-                credit: round($totalCogs, 2),
+                credit: round($totalCogs, 6),
                 transactionDebit: 0.0,
-                transactionCredit: round($totalCogs, 2),
+                transactionCredit: round($totalCogs, 6),
                 description: 'Inventory deduction',
             ));
         }

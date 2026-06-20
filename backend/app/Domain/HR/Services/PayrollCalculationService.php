@@ -16,12 +16,12 @@ class PayrollCalculationService
         }
 
         $dailyRate = $basicSalary / $workingDaysInMonth;
-        $deductions = round(($dailyRate * $absentDays) + $extraDeductions, 2);
+        $deductions = round(($dailyRate * $absentDays) + $extraDeductions, 6);
         $netSalary = round(max($basicSalary - $deductions + $bonuses, 0), 2);
 
         return [
             'basic_salary' => $basicSalary,
-            'daily_rate' => round($dailyRate, 2),
+            'daily_rate' => round($dailyRate, 6),
             'absent_days' => $absentDays,
             'working_days_in_month' => $workingDaysInMonth,
             'deductions' => $deductions,

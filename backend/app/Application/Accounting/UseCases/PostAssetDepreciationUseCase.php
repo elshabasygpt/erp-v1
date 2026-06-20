@@ -39,10 +39,10 @@ final class PostAssetDepreciationUseCase
         $monthsElapsed = min($diff->y * 12 + $diff->m, $usefulLifeYears * 12);
 
         $monthlyDepreciation = $depreciableAmount / ($usefulLifeYears * 12);
-        $totalOwed = round($monthlyDepreciation * $monthsElapsed, 2);
+        $totalOwed = round($monthlyDepreciation * $monthsElapsed, 6);
 
         $currentAccumulated = (float) $asset->accumulated_depreciation;
-        $incremental = round($totalOwed - $currentAccumulated, 2);
+        $incremental = round($totalOwed - $currentAccumulated, 6);
 
         if ($incremental <= 0) {
             return null;
@@ -63,8 +63,8 @@ final class PostAssetDepreciationUseCase
             $journalEntry->post();
             $this->journalEntryRepository->create($journalEntry);
 
-            $newAccumulated = round((float) $asset->accumulated_depreciation + $incremental, 2);
-            $newBookValue = round((float) $asset->purchase_cost - $newAccumulated, 2);
+            $newAccumulated = round((float) $asset->accumulated_depreciation + $incremental, 6);
+            $newBookValue = round((float) $asset->purchase_cost - $newAccumulated, 6);
 
             $asset->update([
                 'accumulated_depreciation' => $newAccumulated,

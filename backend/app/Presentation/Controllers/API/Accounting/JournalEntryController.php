@@ -74,7 +74,7 @@ class JournalEntryController extends BaseController
         }
 
         // Use a small epsilon for floating point comparison if needed, or round to 2 decimals
-        if (round($totalDebit, 2) !== round($totalCredit, 2)) {
+        if (round($totalDebit, 6) !== round($totalCredit, 6)) {
             return $this->error('Journal entry is out of balance. Total Debits must equal Total Credits.', 422);
         }
 

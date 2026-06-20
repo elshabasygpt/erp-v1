@@ -84,9 +84,9 @@ class CreditCoreReturnUseCase
             id: null,
             journalEntryId: '',
             accountId: $this->accountMapping->resolve('ap'),
-            debit: round($totalCreditValue, 2),
+            debit: round($totalCreditValue, 6),
             credit: 0,
-            transactionDebit: round($totalCreditValue, 2),
+            transactionDebit: round($totalCreditValue, 6),
             transactionCredit: 0.0,
             description: 'Core Return Credit',
         ));
@@ -103,9 +103,9 @@ class CreditCoreReturnUseCase
             journalEntryId: '',
             accountId: $inventoryAccountId,
             debit: 0,
-            credit: round($totalCreditValue, 2),
+            credit: round($totalCreditValue, 6),
             transactionDebit: 0.0,
-            transactionCredit: round($totalCreditValue, 2),
+            transactionCredit: round($totalCreditValue, 6),
             description: 'Core Inventory Reduction',
         ));
 

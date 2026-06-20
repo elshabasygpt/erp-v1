@@ -289,7 +289,7 @@ class ReportingService
             'revenue' => $revenueFloat,
             'cogs' => $cogsFloat,
             'gross_margin_amount' => $grossMarginAmount,
-            'gross_margin_percent' => round($grossMarginPercent, 2),
+            'gross_margin_percent' => round($grossMarginPercent, 6),
         ];
     }
 

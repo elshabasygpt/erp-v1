@@ -80,7 +80,7 @@ class HrController extends BaseTenantController
 
         // Hypothetical deduction: 1 monetary unit per minute late (could be parameterized)
         $minuteRate = ($employee->base_salary / 30 / 8 / 60); // assumes 30 days, 8 hrs
-        $deductions = round($minuteRate * $lateMinutes, 2);
+        $deductions = round($minuteRate * $lateMinutes, 6);
 
         // Unpaid leaves
         $unpaidDays = LeaveModel::query()->where('tenant_id', $this->getTenantId($request))->where('employee_id', $employee->id)
@@ -90,7 +90,7 @@ class HrController extends BaseTenantController
             ->count();
 
         $dayRate = $employee->base_salary / 30;
-        $deductions += round($unpaidDays * $dayRate, 2);
+        $deductions += round($unpaidDays * $dayRate, 6);
 
         $net = $employee->base_salary - $deductions;
 

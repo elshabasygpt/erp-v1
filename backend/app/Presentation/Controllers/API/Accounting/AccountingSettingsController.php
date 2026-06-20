@@ -15,6 +15,7 @@ class AccountingSettingsController extends BaseTenantController
     public function __construct(
         private AccountMappingService $accountMapping,
         private FiscalPeriodService $fiscalPeriodService,
+        private \App\Application\Accounting\UseCases\CloseFiscalYearUseCase $closeFiscalYearUseCase,
     ) {}
 
     // ── Account Mappings ──
@@ -99,6 +100,17 @@ class AccountingSettingsController extends BaseTenantController
 
             return $this->success(null, 'Fiscal period reopened successfully');
         } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    public function closeFiscalYear(string $id): JsonResponse
+    {
+        try {
+            $this->closeFiscalYearUseCase->execute($id, auth()->id() ?? '');
+
+            return $this->success(null, 'Fiscal year successfully closed, P&L transferred, and period permanently locked.');
+        } catch (\Exception $e) {
             return $this->error($e->getMessage(), 422);
         }
     }

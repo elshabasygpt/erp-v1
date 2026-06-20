@@ -69,7 +69,30 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('approvals:escalate')->hourly();
         $schedule->command('orders:process-reminders')->hourly();
-        $schedule->command('backups:run-daily')->dailyAt('02:00')->onOneServer();
-        $schedule->command('backups:prune')->dailyAt('03:00')->onOneServer();
+        
+        $schedule->command('backups:run-daily')
+                 ->dailyAt('02:00')
+                 ->onOneServer()
+                 ->emailOutputOnFailure(env('ADMIN_EMAIL', 'sysadmin@erp.com'))
+                 ->pingOnSuccess(env('HEALTHCHECK_BACKUP_URL', 'http://localhost'));
+                 
+        $schedule->command('backups:prune')
+                 ->dailyAt('03:00')
+                 ->onOneServer()
+                 ->emailOutputOnFailure(env('ADMIN_EMAIL', 'sysadmin@erp.com'));
+
+        $schedule->command('backups:check-stale')
+                 ->hourly()
+                 ->onOneServer();
+
+        $schedule->command('backups:validate-random')
+                 ->weeklyOn(0, '08:00') // Run on Sunday at 8 AM
+                 ->onOneServer()
+                 ->emailOutputOnFailure(env('ADMIN_EMAIL', 'sysadmin@erp.com'));
+
+        $schedule->command('queue:health --threshold=10')
+                 ->everyFiveMinutes()
+                 ->onOneServer()
+                 ->emailOutputOnFailure(env('ADMIN_EMAIL', 'sysadmin@erp.com'));
     })
     ->create();

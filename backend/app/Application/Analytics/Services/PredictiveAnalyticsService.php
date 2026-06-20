@@ -81,12 +81,12 @@ class PredictiveAnalyticsService
             $historical[] = [
                 'name' => now()->addMonth()->format('M Y'),
                 'actual' => null,
-                'predicted' => round($predictedNextMonth, 2)
+                'predicted' => round($predictedNextMonth, 6)
             ];
 
             return [
                 'trend' => $historical,
-                'next_month_prediction' => round($predictedNextMonth, 2)
+                'next_month_prediction' => round($predictedNextMonth, 6)
             ];
         });
     }

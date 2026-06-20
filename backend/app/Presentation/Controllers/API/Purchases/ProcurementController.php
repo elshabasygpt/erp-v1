@@ -166,8 +166,8 @@ class ProcurementController extends BaseTenantController
                     'quantity'   => $item->quantity,
                     'unit_price' => $unitPrice,
                     'vat_rate'   => 15,
-                    'vat_amount' => round($lineVat, 2),
-                    'total'      => round($lineSubtotal + $lineVat, 2),
+                    'vat_amount' => round($lineVat, 6),
+                    'total'      => round($lineSubtotal + $lineVat, 6),
                 ];
             }
 
@@ -176,9 +176,9 @@ class ProcurementController extends BaseTenantController
                 'po_number'              => $poNumber,
                 'supplier_id'            => $pr->suggested_supplier_id,
                 'purchase_request_id'    => $pr->id,
-                'subtotal'               => round($subtotal, 2),
-                'vat_amount'             => round($vatTotal, 2),
-                'total'                  => round($subtotal + $vatTotal, 2),
+                'subtotal'               => round($subtotal, 6),
+                'vat_amount'             => round($vatTotal, 6),
+                'total'                  => round($subtotal + $vatTotal, 6),
                 'status'                 => 'draft',
                 'expected_delivery_date' => $pr->required_date,
                 'notes'                  => "تم التحويل من طلب الشراء " . $pr->request_number,
@@ -333,9 +333,9 @@ class ProcurementController extends BaseTenantController
                 'po_number'              => 'PO-' . strtoupper(Str::random(6)),
                 'supplier_id'            => $validated['supplier_id'],
                 'purchase_request_id'    => $validated['purchase_request_id'] ?? null,
-                'subtotal'               => round($subtotal, 2),
-                'vat_amount'             => round($vatTotal, 2),
-                'total'                  => round($subtotal + $vatTotal, 2),
+                'subtotal'               => round($subtotal, 6),
+                'vat_amount'             => round($vatTotal, 6),
+                'total'                  => round($subtotal + $vatTotal, 6),
                 'status'                 => 'draft',
                 'expected_delivery_date' => $validated['expected_delivery_date'] ?? null,
                 'notes'                  => $validated['notes'] ?? null,
@@ -351,8 +351,8 @@ class ProcurementController extends BaseTenantController
                     'quantity'   => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'vat_rate'   => $item['tax_rate'],
-                    'vat_amount' => round($lineVat, 2),
-                    'total'      => round($lineSub + $lineVat, 2),
+                    'vat_amount' => round($lineVat, 6),
+                    'total'      => round($lineSub + $lineVat, 6),
                 ]);
             }
 

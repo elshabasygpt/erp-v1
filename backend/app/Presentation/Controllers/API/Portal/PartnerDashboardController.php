@@ -80,11 +80,11 @@ class PartnerDashboardController extends BaseTenantController
 
         return $this->success([
             'kpis' => [
-                'today_sales' => round((float) $todaySales, 2),
-                'yesterday_sales' => round((float) $yesterdaySales, 2),
+                'today_sales' => round((float) $todaySales, 6),
+                'yesterday_sales' => round((float) $yesterdaySales, 6),
                 'sales_growth_pct' => round($growth, 1),
-                'partner_today_profit' => round($partnerTodayProfit, 2),
-                'partner_month_profit' => round($partnerMonthProfit, 2),
+                'partner_today_profit' => round($partnerTodayProfit, 6),
+                'partner_month_profit' => round($partnerMonthProfit, 6),
                 'total_pending' => (float) $partner->total_pending,
                 'total_withdrawn' => (float) $partner->total_withdrawn,
                 'profit_share_pct' => (float) $partner->profit_share_percentage,
@@ -139,15 +139,15 @@ class PartnerDashboardController extends BaseTenantController
             $chartData[] = [
                 'month' => $mStart->format('M Y'),
                 'month_ar' => $mStart->locale('ar')->isoFormat('MMM YYYY'),
-                'system_profit' => round($mProfit, 2),
-                'partner_profit' => round($mProfit * ($partner->profit_share_percentage / 100), 2),
+                'system_profit' => round($mProfit, 6),
+                'partner_profit' => round($mProfit * ($partner->profit_share_percentage / 100), 6),
             ];
         }
 
         return $this->success([
             'period' => $period,
-            'current_profit' => round($partnerCurrent, 2),
-            'previous_profit' => round($partnerPrevious, 2),
+            'current_profit' => round($partnerCurrent, 6),
+            'previous_profit' => round($partnerPrevious, 6),
             'growth_pct' => round($growth, 1),
             'chart_data' => $chartData,
         ]);
@@ -195,7 +195,7 @@ class PartnerDashboardController extends BaseTenantController
         $entries = $allEntries->map(function ($entry) use (&$runningBalance) {
             $runningBalance += $entry['type'] === 'credit' ? $entry['amount'] : -$entry['amount'];
 
-            return array_merge($entry, ['balance' => round($runningBalance, 2)]);
+            return array_merge($entry, ['balance' => round($runningBalance, 6)]);
         });
 
         // Reverse for display so newest is first
@@ -206,12 +206,12 @@ class PartnerDashboardController extends BaseTenantController
                 'name' => $partner->name,
                 'total_pending' => (float) $partner->total_pending,
                 'total_withdrawn' => (float) $partner->total_withdrawn,
-                'net_profit' => round((float) $partner->total_pending + (float) $partner->total_withdrawn, 2),
+                'net_profit' => round((float) $partner->total_pending + (float) $partner->total_withdrawn, 6),
             ],
             'entries' => $entries,
             'summary' => [
-                'total_credited' => round($profitShares->sum('amount'), 2),
-                'total_withdrawn' => round($withdrawals->sum('amount'), 2),
+                'total_credited' => round($profitShares->sum('amount'), 6),
+                'total_withdrawn' => round($withdrawals->sum('amount'), 6),
                 'current_balance' => (float) $partner->total_pending,
             ],
         ]);

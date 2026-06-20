@@ -57,7 +57,7 @@ class PenaltyCalculatorService
             $penaltyAmount = $rule->calculatePenalty($effectiveMinutes, $baseSalary);
 
             return [
-                'penalty_amount'         => round($penaltyAmount, 2),
+                'penalty_amount'         => round($penaltyAmount, 6),
                 'rule'                   => $rule,
                 'effective_late_minutes' => $effectiveMinutes,
                 'grace_minutes_applied'  => $graceApplied,

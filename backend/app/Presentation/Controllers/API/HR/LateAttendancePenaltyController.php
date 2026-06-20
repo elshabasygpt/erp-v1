@@ -118,7 +118,7 @@ class LateAttendancePenaltyController extends BaseTenantController
                 'position'            => $emp->position,
                 'late_days_count'     => $employeeRecords->count(),
                 'total_late_minutes'  => $employeeRecords->sum('late_minutes'),
-                'total_penalty'       => round($employeeRecords->sum('penalty_amount'), 2),
+                'total_penalty'       => round($employeeRecords->sum('penalty_amount'), 6),
                 'records'             => $employeeRecords->map(fn($r) => [
                     'date'             => $r->date->format('Y-m-d'),
                     'check_in'         => $r->check_in,
@@ -137,7 +137,7 @@ class LateAttendancePenaltyController extends BaseTenantController
             'totals'       => [
                 'total_late_days'     => $records->count(),
                 'total_late_minutes'  => $records->sum('late_minutes'),
-                'total_penalties'     => round($records->sum('penalty_amount'), 2),
+                'total_penalties'     => round($records->sum('penalty_amount'), 6),
                 'employees_affected'  => $byEmployee->count(),
             ],
         ]);

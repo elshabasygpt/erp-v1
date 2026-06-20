@@ -60,8 +60,8 @@ final class TransferBetweenSafesUseCase
             }
 
             // The 'amount' is in the source safe's currency
-            $baseEquivalent = round($amount * $fromRate, 2);
-            $destinationAmount = round($toRate > 0 ? $baseEquivalent / $toRate : $amount, 2);
+            $baseEquivalent = round($amount * $fromRate, 6);
+            $destinationAmount = round($toRate > 0 ? $baseEquivalent / $toRate : $amount, 6);
 
             // Update Balances
             $fromSafe->balance -= ($amount + $feeAmount);
@@ -161,7 +161,7 @@ final class TransferBetweenSafesUseCase
 
             $feeEquivalent = 0.0;
             if ($feeAmount > 0) {
-                $feeEquivalent = round($feeAmount * $fromRate, 2);
+                $feeEquivalent = round($feeAmount * $fromRate, 6);
                 try {
                     $feeAccountId = $this->accountMapping->resolve('bank_fees');
                 } catch (\Exception $e) {

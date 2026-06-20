@@ -60,12 +60,9 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-            $file->move($destinationPath, $filename);
-            $validated['logo_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes/'.$filename;
+            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/makes/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
+            $validated['logo_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
         }
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -98,12 +95,9 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/models');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-            $file->move($destinationPath, $filename);
-            $validated['image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/models/'.$filename;
+            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/models/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
+            $validated['image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
         }
 
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -138,12 +132,9 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('engine_image')) {
             $file = $request->file('engine_image');
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/years');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-            $file->move($destinationPath, $filename);
-            $validated['engine_image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/years/'.$filename;
+            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/years/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
+            $validated['engine_image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
         }
 
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -174,12 +165,9 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-            $file->move($destinationPath, $filename);
-            $validated['logo_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/makes/'.$filename;
+            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/makes/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
+            $validated['logo_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
         }
 
         $make->update($validated);
@@ -204,12 +192,9 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/models');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-            $file->move($destinationPath, $filename);
-            $validated['image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/models/'.$filename;
+            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/models/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
+            $validated['image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
         }
 
         $modelRec->update($validated);
@@ -236,12 +221,9 @@ class VehicleController extends BaseTenantController
         if ($request->hasFile('engine_image')) {
             $file = $request->file('engine_image');
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/vehicles/years');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-            $file->move($destinationPath, $filename);
-            $validated['engine_image_url'] = '/uploads/tenant_'.$this->getTenantId($request).'/vehicles/years/'.$filename;
+            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/years/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
+            $validated['engine_image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
         }
 
         $yearRec->update($validated);

@@ -528,7 +528,7 @@ class SimpleXLSX
         }
 
         //        $m2 = memory_get_peak_usage(true);
-        //        echo __FUNCTION__.' M='.round( ($m2-$m1) / 1048576, 2).'MB'.PHP_EOL;
+        //        echo __FUNCTION__.' M='.round( ($m2-$m1) / 1048576, 6).'MB'.PHP_EOL;
 
         if (count($this->sheets)) {
             // Sort sheets
@@ -592,7 +592,7 @@ class SimpleXLSX
             }
 
             //            $m2 = memory_get_usage();
-            //            echo round( ($m2-$m1) / (1024 * 1024), 2).' MB'.PHP_EOL;
+            //            echo round( ($m2-$m1) / (1024 * 1024), 6).' MB'.PHP_EOL;
 
             if ($entry_xmlobj) {
                 return $entry_xmlobj;
@@ -979,7 +979,7 @@ class SimpleXLSX
                 $css = $c['css'];
                 if ($y === 0) {
                     $tag = 'th';
-                    $css .= $c['width'] ? 'width: '.round($c['width'] * 0.47, 2).'em;' : '';
+                    $css .= $c['width'] ? 'width: '.round($c['width'] * 0.47, 6).'em;' : '';
                 }
 
                 if ($x === 0 && $c['height']) {

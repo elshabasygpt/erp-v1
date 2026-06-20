@@ -1,0 +1,71 @@
+version: '3.8'
+
+# PRODUCTION DEPLOYMENT ARCHITECTURE
+# ----------------------------------
+# High Availability (HA) Setup
+# - Database (Postgres) is intentionally omitted. Must use a managed RDS/Cloud SQL cluster.
+# - Cache (Redis) is intentionally omitted. Must use ElastiCache/Memorystore.
+# - The 'app' container uses 'deploy: replicas: 3' for horizontal scaling.
+# - S3 should be used for file storage via env variable FILESYSTEM_DISK_PUBLIC=s3
+
+services:
+  web:
+    image: nginx:alpine
+    container_name: erp_nginx_lb
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./backend:/var/www/backend
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+      - frontend
+    networks:
+      - erp_network
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    # Do NOT set container_name for horizontally scaled services
+    restart: always
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first # Zero downtime rolling updates
+      restart_policy:
+        condition: on-failure
+    environment:
+      - APP_ENV=production
+      # Expecting external RDS/ElastiCache variables from host environment
+      - DB_HOST=${RDS_DB_HOST}
+      - REDIS_HOST=${ELASTICACHE_REDIS_HOST}
+      - FILESYSTEM_DISK_PUBLIC=s3
+    volumes:
+      - ./backend:/var/www/backend
+    networks:
+      - erp_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    deploy:
+      replicas: 2
+      update_config:
+        order: start-first
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=/api
+    networks:
+      - erp_network
+
+networks:
+  erp_network:
+    driver: overlay # Required for Docker Swarm scaling across multiple nodes

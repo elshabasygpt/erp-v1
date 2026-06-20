@@ -34,7 +34,7 @@ class FXGainLossService
         string $type
     ): array {
         $fxDifference = ($paymentRate - $invoiceRate) * $foreignAmount;
-        $fxDifference = round($fxDifference, 2);
+        $fxDifference = round($fxDifference, 6);
 
         $lines = [];
 
@@ -84,5 +84,186 @@ class FXGainLossService
             'fx_lines' => $lines,
             'fx_amount' => $fxDifference, // Signed amount relative to payment rate difference
         ];
+    }
+
+    /**
+     * Calculate Unrealized FX Gains/Losses for month-end revaluation.
+     * @return int Number of journal entries created
+     */
+    public function calculateUnrealizedGainsLosses(string $tenantId, string $date): int
+    {
+        $entriesCreated = 0;
+        
+        // 1. Get latest exchange rates as of the given date for all foreign currencies
+        $rates = \DB::connection('tenant')->table('exchange_rates')
+            ->where('tenant_id', $tenantId)
+            ->where('date', '<=', $date)
+            ->orderBy('date', 'desc')
+            ->get()
+            ->unique('currency_id')
+            ->keyBy('currency_id');
+
+        if ($rates->isEmpty()) {
+            return 0; // No foreign currencies to revalue
+        }
+
+        $fxAccount = $this->accountMapping->resolve('unrealized_fx_gain_loss');
+        $arAccount = $this->accountMapping->resolve('ar');
+        $apAccount = $this->accountMapping->resolve('ap');
+
+        // 2. Process AR (Sales Invoices)
+        $invoices = \DB::connection('tenant')->table('invoices')
+            ->where('tenant_id', $tenantId)
+            ->whereNotNull('currency_id')
+            ->where('invoice_date', '<=', $date)
+            ->where('payment_status', '!=', 'paid')
+            ->get();
+
+        foreach ($invoices as $inv) {
+            if (!isset($rates[$inv->currency_id])) continue;
+            
+            $eomRate = (float) $rates[$inv->currency_id]->rate;
+            $invRate = (float) $inv->exchange_rate;
+            
+            if ($eomRate === $invRate) continue;
+
+            $openForeign = (float) $inv->total - (float) $inv->paid_amount;
+            $historicalLocal = round($openForeign * $invRate, 6);
+            $currentLocal = round($openForeign * $eomRate, 6);
+            
+            $variance = round($currentLocal - $historicalLocal, 6);
+            if ($variance == 0) continue;
+
+            $this->createRevaluationEntry($tenantId, $date, $variance, $arAccount, $fxAccount, 'ar', $inv->id);
+            $entriesCreated++;
+        }
+
+        // 3. Process AP (Purchase Invoices)
+        $purchases = \DB::connection('tenant')->table('purchase_invoices')
+            ->where('tenant_id', $tenantId)
+            ->whereNotNull('currency_id')
+            ->where('invoice_date', '<=', $date)
+            ->where('payment_status', '!=', 'paid')
+            ->get();
+
+        foreach ($purchases as $pur) {
+            if (!isset($rates[$pur->currency_id])) continue;
+            
+            $eomRate = (float) $rates[$pur->currency_id]->rate;
+            $purRate = (float) $pur->exchange_rate;
+            
+            if ($eomRate === $purRate) continue;
+
+            $openForeign = (float) $pur->total - (float) $pur->paid_amount;
+            $historicalLocal = round($openForeign * $purRate, 6);
+            $currentLocal = round($openForeign * $eomRate, 6);
+            
+            $variance = round($currentLocal - $historicalLocal, 6);
+            if ($variance == 0) continue;
+
+            $this->createRevaluationEntry($tenantId, $date, $variance, $apAccount, $fxAccount, 'ap', $pur->id);
+            $entriesCreated++;
+        }
+
+        return $entriesCreated;
+    }
+
+    private function createRevaluationEntry(string $tenantId, string $date, float $variance, string $baseAccount, string $fxAccount, string $type, string $refId): void
+    {
+        $isGain = false;
+        if ($type === 'ar') {
+            $isGain = $variance > 0;
+        } else { // ap
+            $isGain = $variance < 0;
+        }
+
+        $absVar = abs($variance);
+
+        $je = new \App\Domain\Accounting\Entities\JournalEntry(
+            id: null,
+            entryNumber: 'FXR-' . time() . rand(10,99),
+            date: new \DateTimeImmutable($date),
+            description: "Unrealized FX Revaluation for $type $refId",
+            isPosted: false,
+            referenceType: 'fx_revaluation',
+            referenceId: $refId,
+            createdBy: 'system'
+        );
+
+        if ($type === 'ar') {
+            if ($isGain) {
+                // Dr AR, Cr Unrealized FX Gain
+                $je->addLine($this->createLine($baseAccount, $absVar, 0.0));
+                $je->addLine($this->createLine($fxAccount, 0.0, $absVar));
+            } else {
+                // Dr Unrealized FX Loss, Cr AR
+                $je->addLine($this->createLine($fxAccount, $absVar, 0.0));
+                $je->addLine($this->createLine($baseAccount, 0.0, $absVar));
+            }
+        } else { // ap
+            if ($isGain) {
+                // Dr AP, Cr Unrealized FX Gain
+                $je->addLine($this->createLine($baseAccount, $absVar, 0.0));
+                $je->addLine($this->createLine($fxAccount, 0.0, $absVar));
+            } else {
+                // Dr Unrealized FX Loss, Cr AP
+                $je->addLine($this->createLine($fxAccount, $absVar, 0.0));
+                $je->addLine($this->createLine($baseAccount, 0.0, $absVar));
+            }
+        }
+
+        $je->post();
+        
+        $repo = app(\App\Domain\Accounting\Repositories\JournalEntryRepositoryInterface::class);
+        $repo->create($je);
+
+        // --- Auto Reversal for 1st day of next month ---
+        $reversalDate = (new \DateTimeImmutable($date))->modify('first day of next month')->format('Y-m-d');
+        
+        $jeRev = new \App\Domain\Accounting\Entities\JournalEntry(
+            id: null,
+            entryNumber: 'FXREV-' . time() . rand(10,99),
+            date: new \DateTimeImmutable($reversalDate),
+            description: "Auto-Reversal: Unrealized FX Revaluation for $type $refId",
+            isPosted: false,
+            referenceType: 'fx_reversal',
+            referenceId: $refId,
+            createdBy: 'system'
+        );
+
+        if ($type === 'ar') {
+            if ($isGain) {
+                $jeRev->addLine($this->createLine($baseAccount, 0.0, $absVar));
+                $jeRev->addLine($this->createLine($fxAccount, $absVar, 0.0));
+            } else {
+                $jeRev->addLine($this->createLine($fxAccount, 0.0, $absVar));
+                $jeRev->addLine($this->createLine($baseAccount, $absVar, 0.0));
+            }
+        } else { // ap
+            if ($isGain) {
+                $jeRev->addLine($this->createLine($baseAccount, 0.0, $absVar));
+                $jeRev->addLine($this->createLine($fxAccount, $absVar, 0.0));
+            } else {
+                $jeRev->addLine($this->createLine($fxAccount, 0.0, $absVar));
+                $jeRev->addLine($this->createLine($baseAccount, $absVar, 0.0));
+            }
+        }
+
+        $jeRev->post();
+        $repo->create($jeRev);
+    }
+
+    private function createLine(string $account, float $debit, float $credit): JournalEntryLine
+    {
+        return new JournalEntryLine(
+            id: null,
+            journalEntryId: '',
+            accountId: $account,
+            debit: $debit,
+            credit: $credit,
+            transactionDebit: 0.0,
+            transactionCredit: 0.0,
+            description: ''
+        );
     }
 }

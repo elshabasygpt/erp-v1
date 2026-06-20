@@ -125,7 +125,7 @@ final class CreateSupplierPaymentUseCase
             );
 
             // The payment amount in Base Currency
-            $baseAmount = round($amount * $exchangeRate, 2);
+            $baseAmount = round($amount * $exchangeRate, 6);
 
             // Accounts
             $apAccount = $this->accountMapping->resolve('ap');
@@ -143,9 +143,9 @@ final class CreateSupplierPaymentUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $apAccount,
-                debit: round($apDebitBase, 2),
+                debit: round($apDebitBase, 6),
                 credit: 0,
-                transactionDebit: round($amount, 2),
+                transactionDebit: round($amount, 6),
                 transactionCredit: 0.0,
                 description: 'Supplier Payment - AP Settlement',
                 costCenterId: $data['cost_center_id'] ?? null,
@@ -157,14 +157,14 @@ final class CreateSupplierPaymentUseCase
                 journalEntryId: '',
                 accountId: $cashAccount,
                 debit: 0,
-                credit: round($baseAmount, 2),
+                credit: round($baseAmount, 6),
                 transactionDebit: 0.0,
-                transactionCredit: round($amount, 2),
+                transactionCredit: round($amount, 6),
                 description: "Payment from {$safe->name}"
             ));
 
             // FX Gain/Loss
-            if (round($fxGainLoss, 2) != 0.0) {
+            if (round($fxGainLoss, 6) != 0.0) {
                 $fxData = $this->fxGainLossService->calculateAndGenerateLines(
                     0.0, // Invoice Rate (Relative)
                     1.0, // Payment Rate (Relative)

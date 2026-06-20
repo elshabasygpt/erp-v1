@@ -77,7 +77,7 @@ class SmartPurchaseDrafter
                 // Approximate cost price. We need it from the product.
                 $productRecord = ProductModel::query()->find($f['product_id']);
                 $unitCost = $productRecord ? $productRecord->cost_price : 0;
-                $lineTotal = round($qty * $unitCost, 2);
+                $lineTotal = round($qty * $unitCost, 6);
 
                 PurchaseItemModel::query()->create([
                     'id' => Str::uuid()->toString(),
@@ -94,7 +94,7 @@ class SmartPurchaseDrafter
 
             // Update PO totals
             // Assume 15% VAT for simplicity in auto-draft
-            $vat = round($total * 0.15, 2);
+            $vat = round($total * 0.15, 6);
             $purchase->update([
                 'subtotal' => $total,
                 'vat_amount' => $vat,

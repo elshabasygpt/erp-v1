@@ -84,6 +84,39 @@ final class FiscalPeriodService
             throw new \DomainException("Period '{$period->name}' is already {$period->status}.");
         }
 
+        // --- ERP Forensic Audit Requirement: Fiscal Year Closing Validation ---
+        // Ensure no draft or pending transactions exist within this period before closing
+        
+        $pendingInvoices = DB::connection('tenant')->table('invoices')
+            ->whereBetween('invoice_date', [$period->start_date, $period->end_date])
+            ->whereIn('status', ['draft', 'pending_approval'])
+            ->exists();
+            
+        if ($pendingInvoices) {
+            throw new \DomainException("Cannot close period '{$period->name}': There are draft or pending sales invoices in this period. Confirm or cancel them first.");
+        }
+
+        $pendingPurchases = DB::connection('tenant')->table('purchase_invoices')
+            ->whereBetween('invoice_date', [$period->start_date, $period->end_date])
+            ->whereIn('status', ['draft', 'pending_approval'])
+            ->exists();
+            
+        if ($pendingPurchases) {
+            throw new \DomainException("Cannot close period '{$period->name}': There are draft or pending purchase invoices in this period. Confirm or cancel them first.");
+        }
+
+        $unpostedJournals = DB::connection('tenant')->table('journal_entries')
+            ->whereBetween('date', [$period->start_date, $period->end_date])
+            ->where('is_posted', false)
+            ->exists();
+
+        if ($unpostedJournals) {
+            throw new \DomainException("Cannot close period '{$period->name}': There are unposted journal entries in this period. Post or delete them first.");
+        }
+
+        $tenant = app('current_tenant'); // Ensure tenant context for updates
+        $tenantId = $tenant->id ?? 'tenant_context';
+        
         DB::connection('tenant')->table('fiscal_periods')
             ->where('tenant_id', $tenantId)
             ->where('id', $periodId)
@@ -119,6 +152,8 @@ final class FiscalPeriodService
             throw new \DomainException("Period '{$period->name}' is not closed.");
         }
 
+        $tenant = app('current_tenant'); // Ensure tenant context for updates
+        $tenantId = $tenant->id ?? 'tenant_context';
         DB::connection('tenant')->table('fiscal_periods')
             ->where('tenant_id', $tenantId)
             ->where('id', $periodId)
@@ -126,6 +161,36 @@ final class FiscalPeriodService
                 'status' => 'open',
                 'reopened_by' => $userId,
                 'reopened_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
+
+    /**
+     * Permanently lock a closed fiscal period after year-end closing is complete.
+     */
+    public function lockPeriod(string $periodId, string $userId): void
+    {
+        $period = DB::connection('tenant')
+            ->table('fiscal_periods')
+            ->where('id', $periodId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $period) {
+            throw new \DomainException('Fiscal period not found.');
+        }
+
+        if ($period->status !== 'closed') {
+            throw new \DomainException("Period '{$period->name}' must be closed before it can be locked.");
+        }
+
+        $tenant = app('current_tenant'); // Ensure tenant context for updates
+        $tenantId = $tenant->id ?? 'tenant_context';
+        DB::connection('tenant')->table('fiscal_periods')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $periodId)
+            ->update([
+                'status' => 'locked',
                 'updated_at' => now(),
             ]);
     }
@@ -155,6 +220,7 @@ final class FiscalPeriodService
 
         $id = Str::uuid()->toString();
 
+        $tenantId = app('current_tenant'); // Ensure tenant context for inserts
         DB::connection('tenant')->table('fiscal_periods')->insert([
             'tenant_id' => $tenantId,
             'id' => $id,

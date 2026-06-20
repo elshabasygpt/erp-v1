@@ -76,15 +76,10 @@ class SalesChannelController extends BaseTenantController
         if ($request->hasFile('image')) {
             $file = $request->file('image');
             $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
-
-            $destinationPath = public_path('uploads/tenant_'.$this->getTenantId($request).'/channels');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-
-            $file->move($destinationPath, $filename);
-
-            $url = $request->getSchemeAndHttpHost().'/uploads/tenant_'.$this->getTenantId($request).'/channels/'.$filename;
+            $path = "uploads/tenant_".$this->getTenantId($request)."/channels/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
+            
+            $url = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
 
             return response()->json([
                 'status' => 'success',

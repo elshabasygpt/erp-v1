@@ -71,7 +71,7 @@ class AutoPartsReportController extends BaseTenantController
                 'items' => $results,
                 'summary' => [
                     'total_items'       => $results->count(),
-                    'total_stock_value' => round($results->sum('stock_value'), 2),
+                    'total_stock_value' => round($results->sum('stock_value'), 6),
                     'never_sold_count'  => $results->whereNull('last_sale_date')->count(),
                     'avg_days_no_sale'  => round(
                         $results->where('days_since_last_sale', '<', 9999)->avg('days_since_last_sale') ?? 0
@@ -137,7 +137,7 @@ class AutoPartsReportController extends BaseTenantController
                     'make_id'       => $mId,
                     'make_name'     => $first->make_name,
                     'make_name_ar'  => $first->make_name_ar,
-                    'total_revenue' => round($makeItems->sum('revenue'), 2),
+                    'total_revenue' => round($makeItems->sum('revenue'), 6),
                     'total_qty'     => $makeItems->sum('total_qty'),
                     'items_count'   => $makeItems->count(),
                     'revenue_share' => $totalRevenue > 0 ? round($makeItems->sum('revenue') / $totalRevenue * 100, 1) : 0,
@@ -148,7 +148,7 @@ class AutoPartsReportController extends BaseTenantController
             return [
                 'by_make'   => $byMake,
                 'all_items' => $items->values(),
-                'total_revenue' => round($totalRevenue, 2),
+                'total_revenue' => round($totalRevenue, 6),
             ];
         });
 
@@ -288,9 +288,9 @@ class AutoPartsReportController extends BaseTenantController
                     return $r;
                 })->values(),
                 'totals' => [
-                    'total_revenue'      => round($totalRevenue, 2),
-                    'total_cogs'         => round($results->sum('cogs'), 2),
-                    'total_gross_profit' => round($results->sum('gross_profit'), 2),
+                    'total_revenue'      => round($totalRevenue, 6),
+                    'total_cogs'         => round($results->sum('cogs'), 6),
+                    'total_gross_profit' => round($results->sum('gross_profit'), 6),
                     'avg_margin'         => round($results->avg('profit_margin_pct'), 1),
                 ],
             ];

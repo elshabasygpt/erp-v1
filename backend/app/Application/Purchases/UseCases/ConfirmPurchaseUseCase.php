@@ -76,7 +76,7 @@ final class ConfirmPurchaseUseCase
             }
 
             // ── Supplier balance ──
-            $owedAmount = round((float) $purchase->total - $paidAmount, 2);
+            $owedAmount = round((float) $purchase->total - $paidAmount, 6);
             if ($owedAmount > 0) {
                 $supplier = SupplierModel::query()->lockForUpdate()->find($purchase->supplier_id);
                 if ($supplier) {
@@ -140,9 +140,9 @@ final class ConfirmPurchaseUseCase
             id: null,
             journalEntryId: '',
             accountId: $this->accountMapping->resolve('inventory'),
-            debit: round((float) $purchase->subtotal * $exchangeRate, 2),
+            debit: round((float) $purchase->subtotal * $exchangeRate, 6),
             credit: 0,
-            transactionDebit: round((float) $purchase->subtotal, 2),
+            transactionDebit: round((float) $purchase->subtotal, 6),
             transactionCredit: 0.0,
             description: 'Inventory from purchase',
             costCenterId: $costCenterId,
@@ -154,9 +154,9 @@ final class ConfirmPurchaseUseCase
                 id: null,
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('vat_input'),
-                debit: round((float) $purchase->vat_amount * $exchangeRate, 2),
+                debit: round((float) $purchase->vat_amount * $exchangeRate, 6),
                 credit: 0,
-                transactionDebit: round((float) $purchase->vat_amount, 2),
+                transactionDebit: round((float) $purchase->vat_amount, 6),
                 transactionCredit: 0.0,
                 description: 'Input VAT on purchase',
             ));
@@ -169,9 +169,9 @@ final class ConfirmPurchaseUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('cash'),
                 debit: 0,
-                credit: round($paidAmount * $exchangeRate, 2),
+                credit: round($paidAmount * $exchangeRate, 6),
                 transactionDebit: 0.0,
-                transactionCredit: round($paidAmount, 2),
+                transactionCredit: round($paidAmount, 6),
                 description: 'Cash payment for purchase',
             ));
         }
@@ -183,9 +183,9 @@ final class ConfirmPurchaseUseCase
                 journalEntryId: '',
                 accountId: $this->accountMapping->resolve('ap'),
                 debit: 0,
-                credit: round($owedAmount * $exchangeRate, 2),
+                credit: round($owedAmount * $exchangeRate, 6),
                 transactionDebit: 0.0,
-                transactionCredit: round($owedAmount, 2),
+                transactionCredit: round($owedAmount, 6),
                 description: 'Accounts Payable - Supplier credit',
             ));
         }

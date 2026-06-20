@@ -73,7 +73,7 @@ class SupplierPriceListService
                 'valid_until'     => $p->valid_until?->format('Y-m-d'),
                 'is_cheapest'     => $p->id === $cheapest->id,
                 'savings_vs_current_cost' => $product
-                    ? round((float)$product->cost_price - (float)$p->unit_price, 2)
+                    ? round((float)$product->cost_price - (float)$p->unit_price, 6)
                     : null,
             ])->values(),
             'best_price' => [
@@ -207,7 +207,7 @@ class SupplierPriceListService
         $newPriceFloat = (float) $newPrice;
         
         $changePercent = $oldPriceFloat > 0
-            ? round(($newPriceFloat - $oldPriceFloat) / $oldPriceFloat * 100, 2)
+            ? round(($newPriceFloat - $oldPriceFloat) / $oldPriceFloat * 100, 6)
             : 0;
 
         SupplierPriceHistoryModel::create([

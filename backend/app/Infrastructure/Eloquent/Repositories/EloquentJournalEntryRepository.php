@@ -83,7 +83,7 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
 
     public function getNextEntryNumber(): string
     {
-        $last = JournalEntryModel::orderBy('created_at', 'desc')->first();
+        $last = JournalEntryModel::orderBy('entry_number', 'desc')->first();
         $n = $last ? ((int) substr($last->entry_number, 3)) + 1 : 1;
 
         return 'JE-'.str_pad((string) $n, 6, '0', STR_PAD_LEFT);

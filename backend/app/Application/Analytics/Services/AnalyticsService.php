@@ -169,7 +169,7 @@ class AnalyticsService
             return [
                 'total_sales' => (float) $totalSales,
                 'total_returned' => (float) $totalReturned,
-                'return_rate_percent' => round($returnRate, 2),
+                'return_rate_percent' => round($returnRate, 6),
                 'breakdown_by_reason' => $returns,
             ];
         });
@@ -216,9 +216,9 @@ class AnalyticsService
                 ->get();
 
             return [
-                'average_order_value' => round((float) $averageOrderValue, 2),
-                'purchase_frequency' => round((float) $purchaseFrequency, 2),
-                'historical_clv' => round((float) $historicalClv, 2),
+                'average_order_value' => round((float) $averageOrderValue, 6),
+                'purchase_frequency' => round((float) $purchaseFrequency, 6),
+                'historical_clv' => round((float) $historicalClv, 6),
                 'top_lifetime_customers' => $topCustomers,
             ];
         });
@@ -263,7 +263,7 @@ class AnalyticsService
             return [
                 'gross_sales' => $grossSales,
                 'total_discounts' => $totalDiscounts,
-                'average_discount_rate_percent' => round($discountRate, 2),
+                'average_discount_rate_percent' => round($discountRate, 6),
                 'discounts_by_salesperson' => $discountsBySalesperson,
             ];
         });
@@ -324,8 +324,8 @@ class AnalyticsService
                 'total_quotations' => $quotations,
                 'total_sales_orders' => $salesOrders,
                 'converted_to_invoice' => $convertedInvoices,
-                'quotation_to_so_conversion_rate' => $quotations > 0 ? round(($salesOrders / $quotations) * 100, 2) : 0,
-                'so_to_invoice_conversion_rate' => $salesOrders > 0 ? round(($convertedInvoices / $salesOrders) * 100, 2) : 0,
+                'quotation_to_so_conversion_rate' => $quotations > 0 ? round(($salesOrders / $quotations) * 100, 6) : 0,
+                'so_to_invoice_conversion_rate' => $salesOrders > 0 ? round(($convertedInvoices / $salesOrders) * 100, 6) : 0,
             ];
         });
     }

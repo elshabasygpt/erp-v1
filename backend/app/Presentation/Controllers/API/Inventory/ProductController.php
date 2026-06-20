@@ -106,10 +106,10 @@ class ProductController extends BaseTenantController
         }
 
         if (! array_key_exists('wholesale_price', $validated) && isset($validated['sell_price'])) {
-            $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 2);
+            $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 6);
         }
         if (! array_key_exists('semi_wholesale_price', $validated) && isset($validated['sell_price'])) {
-            $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 2);
+            $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 6);
         }
 
         $validated['tenant_id'] = $this->getTenantId($request);
@@ -186,10 +186,10 @@ class ProductController extends BaseTenantController
         }
 
         if (! array_key_exists('wholesale_price', $validated) && isset($validated['sell_price'])) {
-            $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 2);
+            $validated['wholesale_price'] = round($validated['sell_price'] * 0.80, 6);
         }
         if (! array_key_exists('semi_wholesale_price', $validated) && isset($validated['sell_price'])) {
-            $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 2);
+            $validated['semi_wholesale_price'] = round($validated['sell_price'] * 0.90, 6);
         }
 
         $product->update($validated);
@@ -278,16 +278,10 @@ class ProductController extends BaseTenantController
             $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
             $tenantId = $this->getTenantId($request);
 
-            // Store in public/uploads/tenant_{id}/products/
-            $destinationPath = public_path('uploads/tenant_'.$tenantId.'/products');
-            if (! file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
+            $path = "uploads/tenant_{$tenantId}/products/{$filename}";
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
 
-            $file->move($destinationPath, $filename);
-
-            // Build absolute URL
-            $url = $request->getSchemeAndHttpHost().'/uploads/tenant_'.$tenantId.'/products/'.$filename;
+            $url = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
 
             return $this->success(['image_url' => $url], 'Image uploaded successfully');
         }

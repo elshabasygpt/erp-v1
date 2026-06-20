@@ -40,6 +40,7 @@ use App\Presentation\Controllers\API\Inventory\StockTransferController;
 use App\Presentation\Controllers\API\Inventory\UnitController;
 use App\Presentation\Controllers\API\Inventory\VehicleController;
 use App\Presentation\Controllers\API\Inventory\WarehouseController;
+use App\Presentation\Controllers\API\Inventory\InventoryReconciliationController;
 use App\Presentation\Controllers\API\Partnerships\PartnerController;
 use App\Presentation\Controllers\API\Partnerships\ProfitDistributionController;
 use App\Presentation\Controllers\API\Portal\PartnerAuthController;
@@ -304,8 +305,9 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/movements', [StockMovementController::class, 'index']);
         Route::post('/movements', [StockMovementController::class, 'store']);
 
-        // Inventory Valuation
+        // Inventory Valuation & Reconciliation
         Route::get('/valuation', [InventoryValuationController::class, 'report']);
+        Route::get('/reconciliation', [InventoryReconciliationController::class, 'generate']);
 
         // Adjustments & Stocktakes
         Route::get('/adjustments', [AdjustmentController::class, 'index']);
@@ -513,6 +515,7 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/fiscal-periods', [AccountingSettingsController::class, 'listFiscalPeriods']);
         Route::post('/fiscal-periods', [AccountingSettingsController::class, 'createFiscalPeriod']);
         Route::post('/fiscal-periods/{id}/close', [AccountingSettingsController::class, 'closeFiscalPeriod']);
+        Route::post('/fiscal-periods/{id}/close-year', [AccountingSettingsController::class, 'closeFiscalYear']);
         Route::post('/fiscal-periods/{id}/reopen', [AccountingSettingsController::class, 'reopenFiscalPeriod']);
 
         // Bank Accounts & Reconciliations

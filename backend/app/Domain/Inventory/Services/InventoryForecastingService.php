@@ -62,7 +62,7 @@ class InventoryForecastingService
                         'name_ar' => $product->name_ar,
                         'sku' => $product->sku,
                         'current_stock' => $currentStock,
-                        'daily_velocity' => round($dailyVelocity, 2),
+                        'daily_velocity' => round($dailyVelocity, 6),
                         'days_to_empty' => round($daysToEmpty, 1),
                         'suggested_reorder_qty' => round($dailyVelocity * 30), // Buy for 30 days
                     ];

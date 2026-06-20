@@ -104,25 +104,43 @@ final class JournalEntry extends Entity
 
     public function isBalanced(): bool
     {
-        $totalDebit = 0;
-        $totalCredit = 0;
+        $totalDebit = '0.000000';
+        $totalCredit = '0.000000';
 
         foreach ($this->lines as $line) {
-            $totalDebit += $line->getDebit();
-            $totalCredit += $line->getCredit();
+            $debitStr = sprintf('%.6F', $line->getDebit());
+            $creditStr = sprintf('%.6F', $line->getCredit());
+            
+            $totalDebit = bcadd($totalDebit, $debitStr, 6);
+            $totalCredit = bcadd($totalCredit, $creditStr, 6);
         }
 
-        return abs($totalDebit - $totalCredit) < 0.01; // tolerance for float
+        // Absolute difference
+        $diff = bcsub($totalDebit, $totalCredit, 6);
+        if (bccomp($diff, '0.000000', 6) === -1) {
+            $diff = bcsub('0.000000', $diff, 6);
+        }
+
+        // Tolerance validation strictly up to 0.000001
+        return bccomp($diff, '0.000001', 6) <= 0;
     }
 
     public function getTotalDebit(): float
     {
-        return array_sum(array_map(fn (JournalEntryLine $l) => $l->getDebit(), $this->lines));
+        $total = '0.000000';
+        foreach ($this->lines as $line) {
+            $total = bcadd($total, sprintf('%.6F', $line->getDebit()), 6);
+        }
+        return (float) $total;
     }
 
     public function getTotalCredit(): float
     {
-        return array_sum(array_map(fn (JournalEntryLine $l) => $l->getCredit(), $this->lines));
+        $total = '0.000000';
+        foreach ($this->lines as $line) {
+            $total = bcadd($total, sprintf('%.6F', $line->getCredit()), 6);
+        }
+        return (float) $total;
     }
 
     public function toArray(): array

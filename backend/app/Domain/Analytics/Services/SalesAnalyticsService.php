@@ -10,7 +10,7 @@ class SalesAnalyticsService
             return 0;
         }
 
-        return round((($current - $previous) / $previous) * 100, 2);
+        return round((($current - $previous) / $previous) * 100, 6);
     }
 
     public function calcConversionRate(int $converted, int $total): float
@@ -19,7 +19,7 @@ class SalesAnalyticsService
             return 0;
         }
 
-        return round(($converted / $total) * 100, 2);
+        return round(($converted / $total) * 100, 6);
     }
 
     public function calcAverageOrderValue(float $totalRevenue, int $orderCount): float
@@ -28,7 +28,7 @@ class SalesAnalyticsService
             return 0;
         }
 
-        return round($totalRevenue / $orderCount, 2);
+        return round($totalRevenue / $orderCount, 6);
     }
 
     public function calcReturnRate(int $returnedOrders, int $totalOrders): float
@@ -37,6 +37,6 @@ class SalesAnalyticsService
             return 0;
         }
 
-        return round(($returnedOrders / $totalOrders) * 100, 2);
+        return round(($returnedOrders / $totalOrders) * 100, 6);
     }
 }

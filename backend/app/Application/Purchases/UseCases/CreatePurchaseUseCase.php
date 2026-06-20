@@ -30,12 +30,12 @@ final class CreatePurchaseUseCase
             $taxAmount = 0;
 
             foreach ($dto->items as $item) {
-                $itemSub = round($item['quantity'] * $item['unit_price'], 2);
-                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 2);
+                $itemSub = round($item['quantity'] * $item['unit_price'], 6);
+                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
                 $subtotalAmount += $itemSub;
                 $taxAmount += $itemTax;
             }
-            $totalAmount = round($subtotalAmount + $taxAmount, 2);
+            $totalAmount = round($subtotalAmount + $taxAmount, 6);
 
             // Generate invoice number
             $lastInvoice = PurchaseInvoiceModel::latest('created_at')->first();
@@ -60,8 +60,8 @@ final class CreatePurchaseUseCase
             ]);
 
             foreach ($dto->items as $item) {
-                $itemSub = round($item['quantity'] * $item['unit_price'], 2);
-                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 2);
+                $itemSub = round($item['quantity'] * $item['unit_price'], 6);
+                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
 
                 PurchaseInvoiceItemModel::query()->create([
                     'id' => Str::uuid()->toString(),
@@ -70,7 +70,7 @@ final class CreatePurchaseUseCase
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'vat_rate' => $item['tax_rate'],
-                    'total' => round($itemSub + $itemTax, 2),
+                    'total' => round($itemSub + $itemTax, 6),
                     'lot_number' => $item['lot_number'] ?? null,
                     'serial_number' => $item['serial_number'] ?? null,
                     'production_date' => $item['production_date'] ?? null,
