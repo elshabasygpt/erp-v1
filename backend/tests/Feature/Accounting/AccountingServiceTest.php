@@ -24,7 +24,7 @@ class AccountingServiceTest extends TestCase
             'id' => Str::uuid()->toString(),
             'tenant_id' => '00000000-0000-0000-0000-000000000001',
             'code' => '4000',
-            'name' => 'Sales Revenue', 'name_ar' => 'Sales Revenue',
+            'name' => 'Sales Revenue',
             'name_ar' => 'إيرادات المبيعات',
             'type' => 'revenue',
             'is_active' => true,
@@ -32,9 +32,9 @@ class AccountingServiceTest extends TestCase
 
         $expenseAccount = AccountModel::create([
             'id' => Str::uuid()->toString(),
-            'tenant_id' => 'tenant-1',
+            'tenant_id' => '00000000-0000-0000-0000-000000000001',
             'code' => '5000',
-            'name' => 'COGS', 'name_ar' => 'COGS',
+            'name' => 'COGS',
             'name_ar' => 'تكلفة البضاعة المباعة',
             'type' => 'expense',
             'is_active' => true,
@@ -43,7 +43,7 @@ class AccountingServiceTest extends TestCase
         // 2. Create Journal Entry (Revenue: 1000 Credit, Expense: 400 Debit)
         $entry = JournalEntryModel::create([
             'id' => Str::uuid()->toString(),
-            'tenant_id' => 'tenant-1',
+            'tenant_id' => '00000000-0000-0000-0000-000000000001',
             'entry_number' => 'JE-001',
             'date' => now(),
             'description' => 'Test Sales',

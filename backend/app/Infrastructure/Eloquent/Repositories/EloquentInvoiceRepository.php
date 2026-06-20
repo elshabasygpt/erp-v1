@@ -68,6 +68,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
                 'cost_center_id' => $invoice->getCostCenterId(),
                 'currency_id' => $invoice->getCurrencyId(),
                 'exchange_rate' => $invoice->getExchangeRate(),
+                'payment_method' => $invoice->getPaymentMethod(),
             ]);
 
             foreach ($invoice->getItems() as $item) {
@@ -108,6 +109,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             'zatca_uuid' => $invoice->getZatcaUuid(),
             'zatca_status' => $invoice->getZatcaStatus(),
             'zatca_error_message' => $invoice->getZatcaErrorMessage(),
+            'payment_method' => $invoice->getPaymentMethod(),
         ]);
 
         return $this->findById($invoice->getId());
@@ -214,6 +216,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             costCenterId: $model->cost_center_id,
             currencyId: $model->currency_id,
             exchangeRate: $model->exchange_rate ? (float) $model->exchange_rate : null,
+            paymentMethod: $model->payment_method,
         );
 
         $items = $model->items->map(function ($itemModel) {

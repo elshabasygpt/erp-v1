@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { PosSession } from './usePosState';
+import toast from 'react-hot-toast';
 
 export function usePosCart(
     activeSession: PosSession, 
@@ -25,15 +26,30 @@ export function usePosCart(
     const addToCart = useCallback((product: any) => {
         if (!product || (product.stock_quantity !== undefined && product.stock_quantity <= 0)) {
             if (typeof Audio !== 'undefined') new Audio('/error.mp3').play().catch(()=>{});
+            toast.error(`Product ${product?.name} is out of stock!`);
             return;
         }
+
+        let productToAdd = product;
+        
+        // Auto-replace superseded part
+        if (product.supersededBy) {
+            toast.success(`Part number superseded! Added newer part: ${product.supersededBy.part_number}`, { icon: '🔄', duration: 4000 });
+            // Map the superseded product structure to match the POS structure
+            productToAdd = {
+                ...product.supersededBy,
+                price: parseFloat(product.supersededBy.sell_price || 0),
+                stock_quantity: product.supersededBy.warehouseStocks?.reduce((acc: number, w: any) => acc + parseFloat(w.quantity), 0) || 0,
+            };
+        }
+
         const newCart = [...activeSession.cart];
-        const existing = newCart.find((i) => i.product.id === product.id);
+        const existing = newCart.find((i) => i.product.id === productToAdd.id);
         if (existing) {
             existing.qty += 1;
-            if (product.stock_quantity && existing.qty > product.stock_quantity) existing.qty = product.stock_quantity;
+            if (productToAdd.stock_quantity && existing.qty > productToAdd.stock_quantity) existing.qty = productToAdd.stock_quantity;
         } else {
-            newCart.push({ product, qty: 1, discount: 0 });
+            newCart.push({ product: productToAdd, qty: 1, discount: 0 });
         }
         updateActiveSession({ cart: newCart });
         if (typeof Audio !== 'undefined') new Audio('/beep.mp3').play().catch(()=>{});

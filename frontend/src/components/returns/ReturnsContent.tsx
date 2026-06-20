@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, BarChart, Bar,
@@ -62,6 +63,8 @@ export default function ReturnsContent({ dict, locale }: Props) {
     const [showCreateDamage, setShowCreateDamage] = useState(false);
     const [showDetail, setShowDetail] = useState<typeof returnRecords[0] | null>(null);
 
+    const router = useRouter();
+
     // Form state
     const [newReturn, setNewReturn] = useState({ type: 'salesReturn', invoice: '', customer: '', product: '', qty: 1, unitPrice: 0, reason: 'defective', condition: 'resellable', compensation: 'cashRefund', notes: '' });
 
@@ -109,17 +112,15 @@ export default function ReturnsContent({ dict, locale }: Props) {
 
     // ── Quick Action Buttons ──
     const actionButtons = [
-        { key: 'createReturn', label: r.createReturn, icon: '🔄', gradient: 'from-blue-500/15 to-cyan-600/5', border: 'border-blue-500/20 hover:border-blue-400/40' },
+        { key: 'createSalesReturn', label: r.salesReturn, icon: '↩️', gradient: 'from-green-500/15 to-emerald-600/5', border: 'border-green-500/20 hover:border-green-400/40' },
+        { key: 'createPurchaseReturn', label: r.purchaseReturn, icon: '📦', gradient: 'from-yellow-500/15 to-amber-600/5', border: 'border-yellow-500/20 hover:border-yellow-400/40' },
         { key: 'createDamage', label: r.createDamage, icon: '💔', gradient: 'from-red-500/15 to-rose-600/5', border: 'border-red-500/20 hover:border-red-400/40' },
-        { key: 'salesReturn', label: r.salesReturn, icon: '↩️', gradient: 'from-green-500/15 to-emerald-600/5', border: 'border-green-500/20 hover:border-green-400/40' },
-        { key: 'purchaseReturn', label: r.purchaseReturn, icon: '📦', gradient: 'from-yellow-500/15 to-amber-600/5', border: 'border-yellow-500/20 hover:border-yellow-400/40' },
     ];
 
     const handleAction = (key: string) => {
-        if (key === 'createReturn') setShowCreateReturn(true);
+        if (key === 'createSalesReturn') router.push(`/dashboard/returns/sales/new`);
+        else if (key === 'createPurchaseReturn') router.push(`/dashboard/returns/purchases/new`);
         else if (key === 'createDamage') setShowCreateDamage(true);
-        else if (key === 'salesReturn') { setTypeFilter('salesReturn'); }
-        else if (key === 'purchaseReturn') { setTypeFilter('purchaseReturn'); }
     };
 
     return (
@@ -132,9 +133,13 @@ export default function ReturnsContent({ dict, locale }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={exportCSV} className="btn-secondary flex items-center gap-2 text-sm">📤 {r.exportRecords}</button>
-                    <button onClick={() => setShowCreateReturn(true)} className="btn-primary flex items-center gap-2">
+                    <button onClick={() => router.push(`/dashboard/returns/sales/new`)} className="btn-primary flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-                        {r.createReturn}
+                        {r.salesReturn}
+                    </button>
+                    <button onClick={() => router.push(`/dashboard/returns/purchases/new`)} className="btn-secondary flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                        {r.purchaseReturn}
                     </button>
                 </div>
             </div>

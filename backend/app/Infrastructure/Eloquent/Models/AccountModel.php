@@ -6,7 +6,7 @@ class AccountModel extends BaseModel
 {
     protected $table = 'accounts';
 
-    protected $fillable = ['code', 'name', 'name_ar', 'type', 'parent_id', 'is_active', 'description', 'level', 'created_by', 'updated_by'];
+    protected $fillable = ['tenant_id', 'code', 'name', 'name_ar', 'type', 'parent_id', 'is_active', 'description', 'level', 'created_by', 'updated_by'];
 
     protected $casts = ['is_active' => 'boolean', 'level' => 'integer'];
 

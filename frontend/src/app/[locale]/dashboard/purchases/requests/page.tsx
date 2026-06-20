@@ -60,6 +60,16 @@ export default function PurchaseRequestsPage() {
         }
     };
 
+    const handleConvertToPo = async (id: string) => {
+        try {
+            await purchasesApi.convertPrToPo(id);
+            toast.success('تم تحويل الطلب إلى أمر شراء (PO) بنجاح');
+            fetchRequests();
+        } catch (e) {
+            toast.error('حدث خطأ أثناء التحويل، تأكد من وجود مورد مقترح');
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -116,11 +126,18 @@ export default function PurchaseRequestsPage() {
                             <p className="text-sm">الأصناف: {req.items?.length || 0}</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <span className={`px-3 py-1 rounded-full text-sm ${req.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                {req.status === 'approved' ? 'معتمد' : 'قيد الانتظار'}
+                            <span className={`px-3 py-1 rounded-full text-sm ${
+                                req.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                req.status === 'approved' ? 'bg-green-100 text-green-800' : 
+                                'bg-yellow-100 text-yellow-800'
+                            }`}>
+                                {req.status === 'completed' ? 'مكتمل (تحول لـ PO)' : req.status === 'approved' ? 'معتمد' : 'قيد الانتظار'}
                             </span>
-                            {req.status !== 'approved' && (
+                            {req.status === 'pending_approval' && (
                                 <Button variant="default" className="bg-green-600" onClick={() => handleApprove(req.id)}>اعتماد الطلب</Button>
+                            )}
+                            {req.status === 'approved' && req.suggested_supplier_id && (
+                                <Button variant="default" className="bg-indigo-600" onClick={() => handleConvertToPo(req.id)}>تحويل إلى أمر شراء (PO)</Button>
                             )}
                         </div>
                     </Card>

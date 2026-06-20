@@ -6,7 +6,7 @@ class JournalEntryModel extends BaseModel
 {
     protected $table = 'journal_entries';
 
-    protected $fillable = ['id', 'entry_number', 'date', 'description', 'is_posted', 'reference_type', 'reference_id', 'created_by', 'updated_by', 'transaction_currency_id', 'exchange_rate'];
+    protected $fillable = ['id', 'tenant_id', 'entry_number', 'date', 'description', 'is_posted', 'reference_type', 'reference_id', 'created_by', 'updated_by', 'transaction_currency_id', 'exchange_rate'];
 
     protected $casts = ['date' => 'date', 'is_posted' => 'boolean', 'exchange_rate' => 'decimal:6'];
 

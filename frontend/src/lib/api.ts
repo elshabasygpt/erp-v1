@@ -233,7 +233,10 @@ export const approvalsApi = {
 export const treasuryApi = {
     // Safes
     getSafes: () => api.get('/treasury/safes'),
+    getSafeTransactions: (id: string, page: number = 1) => api.get(`/treasury/safes/${id}/transactions?page=${page}`).then(res => res.data?.data || res.data),
     createSafe: (data: any) => api.post('/treasury/safes', data),
+    updateSafe: (id: string, data: any) => api.put(`/treasury/safes/${id}`, data),
+    deleteSafe: (id: string) => api.delete(`/treasury/safes/${id}`),
     assignUser: (id: string, data: any) => api.post(`/treasury/safes/${id}/assign-user`, data),
     
     // Transactions
@@ -612,6 +615,8 @@ export const accountingApi = {
     // Bank Accounts
     getBankAccounts: () => api.get('/accounting/bank-accounts'),
     createBankAccount: (data: any) => api.post('/accounting/bank-accounts', data),
+    updateBankAccount: (id: string, data: any) => api.put(`/accounting/bank-accounts/${id}`, data),
+    deleteBankAccount: (id: string) => api.delete(`/accounting/bank-accounts/${id}`),
     getReconciliations: (bankAccountId: string) => api.get(`/accounting/bank-accounts/${bankAccountId}/reconciliations`),
     startReconciliation: (bankAccountId: string, data: any) => api.post('/accounting/reconciliations', { bank_account_id: bankAccountId, ...data }),
     importBankTransactions: (bankAccountId: string, file: any) => {
@@ -655,6 +660,17 @@ export const analyticsApi = {
     chat: (data: any) => api.post('/analytics/chat', data),
 };
 
+export const automationApi = {
+    getWorkflows: () => api.get('/automation/workflows'),
+    getWorkflow: (id: string) => api.get(`/automation/workflows/${id}`),
+    saveWorkflow: (data: any) => api.post('/automation/workflows', data),
+    deleteWorkflow: (id: string) => api.delete(`/automation/workflows/${id}`),
+};
+
+export const aiApi = {
+    chat: (prompt: string) => api.post('/ai/chat', { prompt }),
+};
+
 export const reportsApi = {
     getProfitAndLoss: (params?: any) => api.get('/reports/pl', { params }),
     getInventoryReport: () => api.get('/reports/inventory'),
@@ -664,6 +680,8 @@ export const reportsApi = {
         api.get('/reports/vat-report', { params }),
     getAgingReport: (type: 'receivable' | 'payable') => 
         api.get('/reports/aging', { params: { type } }),
+    getPayableReminders: () => api.get('/reports/payables/reminders').then(res => res.data?.data || res.data),
+    getReceivableReminders: () => api.get('/reports/receivables/reminders').then(res => res.data?.data || res.data),
         
     // Auto Parts Reports
     getSlowMovingParts: (params?: {
@@ -699,6 +717,13 @@ export const settingsApi = {
     getCompanyInfo: () => api.get('/settings/company'),
     updateCompanyInfo: (data: any) => api.put('/settings/company', data),
     updateHrManagerEmail: (email: string) => api.post('/settings/hr-manager-email', { email }),
+};
+export const backupsApi = {
+    list: () => api.get('/backups'),
+    get: (id: string) => api.get(`/backups/${id}`),
+    triggerBackup: () => api.post('/backups'),
+    restoreBackup: (id: string, confirmText: string) => api.post(`/backups/${id}/restore`, { confirm_text: confirmText }),
+    download: (id: string, type: 'db' | 'files') => api.get(`/backups/${id}/download?type=${type}`, { responseType: 'blob' }),
 };
 
 export const webhooksApi = {

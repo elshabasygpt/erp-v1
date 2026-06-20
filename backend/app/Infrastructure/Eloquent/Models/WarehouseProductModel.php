@@ -10,12 +10,13 @@ class WarehouseProductModel extends BaseModel
         'warehouse_id',
         'product_id',
         'quantity',
+        'core_quantity',
         'reserved_quantity',
         'average_cost',
         'bin_location',
     ];
 
-    protected $casts = ['quantity' => 'decimal:2', 'average_cost' => 'decimal:2'];
+    protected $casts = ['quantity' => 'decimal:2', 'core_quantity' => 'decimal:2', 'average_cost' => 'decimal:2'];
 
     public function product()
     {

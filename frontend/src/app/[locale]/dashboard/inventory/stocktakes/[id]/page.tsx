@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Save, CheckCircle, ArrowLeft, Barcode, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { getCachedStocktake, saveCachedStocktake, enqueueOfflineAction, getSyncQueue, removeFromQueue } from '@/lib/offline-store';
 
 export default function StocktakeExecutionPage() {
     const { d } = useLanguage();
@@ -19,6 +20,7 @@ export default function StocktakeExecutionPage() {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [isOnline, setIsOnline] = useState(true);
     
     // Barcode scanner logic
     const [barcodeInput, setBarcodeInput] = useState('');
@@ -37,17 +39,66 @@ export default function StocktakeExecutionPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setIsOnline(navigator.onLine);
+            const handleOnline = () => {
+                setIsOnline(true);
+                syncOfflineQueue();
+            };
+            const handleOffline = () => setIsOnline(false);
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
+            return () => {
+                window.removeEventListener('online', handleOnline);
+                window.removeEventListener('offline', handleOffline);
+            };
+        }
+    }, []);
+
+    const syncOfflineQueue = async () => {
+        const queue = await getSyncQueue();
+        const stocktakeItems = queue.filter(q => q.type === 'stocktake_counts');
+        if (stocktakeItems.length > 0) {
+            toast.loading('جاري مزامنة بيانات الجرد...', { id: 'sync' });
+            for (const q of stocktakeItems) {
+                try {
+                    await inventoryApi.updateStocktakeCounts(q.payload.id, { items: q.payload.items });
+                    if (q.payload.isSubmit) {
+                        await inventoryApi.updateStocktakeStatus(q.payload.id, { status: 'review' });
+                    }
+                    await removeFromQueue(q.id!);
+                } catch (e) {
+                    console.error('Failed to sync queue item', q);
+                }
+            }
+            toast.success('تمت مزامنة الجرد بنجاح!', { id: 'sync' });
+            fetchStocktake();
+        }
+    };
+
+    useEffect(() => {
         fetchStocktake();
+        syncOfflineQueue();
     }, [id]);
 
     const fetchStocktake = async () => {
         try {
             setLoading(true);
             const res = await inventoryApi.getStocktake(id as string);
-            setStocktake(res.data.data);
-            setItems(res.data.data.items || []);
+            const data = res.data.data;
+            setStocktake(data);
+            setItems(data.items || []);
+            await saveCachedStocktake(data);
         } catch (error) {
-            toast.error('Failed to load stocktake details');
+            console.warn('Network failed, loading from cache...');
+            const cached = await getCachedStocktake(id as string);
+            if (cached) {
+                setStocktake(cached);
+                setItems(cached.items || []);
+                toast.success('تم فتح جلسة الجرد في وضع عدم الاتصال', { icon: '📶' });
+            } else {
+                toast.error('Failed to load stocktake details and no local cache found');
+            }
         } finally {
             setLoading(false);
         }
@@ -153,16 +204,26 @@ export default function StocktakeExecutionPage() {
                 }));
                 
             if (updateData.length > 0) {
-                await inventoryApi.updateStocktakeCounts(id as string, updateData);
+                if (isOnline) {
+                    await inventoryApi.updateStocktakeCounts(id as string, { items: updateData });
+                } else {
+                    await enqueueOfflineAction('stocktake_counts', { id: id as string, items: updateData, isSubmit: false });
+                    toast.success('تم الحفظ محلياً وسينتظر توفر شبكة', { icon: '📶' });
+                }
             }
             
-            if (stocktake.status === 'draft') {
-                await inventoryApi.updateStocktakeStatus(id as string, 'counting');
-                setStocktake({...stocktake, status: 'counting'});
-            }
+            const newStatus = stocktake.status === 'draft' ? 'counting' : stocktake.status;
+            const updatedStocktake = { ...stocktake, status: newStatus, items };
+            setStocktake(updatedStocktake);
+            await saveCachedStocktake(updatedStocktake);
             
-            toast.success('Progress saved successfully');
-            fetchStocktake(); // Refresh to get variances
+            if (isOnline) {
+                if (stocktake.status === 'draft') {
+                    await inventoryApi.updateStocktakeStatus(id as string, { status: 'counting' });
+                }
+                toast.success('Progress saved successfully');
+                fetchStocktake(); // Refresh to get variances
+            }
         } catch (error) {
             toast.error('Failed to save progress');
         } finally {
@@ -172,10 +233,26 @@ export default function StocktakeExecutionPage() {
 
     const submitForReview = async () => {
         try {
-            await saveProgress();
-            await inventoryApi.updateStocktakeStatus(id as string, 'review');
-            toast.success('Stocktake submitted for review!');
-            router.push('/dashboard/inventory/stocktakes');
+            const updateData = items
+                .filter(i => i.counted_quantity !== null)
+                .map(i => ({
+                    product_id: i.product_id,
+                    counted_quantity: i.counted_quantity
+                }));
+
+            if (isOnline) {
+                await saveProgress();
+                await inventoryApi.updateStocktakeStatus(id as string, { status: 'review' });
+                toast.success('Stocktake submitted for review!');
+                router.push('/dashboard/inventory/stocktakes');
+            } else {
+                await enqueueOfflineAction('stocktake_counts', { id: id as string, items: updateData, isSubmit: true });
+                const updatedStocktake = { ...stocktake, status: 'review', items };
+                setStocktake(updatedStocktake);
+                await saveCachedStocktake(updatedStocktake);
+                toast.success('تم الحفظ والإرسال للمراجعة محلياً', { icon: '📶' });
+                router.push('/dashboard/inventory/stocktakes');
+            }
         } catch (error) {
             toast.error('Failed to submit for review');
         }
@@ -315,6 +392,7 @@ export default function StocktakeExecutionPage() {
                                 {isReview && <th className="px-4 py-3 font-medium text-gray-500 w-10"></th>}
                                 <th className="px-4 py-3 font-medium text-gray-500">SKU</th>
                                 <th className="px-4 py-3 font-medium text-gray-500">Product Name</th>
+                                <th className="px-4 py-3 font-medium text-gray-500">Bin Location</th>
                                 <th className="px-4 py-3 font-medium text-gray-500">Expected</th>
                                 <th className="px-4 py-3 font-medium text-gray-500">Counted</th>
                                 <th className="px-4 py-3 font-medium text-gray-500">Variance</th>
@@ -349,6 +427,11 @@ export default function StocktakeExecutionPage() {
                                         <td className="px-4 py-3 flex items-center gap-2">
                                             {item.product?.name}
                                             {item.is_recounted && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded-full">Recounted</span>}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded border border-gray-300 dark:border-gray-600 font-mono text-sm">
+                                                {item.bin_location || '-'}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-3">{item.expected_quantity ?? '?'}</td>
                                         <td className="px-4 py-3">

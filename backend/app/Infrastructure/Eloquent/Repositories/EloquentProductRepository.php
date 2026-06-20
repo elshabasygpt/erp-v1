@@ -85,9 +85,8 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     {
         $query = ProductModel::query()->select([
             'id', 'name', 'name_ar', 'sku', 'barcode', 'cost_price',
-            'sell_price', 'wholesale_price', 'semi_wholesale_price', 'is_active', 'unit_of_measure', 'category_id',
-            'description', 'image_url', 'stock_alert_level', 'tenant_id',
-        ])->with(['warehouseStocks', 'units']);
+            'sell_price', 'wholesale_price', 'semi_wholesale_price', 'image_url', 'superseded_by_id'
+        ])->with(['warehouseStocks', 'units', 'supersededBy']);
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'ilike', "%{$filters['search']}%")
@@ -167,6 +166,7 @@ final class EloquentProductRepository implements ProductRepositoryInterface
                     ->orWhere('sku', 'ilike', "%{$query}%")
                     ->orWhere('barcode', $query);
             })
+            ->with(['supersededBy', 'warehouseStocks'])
             ->limit($limit)
             ->get()
             ->toArray();

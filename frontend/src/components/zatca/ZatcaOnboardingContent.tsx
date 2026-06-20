@@ -1,52 +1,48 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { zatcaApi } from '@/lib/api';
 
 export default function ZatcaOnboardingContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
-    const [status, setStatus] = useState<'not_enrolled' | 'enrolled' | 'failed' | 'loading'>('loading');
+    const queryClient = useQueryClient();
     const [otp, setOtp] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const checkStatus = async () => {
-        try {
+    const { data: queriedStatus, isLoading: statusLoading } = useQuery({
+        queryKey: ['zatca', 'onboarding-status'],
+        queryFn: async () => {
             const res = await zatcaApi.getOnboardingStatus();
-            setStatus(res.data?.data?.zatca_status || 'not_enrolled');
-        } catch (err) {
+            return res.data?.data?.zatca_status || 'not_enrolled';
+        },
+    });
 
-            setStatus('not_enrolled');
-        }
-    };
+    const submitOtpMutation = useMutation({
+        mutationFn: (otpValue: string) => zatcaApi.submitOtp(otpValue),
+        onSuccess: () => {
+            setSuccess(isRTL ? 'تمت عملية الربط بنجاح!' : 'Onboarding completed successfully!');
+            setOtp('');
+            queryClient.invalidateQueries({ queryKey: ['zatca', 'onboarding-status'] });
+        },
+        onError: (err: any) => {
+            setError(err.response?.data?.message || (isRTL ? 'فشلت عملية الربط. يرجى التأكد من الرمز والمحاولة مرة أخرى.' : 'Onboarding failed. Please check the OTP and try again.'));
+        },
+    });
 
-    useEffect(() => {
-        checkStatus();
-    }, []);
+    const status = statusLoading ? 'loading' : (submitOtpMutation.isError ? 'failed' : (queriedStatus || 'not_enrolled'));
+    const isSubmitting = submitOtpMutation.isPending;
 
-    const handleSubmitOtp = async (e: React.FormEvent) => {
+    const handleSubmitOtp = (e: React.FormEvent) => {
         e.preventDefault();
         if (!otp || otp.trim().length < 4) {
             setError(isRTL ? 'الرجاء إدخال رمز صحيح (OTP)' : 'Please enter a valid OTP');
             return;
         }
-
-        setIsSubmitting(true);
         setError(null);
         setSuccess(null);
-
-        try {
-            await zatcaApi.submitOtp(otp.trim());
-            setSuccess(isRTL ? 'تمت عملية الربط بنجاح!' : 'Onboarding completed successfully!');
-            setStatus('enrolled');
-            setOtp('');
-        } catch (err: any) {
-            setError(err.response?.data?.message || (isRTL ? 'فشلت عملية الربط. يرجى التأكد من الرمز والمحاولة مرة أخرى.' : 'Onboarding failed. Please check the OTP and try again.'));
-            setStatus('failed');
-        } finally {
-            setIsSubmitting(false);
-        }
+        submitOtpMutation.mutate(otp.trim());
     };
 
     return (

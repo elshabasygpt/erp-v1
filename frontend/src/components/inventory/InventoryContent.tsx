@@ -236,6 +236,7 @@ export default function InventoryContent({ dict, locale }: Props) {
                 showAddEdit={showAddEdit} setShowAddEdit={setShowAddEdit} editingProduct={editingProduct}
                 form={form} setForm={setForm} saveProduct={saveProduct} generateBarcode={generateBarcode}
                 groups={groups} units={units} setPromptModal={setPromptModal} updateCostAndProfit={updateCostAndProfit}
+                products={products}
             />
 
             {/* Modals from external files */}

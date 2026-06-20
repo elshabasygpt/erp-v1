@@ -15,6 +15,9 @@ export default function FixedAssetsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form, setForm] = useState<any>(EMPTY_FORM);
     const [loading, setLoading] = useState(true);
+    const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
+    const [schedule, setSchedule] = useState<any[]>([]);
+    const [scheduleLoading, setScheduleLoading] = useState(false);
 
     const loadAssets = async () => {
         setLoading(true);
@@ -57,17 +60,48 @@ export default function FixedAssetsPage() {
     };
 
     const runMonthlyDepreciation = async () => {
-        let successCount = 0;
+        let postedCount = 0;
+        let skippedCount = 0;
+        let failedCount = 0;
         for (const asset of assets) {
             if (asset.status === 'active') {
                 try {
-                    await fixedAssetsApi.calculateDepreciation(asset.id);
-                    successCount++;
-                } catch (e) {}
+                    const res = await fixedAssetsApi.calculateDepreciation(asset.id);
+                    const message = res.data?.message || '';
+                    if (message.toLowerCase().includes('no depreciation due')) {
+                        skippedCount++;
+                    } else {
+                        postedCount++;
+                    }
+                } catch (e) {
+                    failedCount++;
+                }
             }
         }
         loadAssets();
-        toast.success(isRTL ? `تم ترحيل الاستهلاك لعدد ${successCount} أصل بنجاح` : `Depreciation posted for ${successCount} assets successfully!`);
+        toast.success(
+            isRTL
+                ? `تم ترحيل الاستهلاك: ${postedCount} أصل، تم تخطي ${skippedCount}، فشل ${failedCount}`
+                : `Depreciation posted: ${postedCount} assets, ${skippedCount} skipped (up to date), ${failedCount} failed`
+        );
+    };
+
+    const toggleSchedule = async (assetId: string) => {
+        if (expandedAssetId === assetId) {
+            setExpandedAssetId(null);
+            setSchedule([]);
+            return;
+        }
+        setExpandedAssetId(assetId);
+        setScheduleLoading(true);
+        try {
+            const res = await fixedAssetsApi.getDepreciationSchedule(assetId);
+            setSchedule(res.data?.data || res.data || []);
+        } catch (error) {
+            setSchedule([]);
+        } finally {
+            setScheduleLoading(false);
+        }
     };
 
     return (
@@ -120,6 +154,7 @@ export default function FixedAssetsPage() {
                                 isRTL ? 'الاستهلاك المتراكم' : 'Accumulated Dep.',
                                 isRTL ? 'القيمة الدفترية' : 'Book Value',
                                 isRTL ? 'نسبة الاستهلاك' : 'Dep. Rate',
+                                '',
                             ].map(h => (
                                 <th key={h} className={`px-4 py-3 text-xs font-semibold text-slate-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{h}</th>
                             ))}
@@ -127,9 +162,9 @@ export default function FixedAssetsPage() {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={7} className="p-8 text-center text-slate-500">Loading...</td></tr>
+                            <tr><td colSpan={8} className="p-8 text-center text-slate-500">Loading...</td></tr>
                         ) : assets.length === 0 ? (
-                            <tr><td colSpan={7} className="p-8 text-center text-slate-500">{isRTL ? 'لا توجد أصول مسجلة' : 'No assets found'}</td></tr>
+                            <tr><td colSpan={8} className="p-8 text-center text-slate-500">{isRTL ? 'لا توجد أصول مسجلة' : 'No assets found'}</td></tr>
                         ) : assets.map(asset => {
                             const cost = parseFloat(asset.purchase_cost || '0');
                             const salvage = parseFloat(asset.salvage_value || '0');
@@ -138,7 +173,8 @@ export default function FixedAssetsPage() {
                             const depPercent = cost - salvage > 0 ? ((accDep / (cost - salvage)) * 100).toFixed(0) : '0';
                             
                             return (
-                                <tr key={asset.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                                <React.Fragment key={asset.id}>
+                                <tr className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/30">
                                     <td className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : ''}`}>
                                         {isRTL ? asset.name_ar || asset.name : asset.name}
                                     </td>
@@ -160,7 +196,45 @@ export default function FixedAssetsPage() {
                                             <span className="text-xs text-slate-500">{depPercent}%</span>
                                         </div>
                                     </td>
+                                    <td className="px-4 py-3 text-right">
+                                        <button onClick={() => toggleSchedule(asset.id)} className="text-xs font-medium text-amber-600 hover:underline whitespace-nowrap">
+                                            {expandedAssetId === asset.id ? (isRTL ? 'إخفاء السجل' : 'Hide Log') : (isRTL ? 'سجل الاستهلاك' : 'Dep. Log')}
+                                        </button>
+                                    </td>
                                 </tr>
+                                {expandedAssetId === asset.id && (
+                                    <tr className="bg-slate-50 dark:bg-slate-900/40">
+                                        <td colSpan={8} className="px-4 py-3">
+                                            {scheduleLoading ? (
+                                                <p className="text-xs text-slate-500">Loading...</p>
+                                            ) : schedule.length === 0 ? (
+                                                <p className="text-xs text-slate-500">{isRTL ? 'لا توجد قيود استهلاك مرحلة بعد' : 'No depreciation entries posted yet'}</p>
+                                            ) : (
+                                                <table className="w-full text-xs">
+                                                    <thead>
+                                                        <tr className="text-slate-500">
+                                                            <th className={`py-1 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'الفترة' : 'Period'}</th>
+                                                            <th className={`py-1 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'المبلغ' : 'Amount'}</th>
+                                                            <th className={`py-1 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'مجمع الاستهلاك' : 'Accumulated'}</th>
+                                                            <th className={`py-1 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'القيمة الدفترية' : 'Book Value'}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {schedule.map((entry: any) => (
+                                                            <tr key={entry.id} className="border-t border-slate-200 dark:border-slate-700">
+                                                                <td className="py-1.5">{entry.period_start} → {entry.period_end}</td>
+                                                                <td className="py-1.5">{parseFloat(entry.amount).toFixed(2)}</td>
+                                                                <td className="py-1.5">{parseFloat(entry.accumulated_after).toFixed(2)}</td>
+                                                                <td className="py-1.5">{parseFloat(entry.book_value_after).toFixed(2)}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )}
+                                </React.Fragment>
                             );
                         })}
                     </tbody>

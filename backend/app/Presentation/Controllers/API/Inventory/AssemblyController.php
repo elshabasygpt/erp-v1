@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Inventory;
 
+use App\Application\Inventory\UseCases\ConfirmAssemblyUseCase;
 use App\Infrastructure\Eloquent\Models\ProductComponentModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class AssemblyController extends BaseTenantController
 {
+    public function __construct(
+        private readonly ConfirmAssemblyUseCase $confirmAssemblyUseCase,
+    ) {}
+
     // BOM Management
     public function getComponents(Request $request, $productId): JsonResponse
     {
@@ -76,110 +78,19 @@ class AssemblyController extends BaseTenantController
             'notes' => 'nullable|string',
         ]);
 
-        $productId = $validated['product_id'];
-        $warehouseId = $validated['warehouse_id'];
-        $qty = (float) $validated['quantity'];
-        $isAssemble = $validated['type'] === 'assemble';
-
-        DB::connection('tenant')->beginTransaction();
         try {
-            $components = ProductComponentModel::query()->where('tenant_id', $this->getTenantId($request))->where('parent_product_id', $productId)->get();
-            if ($components->isEmpty()) {
-                throw new \Exception('This product has no components defined (BOM is empty).');
-            }
-
-            // Reference Number for the batch
-            $ref = 'ASM-'.date('Ymd').'-'.strtoupper(Str::random(4));
-
-            // Variable to accumulate total cost of the assembled block
-            $totalCostAdded = 0;
-
-            // 1. Process Raw Materials
-            foreach ($components as $component) {
-                $rawQtyNeeded = $component->quantity_required * $qty;
-
-                $rawStock = WarehouseProductModel::query()->firstOrCreate(
-                    ['warehouse_id' => $warehouseId, 'product_id' => $component->child_product_id],
-                    ['quantity' => 0, 'average_cost' => 0]
-                );
-
-                $productInfo = ProductModel::query()->where('tenant_id', $this->getTenantId($request))->find($component->child_product_id);
-                $unitCost = $productInfo->cost_price;
-                $componentTotalCost = $unitCost * $rawQtyNeeded;
-
-                if ($isAssemble) {
-                    // Deduct from raw stock
-                    if ($rawStock->quantity < $rawQtyNeeded) {
-                        throw new \Exception("Insufficient stock for component: {$productInfo->name}. Needed: {$rawQtyNeeded}, Available: {$rawStock->quantity}");
-                    }
-                    $rawStock->quantity -= $rawQtyNeeded;
-                    $totalCostAdded += $componentTotalCost;
-                    $movQty = -$rawQtyNeeded;
-                } else {
-                    // Return to raw stock
-                    $rawStock->quantity += $rawQtyNeeded;
-                    $movQty = $rawQtyNeeded;
-                }
-
-                $rawStock->save();
-
-                // Log raw movement
-                StockMovementModel::query()->create([
-                    'tenant_id' => $this->getTenantId($request),
-                    'product_id' => $component->child_product_id,
-                    'warehouse_id' => $warehouseId,
-                    'type' => 'adjustment', // Assembly
-                    'quantity' => $movQty,
-                    'cost_per_unit' => $unitCost,
-                    'reference_type' => 'assembly',
-                    'reference_id' => null, // Typically link to an assembly record if existed
-                    'notes' => "Component for $validated[type] $ref",
-                    'created_by' => $request->user()?->id,
-                ]);
-            }
-
-            // 2. Process Finished Good
-            $finishedStock = WarehouseProductModel::query()->firstOrCreate(
-                ['warehouse_id' => $warehouseId, 'product_id' => $productId],
-                ['quantity' => 0, 'average_cost' => 0]
+            $ref = $this->confirmAssemblyUseCase->execute(
+                $this->getTenantId($request),
+                $validated['warehouse_id'],
+                $validated['product_id'],
+                (float) $validated['quantity'],
+                $validated['type'],
+                $validated['notes'] ?? null,
+                (string) ($request->user()->id ?? '')
             );
 
-            // Cost calculation for Finished Good (sum of raw)
-            // Can be simplified or stored on Product level too.
-            $finishedUnitCost = $qty > 0 ? ($totalCostAdded / $qty) : 0;
-
-            if ($isAssemble) {
-                $finishedStock->quantity += $qty;
-                $movQty = $qty;
-            } else {
-                if ($finishedStock->quantity < $qty) {
-                    throw new \Exception("Insufficient assembled stock to disassemble. Needed: {$qty}, Available: {$finishedStock->quantity}");
-                }
-                $finishedStock->quantity -= $qty;
-                $movQty = -$qty;
-            }
-            $finishedStock->save();
-
-            // Log Finished good movement
-            StockMovementModel::query()->create([
-                'tenant_id' => $this->getTenantId($request),
-                'product_id' => $productId,
-                'warehouse_id' => $warehouseId,
-                'type' => 'adjustment', // Assembly
-                'quantity' => $movQty,
-                'cost_per_unit' => $finishedUnitCost,
-                'reference_type' => 'assembly',
-                'reference_id' => null,
-                'notes' => "Main item $validated[type] $ref",
-                'created_by' => $request->user()?->id,
-            ]);
-
-            DB::connection('tenant')->commit();
-
-            return $this->success(null, 'Product '.$validated['type'].' processed successfully.', 201);
-        } catch (\Exception $e) {
-            DB::connection('tenant')->rollBack();
-
+            return $this->success(['reference' => $ref], 'Product '.$validated['type'].' processed successfully.', 201);
+        } catch (\Throwable $e) {
             return $this->error($e->getMessage(), 400);
         }
     }

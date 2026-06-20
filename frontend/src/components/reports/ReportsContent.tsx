@@ -1,40 +1,31 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '@/lib/api';
 
 export default function ReportsContent({ dict, locale }: { dict: any, locale: string }) {
     const isRTL = locale === 'ar';
     const [activeTab, setActiveTab] = useState('pl');
 
-    const [plData, setPlData] = useState<any>(null);
-    const [invData, setInvData] = useState<any>(null);
-    const [acctData, setAcctData] = useState<any>(null);
-    const [kpiData, setKpiData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const { data: plData, isLoading: l1 } = useQuery({
+        queryKey: ['reports', 'profit-and-loss'],
+        queryFn: async () => (await reportsApi.getProfitAndLoss()).data?.data,
+    });
+    const { data: invData, isLoading: l2 } = useQuery({
+        queryKey: ['reports', 'inventory'],
+        queryFn: async () => (await reportsApi.getInventoryReport()).data?.data,
+    });
+    const { data: acctData, isLoading: l3 } = useQuery({
+        queryKey: ['reports', 'accounts'],
+        queryFn: async () => (await reportsApi.getAccountsReport()).data?.data,
+    });
+    const { data: kpiData, isLoading: l4 } = useQuery({
+        queryKey: ['reports', 'general-kpis'],
+        queryFn: async () => (await reportsApi.getGeneralKpis()).data?.data,
+    });
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const [pl, inv, acct, kpi] = await Promise.all([
-                reportsApi.getProfitAndLoss(),
-                reportsApi.getInventoryReport(),
-                reportsApi.getAccountsReport(),
-                reportsApi.getGeneralKpis()
-            ]);
-            setPlData(pl.data?.data);
-            setInvData(inv.data?.data);
-            setAcctData(acct.data?.data);
-            setKpiData(kpi.data?.data);
-        } catch (e) {
-
-        }
-        setLoading(false);
-    };
+    const loading = l1 || l2 || l3 || l4;
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;

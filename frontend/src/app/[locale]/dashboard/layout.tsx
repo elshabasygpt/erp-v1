@@ -11,6 +11,7 @@ import { getStoredUser, isMockMode } from '@/lib/auth';
 import { LanguageProvider } from '@/i18n/LanguageContext';
 import MobileHeader from '@/components/layout/MobileHeader';
 import BottomNav from '@/components/layout/BottomNav';
+import AiChatWidget from '@/components/ui/AiChatWidget';
 
 
 // ── Breadcrumb helper ─────────────────────────────────────────────
@@ -259,6 +260,7 @@ function DashboardLayoutInner({
                             onClose={() => setIsHelpOpen(false)}
                             locale={locale}
                         />
+                        <AiChatWidget />
                     </main>
                     </div>
                     {/* Bottom Navigation — يظهر على الموبايل فقط */}

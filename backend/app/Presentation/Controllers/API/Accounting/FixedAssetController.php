@@ -2,6 +2,8 @@
 
 namespace App\Presentation\Controllers\API\Accounting;
 
+use App\Application\Accounting\UseCases\PostAssetDepreciationUseCase;
+use App\Infrastructure\Eloquent\Models\FixedAssetDepreciationEntryModel;
 use App\Infrastructure\Eloquent\Models\FixedAssetModel;
 use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
@@ -10,7 +12,7 @@ class FixedAssetController extends BaseTenantController
 {
     public function index(Request $request)
     {
-        $assets = FixedAssetModel::query()->where('tenant_id', $this->getTenantId($request))->with('account')->orderBy('created_at', 'desc')->get();
+        $assets = FixedAssetModel::query()->where(['tenant_id' => $this->getTenantId($request)])->with('account')->latest()->get();
 
         return $this->success($assets);
     }
@@ -26,6 +28,8 @@ class FixedAssetController extends BaseTenantController
             'salvage_value' => 'nullable|numeric|min:0',
             'useful_life_years' => 'required|integer|min:1',
             'account_id' => 'nullable|exists:tenant.accounts,id',
+            'depreciation_account_id' => 'nullable|exists:tenant.accounts,id',
+            'expense_account_id' => 'nullable|exists:tenant.accounts,id',
             'notes' => 'nullable|string',
         ]);
 
@@ -39,16 +43,16 @@ class FixedAssetController extends BaseTenantController
         return $this->success($asset, 'Fixed asset created successfully', 201);
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $asset = FixedAssetModel::query()->where('tenant_id', $this->getTenantId($request))->with('account')->findOrFail($id);
+        $asset = FixedAssetModel::query()->where(['tenant_id' => $this->getTenantId($request)])->with('account')->findOrFail($id);
 
         return $this->success($asset);
     }
 
     public function update(Request $request, $id)
     {
-        $asset = FixedAssetModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+        $asset = FixedAssetModel::query()->where(['tenant_id' => $this->getTenantId($request)])->findOrFail($id);
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
@@ -56,6 +60,8 @@ class FixedAssetController extends BaseTenantController
             'serial_number' => 'nullable|string',
             'status' => 'sometimes|required|in:active,disposed,sold',
             'account_id' => 'nullable|exists:tenant.accounts,id',
+            'depreciation_account_id' => 'nullable|exists:tenant.accounts,id',
+            'expense_account_id' => 'nullable|exists:tenant.accounts,id',
             'notes' => 'nullable|string',
         ]);
 
@@ -64,41 +70,44 @@ class FixedAssetController extends BaseTenantController
         return $this->success($asset, 'Fixed asset updated successfully');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $asset = FixedAssetModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+        $asset = FixedAssetModel::query()->where(['tenant_id' => $this->getTenantId($request)])->findOrFail($id);
         $asset->delete();
 
         return $this->success(null, 'Fixed asset deleted successfully');
     }
 
-    public function calculateDepreciation($id)
+    public function calculateDepreciation(Request $request, $id, PostAssetDepreciationUseCase $useCase)
     {
-        $asset = FixedAssetModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+        $asset = FixedAssetModel::query()->where(['tenant_id' => $this->getTenantId($request)])->findOrFail($id);
 
         if ($asset->status !== 'active') {
             return $this->error('Asset is not active', 400);
         }
 
-        // Straight-line depreciation per year
-        $depreciableAmount = $asset->purchase_cost - $asset->salvage_value;
-        $annualDepreciation = $depreciableAmount / $asset->useful_life_years;
-
-        // Calculate based on months since purchase
-        $monthsElapsed = now()->diffInMonths($asset->purchase_date);
-        $yearsElapsed = $monthsElapsed / 12;
-
-        if ($yearsElapsed > $asset->useful_life_years) {
-            $yearsElapsed = $asset->useful_life_years;
+        try {
+            $entry = $useCase->execute($asset, new \DateTimeImmutable, auth()->id() ?? null);
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 400);
         }
 
-        $accumulated = round($annualDepreciation * $yearsElapsed, 2);
+        if ($entry === null) {
+            return $this->success($asset->refresh(), 'No depreciation due for this period');
+        }
 
-        $asset->update([
-            'accumulated_depreciation' => $accumulated,
-            'current_value' => $asset->purchase_cost - $accumulated,
-        ]);
+        return $this->success($asset->refresh(), 'Depreciation posted successfully');
+    }
 
-        return $this->success($asset, 'Depreciation calculated successfully');
+    public function depreciationSchedule(Request $request, $id)
+    {
+        $asset = FixedAssetModel::query()->where(['tenant_id' => $this->getTenantId($request)])->findOrFail($id);
+
+        $entries = FixedAssetDepreciationEntryModel::query()
+            ->where('fixed_asset_id', $asset->id)
+            ->orderBy('period_end')
+            ->get();
+
+        return $this->success($entries);
     }
 }

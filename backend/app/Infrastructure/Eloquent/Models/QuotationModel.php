@@ -25,6 +25,7 @@ class QuotationModel extends BaseModel
         'notes',
         'created_by',
         'updated_by',
+        'offline_id',
     ];
 
     protected $casts = [

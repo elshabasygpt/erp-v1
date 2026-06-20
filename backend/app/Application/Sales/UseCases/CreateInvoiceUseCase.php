@@ -106,6 +106,7 @@ final class CreateInvoiceUseCase
                 costCenterId: $dto->costCenterId,
                 currencyId: $dto->currencyId,
                 exchangeRate: $dto->exchangeRate,
+                paymentMethod: $dto->paymentMethod,
             );
 
             $invoice->setItems($items);

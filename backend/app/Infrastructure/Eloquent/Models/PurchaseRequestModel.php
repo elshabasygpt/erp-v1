@@ -13,4 +13,6 @@ class PurchaseRequestModel extends Model
     protected $guarded = [];
     
     public function items() { return $this->hasMany(PurchaseRequestItemModel::class, 'purchase_request_id'); }
+    
+    public function suggestedSupplier() { return $this->belongsTo(SupplierModel::class, 'suggested_supplier_id'); }
 }

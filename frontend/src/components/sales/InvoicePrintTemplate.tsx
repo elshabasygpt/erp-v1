@@ -6,9 +6,11 @@ import { generateZatcaQRDataURI, formatSAR } from '@/lib/zatca-qr';
 interface InvoiceItem {
     code: string;
     name: string;
+    binLocation?: string;
     qty: number;
     unit: string;
-    price: number;
+    price?: number;
+    unit_price?: number;
     vatRate: number;
 }
 
@@ -90,9 +92,10 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
 
     // Calculate totals
     const lines = invoice.items.map((item) => {
-        const exclVat = item.qty * item.price;
+        const price = item.price ?? item.unit_price ?? 0;
+        const exclVat = item.qty * price;
         const vat = exclVat * item.vatRate;
-        return { ...item, exclVat, vat, inclVat: exclVat + vat };
+        return { ...item, price, exclVat, vat, inclVat: exclVat + vat };
     });
     const subtotalExcl = lines.reduce((s, l) => s + l.exclVat, 0);
     const totalVat = lines.reduce((s, l) => s + l.vat, 0);
@@ -215,7 +218,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                         <tr style={{ borderBottom: '1px dashed #000' }}>
                                             <th style={{ textAlign: isRTL ? 'right' : 'left', paddingBottom: 4 }}>{isRTL ? 'الصنف' : 'Item'}</th>
                                             <th style={{ textAlign: 'center', paddingBottom: 4 }}>{isRTL ? 'الكمية' : 'Qty'}</th>
-                                            <th style={{ textAlign: 'right', paddingBottom: 4 }}>{isRTL ? 'المجموع' : 'Total'}</th>
+                                            <th style={{ textAlign: isRTL ? 'left' : 'right', paddingBottom: 4 }}>{isRTL ? 'المجموع' : 'Total'}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -223,10 +226,17 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                             <tr key={i}>
                                                 <td style={{ padding: '4px 0', textAlign: isRTL ? 'right' : 'left' }}>
                                                     <div style={{ fontWeight: 'bold' }}>{line.name}</div>
-                                                    <div style={{ fontSize: 9 }}>{formatSAR(line.price)}</div>
+                                                    <div style={{ fontSize: 9 }}>
+                                                        {formatSAR(line.price)}
+                                                        {line.binLocation && (
+                                                            <span style={{ display: 'inline-block', padding: '0 4px', margin: '0 4px', background: '#f1f5f9', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                                                                {isRTL ? 'الرف: ' : 'Bin: '}{line.binLocation}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td style={{ padding: '4px 0', textAlign: 'center' }}>{line.qty}</td>
-                                                <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 'bold' }}>{formatSAR(line.inclVat)}</td>
+                                                <td style={{ padding: '4px 0', textAlign: isRTL ? 'left' : 'right', fontWeight: 'bold' }}>{formatSAR(line.inclVat)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -356,10 +366,17 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                         <td style={{ padding: '7px 10px', color: '#94a3b8' }}>{i + 1}</td>
                                         <td style={{ padding: '7px 10px' }}>
                                             <span style={{ fontWeight: 600 }}>{line.name}</span>
-                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>{line.code}</span>
+                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8' }}>
+                                                {line.code}
+                                                {line.binLocation && (
+                                                    <span style={{ display: 'inline-block', padding: '1px 4px', margin: '0 4px', background: '#e2e8f0', color: '#475569', borderRadius: '4px' }}>
+                                                        {isRTL ? 'الرف: ' : 'Bin: '}{line.binLocation}
+                                                    </span>
+                                                )}
+                                            </span>
                                         </td>
                                         <td style={{ padding: '7px 10px', textAlign: 'center' }}>{line.qty}</td>
-                                        <td style={{ padding: '7px 10px', textAlign: 'center', color: '#64748b' }}>{line.unit}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', color: '#64748b', fontSize: 12 }}>{line.unit}</td>
                                         <td style={{ padding: '7px 10px', textAlign: 'center' }}>{formatSAR(line.price)}</td>
                                         <td style={{ padding: '7px 10px', textAlign: 'center', color: '#7c3aed' }}>{formatSAR(line.vat)}</td>
                                         <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 700 }}>{formatSAR(line.inclVat)}</td>

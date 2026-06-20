@@ -28,6 +28,7 @@ class SalesReturnModel extends BaseModel
         'commission_amount',
         'created_by',
         'updated_by',
+        'offline_id',
     ];
 
     protected $casts = [

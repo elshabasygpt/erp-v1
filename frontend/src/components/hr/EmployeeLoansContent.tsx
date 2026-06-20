@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { hrApi } from '@/lib/api';
 import AddLoanModal from './AddLoanModal';
@@ -12,68 +13,68 @@ interface EmployeeLoansContentProps {
 
 export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansContentProps) {
     const isRTL = locale === 'ar';
-    const [loans, setLoans] = useState<any[]>([]);
-    const [summary, setSummary] = useState<any>(null);
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [selectedLoan, setSelectedLoan] = useState<any>(null);
+    const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [loansRes, summaryRes, empRes] = await Promise.all([
-                hrApi.getLoans({ status: filterStatus !== 'all' ? (filterStatus as any) : undefined }),
-                hrApi.getLoansSummary(),
-                hrApi.getEmployees({ limit: 1000 })
-            ]);
-            setLoans(loansRes.data.data.data);
-            setSummary(summaryRes.data.data);
-            setEmployees(empRes.data.data.data || empRes.data.data);
-        } catch (error) {
+    const { data: loans = [], isLoading: loading } = useQuery<any[]>({
+        queryKey: ['loans', 'list', filterStatus],
+        queryFn: async () => {
+            const res = await hrApi.getLoans({ status: filterStatus !== 'all' ? (filterStatus as any) : undefined });
+            return res.data.data.data;
+        },
+    });
 
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { data: summary } = useQuery({
+        queryKey: ['loans', 'summary'],
+        queryFn: async () => {
+            const res = await hrApi.getLoansSummary();
+            return res.data.data;
+        },
+    });
 
-    useEffect(() => {
-        fetchData();
-    }, [filterStatus]);
+    const { data: employees = [] } = useQuery<any[]>({
+        queryKey: ['employees', 'list', { limit: 1000 }],
+        queryFn: async () => {
+            const res = await hrApi.getEmployees({ limit: 1000 });
+            return res.data.data.data || res.data.data;
+        },
+    });
+
+    const { data: selectedLoan = null } = useQuery({
+        queryKey: ['loans', 'detail', selectedLoanId],
+        queryFn: async () => {
+            const res = await hrApi.getLoan(selectedLoanId as string);
+            return res.data.data;
+        },
+        enabled: !!selectedLoanId,
+    });
+
+    const refreshLoans = () => queryClient.invalidateQueries({ queryKey: ['loans'] });
 
     const handleCreateLoan = async (data: any) => {
         await hrApi.createLoan(data);
         setIsAddModalOpen(false);
-        fetchData();
+        refreshLoans();
     };
 
     const handleUpdateStatus = async (id: string, status: 'active' | 'paused' | 'cancelled') => {
         if (!confirm(isRTL ? 'هل أنت متأكد من تغيير حالة السلفة؟' : 'Are you sure you want to change loan status?')) return;
         await hrApi.updateLoanStatus(id, { status });
-        if (selectedLoan?.id === id) {
-            const res = await hrApi.getLoan(id);
-            setSelectedLoan(res.data.data);
-        }
-        fetchData();
+        refreshLoans();
     };
 
     const handleSkipInstallment = async (id: string) => {
         if (!confirm(isRTL ? 'هل أنت متأكد من تأجيل هذا القسط للشهر التالي؟' : 'Are you sure you want to skip this installment?')) return;
         await hrApi.skipInstallment(id);
-        if (selectedLoan) {
-            const res = await hrApi.getLoan(selectedLoan.id);
-            setSelectedLoan(res.data.data);
+        if (selectedLoanId) {
+            queryClient.invalidateQueries({ queryKey: ['loans', 'detail', selectedLoanId] });
         }
     };
 
-    const openDetails = async (id: string) => {
-        try {
-            const res = await hrApi.getLoan(id);
-            setSelectedLoan(res.data.data);
-        } catch (error) {
-
-        }
+    const openDetails = (id: string) => {
+        setSelectedLoanId(id);
     };
 
     const statusConfig: Record<string, { label: string; labelEn: string; className: string }> = {
@@ -261,7 +262,7 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                     {isRTL ? 'تفاصيل السلفة' : 'Loan Details'} {selectedLoan.loan_number} — {selectedLoan.employee?.name}
                                 </h2>
-                                <button onClick={() => setSelectedLoan(null)} className="text-gray-400 hover:text-gray-500">
+                                <button onClick={() => setSelectedLoanId(null)} className="text-gray-400 hover:text-gray-500">
                                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>

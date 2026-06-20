@@ -77,8 +77,8 @@ final class InventoryWriteOffUseCase
                 $shrinkageAccount = $this->accountMapping->resolve('inventory_shrinkage');
 
                 // Loss: Debit Shrinkage, Credit Inventory
-                $entry->addLine(new JournalEntryLine(null, '', $shrinkageAccount, $totalLoss, 0, 'Inventory Write-Off Loss'));
-                $entry->addLine(new JournalEntryLine(null, '', $inventoryAccount, 0, $totalLoss, 'Inventory Write-Off Reduction'));
+                $entry->addLine(new JournalEntryLine(id: null, journalEntryId: '', accountId: $shrinkageAccount, debit: $totalLoss, credit: 0, description: 'Inventory Write-Off Loss'));
+                $entry->addLine(new JournalEntryLine(id: null, journalEntryId: '', accountId: $inventoryAccount, debit: 0, credit: $totalLoss, description: 'Inventory Write-Off Reduction'));
 
                 $this->journalEntryRepository->create($entry);
             }

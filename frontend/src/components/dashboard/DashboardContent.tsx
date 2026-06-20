@@ -19,6 +19,8 @@ import {
 import { salesApi, inventoryApi, purchasesApi, crmApi } from '@/lib/api';
 import { useDashboardData } from '@/hooks/useDashboard';
 import toast from 'react-hot-toast';
+import PayableRemindersWidget from './PayableRemindersWidget';
+import ReceivableRemindersWidget from './ReceivableRemindersWidget';
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -59,7 +61,6 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
     const isRTL = locale === 'ar';
     const [mounted, setMounted] = useState(false);
     const [currentTime, setCurrentTime] = useState('');
-    const [isDraftingPO, setIsDraftingPO] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -146,27 +147,6 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
             currency: 'SAR',
             minimumFractionDigits: 0,
         }).format(val);
-
-    const handleAutoDraftPO = async () => {
-        setIsDraftingPO(true);
-        try {
-            const { analyticsApi } = await import('@/lib/api');
-            // Hardcode warehouse_id conceptually for demo, should be fetched from active warehouse context 
-            const defaultWarehouse = "00000000-0000-0000-0000-000000000000"; // Assuming a master warehouse or fetched from API
-            const res = await analyticsApi.autoDraftPurchaseOrder(defaultWarehouse);
-            if (res.data.data.status === 'success') {
-                // We could invalidate queries here if we passed queryClient down
-                toast.success(isRTL ? 'تم إنشاء مسودة فاتورة مشتريات ذكية بنجاح!' : 'Smart Purchase Order Drafted Successfully!');
-            } else {
-                toast.error(isRTL ? 'المخزون بوضع ممتاز، لا داعي للطلب.' : 'Inventory is healthy, no orders needed.');
-            }
-        } catch (err) {
-
-            toast.error(isRTL ? 'حدث خطأ أثناء الإنشاء الذكي' : 'Error generating smart PO');
-        } finally {
-            setIsDraftingPO(false);
-        }
-    };
 
     const handleQuickSearch = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -554,6 +534,11 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                 </div>
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <ReceivableRemindersWidget isRTL={isRTL} formatCurrency={formatCurrency} />
+                <PayableRemindersWidget isRTL={isRTL} formatCurrency={formatCurrency} />
+            </div>
+
             {/* ── Inventory + Accounting side by side ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Inventory Summary */}
@@ -570,13 +555,12 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                 🤖 {isRTL ? 'تنبؤات نفاذ المخزون (AI)' : 'AI Depletion Forecast'}
                             </p>
                             {aiForecasts.length > 0 && (
-                                <button 
-                                    onClick={handleAutoDraftPO}
-                                    disabled={isDraftingPO}
+                                <Link 
+                                    href={`/${locale}/dashboard/purchases/smart-orders`}
                                     className="btn-primary py-1 px-3 text-xs flex items-center gap-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
                                 >
-                                    {isDraftingPO ? '⏳...' : (isRTL ? '⚡ مسودة شراء ذكية' : '⚡ Smart PO Draft')}
-                                </button>
+                                    {isRTL ? '⚡ مسودة شراء ذكية' : '⚡ Smart PO Draft'}
+                                </Link>
                             )}
                         </div>
                         <div className="space-y-2">

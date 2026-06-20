@@ -227,7 +227,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                         { title: isRTL ? 'ميزان المراجعة' : 'Trial Balance', icon: '⚖️', color: '#6366f1', link: '/accounting/reports/trial-balance' },
                         { title: isRTL ? 'كشف الميزانية' : 'Balance Sheet', icon: '🏛️', color: '#10b981', link: '/accounting/reports/balance-sheet' },
                         { title: isRTL ? 'الأرباح والخسائر' : 'P&L Statement', icon: '📈', color: '#f59e0b', link: '/accounting/reports/income-statement' },
-                        { title: isRTL ? 'الأستاذ العام' : 'General Ledger', icon: '📖', color: '#8b5cf6', link: '/accounting/reports/general-ledger' },
+                        { title: isRTL ? 'الأستاذ العام' : 'General Ledger', icon: '📖', color: '#8b5cf6', link: '/accounting/general-ledger' },
                     ].map((report, idx) => (
                         <Link key={idx} href={`/${locale}/dashboard${report.link}`} className="glass-card p-6 flex flex-col items-center text-center group cursor-pointer hover:border-primary-500 transition-all">
                             <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">{report.icon}</span>

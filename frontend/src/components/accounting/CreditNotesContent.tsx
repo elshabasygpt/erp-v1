@@ -1,55 +1,63 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountingApi, crmApi, salesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function CreditNotesContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
-    const [creditNotes, setCreditNotes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    
+    const queryClient = useQueryClient();
+
     // Create form state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [customers, setCustomers] = useState<any[]>([]);
     const [form, setForm] = useState({ customer_id: '', amount: 0, reason: '', date: new Date().toISOString().split('T')[0] });
-    
+
     // Apply form state
     const [selectedNote, setSelectedNote] = useState<any>(null);
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-    const [invoices, setInvoices] = useState<any[]>([]);
     const [applyForm, setApplyForm] = useState({ invoice_id: '', amount: 0 });
 
-    useEffect(() => {
-        loadCreditNotes();
-        loadCustomers();
-    }, []);
-
-    const loadCreditNotes = async () => {
-        setLoading(true);
-        try {
+    const { data: creditNotes = [], isLoading: loading } = useQuery<any[]>({
+        queryKey: ['credit-notes'],
+        queryFn: async () => {
             const res = await accountingApi.getCreditNotes();
-            setCreditNotes(res.data?.data || []);
-        } catch (error) {
+            return res.data?.data || [];
+        },
+    });
 
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadCustomers = async () => {
-        try {
+    const { data: customers = [] } = useQuery<any[]>({
+        queryKey: ['customers', 'list'],
+        queryFn: async () => {
             const res = await crmApi.getCustomers();
-            setCustomers(res.data?.data || []);
-        } catch (error) {
+            return res.data?.data || [];
+        },
+    });
 
-        }
-    };
+    const { data: invoices = [] } = useQuery<any[]>({
+        queryKey: ['credit-notes', 'unpaid-invoices', selectedNote?.customer_id],
+        queryFn: async () => {
+            const res = await salesApi.getInvoices({ customer_id: selectedNote.customer_id, status: 'unpaid' });
+            return res.data?.data || [];
+        },
+        enabled: !!selectedNote,
+    });
+
+    const loadCreditNotes = () => queryClient.invalidateQueries({ queryKey: ['credit-notes'] });
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await accountingApi.createCreditNote(form);
+            const payload = {
+                type: 'customer',
+                customer_id: form.customer_id,
+                issue_date: form.date,
+                subtotal: form.amount,
+                vat_amount: 0,
+                total: form.amount,
+                reason: form.reason
+            };
+            await accountingApi.createCreditNote(payload);
             setIsCreateModalOpen(false);
             setForm({ customer_id: '', amount: 0, reason: '', date: new Date().toISOString().split('T')[0] });
             loadCreditNotes();
@@ -58,18 +66,10 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
         }
     };
 
-    const openApplyModal = async (note: any) => {
+    const openApplyModal = (note: any) => {
         setSelectedNote(note);
         setApplyForm({ invoice_id: '', amount: note.remaining_amount || note.amount });
         setIsApplyModalOpen(true);
-        
-        // Load customer's unpaid invoices
-        try {
-            const res = await salesApi.getInvoices({ customer_id: note.customer_id, status: 'unpaid' });
-            setInvoices(res.data?.data || []);
-        } catch (error) {
-
-        }
     };
 
     const handleApply = async (e: React.FormEvent) => {
@@ -210,7 +210,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'اختر الفاتورة المستحقة' : 'Select Unpaid Invoice'}</label>
-                                <select required value={applyForm.invoice_id} onChange={e => setForm({...applyForm, invoice_id: e.target.value} as any)} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                                <select required value={applyForm.invoice_id} onChange={e => setApplyForm({...applyForm, invoice_id: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
                                     <option value="">{isRTL ? '-- اختر الفاتورة --' : '-- Select Invoice --'}</option>
                                     {invoices.map(inv => (
                                         <option key={inv.id} value={inv.id}>
@@ -221,7 +221,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'المبلغ المراد تطبيقه' : 'Amount to Apply'}</label>
-                                <input required type="number" step="0.01" max={selectedNote.remaining_amount} value={applyForm.amount} onChange={e => setForm({...applyForm, amount: parseFloat(e.target.value)} as any)} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
+                                <input required type="number" step="0.01" max={selectedNote.remaining_amount} value={applyForm.amount} onChange={e => setApplyForm({...applyForm, amount: parseFloat(e.target.value)})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
                             </div>
                         </div>
                         <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">

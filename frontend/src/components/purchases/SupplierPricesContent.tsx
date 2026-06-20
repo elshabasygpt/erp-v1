@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { purchasesApi, suppliersApi } from '@/lib/api';
@@ -9,25 +10,24 @@ import PriceCompareModal from './PriceCompareModal';
 
 export default function SupplierPricesContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
-    const [prices, setPrices] = useState<any[]>([]);
-    const [suppliers, setSuppliers] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({ search: '', supplier_id: '', active_only: false });
     const [comparingProductId, setComparingProductId] = useState<string | null>(null);
 
-    useEffect(() => {
-        suppliersApi.getSuppliers({ limit: 100 })
-            .then(res => setSuppliers(res.data?.data || []))
-            .catch(console.error);
-    }, []);
+    const { data: suppliers = [] } = useQuery<any[]>({
+        queryKey: ['suppliers', 'list', { limit: 100 }],
+        queryFn: async () => {
+            const res = await suppliersApi.getSuppliers({ limit: 100 });
+            return res.data?.data || [];
+        },
+    });
 
-    useEffect(() => {
-        setIsLoading(true);
-        purchasesApi.getSupplierPrices({ ...filters, limit: 50 })
-            .then(res => setPrices(res.data?.data || []))
-            .catch(console.error)
-            .finally(() => setIsLoading(false));
-    }, [filters]);
+    const { data: prices = [], isLoading } = useQuery<any[]>({
+        queryKey: ['supplier-prices', filters],
+        queryFn: async () => {
+            const res = await purchasesApi.getSupplierPrices({ ...filters, limit: 50 });
+            return res.data?.data || [];
+        },
+    });
 
     const getLastPurchaseColor = (dateStr: string | null) => {
         if (!dateStr) return 'text-gray-400';

@@ -23,17 +23,17 @@ class ProcurementController extends BaseTenantController
     public function listRequests(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
-        $limit    = (int) $request->query('limit', 15);
+        $limit    = (int) $request->input('limit', 15);
 
-        $query = PurchaseRequestModel::where('tenant_id', $tenantId)
+        $query = PurchaseRequestModel::query()->where(['tenant_id' => $tenantId])
             ->with(['items'])
-            ->orderBy('created_at', 'desc');
+            ->latest();
 
         if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+            $query->where(['status' => $request->query('status')]);
         }
         if ($request->filled('department')) {
-            $query->where('department', $request->query('department'));
+            $query->where(['department' => $request->query('department')]);
         }
 
         $requests = $query->paginate($limit);
@@ -83,18 +83,118 @@ class ProcurementController extends BaseTenantController
             'notes'  => 'nullable|string',
         ]);
 
-        $pr = PurchaseRequestModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $pr = PurchaseRequestModel::query()->where(['tenant_id' => $this->getTenantId($request)])->find($id);
 
         if (!$pr) {
             return $this->error('Purchase request not found', 404);
         }
 
-        $pr->update([
-            'status'      => $validated['status'],
-            'approved_by' => $validated['status'] === 'approved' ? $request->user()->id : null,
-        ]);
+        $updateData = ['status' => $validated['status']];
+        
+        if ($validated['status'] === 'approved') {
+            $updateData['approved_by'] = $request->user()->id;
+        } elseif (in_array($validated['status'], ['draft', 'rejected'])) {
+            $updateData['approved_by'] = null;
+        }
+
+        if (in_array($validated['status'], ['draft', 'rejected', 'pending_approval'])) {
+            $hasPO = PurchaseOrderModel::query()->where(['purchase_request_id' => $pr->id])->exists();
+            if ($hasPO) {
+                return $this->error('لا يمكن التراجع عن حالة الطلب لارتباطه بأمر شراء فعلي', 422);
+            }
+        }
+
+        $pr->update($updateData);
 
         return $this->success($pr->load('items'), 'Status updated');
+    }
+
+    public function convertToPO(Request $request, string $id): JsonResponse
+    {
+        $tenantId = $this->getTenantId($request);
+        $pr = PurchaseRequestModel::query()->where(['tenant_id' => $tenantId])->with('items')->find($id);
+
+        if (!$pr) {
+            return $this->error('Purchase request not found', 404);
+        }
+
+        if ($pr->status !== 'approved') {
+            return $this->error('Purchase request must be approved first', 422);
+        }
+
+        if (!$pr->suggested_supplier_id) {
+            return $this->error('Purchase request does not have a suggested supplier', 422);
+        }
+
+        // Prevent Duplicate POs
+        if (PurchaseOrderModel::query()->where(['purchase_request_id' => $pr->id])->exists()) {
+            return $this->error('يوجد أمر شراء بالفعل مرتبط بهذا الطلب', 422);
+        }
+
+        // Validate items have product_id
+        foreach ($pr->items as $item) {
+            if (!$item->product_id) {
+                return $this->error('لا يمكن التحويل لأن بعض الأصناف غير مرتبطة بمنتج معرف في النظام', 422);
+            }
+        }
+
+        $po = DB::connection('tenant')->transaction(function () use ($pr, $tenantId, $request) {
+            $lastNum = PurchaseOrderModel::query()->where(['tenant_id' => $tenantId])
+                ->max(DB::raw("CAST(SUBSTR(po_number, 4) AS INTEGER)")) ?? 0;
+            $poNumber = 'PO-' . str_pad((string) ($lastNum + 1), 6, '0', STR_PAD_LEFT);
+
+            $subtotal = 0;
+            $vatTotal = 0;
+            $poItems = [];
+
+            foreach ($pr->items as $item) {
+                // Fetch unit price from supplier price list or default to 0
+                $priceList = \App\Infrastructure\Eloquent\Models\SupplierPriceListModel::query()->where(['tenant_id' => $tenantId])
+                    ->where(['supplier_id' => $pr->suggested_supplier_id])
+                    ->where(['product_id' => $item->product_id])
+                    ->first();
+                
+                $unitPrice = $priceList ? $priceList->unit_price : 0;
+                $lineSubtotal = $item->quantity * $unitPrice;
+                $lineVat = $lineSubtotal * 0.15;
+
+                $subtotal += $lineSubtotal;
+                $vatTotal += $lineVat;
+
+                $poItems[] = [
+                    'product_id' => $item->product_id,
+                    'quantity'   => $item->quantity,
+                    'unit_price' => $unitPrice,
+                    'vat_rate'   => 15,
+                    'vat_amount' => round($lineVat, 2),
+                    'total'      => round($lineSubtotal + $lineVat, 2),
+                ];
+            }
+
+            $po = PurchaseOrderModel::create([
+                'tenant_id'              => $tenantId,
+                'po_number'              => $poNumber,
+                'supplier_id'            => $pr->suggested_supplier_id,
+                'purchase_request_id'    => $pr->id,
+                'subtotal'               => round($subtotal, 2),
+                'vat_amount'             => round($vatTotal, 2),
+                'total'                  => round($subtotal + $vatTotal, 2),
+                'status'                 => 'draft',
+                'expected_delivery_date' => $pr->required_date,
+                'notes'                  => "تم التحويل من طلب الشراء " . $pr->request_number,
+                'created_by'             => $request->user()->id,
+            ]);
+
+            foreach ($poItems as $poItem) {
+                $po->items()->create($poItem);
+            }
+
+            $pr->update(['status' => 'completed']);
+
+            return $po;
+        });
+
+        return $this->success($po->load(['items', 'supplier']), 'Purchase order created successfully', 201);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -104,14 +204,14 @@ class ProcurementController extends BaseTenantController
     public function listRFQs(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
-        $limit    = (int) $request->query('limit', 15);
+        $limit    = (int) $request->input('limit', 15);
 
-        $query = RFQModel::where('tenant_id', $tenantId)
+        $query = RFQModel::query()->where(['tenant_id' => $tenantId])
             ->with(['items', 'purchaseRequest', 'quotations'])
-            ->orderBy('created_at', 'desc');
+            ->latest();
 
         if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+            $query->where(['status' => $request->query('status')]);
         }
 
         $rfqs = $query->paginate($limit);
@@ -135,8 +235,8 @@ class ProcurementController extends BaseTenantController
 
         // تحقق إن purchase_request_id تابع لنفس الـ tenant
         if (!empty($validated['purchase_request_id'])) {
-            $prExists = PurchaseRequestModel::where('tenant_id', $tenantId)
-                ->where('id', $validated['purchase_request_id'])
+            $prExists = PurchaseRequestModel::query()->where(['tenant_id' => $tenantId])
+                ->where(['id' => $validated['purchase_request_id']])
                 ->exists();
 
             if (!$prExists) {
@@ -172,17 +272,17 @@ class ProcurementController extends BaseTenantController
     public function listOrders(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
-        $limit    = (int) $request->query('limit', 15);
+        $limit    = (int) $request->input('limit', 15);
 
-        $query = PurchaseOrderModel::where('tenant_id', $tenantId)
+        $query = PurchaseOrderModel::query()->where(['tenant_id' => $tenantId])
             ->with(['items', 'supplier'])
-            ->orderBy('created_at', 'desc');
+            ->latest();
 
         if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+            $query->where(['status' => $request->query('status')]);
         }
         if ($request->filled('supplier_id')) {
-            $query->where('supplier_id', $request->query('supplier_id'));
+            $query->where(['supplier_id' => $request->query('supplier_id')]);
         }
 
         $pos = $query->paginate($limit);
@@ -208,8 +308,8 @@ class ProcurementController extends BaseTenantController
 
         // تحقق إن purchase_request_id تابع لنفس الـ tenant
         if (!empty($validated['purchase_request_id'])) {
-            $prExists = PurchaseRequestModel::where('tenant_id', $tenantId)
-                ->where('id', $validated['purchase_request_id'])
+            $prExists = PurchaseRequestModel::query()->where(['tenant_id' => $tenantId])
+                ->where(['id' => $validated['purchase_request_id']])
                 ->exists();
 
             if (!$prExists) {
@@ -269,7 +369,7 @@ class ProcurementController extends BaseTenantController
             'notes'  => 'nullable|string',
         ]);
 
-        $po = PurchaseOrderModel::where('tenant_id', $this->getTenantId($request))->find($id);
+        $po = PurchaseOrderModel::query()->where(['tenant_id' => $this->getTenantId($request)])->find($id);
 
         if (!$po) {
             return $this->error('Purchase order not found', 404);

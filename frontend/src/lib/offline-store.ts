@@ -14,19 +14,24 @@ interface PosDB extends DBSchema {
     value: {
       id?: number;
       payload: any;
-      type: 'invoice' | 'quotation' | 'return';
+      type: 'invoice' | 'quotation' | 'return' | 'stocktake_counts';
       timestamp: number;
       retryCount: number;
     };
     indexes: { 'by-timestamp': number };
+  };
+  stocktakes: {
+    key: string;
+    value: any;
   };
 }
 
 let dbPromise: Promise<IDBPDatabase<PosDB>> | null = null;
 
 if (typeof window !== 'undefined') {
-  dbPromise = openDB<PosDB>('pos-cloud-db', 1, {
-    upgrade(db) {
+  // Incremented DB version to 2 for stocktakes
+  dbPromise = openDB<PosDB>('pos-cloud-db', 2, {
+    upgrade(db, oldVersion, newVersion, transaction) {
       if (!db.objectStoreNames.contains('products')) {
         db.createObjectStore('products', { keyPath: 'id' });
       }
@@ -36,6 +41,9 @@ if (typeof window !== 'undefined') {
       if (!db.objectStoreNames.contains('syncQueue')) {
         const store = db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true });
         store.createIndex('by-timestamp', 'timestamp');
+      }
+      if (!db.objectStoreNames.contains('stocktakes')) {
+        db.createObjectStore('stocktakes', { keyPath: 'id' });
       }
     },
   });
@@ -80,7 +88,7 @@ export async function searchCachedCustomers(query: string): Promise<any[]> {
 }
 
 // ─── Sync Queue ───
-export async function enqueueOfflineAction(type: 'invoice' | 'quotation' | 'return', payload: any) {
+export async function enqueueOfflineAction(type: 'invoice' | 'quotation' | 'return' | 'stocktake_counts', payload: any) {
   if (!dbPromise) return;
   const db = await dbPromise;
   await db.add('syncQueue', {
@@ -111,6 +119,33 @@ export async function incrementRetryCount(id: number, currentCount: number) {
     item.retryCount = currentCount + 1;
     await db.put('syncQueue', item);
   }
+}
+
+// ─── Stocktakes ───
+export async function cacheStocktakes(stocktakes: any[]) {
+  if (!dbPromise) return;
+  const db = await dbPromise;
+  const tx = db.transaction('stocktakes', 'readwrite');
+  await Promise.all(stocktakes.map(s => tx.store.put(s)));
+  await tx.done;
+}
+
+export async function getCachedStocktakes(): Promise<any[]> {
+  if (!dbPromise) return [];
+  const db = await dbPromise;
+  return db.getAll('stocktakes');
+}
+
+export async function getCachedStocktake(id: string): Promise<any> {
+  if (!dbPromise) return null;
+  const db = await dbPromise;
+  return db.get('stocktakes', id);
+}
+
+export async function saveCachedStocktake(stocktake: any) {
+  if (!dbPromise) return;
+  const db = await dbPromise;
+  await db.put('stocktakes', stocktake);
 }
 
 export async function clearCache() {

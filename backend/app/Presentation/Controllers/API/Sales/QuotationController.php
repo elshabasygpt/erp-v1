@@ -52,15 +52,33 @@ class QuotationController extends BaseTenantController
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.vat_rate' => 'required|numeric|min:0|max:100',
+            'offline_id' => 'nullable|string',
         ]);
 
         try {
+            $tenantId = $this->getTenantId($request);
+
+            // Idempotency Check for offline sync
+            if (!empty($validated['offline_id'])) {
+                $existing = QuotationModel::where('tenant_id', $tenantId)
+                    ->where('offline_id', $validated['offline_id'])
+                    ->first();
+                if ($existing) {
+                    return $this->success($existing, 'Quotation already synced', 200);
+                }
+            }
+
             $dto = CreateQuotationDTO::fromRequest($validated);
             $quotation = $this->createQuotationUseCase->execute($dto, auth()->id() ?? '');
 
             // Update status if it's not draft
             if ($validated['status'] !== 'draft') {
                 $quotation->update(['status' => $validated['status']]);
+            }
+
+            // Update offline_id if provided
+            if (!empty($validated['offline_id'])) {
+                $quotation->update(['offline_id' => $validated['offline_id']]);
             }
 
             return $this->success($quotation, 'Quotation created successfully', 201);

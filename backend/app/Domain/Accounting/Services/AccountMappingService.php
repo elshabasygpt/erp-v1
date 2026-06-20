@@ -29,6 +29,8 @@ class AccountMappingService
         'revenue' => 'account.revenue',
         'cogs' => 'account.cogs',
         'inventory' => 'account.inventory',
+        'core_inventory' => 'account.core_inventory',
+        'finished_goods_inventory' => 'account.finished_goods_inventory',
         'vat_payable' => 'account.vat_payable',
         'vat_input' => 'account.vat_input',
         'discount' => 'account.discount',
@@ -38,6 +40,9 @@ class AccountMappingService
         'fx_gain_loss' => 'account.fx_gain_loss',
         'zakat_expense' => 'account.zakat_expense',
         'zakat_payable' => 'account.zakat_payable',
+        'accumulated_depreciation' => 'account.accumulated_depreciation',
+        'depreciation_expense' => 'account.depreciation_expense',
+        'bank_fees' => 'account.bank_fees',
     ];
 
     private ?array $resolved = null;

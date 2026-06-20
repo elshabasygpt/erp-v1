@@ -90,11 +90,16 @@ final class CreateTreasuryPaymentUseCase
             ));
 
             // Credit: Safe (Cash/Bank)
-            $creditAccountKey = $safe->type === 'bank' ? 'bank' : 'cash';
+            $creditAccountId = null;
+            if ($safe->bank_account_id && $safe->bankAccount) {
+                $creditAccountId = $safe->bankAccount->chart_of_account_id;
+            }
+            $creditAccountKey = $creditAccountId ?? $safe->account_id ?? $this->accountMapping->resolve($safe->type === 'bank' ? 'bank' : 'cash');
+
             $journalEntry->addLine(new JournalEntryLine(
                 id: null,
                 journalEntryId: '',
-                accountId: $this->accountMapping->resolve($creditAccountKey),
+                accountId: $creditAccountKey,
                 debit: 0,
                 credit: $amount,
                 description: "Payment from {$safe->name}"

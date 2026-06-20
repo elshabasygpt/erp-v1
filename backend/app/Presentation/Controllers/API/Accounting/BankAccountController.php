@@ -37,7 +37,50 @@ class BankAccountController extends BaseTenantController
 
         $account = $this->bankReconciliationService->createBankAccount($validated, auth()->id() ?? '');
 
-        return $this->created($account, 'Bank account created successfully');
+        return $this->success($account, 'Bank account created successfully', 201);
+    }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'account_number' => 'nullable|string|max:50',
+            'bank_name' => 'nullable|string|max:255',
+            'currency_id' => 'nullable|uuid',
+            'opening_balance' => 'numeric',
+            'chart_of_account_id' => 'nullable|uuid|exists:tenant.accounts,id',
+        ]);
+
+        $account = BankAccountModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+        
+        if (isset($validated['opening_balance'])) {
+            // If there are no transactions, the current balance should always be exactly the opening balance
+            if ($account->transactions()->count() === 0) {
+                $validated['current_balance'] = $validated['opening_balance'];
+            } else if ((float)$validated['opening_balance'] !== (float)$account->opening_balance) {
+                // If there are transactions, only adjust by the difference
+                $diff = (float)$validated['opening_balance'] - (float)$account->opening_balance;
+                $validated['current_balance'] = $account->current_balance + $diff;
+            }
+        }
+
+        $account->update($validated);
+
+        return $this->success($account, 'Bank account updated successfully');
+    }
+
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        $account = BankAccountModel::query()->where('tenant_id', $this->getTenantId($request))->findOrFail($id);
+        
+        // Ensure no transactions exist before deleting
+        if ($account->transactions()->count() > 0) {
+            return $this->error('Cannot delete bank account because it has transactions.', 400);
+        }
+
+        $account->delete();
+
+        return $this->success(null, 'Bank account deleted successfully');
     }
 
     public function importTransactions(Request $request, string $id): JsonResponse
@@ -77,13 +120,13 @@ class BankAccountController extends BaseTenantController
                 auth()->id() ?? ''
             );
 
-            return $this->created($reconciliation, 'Reconciliation started successfully');
+            return $this->success($reconciliation, 'Reconciliation started successfully', 201);
         } catch (\Exception $e) {
             return $this->error('Failed to start reconciliation: '.$e->getMessage(), 422);
         }
     }
 
-    public function getReconciliations(string $id): JsonResponse
+    public function getReconciliations(Request $request, string $id): JsonResponse
     {
         $reconciliations = ReconciliationModel::query()->where('tenant_id', $this->getTenantId($request))->where('bank_account_id', $id)
             ->orderBy('statement_date', 'desc')

@@ -14,6 +14,7 @@ class BankAccountModel extends BaseModel
     protected $table = 'bank_accounts';
 
     protected $fillable = [
+        'tenant_id',
         'name',
         'account_number',
         'bank_name',

@@ -10,7 +10,7 @@ import {
     Settings, MoreHorizontal, CheckCircle2, ArrowRight,
     Trash2, FileText, Ban, Warehouse, Gift, RefreshCw,
     Building2, ArrowRightLeft, Activity, Undo2, ShoppingBag,
-    Calculator, UserCheck, Briefcase, Store, Car
+    Calculator, UserCheck, Briefcase, Store, Car, Lock
 } from 'lucide-react';
 import { inventoryApi, salesApi, crmApi, posApi } from '@/lib/api';
 import clsx from 'clsx';
@@ -137,6 +137,14 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     // Shift Management
     const [currentShift, setCurrentShift] = useState<any>(null);
     const [showShiftModal, setShowShiftModal] = useState(false);
+    const [showCloseShiftModal, setShowCloseShiftModal] = useState(false);
+    const [closingCash, setClosingCash] = useState('');
+    const [isClosingShift, setIsClosingShift] = useState(false);
+
+    // Offline Sync
+    const [isOnline, setIsOnline] = useState(true);
+    const [pendingSyncCount, setPendingSyncCount] = useState(0);
+    const [isSyncingQueue, setIsSyncingQueue] = useState(false);
 
     const [customerVehicles, setCustomerVehicles] = useState<any[]>([]);
     const [alternativesProduct, setAlternativesProduct] = useState<any>(null);
@@ -238,34 +246,53 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     }, [customerQuery]);
 
 
-    // Offline Sync Listener
-    useEffect(() => {
-        const handleOnline = async () => {
-            const queue = await getSyncQueue();
-            if (queue.length === 0) return;
-            let success = 0;
-            for (const q of queue) {
-                try {
-                    if (q.type === 'return') await salesApi.createReturn(q.payload);
-                    else if (q.type === 'quotation') await salesApi.createQuotation(q.payload);
-                    else await salesApi.createInvoice(q.payload);
+    // Offline Sync
+    const refreshPendingSyncCount = useCallback(async () => {
+        const queue = await getSyncQueue();
+        setPendingSyncCount(queue.length);
+    }, []);
+
+    const syncOfflineQueue = useCallback(async () => {
+        const queue = await getSyncQueue();
+        if (queue.length === 0) return;
+        setIsSyncingQueue(true);
+        let success = 0;
+        for (const q of queue) {
+            try {
+                if (q.type === 'return') await salesApi.createReturn(q.payload);
+                else if (q.type === 'quotation') await salesApi.createQuotation(q.payload);
+                else await salesApi.createInvoice(q.payload);
+                await removeFromQueue(q.id as number);
+                success++;
+            } catch (e: any) {
+                if (e.response?.status === 428) {
                     await removeFromQueue(q.id as number);
                     success++;
-                } catch (e: any) {
-                    if (e.response?.status === 428) {
-                        await removeFromQueue(q.id as number);
-                        success++;
-                        toast.success(isRTL ? 'تم حفظ إحدى الفواتير للموافقة.' : 'An offline invoice was sent for approval.');
-                    }
+                    toast.success(isRTL ? 'تم حفظ إحدى الفواتير للموافقة.' : 'An offline invoice was sent for approval.');
                 }
+                // Other errors (still offline / server rejected): leave it queued for the next attempt.
             }
-            if (success > 0) {
-                toast.success(isRTL ? `تمت مزامنة ${success} من الفواتير المتأخرة بنجاح!` : `Successfully synced ${success} offline invoices!`);
-            }
-        };
+        }
+        if (success > 0) {
+            toast.success(isRTL ? `تمت مزامنة ${success} من الفواتير المتأخرة بنجاح!` : `Successfully synced ${success} offline invoices!`);
+        }
+        await refreshPendingSyncCount();
+        setIsSyncingQueue(false);
+    }, [isRTL, refreshPendingSyncCount]);
+
+    useEffect(() => {
+        setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
+        refreshPendingSyncCount();
+
+        const handleOnline = () => { setIsOnline(true); syncOfflineQueue(); };
+        const handleOffline = () => setIsOnline(false);
         window.addEventListener('online', handleOnline);
-        return () => window.removeEventListener('online', handleOnline);
-    }, [isRTL]);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [syncOfflineQueue, refreshPendingSyncCount]);
 
     useEffect(() => {
         const h = (e: KeyboardEvent) => {
@@ -280,6 +307,30 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     }, [activeTab?.cart.length, showPaymentModal, activeTabId]);
 
     const toggleTheme = () => { const n = !isDark; setIsDark(n); document.documentElement.classList.toggle('dark', n); localStorage.setItem('theme', n ? 'dark' : 'light'); };
+
+    const handleCloseShift = async () => {
+        if (!closingCash) {
+            toast.error(isRTL ? 'يجب إدخال رصيد الصندوق الختامي' : 'Closing cash is required');
+            return;
+        }
+        if (pendingSyncCount > 0) {
+            toast.error(isRTL ? `يوجد ${pendingSyncCount} فاتورة غير مُزامنة. يرجى الانتظار حتى تتم المزامنة قبل إغلاق الوردية.` : `${pendingSyncCount} invoice(s) are not yet synced. Please wait for sync before closing the shift.`);
+            return;
+        }
+        setIsClosingShift(true);
+        try {
+            await posApi.closeShift({ closing_cash: parseFloat(closingCash) });
+            toast.success(isRTL ? 'تم إغلاق الوردية بنجاح' : 'Shift closed successfully');
+            setCurrentShift(null);
+            setShowCloseShiftModal(false);
+            setClosingCash('');
+            setShowShiftModal(true);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || (isRTL ? 'حدث خطأ' : 'An error occurred'));
+        } finally {
+            setIsClosingShift(false);
+        }
+    };
     const addNewTab = () => { setTabs(prev => { const t = generateNewTab(prev); setActiveTabId(t.id); return [...prev, t]; }); };
 
     const closeTab = (id: string, e: React.MouseEvent) => {
@@ -484,13 +535,17 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     const handleCheckout = async () => {
         if (!cart.length) return;
         setIsSaving(true);
+        const isRefund = activeTab?.isRefundMode;
+        let payload: any = null;
         try {
-            const isRefund = activeTab?.isRefundMode;
-            const payload = {
+            payload = {
+                offline_id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
                 invoice_number: 'POS-' + Date.now(), invoice_date: new Date().toISOString().split('T')[0],
                 customer_id: activeTab?.customer?.id || null, warehouse_id: activeTab?.warehouseId || null,
                 invoice_id: activeTab?.invoiceId || null,
                 price_level: activeTab?.priceLevel, discount: activeTab?.orderDiscount || 0, tax_amount: vat, total, payment_method: paymentMethod, status: 'confirmed',
+                type: paymentMethod === 'cash' ? 'cash' : 'credit',
+                paid_amount: total,
                 sales_channel_id: activeTab?.salesChannelId || null,
                 items: cartWithMarkup.map(i => ({ 
                     product_id: i.product.id, 
@@ -561,6 +616,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
 
             if (typeof navigator !== 'undefined' && !navigator.onLine) {
                 await enqueueOfflineAction(isRefund ? 'return' : 'invoice', payload);
+                await refreshPendingSyncCount();
             } else {
                 if (isRefund) {
                     await salesApi.createReturn(payload);
@@ -603,11 +659,31 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     setReceivedAmount('');
                     setPayNumPad('');
                 }, 2000);
+            } else if (!e.response && payload) {
+                // No response reached the browser at all - treat as a connectivity failure
+                // even though navigator.onLine reported true, and fall back to the offline queue
+                // instead of losing the sale.
+                try {
+                    await enqueueOfflineAction(isRefund ? 'return' : 'invoice', payload);
+                    await refreshPendingSyncCount();
+                    setIsOnline(false);
+                    toast.success(isRTL ? 'تعذر الوصول للسيرفر. تم حفظ الفاتورة محلياً وستتم مزامنتها تلقائياً.' : 'Could not reach the server. Invoice saved offline and will sync automatically.');
+                    setShowSuccess(true);
+                    setTimeout(() => {
+                        setShowSuccess(false);
+                        setTabs(prev => prev.map(t => t.id !== activeTabId ? t : { ...t, cart: [], customer: null, orderDiscount: 0, orderNote: '', isRefundMode: false }));
+                        setShowPaymentModal(false);
+                        setReceivedAmount('');
+                        setPayNumPad('');
+                    }, 2000);
+                } catch {
+                    toast.error(isRTL ? 'فشل حفظ الفاتورة محلياً.' : 'Failed to save the invoice offline.');
+                }
             } else {
-                toast.error(e.response?.data?.message || 'Error processing payment.'); 
+                toast.error(e.response?.data?.message || 'Error processing payment.');
             }
-        } finally { 
-            setIsSaving(false); 
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -619,7 +695,57 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
         <div className={clsx('flex h-screen overflow-hidden font-sans antialiased bg-slate-50 dark:bg-[#0a0a10]', isRTL ? 'flex-row-reverse' : 'flex-row')}>
             
             <ShiftManagementModal isOpen={showShiftModal} isRTL={isRTL} onShiftOpened={(s) => { setCurrentShift(s); setShowShiftModal(false); }} />
-            
+
+            {showCloseShiftModal && (
+                <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-[#1a1a2e] w-full max-w-md rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-white/10">
+                        <div className="flex flex-col items-center justify-center mb-6 text-center">
+                            <div className="w-16 h-16 bg-rose-100 dark:bg-rose-500/20 text-rose-600 rounded-full flex items-center justify-center mb-4">
+                                <Lock className="w-8 h-8" />
+                            </div>
+                            <h2 className="text-xl font-black text-slate-800 dark:text-white">
+                                {isRTL ? 'إغلاق الوردية الحالية' : 'Close Current Shift'}
+                            </h2>
+                            {pendingSyncCount > 0 && (
+                                <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 font-bold">
+                                    {isRTL ? `يوجد ${pendingSyncCount} فاتورة غير مُزامنة بعد.` : `${pendingSyncCount} invoice(s) are not synced yet.`}
+                                </p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-white/80 mb-1.5">
+                                {isRTL ? 'رصيد الصندوق الختامي' : 'Closing Cash Balance'}
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    value={closingCash}
+                                    onChange={e => setClosingCash(e.target.value)}
+                                    className="w-full h-12 px-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-lg font-black text-slate-800 dark:text-white outline-none focus:border-rose-500 transition-all text-center"
+                                    placeholder="0.00"
+                                />
+                                <div className="absolute top-1/2 -translate-y-1/2 left-4 text-xs font-bold text-slate-400">SAR</div>
+                            </div>
+                        </div>
+                        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-white/5 flex gap-3">
+                            <button
+                                onClick={() => { setShowCloseShiftModal(false); setClosingCash(''); }}
+                                className="flex-1 h-12 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-white rounded-xl text-sm font-black transition-all"
+                            >
+                                {isRTL ? 'إلغاء' : 'Cancel'}
+                            </button>
+                            <button
+                                onClick={handleCloseShift}
+                                disabled={isClosingShift || !closingCash}
+                                className="flex-1 h-12 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-600/30"
+                            >
+                                {isClosingShift ? <RefreshCw className="w-5 h-5 animate-spin" /> : (isRTL ? 'تأكيد الإغلاق' : 'Confirm Close')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* THIN APP SIDEBAR */}
             <PosSidebar locale={locale} isRTL={isRTL} />
 
@@ -761,6 +887,17 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                                 <div className="flex items-center gap-1">
                                     <p className="text-[11px] font-black text-slate-800 dark:text-white line-clamp-2 leading-relaxed tracking-wide">{isRTL ? (item.product.name_ar||item.product.name) : item.product.name}</p>
                                 </div>
+                                {(() => {
+                                    const ws = item.product.warehouse_stocks?.find((w: any) => w.warehouse_id === activeTab?.warehouseId) || item.product.warehouse_stocks?.[0];
+                                    if (ws && ws.bin_location) {
+                                        return (
+                                            <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1 font-bold">
+                                                📍 {isRTL ? 'القطعة في:' : 'Bin Location:'} {ws.bin_location}
+                                            </p>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 {item.note && <p className="text-[9px] text-slate-400 dark:text-white/40 mt-1 line-clamp-1 italic font-bold max-w-full"><span className="text-amber-500">Note:</span> {item.note}</p>}
                                 {item.discount ? <p className="text-[9px] text-red-500 dark:text-red-400 font-bold mt-0.5 max-w-full">-{item.discount} SAR Discount</p> : null}
                                 
@@ -834,8 +971,26 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                         <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20"><Zap className="w-6 h-6 text-white fill-white"/></div>
                         <div>
                             <h1 className="text-lg font-black text-slate-800 dark:text-white tracking-tight uppercase">Elite POS Pro</h1>
-                            <p className="text-[11px] text-blue-600 dark:text-blue-400 font-black tracking-[0.2em] flex items-center gap-1.5 mt-0.5 opacity-80"><span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"/> ONLINE TERMINAL</p>
+                            {isOnline ? (
+                                <p className="text-[11px] text-blue-600 dark:text-blue-400 font-black tracking-[0.2em] flex items-center gap-1.5 mt-0.5 opacity-80"><span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"/> {isRTL ? 'متصل بالإنترنت' : 'ONLINE TERMINAL'}</p>
+                            ) : (
+                                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-black tracking-[0.2em] flex items-center gap-1.5 mt-0.5"><span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]"/> {isRTL ? 'غير متصل - وضع عدم الاتصال' : 'OFFLINE MODE'}</p>
+                            )}
                         </div>
+                        {pendingSyncCount > 0 && (
+                            <button
+                                onClick={syncOfflineQueue}
+                                disabled={!isOnline || isSyncingQueue}
+                                className={clsx(
+                                    'flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all',
+                                    isOnline ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:hover:bg-amber-500/25' : 'bg-slate-100 text-slate-400 dark:bg-white/5 dark:text-white/30 cursor-not-allowed'
+                                )}
+                                title={isRTL ? 'فواتير غير مُزامنة في انتظار الاتصال' : 'Invoices pending sync'}
+                            >
+                                <RefreshCw className={clsx('w-3.5 h-3.5', isSyncingQueue && 'animate-spin')} />
+                                {isRTL ? `${pendingSyncCount} في الانتظار` : `${pendingSyncCount} pending`}
+                            </button>
+                        )}
                     </div>
 
                     {/* Price Levels (Dynamically Styled) */}
@@ -848,6 +1003,11 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {currentShift && (
+                            <button onClick={() => setShowCloseShiftModal(true)} className="h-10 px-4 rounded-xl text-[11px] font-black uppercase flex items-center gap-2 tracking-widest active:scale-95 transition-all bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:bg-rose-200 dark:hover:bg-rose-500/20">
+                                <Lock className="w-3.5 h-3.5" /> {isRTL ? 'إغلاق الوردية' : 'End Shift'}
+                            </button>
+                        )}
                         <button onClick={toggleTheme} className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors shadow-sm">{isDark?<Sun className="w-5 h-5"/>:<Moon className="w-5 h-5"/>}</button>
                     </div>
                 </header>

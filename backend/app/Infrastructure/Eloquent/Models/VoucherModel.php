@@ -14,6 +14,7 @@ class VoucherModel extends BaseModel
     protected $connection = 'tenant';
 
     protected $fillable = [
+        'tenant_id',
         'reference_number',
         'type',
         'amount',

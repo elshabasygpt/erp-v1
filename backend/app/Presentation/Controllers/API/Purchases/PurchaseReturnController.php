@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Purchases;
 
+use App\Application\Purchases\UseCases\ConfirmPurchaseReturnUseCase;
 use App\Infrastructure\Eloquent\Models\PurchaseReturnItemModel;
 use App\Infrastructure\Eloquent\Models\PurchaseReturnModel;
-use App\Infrastructure\Eloquent\Models\StockMovementModel;
-use App\Infrastructure\Eloquent\Models\SupplierModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +15,10 @@ use Illuminate\Support\Str;
 
 class PurchaseReturnController extends BaseTenantController
 {
+    public function __construct(
+        private readonly ConfirmPurchaseReturnUseCase $confirmPurchaseReturnUseCase,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $limit = $request->query('limit', '15');
@@ -67,6 +69,8 @@ class PurchaseReturnController extends BaseTenantController
             $nextNum = $lastReturn ? ((int) str_replace('PR-', '', $lastReturn->number)) + 1 : 1;
             $returnNumber = 'PR-'.str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
 
+            // Create as draft first; ConfirmPurchaseReturnUseCase is the single source of truth
+            // for stock, supplier balance, and accounting once a return is completed.
             $purchaseReturn = PurchaseReturnModel::query()->create([
                 'tenant_id' => $this->getTenantId($request),
                 'id' => $returnId,
@@ -76,7 +80,7 @@ class PurchaseReturnController extends BaseTenantController
                 'issue_date' => $validated['issue_date'],
                 'total_amount' => $totalAmount,
                 'tax_amount' => $taxAmount,
-                'status' => $validated['status'],
+                'status' => $validated['status'] === 'completed' ? 'draft' : $validated['status'],
                 'notes' => $validated['notes'] ?? null,
             ]);
 
@@ -95,46 +99,21 @@ class PurchaseReturnController extends BaseTenantController
                     'tax_amount' => $itemTax,
                     'total' => $subtotal + $itemTax,
                 ]);
-
-                // Update stock if completed immediately
-                if ($validated['status'] === 'completed') {
-                    $wp = WarehouseProductModel::query()->where('tenant_id', $this->getTenantId($request))->where([
-                        'warehouse_id' => $validated['warehouse_id'],
-                        'product_id' => $item['product_id'],
-                    ])->first();
-
-                    if ($wp) {
-                        $wp->quantity -= $item['quantity'];
-                        $wp->save();
-                    }
-
-                    StockMovementModel::query()->create([
-                        'tenant_id' => $this->getTenantId($request),
-                        'id' => Str::uuid()->toString(),
-                        'product_id' => $item['product_id'],
-                        'warehouse_id' => $validated['warehouse_id'],
-                        'type' => 'out',
-                        'quantity' => -($item['quantity']),
-                        'reference_id' => $purchaseReturn->id,
-                        'reference_type' => 'purchase_return',
-                        'date' => now(),
-                    ]);
-                }
-            }
-
-            // Update Supplier Balance (Subtract the total since they owe us back or we owe them less)
-            if ($validated['status'] === 'completed') {
-                $supplier = SupplierModel::query()->where('tenant_id', $this->getTenantId($request))->find($validated['supplier_id']);
-                $supplier->balance -= $totalAmount;
-                $supplier->save();
             }
 
             DB::connection('tenant')->commit();
 
+            if ($validated['status'] === 'completed') {
+                $this->confirmPurchaseReturnUseCase->execute($purchaseReturn->id, $validated['warehouse_id'], (string) ($request->user()->id ?? ''));
+                $purchaseReturn->refresh();
+            }
+
             return $this->success($purchaseReturn->load('items'), 'Purchase return created successfully', 201);
 
         } catch (\Exception $e) {
-            DB::connection('tenant')->rollBack();
+            if (DB::connection('tenant')->transactionLevel() > 0) {
+                DB::connection('tenant')->rollBack();
+            }
 
             return $this->error('Failed to create purchase return: '.$e->getMessage(), 500);
         }
@@ -165,44 +144,10 @@ class PurchaseReturnController extends BaseTenantController
         ]);
 
         if ($purchaseReturn->status === 'draft' && $validated['status'] === 'completed') {
-            DB::connection('tenant')->beginTransaction();
             try {
-                // Deduct from stock
-                foreach ($purchaseReturn->items as $item) {
-                    $wp = WarehouseProductModel::query()->where('tenant_id', $this->getTenantId($request))->where([
-                        'warehouse_id' => $validated['warehouse_id'],
-                        'product_id' => $item->product_id,
-                    ])->first();
-
-                    if ($wp) {
-                        $wp->quantity -= $item->quantity;
-                        $wp->save();
-                    }
-
-                    StockMovementModel::query()->create([
-                        'tenant_id' => $this->getTenantId($request),
-                        'id' => Str::uuid()->toString(),
-                        'product_id' => $item->product_id,
-                        'warehouse_id' => $validated['warehouse_id'],
-                        'type' => 'out',
-                        'quantity' => -($item->quantity),
-                        'reference_id' => $purchaseReturn->id,
-                        'reference_type' => 'purchase_return',
-                        'date' => now(),
-                    ]);
-                }
-
-                // Balance adjustment
-                $supplier = SupplierModel::query()->where('tenant_id', $this->getTenantId($request))->find($purchaseReturn->supplier_id);
-                $supplier->balance -= $purchaseReturn->total_amount;
-                $supplier->save();
-
-                $purchaseReturn->update(['status' => 'completed']);
-
-                DB::connection('tenant')->commit();
-            } catch (\Exception $e) {
-                DB::connection('tenant')->rollBack();
-
+                $this->confirmPurchaseReturnUseCase->execute($id, $validated['warehouse_id'], (string) ($request->user()->id ?? ''));
+                $purchaseReturn->refresh();
+            } catch (\Throwable $e) {
                 return $this->error('Failed to complete return process: '.$e->getMessage(), 500);
             }
         } else {

@@ -75,11 +75,16 @@ final class CreateTreasuryReceiptUseCase
             );
 
             // Debit: Safe (Cash/Bank)
-            $debitAccountKey = $safe->type === 'bank' ? 'bank' : 'cash';
+            $debitAccountId = null;
+            if ($safe->bank_account_id && $safe->bankAccount) {
+                $debitAccountId = $safe->bankAccount->chart_of_account_id;
+            }
+            $debitAccountKey = $debitAccountId ?? $safe->account_id ?? $this->accountMapping->resolve($safe->type === 'bank' ? 'bank' : 'cash');
+
             $journalEntry->addLine(new JournalEntryLine(
                 id: null,
                 journalEntryId: '',
-                accountId: $this->accountMapping->resolve($debitAccountKey),
+                accountId: $debitAccountKey,
                 debit: $amount,
                 credit: 0,
                 description: "Receipt to {$safe->name}"

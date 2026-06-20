@@ -38,7 +38,11 @@ export function usePosPayment(
             due_date: new Date().toISOString().slice(0, 10),
             items: activeSession.cart.map((i) => ({
                 product_id: i.product.id,
+                code: i.product.part_number || i.product.sku || i.product.code,
+                name: i.product.name,
+                binLocation: i.product.warehouseStocks?.[0]?.bin_location,
                 quantity: i.qty,
+                unit: i.product.unit_of_measure || 'pcs',
                 unit_price: i.product.price,
                 vat_rate: 15,
                 discount_percent: i.discount,

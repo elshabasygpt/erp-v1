@@ -23,6 +23,10 @@ class DeliveryModel extends BaseModel
         'tracking_code',
         'eta',
         'notes',
+        'latitude',
+        'longitude',
+        'delivery_address_text',
+        'delivery_route_id',
         'created_by',
         'updated_by',
     ];

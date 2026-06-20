@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { deliveriesApiNew as deliveriesApi } from '@/lib/api';
+import dynamic from 'next/dynamic';
+const DeliveryMapDashboard = dynamic(
+  () => import('@/components/sales/DeliveryMapDashboard').then(mod => mod.DeliveryMapDashboard),
+  { ssr: false }
+);
 
 type Delivery = {
   id: string;
@@ -26,6 +31,7 @@ export default function DeliveriesPage() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     const load = async () => {
@@ -54,9 +60,25 @@ export default function DeliveriesPage() {
 
   return (
     <div className={`p-6 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <h1 className="text-2xl font-bold mb-6">
-        {isRTL ? 'إدارة التوصيل' : 'Deliveries'}
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">
+          {isRTL ? 'إدارة التوصيل' : 'Deliveries'}
+        </h1>
+        <div className="flex bg-gray-100 p-1 rounded-lg">
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            {isRTL ? 'قائمة' : 'List'}
+          </button>
+          <button 
+            onClick={() => setViewMode('map')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            {isRTL ? 'خريطة' : 'Map'}
+          </button>
+        </div>
+      </div>
 
       {error && (
         <div className="bg-red-50 text-red-700 p-3 rounded mb-4">{error}</div>
@@ -66,6 +88,8 @@ export default function DeliveriesPage() {
         <div className="text-center py-12 text-gray-400">
           {isRTL ? 'جاري التحميل...' : 'Loading...'}
         </div>
+      ) : viewMode === 'map' ? (
+        <DeliveryMapDashboard dict={{}} locale={isRTL ? 'ar' : 'en'} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">

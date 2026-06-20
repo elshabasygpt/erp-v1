@@ -25,6 +25,7 @@ final class CreateInvoiceDTO
         public readonly ?string $costCenterId = null,
         public readonly ?string $currencyId = null,
         public readonly ?float $exchangeRate = 1.0,
+        public readonly ?string $paymentMethod = null,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -53,6 +54,7 @@ final class CreateInvoiceDTO
             costCenterId: $data['cost_center_id'] ?? null,
             currencyId: $data['currency_id'] ?? null,
             exchangeRate: isset($data['exchange_rate']) ? (float) $data['exchange_rate'] : 1.0,
+            paymentMethod: $data['payment_method'] ?? null,
         );
     }
 }

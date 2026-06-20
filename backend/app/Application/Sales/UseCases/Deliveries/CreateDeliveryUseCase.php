@@ -37,6 +37,9 @@ final class CreateDeliveryUseCase
                 'status' => $dto->status,
                 'delivery_fee' => $dto->deliveryFee,
                 'notes' => $dto->notes,
+                'latitude' => $dto->latitude,
+                'longitude' => $dto->longitude,
+                'delivery_address_text' => $dto->deliveryAddressText,
                 'created_by' => $userId,
             ]);
 

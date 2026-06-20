@@ -2,21 +2,22 @@
 
 namespace App\Presentation\Controllers\API\Sales;
 
-use App\Presentation\Controllers\API\BaseApiController;
+use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\Request;
 use App\Domain\Sales\Entities\PosShift;
 use Carbon\Carbon;
 
-class PosShiftController extends BaseApiController
+class PosShiftController extends BaseTenantController
 {
     public function current(Request $request)
     {
-        $shift = PosShift::where('tenant_id', $request->header('X-Tenant-ID'))
+        $shift = PosShift::query()
+            ->where('tenant_id', $this->getTenantId($request))
             ->where('user_id', $request->user()->id)
             ->where('status', 'open')
             ->first();
 
-        return $this->successResponse($shift);
+        return $this->success($shift);
     }
 
     public function open(Request $request)
@@ -26,17 +27,18 @@ class PosShiftController extends BaseApiController
             'notes' => 'nullable|string'
         ]);
 
-        $existingShift = PosShift::where('tenant_id', $request->header('X-Tenant-ID'))
+        $existingShift = PosShift::query()
+            ->where('tenant_id', $this->getTenantId($request))
             ->where('user_id', $request->user()->id)
             ->where('status', 'open')
             ->first();
 
         if ($existingShift) {
-            return $this->errorResponse('A shift is already open.', 400);
+            return $this->error('A shift is already open.', 400);
         }
 
-        $shift = PosShift::create([
-            'tenant_id' => $request->header('X-Tenant-ID'),
+        $shift = PosShift::query()->create([
+            'tenant_id' => $this->getTenantId($request),
             'user_id' => $request->user()->id,
             'opening_cash' => $request->opening_cash,
             'opened_at' => Carbon::now(),
@@ -44,7 +46,7 @@ class PosShiftController extends BaseApiController
             'notes' => $request->notes,
         ]);
 
-        return $this->successResponse($shift, 'Shift opened successfully', 201);
+        return $this->success($shift, 'Shift opened successfully', 201);
     }
 
     public function close(Request $request)
@@ -54,13 +56,14 @@ class PosShiftController extends BaseApiController
             'notes' => 'nullable|string'
         ]);
 
-        $shift = PosShift::where('tenant_id', $request->header('X-Tenant-ID'))
+        $shift = PosShift::query()
+            ->where('tenant_id', $this->getTenantId($request))
             ->where('user_id', $request->user()->id)
             ->where('status', 'open')
             ->first();
 
         if (!$shift) {
-            return $this->errorResponse('No active shift found.', 404);
+            return $this->error('No active shift found.', 404);
         }
 
         $shift->update([
@@ -70,6 +73,6 @@ class PosShiftController extends BaseApiController
             'notes' => $request->notes ? $shift->notes . "\n" . $request->notes : $shift->notes,
         ]);
 
-        return $this->successResponse($shift, 'Shift closed successfully');
+        return $this->success($shift, 'Shift closed successfully');
     }
 }

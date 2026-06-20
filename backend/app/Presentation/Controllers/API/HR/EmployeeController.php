@@ -1,119 +1,132 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Presentation\Controllers\API\HR;
 
+use App\Presentation\Controllers\API\BaseController;
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
-use App\Presentation\Controllers\API\BaseTenantController;
-use App\Presentation\Requests\HR\StoreEmployeeRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
-class EmployeeController extends BaseTenantController
+class EmployeeController extends BaseController
 {
+    /**
+     * Get all employees
+     */
     public function index(Request $request): JsonResponse
     {
-        $limit = $request->query('limit', '15');
-        $query = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->select([
-            'id', 'user_id', 'name', 'position', 'phone', 'base_salary', 'is_active', 'created_at',
-        ])->with('user:id,name,email')->where('tenant_id', $this->getTenantId($request));
-
-        if ($request->filled('search')) {
-            $search = $request->query('search');
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%")
-                ->orWhere('position', 'like', "%{$search}%");
+        try {
+            $employees = EmployeeModel::with('user')
+                ->latest()
+                ->get();
+                
+            return $this->success($employees, 'Employees retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->error('Failed to retrieve employees: ' . $e->getMessage(), 500);
         }
-
-        if ($request->filled('is_active')) {
-            $query->where('is_active', filter_var($request->query('is_active'), FILTER_VALIDATE_BOOLEAN));
-        }
-
-        $employees = $query->orderBy('created_at', 'desc')->paginate((int) $limit);
-
-        return $this->paginated($employees->toArray(), 'Employees retrieved successfully');
     }
 
-    public function store(StoreEmployeeRequest $request): JsonResponse
+    /**
+     * Show a single employee
+     */
+    public function show($id): JsonResponse
     {
-        $validated = $request->validated();
-
-        $employee = EmployeeModel::query()->create([
-            'tenant_id' => $this->getTenantId($request),
-            'id' => Str::uuid()->toString(),
-            'tenant_id' => $this->getTenantId($request),
-            'user_id' => $validated['user_id'] ?? null,
-            'name' => $validated['name'],
-            'position' => $validated['position'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'base_salary' => $validated['base_salary'],
-            'shift_start' => $validated['shift_start'] ?? null,
-            'shift_end' => $validated['shift_end'] ?? null,
-            'is_active' => $validated['is_active'] ?? true,
-        ]);
-
-        return $this->success($employee->load('user'), 'Employee created successfully', 201);
+        try {
+            $employee = EmployeeModel::with(['user', 'activeLoans'])->find($id);
+            if (!$employee) {
+                return $this->error('Employee not found', 404);
+            }
+            return $this->success($employee, 'Employee retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->error('Failed to retrieve employee: ' . $e->getMessage(), 500);
+        }
     }
 
-    public function show(Request $request, string $id): JsonResponse
+    /**
+     * Create a new employee
+     */
+    public function store(Request $request): JsonResponse
     {
-        $employee = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->with('user')->find($id);
-        $this->assertBelongsToTenant($employee, $request);
-
-        if (! $employee) {
-            return $this->error('Employee not found', 404);
-        }
-
-        return $this->success($employee, 'Employee retrieved successfully');
-    }
-
-    public function update(Request $request, string $id): JsonResponse
-    {
-        $employee = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
-        $this->assertBelongsToTenant($employee, $request);
-
-        if (! $employee) {
-            return $this->error('Employee not found', 404);
-        }
-
         $validated = $request->validate([
-            'user_id' => 'nullable|uuid|exists:users,id',
-            'name' => 'sometimes|required|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'base_salary' => 'sometimes|required|numeric|min:0',
-            'shift_start' => 'nullable|date_format:H:i:s,H:i',
-            'shift_end' => 'nullable|date_format:H:i:s,H:i',
+            'name' => 'required|string|max:255',
+            'position' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'base_salary' => 'required|numeric|min:0',
+            'shift_start' => 'nullable|date_format:H:i',
+            'shift_end' => 'nullable|date_format:H:i',
             'is_active' => 'boolean',
         ]);
 
-        // Fix potential H:i:s formatting issues from front-end
-        if (isset($validated['shift_start']) && strlen($validated['shift_start']) === 5) {
-            $validated['shift_start'] .= ':00';
-        }
-        if (isset($validated['shift_end']) && strlen($validated['shift_end']) === 5) {
-            $validated['shift_end'] .= ':00';
-        }
+        try {
+            $employee = EmployeeModel::create([
+                'name' => $validated['name'],
+                'position' => $validated['position'],
+                'phone' => $validated['phone'] ?? null,
+                'base_salary' => $validated['base_salary'],
+                'shift_start' => $validated['shift_start'] ?? null,
+                'shift_end' => $validated['shift_end'] ?? null,
+                'is_active' => $validated['is_active'] ?? true,
+            ]);
 
-        $employee->update($validated);
-
-        return $this->success($employee->load('user'), 'Employee updated successfully');
+            return $this->success($employee, 'Employee created successfully', 201);
+        } catch (\Exception $e) {
+            return $this->error('Failed to create employee: ' . $e->getMessage(), 500);
+        }
     }
 
-    public function destroy(Request $request, string $id): JsonResponse
+    /**
+     * Update an employee
+     */
+    public function update(Request $request, $id): JsonResponse
     {
-        $employee = EmployeeModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
-        $this->assertBelongsToTenant($employee, $request);
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'position' => 'sometimes|required|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'base_salary' => 'sometimes|required|numeric|min:0',
+            'shift_start' => 'nullable|date_format:H:i|date_format:H:i:s',
+            'shift_end' => 'nullable|date_format:H:i|date_format:H:i:s',
+            'is_active' => 'boolean',
+        ]);
 
-        if (! $employee) {
-            return $this->error('Employee not found', 404);
+        try {
+            $employee = EmployeeModel::find($id);
+            if (!$employee) {
+                return $this->error('Employee not found', 404);
+            }
+
+            // Handle both H:i and H:i:s formats from frontend
+            if (isset($validated['shift_start'])) {
+                $employee->shift_start = substr($validated['shift_start'], 0, 5);
+            }
+            if (isset($validated['shift_end'])) {
+                $employee->shift_end = substr($validated['shift_end'], 0, 5);
+            }
+
+            $employee->fill($request->except(['shift_start', 'shift_end']));
+            $employee->save();
+
+            return $this->success($employee, 'Employee updated successfully');
+        } catch (\Exception $e) {
+            return $this->error('Failed to update employee: ' . $e->getMessage(), 500);
         }
+    }
 
-        // Only soft delete
-        $employee->delete();
+    /**
+     * Delete an employee
+     */
+    public function destroy($id): JsonResponse
+    {
+        try {
+            $employee = EmployeeModel::find($id);
+            if (!$employee) {
+                return $this->error('Employee not found', 404);
+            }
 
-        return $this->success(null, 'Employee deleted successfully');
+            $employee->delete(); // Soft delete
+
+            return $this->success(null, 'Employee deleted successfully');
+        } catch (\Exception $e) {
+            return $this->error('Failed to delete employee: ' . $e->getMessage(), 500);
+        }
     }
 }

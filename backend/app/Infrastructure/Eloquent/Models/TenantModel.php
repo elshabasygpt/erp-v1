@@ -19,4 +19,9 @@ class TenantModel extends CentralModel
     {
         return $this->hasOne(SubscriptionModel::class, 'tenant_id')->where('status', 'active')->latest();
     }
+
+    public function backups()
+    {
+        return $this->hasMany(TenantBackupModel::class, 'tenant_id');
+    }
 }

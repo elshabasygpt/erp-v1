@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function PenaltiesContent() {
+    const queryClient = useQueryClient();
     const [tab, setTab] = useState<'rules' | 'report'>('rules');
 
     // Rules state
-    const [rules, setRules] = useState<any[]>([]);
-    const [loadingRules, setLoadingRules] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [editingRule, setEditingRule] = useState<any>(null);
 
@@ -27,38 +27,28 @@ export default function PenaltiesContent() {
     });
 
     // Report state
-    const [report, setReport] = useState<any>(null);
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
 
-    useEffect(() => {
-        if (tab === 'rules') {
-            fetchRules();
-        } else {
-            fetchReport();
-        }
-    }, [tab, month, year]);
-
-    const fetchRules = async () => {
-        try {
-            setLoadingRules(true);
+    const { data: rules = [], isLoading: loadingRules } = useQuery<any[]>({
+        queryKey: ['penalty-rules'],
+        queryFn: async () => {
             const res = await hrApi.getPenaltyRules();
-            setRules(res.data?.data || []);
-        } catch (e) {
-            toast.error('Failed to load rules');
-        } finally {
-            setLoadingRules(false);
-        }
-    };
+            return res.data?.data || [];
+        },
+        enabled: tab === 'rules',
+    });
 
-    const fetchReport = async () => {
-        try {
+    const { data: report } = useQuery({
+        queryKey: ['penalty-report', month, year],
+        queryFn: async () => {
             const res = await hrApi.getPenaltyReport({ month, year });
-            setReport(res.data?.data || null);
-        } catch (e) {
-            toast.error('Failed to load report');
-        }
-    };
+            return res.data?.data || null;
+        },
+        enabled: tab === 'report',
+    });
+
+    const fetchRules = () => queryClient.invalidateQueries({ queryKey: ['penalty-rules'] });
 
     const handleSaveRule = async () => {
         try {

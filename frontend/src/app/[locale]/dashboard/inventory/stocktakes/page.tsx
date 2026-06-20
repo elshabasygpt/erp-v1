@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Plus, Search, Calendar, FileText, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { cacheStocktakes, getCachedStocktakes } from '@/lib/offline-store';
 
 export default function StocktakesPage() {
     const { d } = useLanguage();
@@ -41,10 +42,21 @@ export default function StocktakesPage() {
             if (data?.data?.data) data = data.data.data;
             else if (data?.data) data = data.data;
             
-            setStocktakes(Array.isArray(data) ? data : []);
+            const arr = Array.isArray(data) ? data : [];
+            setStocktakes(arr);
+            if (arr.length > 0) {
+                await cacheStocktakes(arr);
+            }
         } catch (error) {
-            toast.error(d?.inventory?.stocktakes?.fetchError || 'Failed to load stocktakes');
-            setStocktakes([]);
+            console.warn('Network failed, loading from cache...');
+            const cached = await getCachedStocktakes();
+            if (cached && cached.length > 0) {
+                setStocktakes(cached);
+                toast.success('تم استرجاع جلسات الجرد من الذاكرة المحلية', { icon: '📶' });
+            } else {
+                toast.error(d?.inventory?.stocktakes?.fetchError || 'Failed to load stocktakes');
+                setStocktakes([]);
+            }
         } finally {
             setLoading(false);
         }

@@ -112,13 +112,32 @@ class InvoiceController extends BaseTenantController
             'credit_limit_override' => 'nullable|boolean',
             'installments' => 'nullable|array',
             'sales_channel_id' => 'nullable|uuid|exists:sales_channels,id',
+            'payment_method' => 'nullable|string|in:cash,card,bank_transfer,other',
+            'offline_id' => 'nullable|string',
         ]);
 
         try {
-            $validated['tenant_id'] = $this->getTenantId($request);
+            $tenantId = $this->getTenantId($request);
+            $validated['tenant_id'] = $tenantId;
+
+            // Idempotency Check for offline sync
+            if (!empty($validated['offline_id'])) {
+                $existing = InvoiceModel::where('tenant_id', $tenantId)
+                    ->where('offline_id', $validated['offline_id'])
+                    ->first();
+                if ($existing) {
+                    return $this->success(['id' => $existing->id], 'Sales Invoice already synced', 200);
+                }
+            }
+
             $dto = CreateInvoiceDTO::fromRequest($validated);
             \Log::info('Tenant transaction level: '.\DB::connection('tenant')->transactionLevel().' spl: '.spl_object_id(\DB::connection('tenant')));
             $invoice = $this->createInvoiceUseCase->execute($dto, auth()->id() ?? '');
+
+            // Update offline_id if provided
+            if (!empty($validated['offline_id'])) {
+                InvoiceModel::where('id', $invoice->getId())->update(['offline_id' => $validated['offline_id']]);
+            }
 
             if ($validated['status'] === 'confirmed') {
                 $confirmUseCase = app(ConfirmInvoiceUseCase::class);
@@ -157,6 +176,7 @@ class InvoiceController extends BaseTenantController
             'credit_limit_override' => 'nullable|boolean',
             'installments' => 'nullable|array',
             'sales_channel_id' => 'nullable|uuid|exists:sales_channels,id',
+            'payment_method' => 'nullable|string|in:cash,card,bank_transfer,other',
         ]);
 
         try {

@@ -24,7 +24,9 @@ final class EloquentAccountRepository implements AccountRepositoryInterface
 
     public function create(Account $a): Account
     {
-        AccountModel::query()->create(['id' => $a->getId(), 'code' => $a->getCode(), 'name' => $a->getName(), 'name_ar' => $a->getNameAr(), 'type' => $a->getType(), 'parent_id' => $a->getParentId(), 'is_active' => $a->isActive(), 'description' => $a->getDescription(), 'level' => $a->getLevel()]);
+        $tenantId = app()->has('current_tenant') ? app('current_tenant')->id : null;
+
+        AccountModel::query()->create(['id' => $a->getId(), 'tenant_id' => $tenantId, 'code' => $a->getCode(), 'name' => $a->getName(), 'name_ar' => $a->getNameAr(), 'type' => $a->getType(), 'parent_id' => $a->getParentId(), 'is_active' => $a->isActive(), 'description' => $a->getDescription(), 'level' => $a->getLevel()]);
 
         return $a;
     }

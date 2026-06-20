@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '@/lib/api';
 
 interface VatReportContentProps {
@@ -41,36 +42,27 @@ export default function VatReportContent({ dict, locale }: VatReportContentProps
         (new Date().getMonth() + 1).toString().padStart(2, '0')
     );
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-    const [loading, setLoading] = useState(true);
-    const [vatData, setVatData] = useState({
+
+    const defaultVatData = {
         sales: 0,
         exemptSales: 0,
         outputVat: 0,
         purchases: 0,
         inputVat: 0,
         netVatPayable: 0
-    });
+    };
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
+    const { data: vatData = defaultVatData, isLoading: loading } = useQuery({
+        queryKey: ['vat-report', periodType, selectedPeriod, selectedYear],
+        queryFn: async () => {
             const res = await reportsApi.getVatReport({
                 year: selectedYear,
                 period: periodType,
                 value: selectedPeriod
             });
-            if (res.data?.status === 'success') {
-                setVatData(res.data.data);
-            }
-        } catch (error) {
-
-        }
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, [periodType, selectedPeriod, selectedYear]);
+            return res.data?.status === 'success' ? res.data.data : defaultVatData;
+        },
+    });
 
     const boxes = [
         {

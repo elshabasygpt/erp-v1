@@ -7,6 +7,7 @@ import ZatcaSettingsSection from '@/components/settings/ZatcaSettingsSection';
 import SalesChannelsSettings from '@/components/settings/SalesChannelsSettings';
 import BarcodeSettingsSection from '@/components/settings/BarcodeSettingsSection';
 import InvoiceSettingsSection from '@/components/settings/InvoiceSettingsSection';
+import BackupsSettingsSection from '@/components/settings/BackupsSettingsSection';
 import { useSidebar, type SidebarMode } from '@/providers/SidebarProvider';
 import toast from 'react-hot-toast';
 
@@ -206,6 +207,9 @@ export default function SettingsPage() {
 
                 {/* ── Invoice Settings ── */}
                 <InvoiceSettingsSection dict={dict} locale={locale} />
+
+                {/* ── Backups & Restore ── */}
+                <BackupsSettingsSection dict={dict} locale={locale} />
 
                 {/* ── Sidebar Style ── */}
                 <div className="glass-card p-6">

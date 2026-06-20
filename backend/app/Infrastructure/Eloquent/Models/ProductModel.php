@@ -16,7 +16,7 @@ class ProductModel extends BaseModel
         'name', 'name_ar', 'sku', 'barcode', 'cost_price',
         'sell_price', 'wholesale_price', 'semi_wholesale_price', 'vat_rate', 'stock_alert_level', 'is_active',
         'category_id', 'unit_of_measure', 'description', 'image_url', 'is_favorite',
-        'oem_number', 'part_number', 'brand', 'quality_grade', 'warranty_months', 'country_of_origin',
+        'oem_number', 'part_number', 'superseded_by_id', 'brand', 'quality_grade', 'warranty_months', 'country_of_origin',
         'has_core_charge', 'core_charge_amount', 'is_kit',
         'created_by', 'updated_by',
     ];
@@ -35,6 +35,11 @@ class ProductModel extends BaseModel
         'core_charge_amount' => 'decimal:2',
         'is_kit' => 'boolean',
     ];
+
+    public function supersededBy()
+    {
+        return $this->belongsTo(ProductModel::class, 'superseded_by_id');
+    }
 
     public function warehouseStocks()
     {
@@ -94,5 +99,28 @@ class ProductModel extends BaseModel
             'alternative_product_id',
             'product_id'
         )->withPivot('notes')->withTimestamps();
+    }
+
+    public function kitComponents()
+    {
+        return $this->hasMany(ProductComponentModel::class, 'parent_product_id');
+    }
+
+    public function partOfKits()
+    {
+        return $this->hasMany(ProductComponentModel::class, 'child_product_id');
+    }
+
+    public function defaultSupplier()
+    {
+        return $this->hasOne(ProductDefaultSupplierModel::class, 'product_id')
+                    ->where('priority', 1);
+    }
+
+    public function allSuppliers()
+    {
+        return $this->hasMany(ProductDefaultSupplierModel::class, 'product_id')
+                    ->with('supplier')
+                    ->orderBy('priority');
     }
 }

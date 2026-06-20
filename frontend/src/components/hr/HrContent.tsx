@@ -1,19 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { hrApi, treasuryApi } from '@/lib/api';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function HrContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
+    const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<'employees' | 'attendance' | 'leaves' | 'payroll'>('employees');
-    
-    // States
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [attendances, setAttendances] = useState<any[]>([]);
-    const [payrolls, setPayrolls] = useState<any[]>([]);
-    const [safes, setSafes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Modals
     const [showEmpModal, setShowEmpModal] = useState(false);
@@ -25,31 +20,37 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
     const [showPayModal, setShowPayModal] = useState(false);
     const [payData, setPayData] = useState({ employee_id: '', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            if (activeTab === 'employees') {
-                const res = await hrApi.getEmployees();
-                setEmployees(res.data?.data || []);
-            } else if (activeTab === 'attendance') {
-                const [resA, resE] = await Promise.all([hrApi.getAttendance(), hrApi.getEmployees()]);
-                setAttendances(resA.data?.data || []);
-                setEmployees(resE.data?.data || []);
-            } else if (activeTab === 'payroll') {
-                const [resP, resE, resS] = await Promise.all([hrApi.getPayrolls(), hrApi.getEmployees(), treasuryApi.getSafes()]);
-                setPayrolls(resP.data?.data || []);
-                setEmployees(resE.data?.data || []);
-                setSafes(resS.data?.data?.filter((s: any) => s.type === 'cash' || s.type === 'bank') || []);
-            }
-        } catch (error) {
+    const { data: employees = [], isLoading: loadingEmployees } = useQuery<any[]>({
+        queryKey: ['hr', 'employees'],
+        queryFn: async () => {
+            const res = await hrApi.getEmployees();
+            return res.data?.data || [];
+        },
+    });
 
-        }
-        setLoading(false);
+    const { data: attendances = [], isLoading: loadingAttendance } = useQuery<any[]>({
+        queryKey: ['hr', 'attendance'],
+        queryFn: async () => {
+            const res = await hrApi.getAttendance();
+            return res.data?.data || [];
+        },
+        enabled: activeTab === 'attendance',
+    });
+
+    const { data: payrolls = [], isLoading: loadingPayroll } = useQuery<any[]>({
+        queryKey: ['hr', 'payrolls'],
+        queryFn: async () => {
+            const res = await hrApi.getPayrolls();
+            return res.data?.data || [];
+        },
+        enabled: activeTab === 'payroll',
+    });
+
+    const loading = activeTab === 'employees' ? loadingEmployees : activeTab === 'attendance' ? loadingAttendance : activeTab === 'payroll' ? loadingPayroll : false;
+
+    const fetchData = () => {
+        queryClient.invalidateQueries({ queryKey: ['hr'] });
     };
-
-    useEffect(() => {
-        fetchData();
-    }, [activeTab]);
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 2 }).format(val || 0);

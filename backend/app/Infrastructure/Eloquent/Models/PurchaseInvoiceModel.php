@@ -10,7 +10,7 @@ class PurchaseInvoiceModel extends BaseModel
 
     protected $table = 'purchase_invoices';
 
-    protected $fillable = ['invoice_number', 'supplier_id', 'subtotal', 'vat_amount', 'total', 'status', 'notes', 'warehouse_id', 'invoice_date', 'created_by', 'updated_by', 'cost_center_id', 'currency_id', 'exchange_rate'];
+    protected $fillable = ['invoice_number', 'supplier_id', 'subtotal', 'vat_amount', 'total', 'status', 'notes', 'warehouse_id', 'invoice_date', 'created_by', 'updated_by', 'cost_center_id', 'currency_id', 'exchange_rate', 'paid_amount', 'due_date', 'payment_status'];
 
     protected $casts = ['subtotal' => 'decimal:2', 'vat_amount' => 'decimal:2', 'total' => 'decimal:2', 'invoice_date' => 'datetime', 'exchange_rate' => 'decimal:6'];
 
@@ -23,4 +23,10 @@ class PurchaseInvoiceModel extends BaseModel
     {
         return $this->belongsTo(SupplierModel::class, 'supplier_id');
     }
+
+    public function installments()
+    {
+        return $this->hasMany(PurchaseInstallmentModel::class, 'purchase_invoice_id')->orderBy('due_date', 'asc');
+    }
 }
+

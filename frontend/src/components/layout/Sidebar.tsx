@@ -118,6 +118,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'purchases', path: '/purchases', iconKey: 'purchases', labelAr: 'فواتير الشراء', labelEn: 'Purchase Invoices' },
             { key: 'suppliers', path: '/suppliers', iconKey: 'suppliers', labelAr: 'الموردين', labelEn: 'Suppliers' },
             { key: 'supplierPrices', path: '/purchases/supplier-prices', iconKey: 'purchases', labelAr: 'قوائم أسعار الموردين', labelEn: 'Supplier Price Lists' },
+            { key: 'smartOrders', path: '/purchases/smart-orders', iconKey: 'reports', labelAr: 'الطلبيات الذكية', labelEn: 'Smart Orders', badge: { text: 'AI', color: '#8b5cf6' } },
         ],
     },
     {

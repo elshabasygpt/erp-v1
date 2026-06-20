@@ -17,6 +17,8 @@ export interface Product {
     isKit?: boolean;
     binLocation?: string;
     warehouseStocks?: any[];
+    supersededById?: string;
+    supersededBy?: any;
 }
 
 export function useInventoryData() {
@@ -82,7 +84,12 @@ export function useInventoryData() {
                 semiWholesalePrice: p.semi_wholesale_price !== null && p.semi_wholesale_price !== undefined ? parseFloat(p.semi_wholesale_price) : parseFloat(p.sell_price || 0) * 0.95,
                 profitPercent: 0,
                 discount: 0,
-                stock: p.warehouseStocks?.reduce((acc: number, ws: any) => acc + parseFloat(ws.quantity), 0) || 0,
+                countryOfOrigin: p.country_of_origin || '',
+                isKit: p.is_kit || false,
+                supersededById: p.superseded_by_id || '',
+                supersededBy: p.superseded_by || null,
+                stock: p.warehouseStocks?.reduce((acc: number, w: any) => acc + (parseFloat(w.quantity) || 0), 0) || 0,
+                warehouseStocks: p.warehouseStocks || [],
                 minStock: p.stock_alert_level || 5,
                 description: p.description || '',
                 imageUrl: p.image_url || '',
@@ -90,9 +97,6 @@ export function useInventoryData() {
                 partNumber: p.part_number || '',
                 brand: p.brand || '',
                 qualityGrade: p.quality_grade || '',
-                countryOfOrigin: p.country_of_origin || '',
-                isKit: p.is_kit || false,
-                warehouseStocks: p.warehouseStocks || [],
                 binLocation: p.warehouseStocks && p.warehouseStocks.length > 0 ? p.warehouseStocks[0].bin_location : '',
             })) as Product[];
         }

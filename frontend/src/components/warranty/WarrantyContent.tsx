@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '@/lib/api';
 import WarrantyDetailModal from './WarrantyDetailModal';
 import ClaimModal from './ClaimModal';
 
 export default function WarrantyContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
-    const [warranties, setWarranties] = useState<any[]>([]);
-    const [report, setReport] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    
+    const queryClient = useQueryClient();
+
     // Filters
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'claimed' | 'void'>('all');
     const [expiringFilter, setExpiringFilter] = useState<string>('');
@@ -18,33 +17,34 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
 
     const [selectedWarranty, setSelectedWarranty] = useState<any>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-    
+
     const [claimWarranty, setClaimWarranty] = useState<any>(null);
     const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const reportRes = await salesApi.getWarrantiesReport();
-            setReport(reportRes.data?.data);
+    const { data: report } = useQuery({
+        queryKey: ['warranties', 'report'],
+        queryFn: async () => {
+            const res = await salesApi.getWarrantiesReport();
+            return res.data?.data;
+        },
+    });
 
+    const { data: warranties = [], isLoading: loading } = useQuery<any[]>({
+        queryKey: ['warranties', 'list', { statusFilter, expiringFilter, searchQuery }],
+        queryFn: async () => {
             const params: any = {};
             if (statusFilter !== 'all') params.status = statusFilter;
             if (expiringFilter) params.expiring_in_days = parseInt(expiringFilter);
             if (searchQuery) params.search = searchQuery;
 
             const res = await salesApi.getWarranties(params);
-            setWarranties(res.data?.data?.data || []);
-        } catch (err) {
+            return res.data?.data?.data || [];
+        },
+    });
 
-        } finally {
-            setLoading(false);
-        }
+    const loadData = () => {
+        queryClient.invalidateQueries({ queryKey: ['warranties'] });
     };
-
-    useEffect(() => {
-        loadData();
-    }, [statusFilter, expiringFilter, searchQuery]);
 
     const handleOpenClaim = (w: any) => {
         setClaimWarranty(w);

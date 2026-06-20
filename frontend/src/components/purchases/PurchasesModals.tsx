@@ -1,5 +1,6 @@
 import React, { memo, useState } from 'react';
 import PriceCompareModal from './PriceCompareModal';
+import PurchaseInstallmentsModal from './PurchaseInstallmentsModal';
 
 interface PurchasesModalsProps {
     isRTL: boolean;
@@ -38,9 +39,19 @@ const PurchasesModals = memo(function PurchasesModals({
     statusConfig, getStatusLabel, formatCurrency
 }: PurchasesModalsProps) {
     const [comparingProductId, setComparingProductId] = useState<string | null>(null);
+    const [showInstallments, setShowInstallments] = useState(false);
 
     return (
         <>
+            {showInstallments && selectedOrder && (
+                <PurchaseInstallmentsModal 
+                    invoice={selectedOrder}
+                    isRTL={isRTL}
+                    onClose={() => setShowInstallments(false)}
+                    formatCurrency={formatCurrency}
+                />
+            )}
+
             {showOrderModal && newOrder && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-surface-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowOrderModal(false)}>
                     <div className="relative w-full max-w-5xl rounded-3xl overflow-hidden bg-white dark:bg-surface-900 shadow-2xl border border-surface-200 dark:border-surface-800 flex flex-col" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh' }}>
@@ -231,6 +242,9 @@ const PurchasesModals = memo(function PurchasesModals({
 
                         <div className="flex justify-end gap-3 border-t border-white/10 pt-4">
                             <button onClick={() => setSelectedOrder(null)} className="px-4 py-2 text-surface-400">{isRTL ? 'إغلاق' : 'Close'}</button>
+                            {(selectedOrder.total - (selectedOrder.paid_amount || 0)) > 0 && (
+                                <button onClick={() => setShowInstallments(true)} className="px-4 py-2 rounded-lg bg-primary-500/20 text-primary-400 font-bold border border-primary-500/30">📅 {isRTL ? 'جدولة الأقساط' : 'Schedule Installments'}</button>
+                            )}
                             {(selectedOrder.status === 'draft' || selectedOrder.status === 'pending') && (
                                 <button onClick={() => openEditOrder(selectedOrder)} className="px-4 py-2 rounded-lg bg-surface-hover text-primary">{isRTL ? 'تعديل الفاتورة' : 'Edit'}</button>
                             )}

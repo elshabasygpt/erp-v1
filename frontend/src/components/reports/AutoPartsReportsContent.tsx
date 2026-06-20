@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { reportsApi, inventoryApi } from '@/lib/api';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -10,66 +11,67 @@ import {
 export default function AutoPartsReportsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
     const [activeTab, setActiveTab] = useState<'slow' | 'top-make' | 'missing' | 'profit'>('slow');
-    const [loading, setLoading] = useState(false);
 
     // Slow Moving State
-    const [slowData, setSlowData] = useState<any>(null);
     const [slowDays, setSlowDays] = useState(90);
 
     // Top By Make State
-    const [topData, setTopData] = useState<any>(null);
     const [topDateFrom, setTopDateFrom] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
     const [topDateTo, setTopDateTo] = useState(new Date().toISOString().split('T')[0]);
     const [topMakeFilter, setTopMakeFilter] = useState('');
     const [selectedMake, setSelectedMake] = useState<number | null>(null);
-    const [makes, setMakes] = useState<any[]>([]);
-
-    // Missing Parts State
-    const [missingData, setMissingData] = useState<any>(null);
 
     // Profit By Brand State
-    const [profitData, setProfitData] = useState<any>(null);
     const [profitGroupBy, setProfitGroupBy] = useState<'brand' | 'quality_grade'>('brand');
     const [profitFrom, setProfitFrom] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
     const [profitTo, setProfitTo] = useState(new Date().toISOString().split('T')[0]);
 
     // Load makes for filter
-    useEffect(() => {
-        inventoryApi.getVehicleMakes()
-            .then(res => setMakes(res.data?.data || []))
-            .catch(() => {});
-    }, []);
+    const { data: makes = [] } = useQuery<any[]>({
+        queryKey: ['vehicle-makes'],
+        queryFn: async () => {
+            const res = await inventoryApi.getVehicleMakes();
+            return res.data?.data || [];
+        },
+    });
 
-    // Load data when tab changes or filters change
-    const loadData = useCallback(async () => {
-        setLoading(true);
-        try {
-            if (activeTab === 'slow') {
-                const res = await reportsApi.getSlowMovingParts({ days: slowDays });
-                setSlowData(res.data?.data);
-            } else if (activeTab === 'top-make') {
-                const res = await reportsApi.getTopPartsByMake({
-                    date_from: topDateFrom, date_to: topDateTo,
-                    make_id: topMakeFilter || undefined
-                });
-                setTopData(res.data?.data);
-                if (res.data?.data?.by_make?.length > 0 && !selectedMake) {
-                    setSelectedMake(res.data.data.by_make[0].make_id);
-                }
-            } else if (activeTab === 'missing') {
-                const res = await reportsApi.getMissingParts({});
-                setMissingData(res.data?.data);
-            } else if (activeTab === 'profit') {
-                const res = await reportsApi.getProfitByBrand({
-                    date_from: profitFrom, date_to: profitTo, group_by: profitGroupBy
-                });
-                setProfitData(res.data?.data);
+    const { data: slowData, isLoading: loadingSlow } = useQuery({
+        queryKey: ['auto-parts-reports', 'slow-moving', slowDays],
+        queryFn: async () => (await reportsApi.getSlowMovingParts({ days: slowDays })).data?.data,
+        enabled: activeTab === 'slow',
+    });
+
+    const { data: topData, isLoading: loadingTop } = useQuery({
+        queryKey: ['auto-parts-reports', 'top-by-make', topDateFrom, topDateTo, topMakeFilter],
+        queryFn: async () => {
+            const res = await reportsApi.getTopPartsByMake({
+                date_from: topDateFrom, date_to: topDateTo,
+                make_id: topMakeFilter || undefined
+            });
+            const data = res.data?.data;
+            if (data?.by_make?.length > 0 && !selectedMake) {
+                setSelectedMake(data.by_make[0].make_id);
             }
-        } catch (e) {  }
-        finally { setLoading(false); }
-    }, [activeTab, slowDays, topDateFrom, topDateTo, topMakeFilter, profitGroupBy, profitFrom, profitTo]);
+            return data;
+        },
+        enabled: activeTab === 'top-make',
+    });
 
-    useEffect(() => { loadData(); }, [loadData]);
+    const { data: missingData, isLoading: loadingMissing } = useQuery({
+        queryKey: ['auto-parts-reports', 'missing-parts'],
+        queryFn: async () => (await reportsApi.getMissingParts({})).data?.data,
+        enabled: activeTab === 'missing',
+    });
+
+    const { data: profitData, isLoading: loadingProfit } = useQuery({
+        queryKey: ['auto-parts-reports', 'profit-by-brand', profitFrom, profitTo, profitGroupBy],
+        queryFn: async () => (await reportsApi.getProfitByBrand({
+            date_from: profitFrom, date_to: profitTo, group_by: profitGroupBy
+        })).data?.data,
+        enabled: activeTab === 'profit',
+    });
+
+    const loading = activeTab === 'slow' ? loadingSlow : activeTab === 'top-make' ? loadingTop : activeTab === 'missing' ? loadingMissing : loadingProfit;
 
     const fmt = (n: number) => new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US').format(Math.round(n || 0));
     const fmtCur = (n: number) => fmt(n) + (isRTL ? ' ر.س' : ' SAR');

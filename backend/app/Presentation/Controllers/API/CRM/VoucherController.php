@@ -25,13 +25,16 @@ class VoucherController extends BaseTenantController
             'customer_id' => 'nullable|uuid|exists:tenant.customers,id',
             'supplier_id' => 'nullable|uuid',
             'notes' => 'nullable|string',
+            'safe_id' => 'nullable|uuid|exists:tenant.safes,id',
         ]);
 
         if (empty($validated['customer_id']) && empty($validated['supplier_id'])) {
             return $this->error('Voucher must be linked to either a customer or supplier', 422);
         }
 
-        DB::connection('tenant')->beginTransaction();
+        /** @var \Illuminate\Database\Connection $db */
+        $db = DB::connection('tenant');
+        $db->beginTransaction();
 
         try {
             // 1. Create the Voucher
@@ -48,13 +51,46 @@ class VoucherController extends BaseTenantController
                 'created_by' => $request->user()->id ?? null,
             ]);
 
+            // 1.5 Update Safe Balance and Create Safe Transaction
+            if (!empty($validated['safe_id'])) {
+                /** @var \Illuminate\Database\Eloquent\Builder $safeQuery */
+                $safeQuery = \App\Infrastructure\Eloquent\Models\SafeModel::query();
+                $safe = $safeQuery->where(['tenant_id' => $this->getTenantId($request)])
+                    ->find($validated['safe_id']);
+                
+                if ($safe) {
+                    $isReceipt = $validated['type'] === 'receipt';
+                    $isPayment = $validated['type'] === 'payment';
+
+                    if ($isReceipt) {
+                        $safe->balance += $validated['amount'];
+                    } elseif ($isPayment) {
+                        $safe->balance -= $validated['amount'];
+                    }
+                    $safe->save();
+
+                    \App\Infrastructure\Eloquent\Models\SafeTransactionModel::query()->create([
+                        'tenant_id' => $this->getTenantId($request),
+                        'id' => Str::uuid()->toString(),
+                        'safe_id' => $safe->id,
+                        'type' => $isReceipt ? 'deposit' : ($isPayment ? 'withdrawal' : 'other'),
+                        'amount' => $validated['amount'],
+                        'description' => 'سند: ' . $voucher->reference_number . ' - ' . ($validated['notes'] ?? ''),
+                        'reference_type' => 'voucher',
+                        'reference_id' => $voucher->id,
+                        'created_by' => $request->user()->id ?? null,
+                        'transaction_date' => $validated['date'],
+                    ]);
+                }
+            }
+
             // 2. Automated Accounting (Double-Entry Journal)
             // Note: In a true ERP, you would query Chart of Accounts for the specific IDs.
             // For now, we simulate inserting a double-entry record into `journal_entries`
             // dynamically to satisfy the requirement "الاثنين".
 
             $journalId = Str::uuid()->toString();
-            DB::connection('tenant')->table('journal_entries')->insert([
+            $db->table('journal_entries')->insert([
                 'tenant_id' => $this->getTenantId($request),
                 'id' => $journalId,
                 'entry_number' => 'JE-'.time().'-'.rand(10, 99),
@@ -77,11 +113,21 @@ class VoucherController extends BaseTenantController
 
             // Dummy logic representing the two sides of the accounting equation
             // Side A: Asset/Expense
-            DB::connection('tenant')->table('journal_entry_lines')->insert([
+            $safeAccountId = null;
+            if (isset($safe)) {
+                if ($safe->bank_account_id && $safe->bankAccount) {
+                    $safeAccountId = $safe->bankAccount->chart_of_account_id;
+                } else {
+                    $safeAccountId = $safe->account_id;
+                }
+            }
+            $finalAccountId = $safeAccountId ?: self::getSystemAccountId('cash_or_expense', $this->getTenantId($request));
+
+            $db->table('journal_entry_lines')->insert([
                 'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'journal_entry_id' => $journalId,
-                'account_id' => self::getSystemAccountId('cash_or_expense', $this->getTenantId($request)), // Abstracted resolver
+                'account_id' => $finalAccountId,
                 'debit' => $isCustomerCredit ? $validated['amount'] : 0,
                 'credit' => $isCustomerCredit ? 0 : $validated['amount'],
                 'description' => 'حساب نقدية/أخرى',
@@ -90,7 +136,7 @@ class VoucherController extends BaseTenantController
             ]);
 
             // Side B: Accounts Receivable (Customer)
-            DB::connection('tenant')->table('journal_entry_lines')->insert([
+            $db->table('journal_entry_lines')->insert([
                 'tenant_id' => $this->getTenantId($request),
                 'id' => Str::uuid()->toString(),
                 'journal_entry_id' => $journalId,
@@ -102,12 +148,14 @@ class VoucherController extends BaseTenantController
                 'updated_at' => now(),
             ]);
 
-            DB::connection('tenant')->commit();
+            $db->commit();
 
             return $this->success($voucher, 'Voucher issued & Journal encoded successfully', 201);
 
         } catch (\Exception $e) {
-            DB::connection('tenant')->rollBack();
+            /** @var \Illuminate\Database\Connection $dbRollback */
+            $dbRollback = DB::connection('tenant');
+            $dbRollback->rollBack();
 
             return $this->error('Failed to issue voucher: '.$e->getMessage(), 500);
         }
@@ -119,12 +167,15 @@ class VoucherController extends BaseTenantController
      */
     private static function getSystemAccountId(string $alias, int|string $tenantId): string
     {
+        /** @var \Illuminate\Database\Connection $db */
+        $db = DB::connection('tenant');
+        
         // Simple mock returning the first asset/revenue account IDs to avoid crash.
-        $acc = DB::connection('tenant')->table('accounts')->where('tenant_id', $tenantId)->first();
+        $acc = $db->table('accounts')->where(['tenant_id' => $tenantId])->first();
         if (! $acc) {
             // Seed a dummy account if pure empty DB
             $id = Str::uuid()->toString();
-            DB::connection('tenant')->table('accounts')->insert([
+            $db->table('accounts')->insert([
                 'tenant_id' => $tenantId,
                 'id' => $id,
                 'code' => rand(1000, 9999),

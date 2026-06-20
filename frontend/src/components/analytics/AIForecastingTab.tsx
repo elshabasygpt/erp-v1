@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { inventoryApi } from '@/lib/api';
+import { inventoryApi, analyticsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function AIForecastingTab({ locale }: { locale: string }) {
     const isRTL = locale === 'ar';
@@ -14,8 +15,13 @@ export default function AIForecastingTab({ locale }: { locale: string }) {
     const [autoPO, setAutoPO] = useState<any>(null);
     const [loading, setLoading] = useState({ forecast: false, partnerForecast: false, autoPO: false });
     const [threshold, setThreshold] = useState(10);
+    const [predictiveData, setPredictiveData] = useState<any>(null);
 
     useEffect(() => {
+        // Load predictive analytics from new API
+        analyticsApi.getPredictiveDashboard().then(res => {
+            setPredictiveData(res.data?.data || res.data);
+        }).catch(err => console.error(err));
         inventoryApi.getWarehouses({}).then(r => {
             const wh = r.data?.data || r.data || [];
             setWarehouses(wh);
@@ -55,6 +61,60 @@ export default function AIForecastingTab({ locale }: { locale: string }) {
 
     return (
         <div className="space-y-6 animate-fade-in">
+            {predictiveData && (
+                <>
+                    {/* Cash Flow Prediction */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div className="glass-card p-6 rounded-2xl col-span-1 md:col-span-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/20">
+                            <h2 className="font-bold text-lg mb-4 text-emerald-800 dark:text-emerald-300">💰 {isRTL ? 'توقعات السيولة النقدية (نهاية الشهر)' : 'Cash Flow Prediction (Month End)'}</h2>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                    <p className="text-xs text-surface-500">{isRTL ? 'الرصيد الحالي' : 'Current Balance'}</p>
+                                    <p className="text-xl font-bold">{predictiveData.cash_flow_prediction?.current_balance?.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-surface-500 text-green-600">{isRTL ? 'مقبوضات متوقعة' : 'Incoming (AR)'}</p>
+                                    <p className="text-xl font-bold text-green-600">+{predictiveData.cash_flow_prediction?.incoming_ar?.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-surface-500 text-red-600">{isRTL ? 'مدفوعات متوقعة' : 'Outgoing (AP)'}</p>
+                                    <p className="text-xl font-bold text-red-600">-{predictiveData.cash_flow_prediction?.outgoing_ap?.toFixed(2)}</p>
+                                </div>
+                                <div className="p-3 bg-white dark:bg-surface-800 rounded-xl shadow-sm">
+                                    <p className="text-xs text-surface-500">{isRTL ? 'الرصيد المتوقع' : 'Predicted Balance'}</p>
+                                    <p className={`text-2xl font-black ${predictiveData.cash_flow_prediction?.predicted_balance_30_days > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {predictiveData.cash_flow_prediction?.predicted_balance_30_days?.toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sales Forecast Chart */}
+                    <div className="glass-card p-6 rounded-2xl mb-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="font-bold text-lg">📈 {isRTL ? 'توقعات المبيعات (الذكاء الاصطناعي)' : 'Sales Trend & AI Forecast'}</h2>
+                            <span className="px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-xs font-bold">
+                                {isRTL ? 'توقع الشهر القادم:' : 'Next Month Prediction:'} {predictiveData.sales_forecast?.next_month_prediction?.toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={predictiveData.sales_forecast?.trend || []}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                                    <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                                    <Legend />
+                                    <Line type="monotone" name={isRTL ? "مبيعات فعلية" : "Actual Sales"} dataKey="actual" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                                    <Line type="monotone" strokeDasharray="5 5" name={isRTL ? "توقعات" : "Forecast"} dataKey="predicted" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {/* Inventory Forecast Section */}
             <div className="glass-card rounded-2xl overflow-hidden">
                 <div className="px-6 py-5 border-b border-surface-200 dark:border-surface-700 flex flex-wrap justify-between items-center gap-3">

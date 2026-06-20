@@ -22,7 +22,7 @@ class InvoiceModel extends BaseModel
         'commission_amount',
         'sales_channel_id', 'sales_channel_name',
         'pricing_adjustment_type', 'pricing_adjustment_value',
-        'due_date', 'internal_notes', 'reference_no', 'paid_amount', 'salesperson_id', 'cost_center_id', 'currency_id', 'exchange_rate',
+        'due_date', 'internal_notes', 'reference_no', 'paid_amount', 'salesperson_id', 'cost_center_id', 'currency_id', 'exchange_rate', 'payment_method', 'offline_id',
     ];
 
     protected $casts = [

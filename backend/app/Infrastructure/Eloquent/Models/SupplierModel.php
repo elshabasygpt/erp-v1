@@ -33,4 +33,14 @@ class SupplierModel extends BaseModel
     {
         return $this->hasMany(SupplierPriceListModel::class, 'supplier_id');
     }
+
+    public function orderingSchedule()
+    {
+        return $this->hasOne(SupplierOrderingScheduleModel::class, 'supplier_id');
+    }
+
+    public function defaultProducts()
+    {
+        return $this->hasMany(ProductDefaultSupplierModel::class, 'supplier_id');
+    }
 }

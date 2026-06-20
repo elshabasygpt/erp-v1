@@ -22,11 +22,12 @@ interface InventoryFormModalProps {
     units: Unit[];
     setPromptModal: (v: any) => void;
     updateCostAndProfit: (cost: number, profit: number) => void;
+    products?: Product[];
 }
 
 const InventoryFormModal = memo(function InventoryFormModal({
     isRTL, inv, common, showAddEdit, setShowAddEdit, editingProduct, form, setForm,
-    saveProduct, generateBarcode, groups, units, setPromptModal, updateCostAndProfit
+    saveProduct, generateBarcode, groups, units, setPromptModal, updateCostAndProfit, products = []
 }: InventoryFormModalProps) {
     if (!showAddEdit) return null;
     const availableSubs = form.mainGroupId ? groups.find(g => g.id === form.mainGroupId)?.subGroups || [] : [];
@@ -285,6 +286,22 @@ const InventoryFormModal = memo(function InventoryFormModal({
                                             />
                                         </div>
                                     )}
+                                </div>
+                                <div className="col-span-1 md:col-span-2 pt-2 border-t" style={{ borderColor: 'var(--border-default)' }}>
+                                    <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>
+                                        {isRTL ? 'تحديث رقم القطعة (رقم القطعة الجديد)' : 'Superseded By (New Part)'}
+                                    </label>
+                                    <select className="select-field w-full" value={form.supersededById || ''} onChange={e => setForm((f:any) => ({ ...f, supersededById: e.target.value }))}>
+                                        <option value="">{isRTL ? 'لا يوجد استبدال' : 'Not Superseded'}</option>
+                                        {products.filter(p => p.id !== editingProduct?.id).map(p => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.partNumber} - {isRTL ? p.nameAr : p.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs mt-1 text-gray-500">
+                                        {isRTL ? 'إذا كان هذا الرقم قديماً وتم تغييره من قبل المصنع، اختر الرقم الجديد هنا.' : 'If this part number was changed by the manufacturer, select the new part here.'}
+                                    </p>
                                 </div>
                             </div>
                         </div>

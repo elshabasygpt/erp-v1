@@ -2,6 +2,8 @@
 
 use App\Presentation\Controllers\API\Accounting\AccountingSettingsController;
 use App\Presentation\Controllers\API\Accounting\BankAccountController;
+use App\Presentation\Controllers\API\Accounting\ChartOfAccountsController;
+use App\Presentation\Controllers\API\Accounting\JournalEntryController;
 use App\Presentation\Controllers\API\Accounting\CreditNoteController;
 use App\Presentation\Controllers\API\Accounting\FixedAssetController;
 use App\Presentation\Controllers\API\Accounting\ReportsController;
@@ -15,6 +17,7 @@ use App\Presentation\Controllers\API\CRM\CustomerController;
 use App\Presentation\Controllers\API\CRM\CustomerInteractionController;
 use App\Presentation\Controllers\API\CRM\CustomerVehicleController;
 use App\Presentation\Controllers\API\CRM\ReceivableController;
+use App\Presentation\Controllers\API\CRM\PayableController;
 use App\Presentation\Controllers\API\CRM\SalesFollowUpController;
 use App\Presentation\Controllers\API\CRM\SupplierController;
 use App\Presentation\Controllers\API\CRM\VoucherController;
@@ -46,6 +49,8 @@ use App\Presentation\Controllers\API\Purchases\PurchaseReturnController;
 use App\Presentation\Controllers\API\Purchases\SupplierPaymentAllocationController;
 use App\Presentation\Controllers\API\Purchases\ProcurementController;
 use App\Presentation\Controllers\API\Purchases\SupplierPriceListController;
+use App\Presentation\Controllers\API\Purchases\SupplierCoreReturnController;
+use App\Presentation\Controllers\API\Purchases\SupplierOrderController;
 use App\Presentation\Controllers\API\Reports\ReportController;
 use App\Presentation\Controllers\API\Reports\AutoPartsReportController;
 use App\Presentation\Controllers\API\Sales\AdvancedSalesReportController;
@@ -59,6 +64,7 @@ use App\Presentation\Controllers\API\Sales\SalesReturnController;
 use App\Presentation\Controllers\API\Sales\ShippingController;
 use App\Presentation\Controllers\API\Sales\WarrantyController;
 use App\Presentation\Controllers\API\Sales\ZatcaOnboardingController;
+use App\Presentation\Controllers\API\Settings\BackupController;
 use App\Presentation\Controllers\API\Settings\WebhookController;
 use App\Presentation\Controllers\API\SettingsController;
 use App\Presentation\Controllers\API\Subscription\SubscriptionController;
@@ -169,6 +175,30 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::put('/deliveries/{id}/status', [DeliveryController::class, 'updateStatus']);
     });
 
+    // Accounting
+    Route::prefix('accounting')->group(function () {
+        // Chart of Accounts
+        Route::get('/accounts', [ChartOfAccountsController::class, 'index']);
+        Route::get('/accounts/tree', [ChartOfAccountsController::class, 'tree']);
+        Route::post('/accounts', [ChartOfAccountsController::class, 'store']);
+        Route::put('/accounts/{id}', [ChartOfAccountsController::class, 'update']);
+        Route::delete('/accounts/{id}', [ChartOfAccountsController::class, 'destroy']);
+
+        // Journal Entries
+        Route::get('/journal-entries', [JournalEntryController::class, 'index']);
+        Route::post('/journal-entries', [JournalEntryController::class, 'store']);
+        Route::get('/journal-entries/{id}', [JournalEntryController::class, 'show']);
+    });
+
+    // HR
+    Route::prefix('hr')->group(function () {
+        Route::get('/employees', [EmployeeController::class, 'index']);
+        Route::post('/employees', [EmployeeController::class, 'store']);
+        Route::get('/employees/{id}', [EmployeeController::class, 'show']);
+        Route::put('/employees/{id}', [EmployeeController::class, 'update']);
+        Route::delete('/employees/{id}', [EmployeeController::class, 'destroy']);
+    });
+
     // Approvals
     Route::prefix('approvals')->group(function () {
         Route::get('/inbox', [ApprovalController::class, 'inbox']);
@@ -182,7 +212,10 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
     Route::prefix('treasury')->group(function () {
         Route::get('/safes', [TreasuryController::class, 'getSafes']);
         Route::post('/safes', [TreasuryController::class, 'storeSafe']);
+        Route::put('/safes/{id}', [TreasuryController::class, 'updateSafe']);
+        Route::delete('/safes/{id}', [TreasuryController::class, 'destroySafe']);
         Route::post('/safes/{id}/assign-user', [TreasuryController::class, 'assignUser']);
+        Route::get('/safes/{id}/transactions', [TreasuryController::class, 'getTransactions']);
         Route::post('/transactions', [TreasuryController::class, 'storeTransaction']);
         Route::post('/transfer', [TreasuryController::class, 'transfer']);
     });
@@ -202,6 +235,9 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/kpis', [ReportController::class, 'getGeneralKpis']);
         Route::get('/vat-report', [ReportController::class, 'getVatReport']);
         Route::get('/aging', [ReportController::class, 'getAgingReport']);
+        Route::get('/payables/reminders', [\App\Presentation\Controllers\API\Reports\PayablesReportController::class, 'getInstallmentReminders']);
+        Route::get('/receivables/reminders', [\App\Presentation\Controllers\API\Reports\ReceivablesReportController::class, 'getInstallmentReminders']);
+
 
         // Auto Parts Specialized Reports
         Route::prefix('auto-parts')->group(function () {
@@ -258,6 +294,10 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/products/{id}/alternatives', [ProductController::class, 'getAlternatives']);
         Route::post('/products/{id}/alternatives', [ProductController::class, 'attachAlternative']);
         Route::delete('/products/{id}/alternatives/{alternativeId}', [ProductController::class, 'detachAlternative']);
+
+        // Product Kits/Assemblies
+        Route::get('/products/{id}/assemblies', [ProductController::class, 'getAssemblies']);
+        Route::post('/products/{id}/assemblies', [ProductController::class, 'saveAssemblies']);
 
         // Stock Movements
         Route::get('/movements/summary', [StockMovementController::class, 'summary']);
@@ -319,6 +359,8 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('receivables/statement/{customerId}', [ReceivableController::class, 'statement']);
         Route::post('receivables/collect', [ReceivableController::class, 'collectPayment']);
 
+        Route::get('payables/aging', [PayableController::class, 'agingReport']);
+
         Route::get('customers/export', [CustomerController::class, 'export']);
         Route::post('customers/import', [CustomerController::class, 'import']);
         Route::get('customers/{id}/statement', [CustomerController::class, 'statement']);
@@ -357,11 +399,18 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/invoices/{id}', [PurchaseController::class, 'show']);
         Route::put('/invoices/{id}', [PurchaseController::class, 'update']);
         Route::put('/invoices/{id}/status', [PurchaseController::class, 'updateStatus']);
+        
+        // Purchase Installments
+        Route::get('/invoices/{id}/installments', [PurchaseController::class, 'getInstallments']);
+        Route::post('/invoices/{id}/installments', [PurchaseController::class, 'saveInstallments']);
+        Route::post('/installments/{id}/pay', [PurchaseController::class, 'payInstallment']);
+
 
         // Advanced Procurement Workflow
         Route::get('/requests', [ProcurementController::class, 'listRequests']);
         Route::post('/requests', [ProcurementController::class, 'storeRequest']);
         Route::put('/requests/{id}/status', [ProcurementController::class, 'updateRequestStatus']);
+        Route::post('/requests/{id}/convert-to-po', [ProcurementController::class, 'convertToPO']);
 
         Route::get('/rfqs', [ProcurementController::class, 'listRFQs']);
         Route::post('/rfqs', [ProcurementController::class, 'storeRFQ']);
@@ -376,6 +425,13 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/returns/{id}', [PurchaseReturnController::class, 'show']);
         Route::put('/returns/{id}/status', [PurchaseReturnController::class, 'updateStatus']);
 
+        // Supplier Core Returns
+        Route::get('/core-returns', [SupplierCoreReturnController::class, 'index']);
+        Route::post('/core-returns', [SupplierCoreReturnController::class, 'store']);
+        Route::get('/core-returns/{id}', [SupplierCoreReturnController::class, 'show']);
+        Route::post('/core-returns/{id}/ship', [SupplierCoreReturnController::class, 'ship']);
+        Route::post('/core-returns/{id}/credit', [SupplierCoreReturnController::class, 'credit']);
+
         // Supplier Payment Allocations
         Route::get('/payments/{paymentId}/allocations', [SupplierPaymentAllocationController::class, 'index']);
         Route::post('/payments/{paymentId}/allocations', [SupplierPaymentAllocationController::class, 'store']);
@@ -389,6 +445,22 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
             Route::put('/{id}',                 [SupplierPriceListController::class, 'update']);
             Route::delete('/{id}',              [SupplierPriceListController::class, 'destroy']);
             Route::get('/{id}/history',         [SupplierPriceListController::class, 'getHistory']);
+        });
+
+        // Smart Order Scheduling System
+        Route::prefix('order-schedules')->group(function () {
+            Route::get('/',     [SupplierOrderController::class, 'getSchedules']);
+            Route::post('/',    [SupplierOrderController::class, 'storeSchedule']);
+            Route::delete('/{id}', [SupplierOrderController::class, 'destroySchedule']);
+        });
+
+        Route::post('/product-suppliers', [SupplierOrderController::class, 'setProductSupplier']);
+
+        Route::prefix('smart-order')->group(function () {
+            Route::get('/low-stock',   [SupplierOrderController::class, 'getLowStockGrouped']);
+            Route::get('/upcoming',    [SupplierOrderController::class, 'getUpcomingOrders']);
+            Route::post('/draft',      [SupplierOrderController::class, 'draftForSupplier']);
+            Route::post('/draft-all',  [SupplierOrderController::class, 'draftAllSuppliers']);
         });
     });
 
@@ -431,6 +503,7 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         // Fixed Assets
         Route::apiResource('fixed-assets', FixedAssetController::class);
         Route::post('fixed-assets/{id}/depreciate', [FixedAssetController::class, 'calculateDepreciation']);
+        Route::get('fixed-assets/{id}/depreciation-schedule', [FixedAssetController::class, 'depreciationSchedule']);
 
         // Account Mappings
         Route::get('/account-mappings', [AccountingSettingsController::class, 'getAccountMappings']);
@@ -469,6 +542,15 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::put('/{id}', [WebhookController::class, 'update']);
         Route::delete('/{id}', [WebhookController::class, 'destroy']);
         Route::get('/{id}/logs', [WebhookController::class, 'getLogs']);
+    });
+
+    // Backups
+    Route::prefix('backups')->group(function () {
+        Route::get('/', [BackupController::class, 'index']);
+        Route::post('/', [BackupController::class, 'store'])->middleware('throttle:3,60');
+        Route::get('/{id}', [BackupController::class, 'show']);
+        Route::get('/{id}/download', [BackupController::class, 'download']);
+        Route::post('/{id}/restore', [BackupController::class, 'restore'])->middleware('throttle:3,60');
     });
 
     // HR & Payroll

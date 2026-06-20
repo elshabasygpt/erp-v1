@@ -20,13 +20,13 @@ class CreditNoteController extends BaseTenantController
     public function index(Request $request): JsonResponse
     {
         $type = $request->query('type');
-        $query = CreditNoteModel::query()->where('tenant_id', $this->getTenantId($request))->with(['customer', 'supplier', 'salesInvoice', 'purchaseInvoice']);
+        $query = CreditNoteModel::query()->where(['tenant_id' => $this->getTenantId($request)])->with(['customer', 'supplier', 'salesInvoice', 'purchaseInvoice']);
 
         if ($type) {
-            $query->where('type', $type);
+            $query->where(['type' => $type]);
         }
 
-        $creditNotes = $query->orderBy('created_at', 'desc')->paginate(15);
+        $creditNotes = $query->latest()->paginate(15);
 
         return $this->paginated($creditNotes->toArray(), 'Credit notes retrieved successfully');
     }
@@ -55,10 +55,15 @@ class CreditNoteController extends BaseTenantController
         }
     }
 
-    public function apply(string $id): JsonResponse
+    public function apply(Request $request, string $id): JsonResponse
     {
+        $validated = $request->validate([
+            'invoice_id' => 'nullable|uuid',
+            'amount' => 'nullable|numeric|min:0'
+        ]);
+
         try {
-            $this->creditNoteService->applyCreditNote($id, (string) (Auth::id() ?? ''));
+            $this->creditNoteService->applyCreditNote($id, $validated, (string) (Auth::id() ?? ''));
 
             return $this->success(null, 'Credit note applied successfully');
         } catch (\Exception $e) {

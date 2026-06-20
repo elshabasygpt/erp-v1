@@ -3,7 +3,7 @@ import type { Product } from './useInventoryData';
 import toast from 'react-hot-toast';
 
 export function useProductForm(products: Product[], setProducts: any, groups: any[], setGroups: any, units: any[], setUnits: any, isRTL: boolean) {
-    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', qualityGrade: '', countryOfOrigin: '', warrantyMonths: 0, hasCoreCharge: false, coreChargeAmount: 0, isKit: false, binLocation: '' };
+    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', qualityGrade: '', countryOfOrigin: '', warrantyMonths: 0, hasCoreCharge: false, coreChargeAmount: 0, isKit: false, supersededById: '', binLocation: '' };
     const [form, setForm] = useState(emptyForm);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -21,14 +21,14 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
 
     const openEdit = useCallback((p: Product) => {
         setEditingProduct(p);
-        setForm({ code: p.code, name: p.name, nameAr: p.nameAr, barcode: p.barcode, mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '', warrantyMonths: (p as any).warranty_months || 0, hasCoreCharge: (p as any).has_core_charge || false, coreChargeAmount: parseFloat((p as any).core_charge_amount || 0), isKit: p.isKit || false, binLocation: p.binLocation || '' });
+        setForm({ code: p.code, name: p.name, nameAr: p.nameAr, barcode: p.barcode, mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '', warrantyMonths: (p as any).warranty_months || 0, hasCoreCharge: (p as any).has_core_charge || false, coreChargeAmount: parseFloat((p as any).core_charge_amount || 0), isKit: p.isKit || false, supersededById: (p as any).superseded_by_id || '', binLocation: p.binLocation || '' });
         setShowAddEdit(true);
     }, []);
 
     const openDuplicate = useCallback((p: Product) => {
         setEditingProduct(null);
         const nextCode = String(Math.max(...products.map(pr => parseInt(pr.code) || 0), 1000) + 1);
-        setForm({ code: nextCode, name: `${p.name} (Copy)`, nameAr: `${p.nameAr} (نسخة)`, barcode: generateBarcode(), mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '', warrantyMonths: (p as any).warranty_months || 0, hasCoreCharge: (p as any).has_core_charge || false, coreChargeAmount: parseFloat((p as any).core_charge_amount || 0), isKit: p.isKit || false, binLocation: p.binLocation || '' });
+        setForm({ code: nextCode, name: `${p.name} (Copy)`, nameAr: `${p.nameAr} (نسخة)`, barcode: generateBarcode(), mainGroupId: p.mainGroupId, subGroupId: p.subGroupId, unitId: p.unitId, costPrice: p.costPrice, sellPrice: p.sellPrice, wholesalePrice: p.wholesalePrice, semiWholesalePrice: p.semiWholesalePrice, profitPercent: p.profitPercent, discount: p.discount, minStock: p.minStock, description: p.description, imageUrl: p.imageUrl || '', oemNumber: p.oemNumber || '', partNumber: p.partNumber || '', brand: p.brand || '', qualityGrade: p.qualityGrade || '', countryOfOrigin: p.countryOfOrigin || '', warrantyMonths: (p as any).warranty_months || 0, hasCoreCharge: (p as any).has_core_charge || false, coreChargeAmount: parseFloat((p as any).core_charge_amount || 0), isKit: p.isKit || false, supersededById: (p as any).superseded_by_id || '', binLocation: p.binLocation || '' });
         setShowAddEdit(true);
     }, [products]);
 
@@ -61,6 +61,7 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                 has_core_charge: form.hasCoreCharge || false,
                 core_charge_amount: form.coreChargeAmount || 0,
                 is_kit: form.isKit || false,
+                superseded_by_id: form.supersededById || null,
             };
 
             if (editingProduct) {

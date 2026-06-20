@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { tasksApi } from '@/lib/api';
 import TaskListView from './TaskListView';
 import KanbanView from './KanbanView';
@@ -8,9 +9,8 @@ import TaskDetailModal from './TaskDetailModal';
 
 export default function TasksContent({ dict, locale }: { dict: any, locale: string }) {
     const isRTL = locale === 'ar';
+    const queryClient = useQueryClient();
     const [view, setView] = useState<'list' | 'kanban'>('list');
-    const [tasks, setTasks] = useState<any[]>([]);
-    const [dashboard, setDashboard] = useState<any>(null);
     const [filters, setFilters] = useState({
         view: 'mine' as 'mine' | 'assigned' | 'created' | 'all',
         status: '',
@@ -22,34 +22,44 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingTask, setEditingTask] = useState<any>(null);
     const [detailTask, setDetailTask] = useState<any>(null);
-    const [users, setUsers] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [tasksRes, dashRes, catsRes, usersRes] = await Promise.all([
-                tasksApi.getTasks({ ...filters, due: filters.due || undefined, per_page: 100 }),
-                tasksApi.getDashboard(),
-                tasksApi.getCategories(),
-                // In a real app we might fetch from usersApi, but assuming a generic endpoint:
-                fetch('/api/users', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }).then(res => res.json()).catch(() => ({ data: [] }))
-            ]);
-            setTasks(tasksRes.data?.data || tasksRes.data || []);
-            setDashboard(dashRes.data?.data || dashRes.data);
-            setCategories(catsRes.data?.data || catsRes.data || []);
-            setUsers(usersRes.data || []);
-        } catch (error) {
+    const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+        queryKey: ['tasks', 'list', filters],
+        queryFn: async () => {
+            const res = await tasksApi.getTasks({ ...filters, due: filters.due || undefined, per_page: 100 });
+            return res.data?.data || res.data || [];
+        },
+    });
 
-        } finally {
-            setLoading(false);
-        }
+    const { data: dashboard } = useQuery({
+        queryKey: ['tasks', 'dashboard'],
+        queryFn: async () => {
+            const res = await tasksApi.getDashboard();
+            return res.data?.data || res.data;
+        },
+    });
+
+    const { data: categories = [] } = useQuery({
+        queryKey: ['tasks', 'categories'],
+        queryFn: async () => {
+            const res = await tasksApi.getCategories();
+            return res.data?.data || res.data || [];
+        },
+    });
+
+    const { data: users = [] } = useQuery({
+        queryKey: ['tasks', 'users'],
+        queryFn: async () => {
+            const json = await fetch('/api/users', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+                .then(res => res.json())
+                .catch(() => ({ data: [] }));
+            return json.data || [];
+        },
+    });
+
+    const refresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
     };
-
-    useEffect(() => {
-        fetchData();
-    }, [filters]);
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -123,12 +133,12 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
             </div>
 
             {/* Content */}
-            {loading && tasks.length === 0 ? (
+            {tasksLoading && tasks.length === 0 ? (
                 <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>
             ) : view === 'list' ? (
-                <TaskListView tasks={tasks} isRTL={isRTL} onRefresh={fetchData} setDetailTask={setDetailTask} setEditingTask={setEditingTask} />
+                <TaskListView tasks={tasks} isRTL={isRTL} onRefresh={refresh} setDetailTask={setDetailTask} setEditingTask={setEditingTask} />
             ) : (
-                <KanbanView tasks={tasks} isRTL={isRTL} onRefresh={fetchData} setDetailTask={setDetailTask} setEditingTask={setEditingTask} />
+                <KanbanView tasks={tasks} isRTL={isRTL} onRefresh={refresh} setDetailTask={setDetailTask} setEditingTask={setEditingTask} />
             )}
 
             {/* Modals */}
@@ -139,7 +149,7 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
                     categories={categories}
                     isRTL={isRTL}
                     onClose={() => { setShowAddModal(false); setEditingTask(null); }}
-                    onSuccess={() => { setShowAddModal(false); setEditingTask(null); fetchData(); }}
+                    onSuccess={() => { setShowAddModal(false); setEditingTask(null); refresh(); }}
                 />
             )}
 
@@ -148,7 +158,7 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
                     task={detailTask}
                     isRTL={isRTL}
                     onClose={() => setDetailTask(null)}
-                    onRefresh={fetchData}
+                    onRefresh={refresh}
                     onEdit={() => { setDetailTask(null); setEditingTask(detailTask); }}
                 />
             )}

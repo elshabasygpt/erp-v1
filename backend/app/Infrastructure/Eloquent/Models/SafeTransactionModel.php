@@ -12,6 +12,7 @@ class SafeTransactionModel extends Model
     protected $table = 'safe_transactions';
 
     protected $fillable = [
+        'tenant_id',
         'safe_id',
         'type', // deposit, withdrawal, transfer_in, transfer_out
         'amount',

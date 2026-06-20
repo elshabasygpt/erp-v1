@@ -16,6 +16,9 @@ final class CreateDeliveryDTO
         public readonly ?string $notes = null,
         public readonly string $status = 'pending',
         public readonly array $items = [],
+        public readonly ?float $latitude = null,
+        public readonly ?float $longitude = null,
+        public readonly ?string $deliveryAddressText = null,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -29,7 +32,10 @@ final class CreateDeliveryDTO
             deliveryFee: (float) ($data['delivery_fee'] ?? 0),
             notes: $data['notes'] ?? null,
             status: $data['status'] ?? 'pending',
-            items: $data['items'] ?? []
+            items: $data['items'] ?? [],
+            latitude: isset($data['latitude']) ? (float) $data['latitude'] : null,
+            longitude: isset($data['longitude']) ? (float) $data['longitude'] : null,
+            deliveryAddressText: $data['delivery_address_text'] ?? null,
         );
     }
 }

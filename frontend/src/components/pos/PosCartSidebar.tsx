@@ -180,7 +180,14 @@ const PosCartSidebar = memo(function PosCartSidebar({
                                 <div className="flex justify-between items-start">
                                     <div className="pe-6">
                                         <p className="text-xs font-bold line-clamp-1">{isRTL ? (item.product.nameAr || item.product.name) : item.product.name}</p>
-                                        <p className="text-[10px] text-primary-600 font-bold mt-0.5">{parseFloat(item.product.price).toLocaleString()} ر.س</p>
+                                        <p className="text-[10px] text-primary-600 font-bold mt-0.5">
+                                            {parseFloat(item.product.price).toLocaleString()} ر.س
+                                            {item.product.warehouseStocks?.[0]?.bin_location && (
+                                                <span className="ml-2 text-gray-500 bg-gray-100 px-1 rounded">
+                                                    {isRTL ? 'الرف:' : 'Bin:'} {item.product.warehouseStocks[0].bin_location}
+                                                </span>
+                                            )}
+                                        </p>
                                     </div>
                                     <div className="text-end">
                                         <p className="text-sm font-black text-indigo-700 dark:text-indigo-400">{lineTotal.toFixed(2)}</p>

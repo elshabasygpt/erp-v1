@@ -21,8 +21,18 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
     public function create(JournalEntry $entry): JournalEntry
     {
         $closure = function () use ($entry) {
+            $tenantId = null;
+            if (app()->has('current_tenant')) {
+                $tenantId = app('current_tenant')->id;
+            } elseif (auth()->check()) {
+                $tenantId = auth()->user()->tenant_id;
+            } elseif (request()->header('X-Tenant-ID')) {
+                $tenantId = request()->header('X-Tenant-ID');
+            }
+
             JournalEntryModel::query()->create([
                 'id' => $entry->getId(),
+                'tenant_id' => $tenantId,
                 'entry_number' => $entry->getEntryNumber(),
                 'date' => $entry->getDate(),
                 'description' => $entry->getDescription(),
@@ -36,6 +46,7 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
             foreach ($entry->getLines() as $line) {
                 JournalEntryLineModel::query()->create([
                     'id' => $line->getId(),
+                    'tenant_id' => $tenantId,
                     'journal_entry_id' => $entry->getId(),
                     'account_id' => $line->getAccountId(),
                     'debit' => $line->getDebit(),
@@ -107,7 +118,7 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
         return $q->get()->toArray();
     }
 
-    public function getGeneralLedger(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $costCenterId = null): array
+    public function getGeneralLedger(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $costCenterId = null, ?string $accountId = null): array
     {
         $tenantId = app('current_tenant')->id ?? 'tenant_context';
         $q = DB::connection('tenant')->table('journal_entry_lines')->where('journal_entry_lines.tenant_id', $tenantId)
@@ -119,6 +130,10 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
 
         if ($costCenterId) {
             $q->where('journal_entry_lines.cost_center_id', $costCenterId);
+        }
+
+        if ($accountId) {
+            $q->where('journal_entry_lines.account_id', $accountId);
         }
 
         return $q->get()->toArray();

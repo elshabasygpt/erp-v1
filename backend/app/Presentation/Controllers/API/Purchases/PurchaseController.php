@@ -215,4 +215,120 @@ class PurchaseController extends BaseTenantController
 
         return $this->success($purchase, 'Purchase invoice status updated successfully');
     }
+
+    public function getInstallments(Request $request, string $id): JsonResponse
+    {
+        $purchase = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $purchase) {
+            return $this->error('Purchase invoice not found', 404);
+        }
+
+        $installments = $purchase->installments()->get();
+
+        return $this->success($installments, 'Installments retrieved successfully');
+    }
+
+    public function saveInstallments(Request $request, string $id): JsonResponse
+    {
+        $purchase = PurchaseInvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $purchase) {
+            return $this->error('Purchase invoice not found', 404);
+        }
+
+        $validated = $request->validate([
+            'installments' => 'required|array|min:1',
+            'installments.*.due_date' => 'required|date',
+            'installments.*.amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $totalInstallments = collect($validated['installments'])->sum('amount');
+        $dueAmount = $purchase->total - $purchase->paid_amount;
+
+        // Tolerance for rounding issues
+        if (abs($totalInstallments - $dueAmount) > 0.1) {
+            return $this->error("Total installments amount ($totalInstallments) does not match the invoice due amount ($dueAmount).", 422);
+        }
+
+        \DB::connection('tenant')->transaction(function () use ($purchase, $validated, $request) {
+            // Only delete unpaid installments if we are regenerating
+            // (Assuming we are fully replacing them if they are all unpaid)
+            $hasPaid = $purchase->installments()->where('paid_amount', '>', 0)->exists();
+            if ($hasPaid) {
+                throw new \DomainException('Cannot regenerate installments because some have already been paid.');
+            }
+
+            $purchase->installments()->delete();
+
+            foreach ($validated['installments'] as $inst) {
+                $purchase->installments()->create([
+                    'id' => Str::uuid()->toString(),
+                    'tenant_id' => $this->getTenantId($request),
+                    'due_date' => $inst['due_date'],
+                    'amount' => $inst['amount'],
+                    'paid_amount' => 0,
+                    'status' => 'unpaid'
+                ]);
+            }
+        });
+
+        return $this->success($purchase->installments()->get(), 'Installments saved successfully', 201);
+    }
+
+    public function payInstallment(Request $request, string $id): JsonResponse
+    {
+        $installment = \App\Infrastructure\Eloquent\Models\PurchaseInstallmentModel::query()
+            ->where('tenant_id', $this->getTenantId($request))
+            ->find($id);
+
+        if (! $installment) {
+            return $this->error('Installment not found', 404);
+        }
+
+        if ($installment->status === 'paid') {
+            return $this->error('Installment is already fully paid.', 422);
+        }
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|string',
+            'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120', // Max 5MB
+            'safe_id' => 'nullable|uuid|exists:tenant.safes,id',
+        ]);
+
+        $amountToPay = (float) $validated['amount'];
+        $remaining = $installment->amount - $installment->paid_amount;
+
+        if ($amountToPay > $remaining + 0.1) {
+            return $this->error("Cannot pay more than the remaining amount ($remaining).", 422);
+        }
+
+        $path = $installment->attachment_path;
+        if ($request->hasFile('attachment')) {
+            $path = $request->file('attachment')->store('installments/receipts', 'public');
+        }
+
+        \DB::connection('tenant')->transaction(function () use ($installment, $validated, $amountToPay, $remaining, $path, $request) {
+            $newPaid = $installment->paid_amount + $amountToPay;
+            $status = ($newPaid >= $installment->amount - 0.1) ? 'paid' : 'partial';
+
+            $installment->update([
+                'paid_amount' => $newPaid,
+                'status' => $status,
+                'payment_method' => $validated['payment_method'],
+                'payment_date' => now(),
+                'attachment_path' => $path,
+            ]);
+
+            // Update the purchase invoice paid amount as well
+            $invoice = $installment->purchaseInvoice;
+            if ($invoice) {
+                $invoice->increment('paid_amount', $amountToPay);
+            }
+
+            // Here we could also record a transaction in safe_transactions if safe_id is provided
+            // For now, we focus on the installment state.
+        });
+
+        return $this->success($installment->refresh(), 'Installment payment recorded successfully');
+    }
 }

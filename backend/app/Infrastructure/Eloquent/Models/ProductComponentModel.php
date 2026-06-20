@@ -13,6 +13,7 @@ class ProductComponentModel extends BaseModel
     protected $connection = 'tenant';
 
     protected $fillable = [
+        'tenant_id',
         'parent_product_id',
         'child_product_id',
         'quantity_required',

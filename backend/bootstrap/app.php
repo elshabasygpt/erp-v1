@@ -68,5 +68,8 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('approvals:escalate')->hourly();
+        $schedule->command('orders:process-reminders')->hourly();
+        $schedule->command('backups:run-daily')->dailyAt('02:00')->onOneServer();
+        $schedule->command('backups:prune')->dailyAt('03:00')->onOneServer();
     })
     ->create();

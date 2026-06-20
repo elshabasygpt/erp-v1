@@ -296,17 +296,22 @@ class ConfirmInvoiceUseCase
         $paidAmount = $invoice->getType() === 'cash' ? $invoice->getTotal() : $invoice->getPaidAmount();
         $dueAmount = $invoice->getTotal() - $paidAmount;
 
-        // Debit: Cash (for paid amount)
+        // Debit: Cash or Bank (for paid amount)
         if ($paidAmount > 0) {
+            $paymentMethod = $invoiceModel->payment_method ?? 'cash';
+            $cashAccountId = ($paymentMethod === 'card' || $paymentMethod === 'bank_transfer') 
+                ? $this->accountMapping->resolve('bank') 
+                : $this->accountMapping->resolve('cash');
+
             $journalEntry->addLine(new JournalEntryLine(
                 id: null,
                 journalEntryId: '',
-                accountId: $this->accountMapping->resolve('cash'),
+                accountId: $cashAccountId,
                 debit: round($paidAmount * $exchangeRate, 2),
                 credit: 0,
                 transactionDebit: round($paidAmount, 2),
                 transactionCredit: 0.0,
-                description: 'Cash payment for sales',
+                description: "Payment for sales ({$paymentMethod})",
             ));
         }
 

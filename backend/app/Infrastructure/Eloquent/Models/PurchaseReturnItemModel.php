@@ -7,6 +7,7 @@ class PurchaseReturnItemModel extends BaseModel
     protected $table = 'purchase_return_items';
 
     protected $fillable = [
+        'tenant_id',
         'purchase_return_id',
         'product_id',
         'quantity',

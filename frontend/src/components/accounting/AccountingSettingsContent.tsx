@@ -9,7 +9,9 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
     const [activeTab, setActiveTab] = useState<'mappings' | 'fiscal_periods'>('mappings');
 
     // Mappings state
-    const [mappings, setMappings] = useState<any[]>([]);
+    const [mappings, setMappings] = useState<Record<string, string>>({
+        cash: '', bank: '', ar: '', ap: '', revenue: '', cogs: '', inventory: '', vat_payable: '', vat_input: '', discount: '', finished_goods_inventory: '', accumulated_depreciation: '', depreciation_expense: ''
+    });
     const [chartOfAccounts, setChartOfAccounts] = useState<any[]>([]);
     const [savingMappings, setSavingMappings] = useState(false);
 
@@ -30,31 +32,35 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
     const loadMappings = async () => {
         try {
             const res = await accountingApi.getAccountMappings();
-            setMappings(res.data?.data || []);
+            const data = res.data?.data || res.data || {};
+            setMappings(prev => ({ ...prev, ...data }));
         } catch (error) {
-
         }
     };
 
     const loadChartOfAccounts = async () => {
         try {
-            const res = await accountingApi.getChartOfAccounts();
-            setChartOfAccounts(res.data?.data || []);
+            const res = await accountingApi.getAccountsTree();
+            const tree = res.data?.data || res.data || [];
+            const flatAccounts: any[] = [];
+            const flatten = (nodes: any[]) => {
+                nodes.forEach(node => {
+                    flatAccounts.push(node);
+                    if (node.children && node.children.length > 0) {
+                        flatten(node.children);
+                    }
+                });
+            };
+            flatten(tree);
+            setChartOfAccounts(flatAccounts);
         } catch (error) {
-
         }
     };
 
     const handleSaveMappings = async () => {
         setSavingMappings(true);
         try {
-            const payload = {
-                mappings: mappings.map(m => ({
-                    mapping_key: m.mapping_key,
-                    account_id: m.account_id
-                }))
-            };
-            await accountingApi.updateAccountMappings(payload);
+            await accountingApi.updateAccountMappings(mappings);
             toast.success(isRTL ? 'تم حفظ الربط المحاسبي بنجاح' : 'Account mappings saved successfully');
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Error saving mappings');
@@ -64,7 +70,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
     };
 
     const updateMapping = (key: string, accountId: string) => {
-        setMappings(prev => prev.map(m => m.mapping_key === key ? { ...m, account_id: accountId } : m));
+        setMappings(prev => ({ ...prev, [key]: accountId }));
     };
 
     const loadPeriods = async () => {
@@ -141,25 +147,151 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {mappings.map((mapping) => (
-                            <div key={mapping.mapping_key} className="space-y-2">
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    {mapping.description || mapping.mapping_key}
-                                </label>
-                                <select 
-                                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                                    value={mapping.account_id || ''}
-                                    onChange={(e) => updateMapping(mapping.mapping_key, e.target.value)}
-                                >
-                                    <option value="">{isRTL ? '-- اختر حساب --' : '-- Select Account --'}</option>
-                                    {chartOfAccounts.map(acc => (
-                                        <option key={acc.id} value={acc.id}>
-                                            {acc.code} - {isRTL ? acc.name_ar || acc.name : acc.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        ))}
+                        
+                        {/* Cash & Bank */}
+                        <div className="space-y-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                {isRTL ? 'النقدية والبنوك' : 'Cash & Bank'}
+                            </h3>
+                            {['cash', 'bank'].map((key) => (
+                                <div key={key} className="space-y-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {key === 'cash' ? (isRTL ? 'حساب الصندوق الرئيسي' : 'Main Cash Account') : (isRTL ? 'حساب البنك الرئيسي' : 'Main Bank Account')}
+                                    </label>
+                                    <select 
+                                        className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                        value={mappings[key] || ''}
+                                        onChange={(e) => updateMapping(key, e.target.value)}
+                                    >
+                                        <option value="">{isRTL ? '-- غير محدد --' : '-- Not Set --'}</option>
+                                        {chartOfAccounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.code} - {isRTL ? acc.name_ar : acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Sales & Receivables */}
+                        <div className="space-y-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                {isRTL ? 'المبيعات والعملاء' : 'Sales & Receivables'}
+                            </h3>
+                            {['revenue', 'ar', 'discount'].map((key) => (
+                                <div key={key} className="space-y-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {key === 'revenue' ? (isRTL ? 'حساب إيرادات المبيعات' : 'Sales Revenue') : key === 'ar' ? (isRTL ? 'حساب العملاء' : 'Accounts Receivable (AR)') : (isRTL ? 'الخصومات المسموح بها' : 'Discount Allowed')}
+                                    </label>
+                                    <select 
+                                        className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                        value={mappings[key] || ''}
+                                        onChange={(e) => updateMapping(key, e.target.value)}
+                                    >
+                                        <option value="">{isRTL ? '-- غير محدد --' : '-- Not Set --'}</option>
+                                        {chartOfAccounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.code} - {isRTL ? acc.name_ar : acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Purchases & Payables */}
+                        <div className="space-y-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                {isRTL ? 'المشتريات والموردين' : 'Purchases & Payables'}
+                            </h3>
+                            {['inventory', 'cogs', 'ap'].map((key) => (
+                                <div key={key} className="space-y-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {key === 'inventory' ? (isRTL ? 'حساب المخزون (أصول)' : 'Inventory Asset') : key === 'cogs' ? (isRTL ? 'تكلفة البضاعة المباعة' : 'COGS') : (isRTL ? 'حساب الموردين' : 'Accounts Payable (AP)')}
+                                    </label>
+                                    <select 
+                                        className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                        value={mappings[key] || ''}
+                                        onChange={(e) => updateMapping(key, e.target.value)}
+                                    >
+                                        <option value="">{isRTL ? '-- غير محدد --' : '-- Not Set --'}</option>
+                                        {chartOfAccounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.code} - {isRTL ? acc.name_ar : acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Manufacturing */}
+                        <div className="space-y-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                {isRTL ? 'التصنيع والتجميع' : 'Manufacturing & Assembly'}
+                            </h3>
+                            {['finished_goods_inventory'].map((key) => (
+                                <div key={key} className="space-y-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {isRTL ? 'حساب مخزون المنتجات الجاهزة' : 'Finished Goods Inventory'}
+                                    </label>
+                                    <select
+                                        className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                        value={mappings[key] || ''}
+                                        onChange={(e) => updateMapping(key, e.target.value)}
+                                    >
+                                        <option value="">{isRTL ? '-- غير محدد --' : '-- Not Set --'}</option>
+                                        {chartOfAccounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.code} - {isRTL ? acc.name_ar : acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Fixed Assets */}
+                        <div className="space-y-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                {isRTL ? 'الأصول الثابتة' : 'Fixed Assets'}
+                            </h3>
+                            {['accumulated_depreciation', 'depreciation_expense'].map((key) => (
+                                <div key={key} className="space-y-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {key === 'accumulated_depreciation' ? (isRTL ? 'مجمع الإهلاك (أصول)' : 'Accumulated Depreciation') : (isRTL ? 'مصروف الإهلاك' : 'Depreciation Expense')}
+                                    </label>
+                                    <select
+                                        className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                        value={mappings[key] || ''}
+                                        onChange={(e) => updateMapping(key, e.target.value)}
+                                    >
+                                        <option value="">{isRTL ? '-- غير محدد --' : '-- Not Set --'}</option>
+                                        {chartOfAccounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.code} - {isRTL ? acc.name_ar : acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Taxes */}
+                        <div className="space-y-4 p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                {isRTL ? 'الضرائب (VAT)' : 'Taxes (VAT)'}
+                            </h3>
+                            {['vat_payable', 'vat_input'].map((key) => (
+                                <div key={key} className="space-y-1">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        {key === 'vat_payable' ? (isRTL ? 'ضريبة القيمة المضافة المحصلة' : 'VAT Payable (Output)') : (isRTL ? 'ضريبة المدخلات' : 'VAT Receivable (Input)')}
+                                    </label>
+                                    <select 
+                                        className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                        value={mappings[key] || ''}
+                                        onChange={(e) => updateMapping(key, e.target.value)}
+                                    >
+                                        <option value="">{isRTL ? '-- غير محدد --' : '-- Not Set --'}</option>
+                                        {chartOfAccounts.map(acc => (
+                                            <option key={acc.id} value={acc.id}>{acc.code} - {isRTL ? acc.name_ar : acc.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+
                     </div>
 
                     <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">

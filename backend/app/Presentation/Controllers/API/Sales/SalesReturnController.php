@@ -8,6 +8,7 @@ use App\Application\Sales\DTOs\Returns\ProcessSalesReturnDTO;
 use App\Application\Sales\UseCases\Returns\ProcessSalesReturnUseCase;
 use App\Infrastructure\Eloquent\Models\SalesReturnModel;
 use App\Presentation\Controllers\API\BaseTenantController;
+use App\Application\Sales\UseCases\ConfirmSalesReturnUseCase;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -47,11 +48,29 @@ class SalesReturnController extends BaseTenantController
             'items.*.product_id' => 'required|uuid|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.condition' => 'nullable|string|in:good,damaged',
+            'offline_id' => 'nullable|string',
         ]);
 
         try {
+            $tenantId = $this->getTenantId($request);
+
+            // Idempotency Check for offline sync
+            if (!empty($validated['offline_id'])) {
+                $existing = SalesReturnModel::where('tenant_id', $tenantId)
+                    ->where('offline_id', $validated['offline_id'])
+                    ->first();
+                if ($existing) {
+                    return $this->success(['id' => $existing->id], 'Sales Return already synced', 200);
+                }
+            }
+
             $dto = ProcessSalesReturnDTO::fromRequest($validated);
             $salesReturn = $this->processSalesReturnUseCase->execute($dto, auth()->id() ?? '');
+
+            // Update offline_id if provided
+            if (!empty($validated['offline_id'])) {
+                SalesReturnModel::where('id', $salesReturn->getId())->update(['offline_id' => $validated['offline_id']]);
+            }
 
             return $this->created($salesReturn->toArray(), 'Sales return processed successfully');
         } catch (\DomainException $e) {
@@ -90,7 +109,17 @@ class SalesReturnController extends BaseTenantController
             'status' => 'required|string|in:draft,completed,cancelled',
         ]);
 
-        $salesReturn->update($validated);
+        if ($salesReturn->status !== 'completed' && $validated['status'] === 'completed') {
+            try {
+                $confirmUseCase = app(ConfirmSalesReturnUseCase::class);
+                $confirmUseCase->execute($salesReturn->id, auth()->id() ?? '');
+                $salesReturn->refresh();
+            } catch (\Exception $e) {
+                return $this->error('Failed to confirm sales return: ' . $e->getMessage(), 422);
+            }
+        } else {
+            $salesReturn->update($validated);
+        }
 
         return $this->success($salesReturn->toArray(), 'Sales return status updated successfully');
     }

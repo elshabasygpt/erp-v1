@@ -27,6 +27,10 @@ class BankReconciliationService
     {
         $data['id'] = Str::uuid()->toString();
         $data['created_by'] = $userId;
+        $data['tenant_id'] = app()->has('current_tenant') ? app('current_tenant')->id : null;
+        if (!isset($data['current_balance'])) {
+            $data['current_balance'] = $data['opening_balance'] ?? 0;
+        }
 
         return BankAccountModel::query()->create($data);
     }

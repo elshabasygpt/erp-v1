@@ -22,7 +22,7 @@ interface JournalEntryRepositoryInterface
 
     public function getByAccount(string $accountId, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null): array;
 
-    public function getGeneralLedger(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $costCenterId = null): array;
+    public function getGeneralLedger(\DateTimeImmutable $from, \DateTimeImmutable $to, ?string $costCenterId = null, ?string $accountId = null): array;
 
     public function getTrialBalance(\DateTimeImmutable $asOf, ?string $costCenterId = null): array;
 }

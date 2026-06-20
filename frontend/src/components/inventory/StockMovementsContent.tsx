@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -22,15 +23,11 @@ const TYPE_CONFIG = {
 export default function StockMovementsContent({ dict, locale }: StockMovementsContentProps) {
     const isRTL = locale === 'ar';
 
-    const [loading, setLoading]             = useState(true);
-    const [movements, setMovements]         = useState<any[]>([]);
-    const [summary, setSummary]             = useState<any>(null);
-    const [products, setProducts]           = useState<any[]>([]);
+    const queryClient = useQueryClient();
     const [typeFilter, setTypeFilter]       = useState<MovementType | 'all'>('all');
     const [search, setSearch]               = useState('');
     const [showAddModal, setShowAddModal]   = useState(false);
     const [saving, setSaving]               = useState(false);
-    const [error, setError]                 = useState<string | null>(null);
 
     const [form, setForm] = useState({
         product_id: '', warehouse_id: '',
@@ -39,29 +36,36 @@ export default function StockMovementsContent({ dict, locale }: StockMovementsCo
     });
 
     // ── Load data ──────────────────────────────────────────────────
-    const loadData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [movRes, sumRes, prodRes] = await Promise.all([
-                inventoryApi.getMovements({ type: typeFilter !== 'all' ? typeFilter : undefined }),
-                inventoryApi.getMovementsSummary(),
-                inventoryApi.getProducts({ per_page: 200 }),
-            ]);
-            setMovements(movRes.data?.data || movRes.data || []);
-            setSummary(sumRes.data?.data || sumRes.data || {});
-            setProducts(prodRes.data?.data || prodRes.data || []);
-        } catch {
-            // Fallback to empty state — backend may be offline
-            setError(isRTL ? 'تعذّر تحميل البيانات. تحقق من اتصال الخادم.' : 'Failed to load data. Check server connection.');
-            setMovements([]);
-            setSummary({});
-        } finally {
-            setLoading(false);
-        }
-    }, [typeFilter, isRTL]);
+    const { data: movements = [], isLoading: loadingMovements, isError: movementsErrored, refetch: refetchMovements } = useQuery<any[]>({
+        queryKey: ['stock-movements', 'list', typeFilter],
+        queryFn: async () => {
+            const res = await inventoryApi.getMovements({ type: typeFilter !== 'all' ? typeFilter : undefined });
+            return res.data?.data || res.data || [];
+        },
+    });
 
-    useEffect(() => { loadData(); }, [loadData]);
+    const { data: summary = {}, isLoading: loadingSummary } = useQuery<any>({
+        queryKey: ['stock-movements', 'summary'],
+        queryFn: async () => {
+            const res = await inventoryApi.getMovementsSummary();
+            return res.data?.data || res.data || {};
+        },
+    });
+
+    const { data: products = [] } = useQuery<any[]>({
+        queryKey: ['products', 'list', { per_page: 200 }],
+        queryFn: async () => {
+            const res = await inventoryApi.getProducts({ per_page: 200 });
+            return res.data?.data || res.data || [];
+        },
+    });
+
+    const loading = loadingMovements || loadingSummary;
+    const error = movementsErrored ? (isRTL ? 'تعذّر تحميل البيانات. تحقق من اتصال الخادم.' : 'Failed to load data. Check server connection.') : null;
+    const loadData = () => {
+        refetchMovements();
+        queryClient.invalidateQueries({ queryKey: ['stock-movements', 'summary'] });
+    };
 
     // ── Local filter (search only — type filter hits API) ──────────
     const filtered = useMemo(() => {

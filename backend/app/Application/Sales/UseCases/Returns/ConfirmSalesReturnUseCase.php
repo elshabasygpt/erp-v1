@@ -61,17 +61,24 @@ class ConfirmSalesReturnUseCase
             $cashAccount = AccountModel::query()->where('code', '1101')->first();
 
             if ($salesReturnsAccount && $vatPayableAccount && ($receivablesAccount || $cashAccount)) {
+                $tenantId = $salesReturn->tenant_id ?? (app()->has('current_tenant') ? app('current_tenant')->id : null);
+                $entryNumber = 'JE-'.date('Y').'-'.str_pad((string) (JournalEntryModel::count() + 1), 4, '0', STR_PAD_LEFT);
+
                 $je = JournalEntryModel::query()->create([
                     'id' => Str::uuid()->toString(),
+                    'tenant_id' => $tenantId,
+                    'entry_number' => $entryNumber,
                     'date' => now(),
-                    'reference' => 'RET-'.$salesReturn->return_number,
+                    'reference_type' => 'sales_return',
+                    'reference_id' => $salesReturn->id,
                     'description' => 'Sales Return for Invoice '.$invoice->invoice_number,
-                    'status' => 'posted',
+                    'is_posted' => true,
                     'created_by' => $userId,
                 ]);
 
                 JournalEntryLineModel::query()->create([
                     'id' => Str::uuid()->toString(),
+                    'tenant_id' => $tenantId,
                     'journal_entry_id' => $je->id,
                     'account_id' => $salesReturnsAccount->id,
                     'debit' => $salesReturn->subtotal,
@@ -82,6 +89,7 @@ class ConfirmSalesReturnUseCase
                 if ($salesReturn->vat_amount > 0) {
                     JournalEntryLineModel::query()->create([
                         'id' => Str::uuid()->toString(),
+                        'tenant_id' => $tenantId,
                         'journal_entry_id' => $je->id,
                         'account_id' => $vatPayableAccount->id,
                         'debit' => $salesReturn->vat_amount,
@@ -94,6 +102,7 @@ class ConfirmSalesReturnUseCase
 
                 JournalEntryLineModel::query()->create([
                     'id' => Str::uuid()->toString(),
+                    'tenant_id' => $tenantId,
                     'journal_entry_id' => $je->id,
                     'account_id' => $creditAccount->id,
                     'debit' => 0,

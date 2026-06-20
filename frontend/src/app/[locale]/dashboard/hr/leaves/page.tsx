@@ -1,249 +1,280 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-
-type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other';
-type LeaveStatus = 'pending' | 'approved' | 'rejected';
-
-const LEAVE_TYPE_CONFIG: Record<LeaveType, { ar: string; en: string; color: string; icon: string }> = {
-    annual:  { ar: 'إجازة سنوية',      en: 'Annual Leave',   color: 'bg-blue-100 text-blue-700',   icon: '🌴' },
-    sick:    { ar: 'إجازة مرضية',       en: 'Sick Leave',     color: 'bg-red-100 text-red-700',     icon: '🏥' },
-    unpaid:  { ar: 'إجازة بدون راتب',   en: 'Unpaid Leave',   color: 'bg-orange-100 text-orange-700', icon: '⚠️' },
-    other:   { ar: 'إجازة أخرى',        en: 'Other',          color: 'bg-slate-100 text-slate-600', icon: '📝' },
-};
-
-const STATUS_CONFIG: Record<LeaveStatus, { ar: string; en: string; color: string }> = {
-    pending:  { ar: 'قيد الانتظار', en: 'Pending',  color: 'bg-yellow-100 text-yellow-700' },
-    approved: { ar: 'موافق عليه',   en: 'Approved', color: 'bg-green-100 text-green-700' },
-    rejected: { ar: 'مرفوض',        en: 'Rejected', color: 'bg-red-100 text-red-700' },
-};
-
-const EMPTY_FORM = { employee_id: '', start_date: '', end_date: '', type: 'annual' as LeaveType, reason: '' };
+import { Plus, Check, X, Clock, Calendar } from 'lucide-react';
 
 export default function LeavesPage() {
-    const { isRTL, locale } = useLanguage();
+    const { isRTL } = useLanguage();
     const [leaves, setLeaves] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [form, setForm] = useState<any>(EMPTY_FORM);
-    const [filterType, setFilterType] = useState('all');
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [type, setType] = useState('annual');
+    const [reason, setReason] = useState('');
 
-    const fetchLeaves = useCallback(async () => {
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async () => {
         setLoading(true);
         try {
-            const res = await hrApi.getLeaves({});
-            setLeaves(res.data?.data || res.data || []);
-        } catch { setLeaves([]); } finally { setLoading(false); }
-    }, []);
+            const [leavesRes, empRes] = await Promise.all([
+                hrApi.getLeaves(),
+                hrApi.getEmployees()
+            ]);
+            setLeaves(leavesRes.data?.data || leavesRes.data || []);
+            setEmployees(empRes.data?.data || empRes.data || []);
+        } catch (err) {
+            toast.error(isRTL ? 'فشل تحميل البيانات' : 'Failed to load data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    useEffect(() => { fetchLeaves(); }, [fetchLeaves]);
-    useEffect(() => {
-        hrApi.getEmployees({}).then(r => setEmployees(r.data?.data || r.data || [])).catch(() => {});
-    }, []);
-
-    const handleSave = async (e: React.FormEvent) => {
+    const handleApplyLeave = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await hrApi.applyLeave(form);
+            await hrApi.applyLeave({
+                employee_id: selectedEmployeeId,
+                start_date: startDate,
+                end_date: endDate,
+                type,
+                reason
+            });
+            toast.success(isRTL ? 'تم تسجيل طلب الإجازة بنجاح' : 'Leave request submitted');
             setIsModalOpen(false);
-            setForm(EMPTY_FORM);
-            fetchLeaves();
-        } catch (err: any) { toast.error(err?.response?.data?.message || 'Error applying leave'); }
+            loadData();
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || (isRTL ? 'فشل إرسال الطلب' : 'Failed to submit request'));
+        }
     };
 
-    const handleStatus = async (id: string, status: LeaveStatus) => {
+    const handleUpdateStatus = async (id: string, status: string) => {
         try {
             await hrApi.updateLeaveStatus(id, status);
-            fetchLeaves();
-        } catch {}
+            toast.success(isRTL ? 'تم تحديث حالة الطلب' : 'Status updated');
+            loadData();
+        } catch (err) {
+            toast.error(isRTL ? 'فشل تحديث الحالة' : 'Failed to update status');
+        }
     };
 
-    const calcDays = (start: string, end: string) => {
-        if (!start || !end) return 0;
-        const diff = new Date(end).getTime() - new Date(start).getTime();
-        return Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'approved': return <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 w-max"><Check size={12}/> {isRTL ? 'مقبول' : 'Approved'}</span>;
+            case 'rejected': return <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center gap-1 w-max"><X size={12}/> {isRTL ? 'مرفوض' : 'Rejected'}</span>;
+            case 'pending': return <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center gap-1 w-max"><Clock size={12}/> {isRTL ? 'قيد الانتظار' : 'Pending'}</span>;
+            default: return null;
+        }
     };
 
-    const filtered = filterType === 'all' ? leaves : leaves.filter(l => l.type === filterType);
-    const totalPending = leaves.filter(l => l.status === 'pending' || !l.status).length;
+    const getTypeLabel = (type: string) => {
+        const map: any = {
+            'annual': isRTL ? 'سنوية' : 'Annual',
+            'sick': isRTL ? 'مرضية' : 'Sick',
+            'unpaid': isRTL ? 'غير مدفوعة' : 'Unpaid',
+            'other': isRTL ? 'أخرى' : 'Other'
+        };
+        return map[type] || type;
+    };
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className={`p-6 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-500 to-cyan-600">
-                        🌴 {isRTL ? 'إدارة الإجازات' : 'Leave Management'}
-                    </h1>
-                    <p className="text-slate-500 mt-1 text-sm">{isRTL ? 'إدارة وموافقة طلبات الإجازات للموظفين' : 'Manage and approve employee leave requests'}</p>
+                    <h1 className="text-2xl font-bold mb-1">{isRTL ? 'إدارة الإجازات' : 'Leave Management'}</h1>
+                    <p className="text-surface-500 text-sm">
+                        {isRTL ? 'طلبات إجازات الموظفين واعتماداتها' : 'Employee leave requests and approvals'}
+                    </p>
                 </div>
-                <div className="flex gap-2 items-center">
-                    {totalPending > 0 && (
-                        <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium">
-                            ⏳ {totalPending} {isRTL ? 'طلب بانتظار الموافقة' : 'pending request(s)'}
-                        </span>
-                    )}
-                    <button onClick={() => { setForm(EMPTY_FORM); setIsModalOpen(true); }}
-                        className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-xl hover:opacity-90 transition font-medium shadow-sm flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                        {isRTL ? 'طلب إجازة جديد' : 'New Leave Request'}
-                    </button>
-                </div>
+                <button 
+                    onClick={() => {
+                        setSelectedEmployeeId('');
+                        setStartDate('');
+                        setEndDate('');
+                        setType('annual');
+                        setReason('');
+                        setIsModalOpen(true);
+                    }}
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg shadow-sm transition flex items-center justify-center gap-2"
+                >
+                    <Plus size={18} />
+                    {isRTL ? 'إضافة إجازة' : 'Add Leave'}
+                </button>
             </div>
 
-            {/* Type Filter */}
-            <div className="flex gap-2 flex-wrap">
-                {[
-                    { k: 'all', ar: 'الكل', en: 'All' },
-                    ...Object.entries(LEAVE_TYPE_CONFIG).map(([k, v]) => ({ k, ar: v.ar, en: v.en })),
-                ].map(f => (
-                    <button key={f.k} onClick={() => setFilterType(f.k)}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition ${filterType === f.k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 hover:border-teal-300'}`}>
-                        {isRTL ? f.ar : f.en} {filterType === f.k && `(${filtered.length})`}
-                    </button>
-                ))}
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(LEAVE_TYPE_CONFIG).map(([k, v]) => {
-                    const count = leaves.filter(l => l.type === k).length;
-                    const approved = leaves.filter(l => l.type === k && l.status === 'approved').length;
-                    return (
-                        <div key={k} className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xl">{v.icon}</span>
-                                <span className="text-xs text-slate-500">{isRTL ? v.ar : v.en}</span>
-                            </div>
-                            <p className="text-2xl font-bold">{count}</p>
-                            <p className="text-xs text-slate-400 mt-1">{approved} {isRTL ? 'موافق عليه' : 'approved'}</p>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 overflow-hidden">
                 {loading ? (
-                    <div className="text-center py-16 text-slate-400">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                    <div className="p-12 text-center text-surface-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
                 ) : (
-                    <table className="w-full text-sm">
-                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                            <tr>
-                                {[isRTL ? 'الموظف' : 'Employee', isRTL ? 'نوع الإجازة' : 'Leave Type',
-                                  isRTL ? 'من' : 'From', isRTL ? 'إلى' : 'To', isRTL ? 'الأيام' : 'Days',
-                                  isRTL ? 'السبب' : 'Reason', isRTL ? 'الحالة' : 'Status', isRTL ? 'إجراءات' : 'Actions'].map(h => (
-                                    <th key={h} className={`px-4 py-3 text-xs font-semibold text-slate-500 uppercase ${isRTL ? 'text-right' : 'text-left'}`}>{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map(leave => {
-                                const typeCfg = LEAVE_TYPE_CONFIG[leave.type as LeaveType] || LEAVE_TYPE_CONFIG.other;
-                                const statusCfg = STATUS_CONFIG[(leave.status as LeaveStatus) || 'pending'];
-                                const days = calcDays(leave.start_date, leave.end_date);
-                                return (
-                                    <tr key={leave.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
-                                        <td className={`px-4 py-3 font-medium ${isRTL ? 'text-right' : ''}`}>{leave.employee?.name || '-'}</td>
-                                        <td className={`px-4 py-3 ${isRTL ? 'text-right' : ''}`}>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${typeCfg.color}`}>{typeCfg.icon} {isRTL ? typeCfg.ar : typeCfg.en}</span>
-                                        </td>
-                                        <td className={`px-4 py-3 text-slate-500 ${isRTL ? 'text-right' : ''}`}>{leave.start_date}</td>
-                                        <td className={`px-4 py-3 text-slate-500 ${isRTL ? 'text-right' : ''}`}>{leave.end_date}</td>
-                                        <td className={`px-4 py-3 font-bold text-center ${isRTL ? 'text-right' : ''}`}>{days}</td>
-                                        <td className={`px-4 py-3 text-slate-600 max-w-xs truncate ${isRTL ? 'text-right' : ''}`}>{leave.reason}</td>
-                                        <td className={`px-4 py-3 ${isRTL ? 'text-right' : ''}`}>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusCfg.color}`}>{isRTL ? statusCfg.ar : statusCfg.en}</span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex gap-1 flex-wrap">
-                                                {(!leave.status || leave.status === 'pending') && (
-                                                    <>
-                                                        <button onClick={() => handleStatus(leave.id, 'approved')}
-                                                            className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 font-medium">
-                                                            ✅ {isRTL ? 'موافقة' : 'Approve'}
-                                                        </button>
-                                                        <button onClick={() => handleStatus(leave.id, 'rejected')}
-                                                            className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200">
-                                                            ❌ {isRTL ? 'رفض' : 'Reject'}
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <thead className="bg-surface-50 dark:bg-surface-800/50 text-surface-500 border-b border-surface-200 dark:border-surface-800 uppercase text-xs font-semibold">
+                                <tr>
+                                    <th className="px-6 py-4 text-start">{isRTL ? 'الموظف' : 'Employee'}</th>
+                                    <th className="px-6 py-4 text-start">{isRTL ? 'النوع' : 'Type'}</th>
+                                    <th className="px-6 py-4 text-start">{isRTL ? 'المدة' : 'Duration'}</th>
+                                    <th className="px-6 py-4 text-start">{isRTL ? 'الحالة' : 'Status'}</th>
+                                    <th className="px-6 py-4 text-start">{isRTL ? 'ملاحظات' : 'Reason'}</th>
+                                    <th className="px-6 py-4 text-center">{isRTL ? 'إجراءات' : 'Actions'}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {leaves.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-surface-500">
+                                            {isRTL ? 'لا توجد طلبات إجازة' : 'No leave requests found'}
                                         </td>
                                     </tr>
-                                );
-                            })}
-                            {filtered.length === 0 && (
-                                <tr><td colSpan={8} className="text-center py-14 text-slate-400">
-                                    <div className="text-5xl mb-3">🌴</div>
-                                    <p>{isRTL ? 'لا توجد طلبات إجازة' : 'No leave requests found'}</p>
-                                </td></tr>
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    leaves.map(leave => (
+                                        <tr key={leave.id} className="border-b border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="font-medium text-surface-900 dark:text-surface-100">
+                                                    {leave.employee?.name || 'Unknown'}
+                                                </div>
+                                                <div className="text-xs text-surface-500">
+                                                    {leave.employee?.position || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-1.5 text-surface-700 dark:text-surface-300">
+                                                    <Calendar size={14} className="text-surface-400" />
+                                                    {getTypeLabel(leave.type)}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-medium">{leave.start_date}</div>
+                                                <div className="text-xs text-surface-500">
+                                                    {isRTL ? 'إلى' : 'to'} {leave.end_date}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {getStatusBadge(leave.status)}
+                                            </td>
+                                            <td className="px-6 py-4 text-surface-500 text-xs max-w-[200px] truncate" title={leave.reason}>
+                                                {leave.reason || '-'}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {leave.status === 'pending' && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => handleUpdateStatus(leave.id, 'approved')}
+                                                                className="px-2 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 rounded transition text-xs font-medium flex items-center gap-1"
+                                                            >
+                                                                <Check size={14} /> {isRTL ? 'قبول' : 'Approve'}
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleUpdateStatus(leave.id, 'rejected')}
+                                                                className="px-2 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 rounded transition text-xs font-medium flex items-center gap-1"
+                                                            >
+                                                                <X size={14} /> {isRTL ? 'رفض' : 'Reject'}
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
 
-            {/* Create Modal */}
+            {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-                        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                            <h3 className="font-bold text-lg">🌴 {isRTL ? 'طلب إجازة جديد' : 'New Leave Request'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-md overflow-hidden shadow-xl border border-surface-200 dark:border-surface-800">
+                        <div className="p-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-800/50 flex justify-between items-center">
+                            <h2 className="font-bold text-lg">{isRTL ? 'طلب إجازة جديد' : 'New Leave Request'}</h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-200">
+                                <X size={20} />
+                            </button>
                         </div>
-                        <form onSubmit={handleSave} className="p-6 space-y-4">
+                        <form onSubmit={handleApplyLeave} className="p-5 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">{isRTL ? 'الموظف' : 'Employee'} *</label>
-                                <select required value={form.employee_id} onChange={e => setForm((f: any) => ({...f, employee_id: e.target.value}))}
-                                    className="w-full p-2.5 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-sm">
-                                    <option value="">{isRTL ? '-- اختر موظف --' : '-- Select Employee --'}</option>
-                                    {employees.map((emp: any) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1.5">{isRTL ? 'نوع الإجازة' : 'Leave Type'}</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {Object.entries(LEAVE_TYPE_CONFIG).map(([k, v]) => (
-                                        <button key={k} type="button" onClick={() => setForm((f: any) => ({...f, type: k}))}
-                                            className={`p-2.5 rounded-lg border text-sm text-left transition ${form.type === k ? `${v.color} border-current` : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
-                                            {v.icon} {isRTL ? v.ar : v.en}
-                                        </button>
+                                <label className="block text-sm font-medium mb-1">{isRTL ? 'الموظف' : 'Employee'} <span className="text-rose-500">*</span></label>
+                                <select 
+                                    value={selectedEmployeeId}
+                                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                                    className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                    required
+                                >
+                                    <option value="" disabled>{isRTL ? 'اختر الموظف' : 'Select Employee'}</option>
+                                    {employees.map(emp => (
+                                        <option key={emp.id} value={emp.id}>{emp.name}</option>
                                     ))}
-                                </div>
+                                </select>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1.5">{isRTL ? 'من تاريخ' : 'From'} *</label>
-                                    <input required type="date" value={form.start_date} onChange={e => setForm((f: any) => ({...f, start_date: e.target.value}))}
-                                        className="w-full p-2.5 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-sm"/>
+                                    <label className="block text-sm font-medium mb-1">{isRTL ? 'من تاريخ' : 'Start Date'} <span className="text-rose-500">*</span></label>
+                                    <input 
+                                        type="date" 
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                        required
+                                    />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1.5">{isRTL ? 'إلى تاريخ' : 'To'} *</label>
-                                    <input required type="date" value={form.end_date} min={form.start_date} onChange={e => setForm((f: any) => ({...f, end_date: e.target.value}))}
-                                        className="w-full p-2.5 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-sm"/>
+                                    <label className="block text-sm font-medium mb-1">{isRTL ? 'إلى تاريخ' : 'End Date'} <span className="text-rose-500">*</span></label>
+                                    <input 
+                                        type="date" 
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                        required
+                                    />
                                 </div>
                             </div>
-                            {form.start_date && form.end_date && (
-                                <div className="p-3 bg-teal-50 dark:bg-teal-900/20 rounded-lg border border-teal-200 dark:border-teal-800 text-sm text-teal-700 dark:text-teal-400 font-medium">
-                                    📅 {isRTL ? 'عدد الأيام:' : 'Total Days:'} <strong>{calcDays(form.start_date, form.end_date)}</strong>
-                                    {form.type === 'unpaid' && <span className="ml-2 text-orange-600">{isRTL ? '⚠️ (ستُخصم من الراتب)' : '⚠️ (Will be deducted from salary)'}</span>}
-                                </div>
-                            )}
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">{isRTL ? 'سبب الإجازة' : 'Reason'} *</label>
-                                <textarea required rows={3} value={form.reason} onChange={e => setForm((f: any) => ({...f, reason: e.target.value}))}
-                                    className="w-full p-2.5 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-sm"/>
+                                <label className="block text-sm font-medium mb-1">{isRTL ? 'نوع الإجازة' : 'Leave Type'} <span className="text-rose-500">*</span></label>
+                                <select 
+                                    value={type}
+                                    onChange={(e) => setType(e.target.value)}
+                                    className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                    required
+                                >
+                                    <option value="annual">{isRTL ? 'سنوية' : 'Annual'}</option>
+                                    <option value="sick">{isRTL ? 'مرضية' : 'Sick'}</option>
+                                    <option value="unpaid">{isRTL ? 'غير مدفوعة' : 'Unpaid'}</option>
+                                    <option value="other">{isRTL ? 'أخرى' : 'Other'}</option>
+                                </select>
                             </div>
-                            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200">{isRTL ? 'إلغاء' : 'Cancel'}</button>
-                                <button type="submit" className="px-5 py-2 text-sm bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg font-medium hover:opacity-90">
-                                    {isRTL ? '→ تقديم طلب الإجازة' : '→ Submit Request'}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">{isRTL ? 'السبب' : 'Reason'}</label>
+                                <textarea 
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                    className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500 resize-none h-20"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-surface-200 dark:border-surface-800">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="px-4 py-2 text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg font-medium transition"
+                                >
+                                    {isRTL ? 'إلغاء' : 'Cancel'}
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium shadow-sm transition"
+                                >
+                                    {isRTL ? 'حفظ' : 'Save'}
                                 </button>
                             </div>
                         </form>

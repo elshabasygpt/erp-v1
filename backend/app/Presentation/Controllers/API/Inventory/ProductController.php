@@ -26,7 +26,7 @@ class ProductController extends BaseTenantController
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $product = ProductModel::query()->where(['tenant_id' => $this->getTenantId($request)])->with(['warehouseStocks', 'units'])->find($id);
+        $product = ProductModel::query()->where(['tenant_id' => $this->getTenantId($request)])->with(['warehouseStocks', 'units', 'supersededBy', 'kitComponents.component'])->find($id);
 
         return $product ? $this->success($product->toArray()) : $this->error('Product not found.', 404);
     }
@@ -75,12 +75,19 @@ class ProductController extends BaseTenantController
             'has_core_charge' => 'nullable|boolean',
             'core_charge_amount' => 'nullable|numeric|min:0',
             'is_kit' => 'nullable|boolean',
+            'quality_grade' => 'nullable|string',
+            'warranty_months' => 'nullable|integer',
+            'country_of_origin' => 'nullable|string',
+            'superseded_by_id' => 'nullable|uuid|exists:tenant.products,id',
             'image_url' => 'nullable|string',
             'units' => 'nullable|array',
             'units.*.unit_name' => 'required|string',
             'units.*.conversion_factor' => 'required|numeric|min:0.0001',
             'units.*.barcode' => 'nullable|string',
             'units.*.sell_price' => 'nullable|numeric|min:0',
+            'kit_components' => 'nullable|array',
+            'kit_components.*.component_id' => 'required|uuid|exists:tenant.products,id',
+            'kit_components.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         $validated['id'] = Str::uuid()->toString();
@@ -114,7 +121,18 @@ class ProductController extends BaseTenantController
             }
         }
 
-        $product->load(['units', 'warehouseStocks']);
+        if (! empty($validated['kit_components']) && $product->is_kit) {
+            foreach ($validated['kit_components'] as $component) {
+                $product->kitComponents()->create([
+                    'id' => Str::uuid()->toString(),
+                    'tenant_id' => $this->getTenantId($request),
+                    'child_product_id' => $component['component_id'],
+                    'quantity_required' => $component['quantity'],
+                ]);
+            }
+        }
+
+        $product->load(['units', 'warehouseStocks', 'kitComponents.component']);
 
         return $this->success($product, 'Product created successfully', 201);
     }
@@ -152,6 +170,9 @@ class ProductController extends BaseTenantController
             'units.*.conversion_factor' => 'required|numeric|min:0.0001',
             'units.*.barcode' => 'nullable|string',
             'units.*.sell_price' => 'nullable|numeric|min:0',
+            'kit_components' => 'nullable|array',
+            'kit_components.*.component_id' => 'required|uuid|exists:tenant.products,id',
+            'kit_components.*.quantity' => 'required|numeric|min:0.01',
         ]);
 
         if (isset($validated['selling_price'])) {
@@ -180,7 +201,19 @@ class ProductController extends BaseTenantController
             }
         }
 
-        $product->load(['units', 'warehouseStocks']);
+        if (isset($validated['kit_components']) && $product->is_kit) {
+            $product->kitComponents()->delete();
+            foreach ($validated['kit_components'] as $component) {
+                $product->kitComponents()->create([
+                    'id' => Str::uuid()->toString(),
+                    'tenant_id' => $this->getTenantId($request),
+                    'child_product_id' => $component['component_id'],
+                    'quantity_required' => $component['quantity'],
+                ]);
+            }
+        }
+
+        $product->load(['units', 'warehouseStocks', 'kitComponents.component']);
 
         return $this->success($product, 'Product updated successfully');
     }
@@ -335,5 +368,47 @@ class ProductController extends BaseTenantController
         });
 
         return $this->success(null, 'Alternative product unlinked successfully');
+    }
+
+    public function getAssemblies(Request $request, string $id): JsonResponse
+    {
+        $product = ProductModel::query()->where(['tenant_id' => $this->getTenantId($request)])->find($id);
+
+        if (! $product) {
+            return $this->error('Product not found', 404);
+        }
+
+        $assemblies = $product->kitComponents()->with('component')->get();
+
+        return $this->success($assemblies);
+    }
+
+    public function saveAssemblies(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'components' => 'required|array',
+            'components.*.child_product_id' => 'required|uuid|exists:tenant.products,id',
+            'components.*.quantity_required' => 'required|numeric|min:0.01',
+        ]);
+
+        $product = ProductModel::query()->where(['tenant_id' => $this->getTenantId($request)])->find($id);
+
+        if (! $product) {
+            return $this->error('Product not found', 404);
+        }
+
+        DB::connection('tenant')->transaction(function () use ($product, $validated, $request) {
+            $product->kitComponents()->delete();
+            foreach ($validated['components'] as $component) {
+                $product->kitComponents()->create([
+                    'id' => Str::uuid()->toString(),
+                    'tenant_id' => $this->getTenantId($request),
+                    'child_product_id' => $component['child_product_id'],
+                    'quantity_required' => $component['quantity_required'],
+                ]);
+            }
+        });
+
+        return $this->success(null, 'Assemblies saved successfully');
     }
 }
