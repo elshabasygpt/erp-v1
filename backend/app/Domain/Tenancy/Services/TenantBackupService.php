@@ -39,7 +39,7 @@ final class TenantBackupService
         $startTime = now();
 
         try {
-            $timestamp = now()->format('Y-m-d_His');
+            $timestamp = now()->format('Y-m-d_His') . '_' . Str::random(4);
             $dbDumpLocal = "{$workDir}/db.sql";
             $dbDumpGzLocal = "{$workDir}/db.sql.gz";
             $dbDumpEncLocal = "{$workDir}/db.sql.gz.enc";
@@ -332,8 +332,9 @@ final class TenantBackupService
             if (is_resource($readStream)) fclose($readStream);
         }
 
-        if ($expectedHash && hash_file('sha256', $encPath) !== $expectedHash) {
-            throw new \RuntimeException('Database backup cryptographic checksum validation failed. Backup may be corrupted or tampered with.');
+        $actualHash = hash_file('sha256', $encPath);
+        if ($expectedHash && $actualHash !== $expectedHash) {
+            throw new \RuntimeException("Database backup cryptographic checksum validation failed. Expected: {$expectedHash}, Got: {$actualHash}. Path: {$encPath}");
         }
 
         $this->decryptFile($encPath, $gzPath);
@@ -379,7 +380,7 @@ final class TenantBackupService
             File::ensureDirectoryExists(dirname($destPath));
             File::copy($localPath, $destPath);
         } else {
-            $stream = fopen($localPath, 'r');
+            $stream = fopen($localPath, 'rb');
             Storage::disk('backups')->writeStream($key, $stream);
             if (is_resource($stream)) {
                 fclose($stream);

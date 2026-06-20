@@ -24,7 +24,12 @@ final class PgRestoreRunner
 
         if (($connection['driver'] ?? 'pgsql') === 'sqlite') {
             if (\Illuminate\Support\Facades\File::exists($dumpPath)) {
-                $dbPath = str_ends_with($databaseName, '.sqlite') ? $databaseName : database_path($databaseName . '.sqlite');
+                $dbPath = str_contains($databaseName, DIRECTORY_SEPARATOR) || str_contains($databaseName, '/') 
+                    ? $databaseName 
+                    : database_path($databaseName);
+                if (!str_ends_with($dbPath, '.sqlite')) {
+                    $dbPath .= '.sqlite';
+                }
                 \Illuminate\Support\Facades\File::copy($dumpPath, $dbPath);
             }
             return;
@@ -55,7 +60,12 @@ final class PgRestoreRunner
     {
         $connection = config('database.connections.tenant');
         if (($connection['driver'] ?? 'pgsql') === 'sqlite') {
-            $dbPath = str_ends_with($databaseName, '.sqlite') ? $databaseName : database_path($databaseName . '.sqlite');
+            $dbPath = str_contains($databaseName, DIRECTORY_SEPARATOR) || str_contains($databaseName, '/') 
+                ? $databaseName 
+                : database_path($databaseName);
+            if (!str_ends_with($dbPath, '.sqlite')) {
+                $dbPath .= '.sqlite';
+            }
             if (\Illuminate\Support\Facades\File::exists($dbPath)) {
                 \Illuminate\Support\Facades\File::delete($dbPath);
             }
