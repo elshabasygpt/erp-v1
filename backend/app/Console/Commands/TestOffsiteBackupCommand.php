@@ -32,13 +32,19 @@ class TestOffsiteBackupCommand extends Command
             
             File::ensureDirectoryExists(dirname($localDbPath));
             
-            // Create a real SQLite database with one table
+            // Create a real SQLite database with testing tables
             $tempDb = new \PDO('sqlite:' . $localDbPath);
             $tempDb->exec('CREATE TABLE test_table (id INTEGER PRIMARY KEY, value TEXT)');
             $tempDb->exec("INSERT INTO test_table (value) VALUES ('ERP_VALIDATION_{$testId}')");
+            
+            // Inject Accounting Ledger Simulation
+            $tempDb->exec('CREATE TABLE accounting_ledger (id INTEGER PRIMARY KEY, account TEXT, debit DECIMAL(10,2), credit DECIMAL(10,2))');
+            $tempDb->exec("INSERT INTO accounting_ledger (account, debit, credit) VALUES ('Cash', 5000.00, 0.00)");
+            $tempDb->exec("INSERT INTO accounting_ledger (account, debit, credit) VALUES ('Revenue', 0.00, 5000.00)");
+            
             $tempDb = null; // Close connection
 
-            $this->info("[1/9] Real SQLite Database Generated.");
+            $this->info("[1/9] Real SQLite Database Generated with Accounting Ledger.");
 
             // 2. Encrypt Payload
             $key = env('BACKUP_ENCRYPTION_KEY', 'simulated_drill_secret_key_123456');
@@ -118,10 +124,22 @@ class TestOffsiteBackupCommand extends Command
             $stmt = $restoredDb->query('SELECT value FROM test_table WHERE id = 1');
             $row = $stmt->fetch();
             if (!$row || $row['value'] !== "ERP_VALIDATION_{$testId}") {
-                throw new \RuntimeException('Validation failed: Restored data does not match original.');
+                throw new \RuntimeException('Validation failed: Restored basic data does not match original.');
             }
+            
+            // Verify Accounting Integrity
+            $ledgerStmt = $restoredDb->query('SELECT SUM(debit) as total_debit, SUM(credit) as total_credit FROM accounting_ledger');
+            $ledgerData = $ledgerStmt->fetch();
+            
+            if ((float)$ledgerData['total_debit'] !== 5000.00 || (float)$ledgerData['total_credit'] !== 5000.00) {
+                 throw new \RuntimeException('Validation failed: Accounting ledger balance corrupted during restoration sequence.');
+            }
+            
+            $this->info("   -> Basic Schema Intact.");
+            $this->info("   -> Accounting Ledger Double-Entry Balanced (Debit: {$ledgerData['total_debit']} | Credit: {$ledgerData['total_credit']}).");
+
             $restoredDb = null;
-            $this->info("[8/9] Data validation passed. Database is fully executable.");
+            $this->info("[8/9] Data validation passed. Database and Accounting Integrity fully verified.");
 
             // 9. Cleanup
             if ($driver === 'local') {

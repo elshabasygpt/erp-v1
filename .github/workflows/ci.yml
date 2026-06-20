@@ -47,3 +47,43 @@ jobs:
       run: npm run typecheck || true
     - name: Build
       run: npm run build
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-build]
+    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: pdo_sqlite, pdo, sqlite3
+    
+    - name: Install Dependencies
+      run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+    
+    - name: Prepare Environment
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+        touch database/database.sqlite
+    
+    - name: Enforce Pre-Deployment Snapshot
+      run: php artisan deploy:snapshot
+      
+    - name: Execute Migrations
+      id: migrate
+      run: php artisan migrate --force
+      continue-on-error: true
+      
+    - name: Automatic Rollback on Migration Failure
+      if: steps.migrate.outcome == 'failure'
+      run: |
+        echo "Migration failed! Initiating automatic rollback..."
+        php artisan deploy:snapshot-rollback
+        exit 1 # Fail the pipeline so the team knows the deployment failed

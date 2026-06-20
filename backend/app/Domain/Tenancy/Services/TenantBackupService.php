@@ -36,6 +36,7 @@ final class TenantBackupService
 
         $workDir = storage_path('app/tmp/backups/'.Str::uuid());
         File::ensureDirectoryExists($workDir);
+        $startTime = now();
 
         try {
             $timestamp = now()->format('Y-m-d_His');
@@ -153,9 +154,9 @@ final class TenantBackupService
             $filesArchiveLocal = "{$workDir}/files.zip";
 
             if (config('filesystems.disks.backups.driver') === 'local') {
-                \Illuminate\Support\Facades\File::copy(storage_path('app/backups/'.$sourceBackup->files_archive_path), $filesArchiveEncLocal);
+                File::copy(storage_path('app/backups/'.$sourceBackup->files_archive_path), $filesArchiveEncLocal);
             } else {
-                file_put_contents($filesArchiveEncLocal, \Illuminate\Support\Facades\Storage::disk('backups')->get($sourceBackup->files_archive_path));
+                file_put_contents($filesArchiveEncLocal, Storage::disk('backups')->get($sourceBackup->files_archive_path));
             }
 
             if ($sourceBackup->files_hash && hash_file('sha256', $filesArchiveEncLocal) !== $sourceBackup->files_hash) {
@@ -203,12 +204,12 @@ final class TenantBackupService
      */
     public function pruneOldBackups(TenantModel $tenant, int $retentionDays, int $keepMinimum = 3): int
     {
-        $candidates = TenantBackupModel::query()
-            ->where('tenant_id', $tenant->id)
+        /** @var \Illuminate\Database\Eloquent\Builder $query */
+        $query = TenantBackupModel::where('tenant_id', $tenant->id)
             ->where('status', 'completed')
-            ->orderByDesc('created_at')
-            ->get()
-            ->slice($keepMinimum);
+            ->orderByDesc('created_at');
+            
+        $candidates = $query->get()->slice($keepMinimum);
 
         $cutoff = now()->subDays($retentionDays);
         $prunedCount = 0;
@@ -235,11 +236,11 @@ final class TenantBackupService
         $prefix = "uploads/tenant_{$tenantId}";
         $fullPath = storage_path('app/public/'.$prefix);
         
-        if (!\Illuminate\Support\Facades\File::exists($fullPath)) {
-            \Illuminate\Support\Facades\File::ensureDirectoryExists($fullPath);
+        if (!File::exists($fullPath)) {
+            File::ensureDirectoryExists($fullPath);
         }
         
-        $files = \Illuminate\Support\Facades\File::allFiles($fullPath);
+        $files = File::allFiles($fullPath);
 
         if (!class_exists('\ZipArchive')) {
             // Fallback for simulation environments missing ext-zip
@@ -259,7 +260,7 @@ final class TenantBackupService
             }
             $zip->close();
             
-            if ($zip->status !== \ZipArchive::ER_OK && $zip->status !== \ZipArchive::ER_WARNING) {
+            if ($zip->status !== \ZipArchive::ER_OK) {
                 throw new \RuntimeException("ZipArchive failed with status code: {$zip->status}");
             }
         } else {
@@ -273,10 +274,10 @@ final class TenantBackupService
         $fullPath = storage_path('app/public/'.$prefix);
         
         // Clear current files from the logical disk before extracting the restored snapshot
-        if (\Illuminate\Support\Facades\File::exists($fullPath)) {
-            \Illuminate\Support\Facades\File::deleteDirectory($fullPath);
+        if (File::exists($fullPath)) {
+            File::deleteDirectory($fullPath);
         }
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($fullPath);
+        File::ensureDirectoryExists($fullPath);
 
         if (!class_exists('\ZipArchive')) {
             // Fallback for simulation environments missing ext-zip
@@ -293,7 +294,7 @@ final class TenantBackupService
                 $cleanPath = str_replace('tenant_'.$tenantId.'/', '', $filename);
                 $destFile = $fullPath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $cleanPath);
                 
-                \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($destFile));
+                File::ensureDirectoryExists(dirname($destFile));
                 file_put_contents($destFile, $content);
             }
             $zip->close();
@@ -317,9 +318,9 @@ final class TenantBackupService
         
         if (config('filesystems.disks.backups.driver') === 'local') {
             $sourcePath = storage_path('app/backups/'.$key);
-            \Illuminate\Support\Facades\File::copy($sourcePath, $encPath);
+            File::copy($sourcePath, $encPath);
         } else {
-            $readStream = \Illuminate\Support\Facades\Storage::disk('backups')->readStream($key);
+            $readStream = Storage::disk('backups')->readStream($key);
             if ($readStream === null) {
                 throw new \RuntimeException("Could not read backup file from storage: {$key}");
             }
@@ -396,7 +397,7 @@ final class TenantBackupService
         }
 
         if (PHP_OS_FAMILY === 'Windows') {
-            \Illuminate\Support\Facades\File::copy($sourcePath, $destinationPath);
+            File::copy($sourcePath, $destinationPath);
             return;
         }
 
@@ -420,7 +421,7 @@ final class TenantBackupService
         }
 
         if (PHP_OS_FAMILY === 'Windows') {
-            \Illuminate\Support\Facades\File::copy($sourcePath, $destinationPath);
+            File::copy($sourcePath, $destinationPath);
             return;
         }
 
