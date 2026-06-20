@@ -72,6 +72,8 @@ final class TenantBackupService
             $sizeBytes = $this->putFile($dbDumpEncLocal, $dbKey)
                 + $this->putFile($filesArchiveEncLocal, $filesKey);
 
+            $durationSeconds = now()->diffInSeconds($startTime);
+
             $backup->update([
                 'status' => 'completed',
                 'db_dump_path' => $dbKey,
@@ -81,7 +83,19 @@ final class TenantBackupService
                 'size_bytes' => $sizeBytes,
                 'completed_at' => now(),
             ]);
+
+            // Dispatch Success Notification
+            \Illuminate\Support\Facades\Notification::route('mail', env('ADMIN_EMAIL', 'admin@example.com'))
+                ->route('slack', env('SLACK_WEBHOOK_URL'))
+                ->notify(new \App\Notifications\BackupSuccessNotification(
+                    $tenant->id,
+                    $type,
+                    (float) $durationSeconds,
+                    (int) $sizeBytes
+                ));
         } catch (\Throwable $e) {
+            $durationSeconds = isset($startTime) ? now()->diffInSeconds($startTime) : 0;
+            
             $backup->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
@@ -94,7 +108,9 @@ final class TenantBackupService
                 ->notify(new \App\Notifications\BackupFailureNotification(
                     $tenant->id,
                     $type,
-                    $e->getMessage()
+                    $e->getMessage(),
+                    (float) $durationSeconds,
+                    null
                 ));
 
             throw $e;
@@ -152,6 +168,8 @@ final class TenantBackupService
 
             $restoreRecord->update(['status' => 'completed', 'completed_at' => now()]);
         } catch (\Throwable $e) {
+            $durationSeconds = isset($startTime) ? now()->diffInSeconds($startTime) : 0;
+            
             $restoreRecord->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
@@ -164,7 +182,9 @@ final class TenantBackupService
                 ->notify(new \App\Notifications\BackupFailureNotification(
                     $tenant->id,
                     'restore',
-                    $e->getMessage()
+                    $e->getMessage(),
+                    (float) $durationSeconds,
+                    null
                 ));
 
             throw $e;
