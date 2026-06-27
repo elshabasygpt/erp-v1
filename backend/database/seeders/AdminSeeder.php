@@ -66,12 +66,17 @@ class AdminSeeder extends Seeder
         // ==========================================
         // Create Admin User
         // ==========================================
+        $tenantId = app()->has('current_tenant')
+            ? app('current_tenant')->id
+            : DB::table('tenants')->whereNull('deleted_at')->where('status', 'active')->value('id');
+
         DB::connection('tenant')->table('users')->insert([
             'id' => Uuid::uuid4()->toString(),
             'name' => 'Administrator',
             'email' => 'admin@company.com',
             'password' => Hash::make('password'),
             'role_id' => $adminRoleId,
+            'tenant_id' => $tenantId,
             'is_active' => true,
             'phone' => '+966500000000',
             'locale' => 'ar',

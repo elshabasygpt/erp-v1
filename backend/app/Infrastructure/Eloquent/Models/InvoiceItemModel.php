@@ -9,7 +9,7 @@ class InvoiceItemModel extends BaseModel
     protected $table = 'invoice_items';
 
     protected $fillable = [
-        'invoice_id', 'product_id', 'quantity', 'unit_price', 'cost_price',
+        'invoice_id', 'product_id', 'printed_name', 'quantity', 'unit_price', 'cost_price',
         'discount_percent', 'vat_rate', 'total', 'subtotal', 'tax_amount',
         'base_unit_price', 'adjusted_unit_price', 'adjustment_amount',
         'core_charge_applied', 'core_charge_amount',

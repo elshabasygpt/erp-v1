@@ -1,5 +1,6 @@
 <?php
 
+use App\Infrastructure\Eloquent\Models\PermissionModel;
 use App\Infrastructure\Eloquent\Models\RoleModel;
 use Spatie\Permission\DefaultTeamResolver;
 use Spatie\Permission\Models\Permission;

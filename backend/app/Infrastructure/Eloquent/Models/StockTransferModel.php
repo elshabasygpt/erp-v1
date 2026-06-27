@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StockTransferModel extends Model
+class StockTransferModel extends BaseModel
 {
-    use HasUuids, SoftDeletes;
+    use SoftDeletes;
 
     protected $table = 'stock_transfers';
 
     protected $fillable = [
         'id',
+        'tenant_id',
         'reference_number',
         'from_warehouse_id',
         'to_warehouse_id',

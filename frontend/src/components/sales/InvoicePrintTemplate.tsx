@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { generateZatcaQRDataURI, formatSAR } from '@/lib/zatca-qr';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 interface InvoiceItem {
     code: string;
@@ -62,6 +63,7 @@ const PAYMENT_LABELS: Record<string, { ar: string; en: string }> = {
 export default function InvoicePrintTemplate({ invoice, locale, onClose }: InvoicePrintTemplateProps) {
     const isRTL = locale === 'ar';
     const printRef = useRef<HTMLDivElement>(null);
+    const { country, taxRate } = useRegionalSettings();
 
     const [settings, setSettings] = useState({
         invoice_default_size: 'A4',
@@ -101,14 +103,14 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
     const totalVat = lines.reduce((s, l) => s + l.vat, 0);
     const grandTotal = subtotalExcl + totalVat;
 
-    // Generate QR
-    const qrDataURI = generateZatcaQRDataURI({
+    // Generate ZATCA QR — Saudi Arabia only
+    const qrDataURI = country === 'SA' && invoice.seller.vatNumber ? generateZatcaQRDataURI({
         sellerName: invoice.seller.name,
         vatNumber: invoice.seller.vatNumber,
         invoiceTimestamp: `${invoice.date}T${invoice.time}`,
         totalWithVat: grandTotal,
         vatAmount: totalVat,
-    });
+    }) : null;
 
     const handlePrint = () => window.print();
 
@@ -248,7 +250,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                         <span>{formatSAR(subtotalExcl)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span>{isRTL ? 'الضريبة (15%)' : 'VAT'}</span>
+                                        <span>{isRTL ? `الضريبة (${taxRate}%)` : `VAT (${taxRate}%)`}</span>
                                         <span>{formatSAR(totalVat)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>
@@ -413,7 +415,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                             <td style={{ textAlign: 'end', fontWeight: 600 }}>{formatSAR(subtotalExcl)}</td>
                                         </tr>
                                         <tr>
-                                            <td style={{ color: '#7c3aed', padding: '4px 0' }}>{isRTL ? 'ضريبة القيمة المضافة (15%)' : 'VAT (15%)'}</td>
+                                            <td style={{ color: '#7c3aed', padding: '4px 0' }}>{isRTL ? `ضريبة القيمة المضافة (${taxRate}%)` : `VAT (${taxRate}%)`}</td>
                                             <td style={{ textAlign: 'end', color: '#7c3aed', fontWeight: 600 }}>{formatSAR(totalVat)}</td>
                                         </tr>
                                         <tr style={{ borderTop: '2px solid #4f46e5' }}>

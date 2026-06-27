@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Eloquent\Models;
 
+use App\Infrastructure\Eloquent\Traits\NormalizesImageUrls;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VehicleMakeModel extends BaseModel
 {
+    use NormalizesImageUrls;
     protected $table = 'vehicle_makes';
 
     protected static function booted()
@@ -16,16 +18,12 @@ class VehicleMakeModel extends BaseModel
 
         static::updated(function ($model) {
             if ($model->isDirty('logo_url') && $model->getOriginal('logo_url')) {
-                $oldPath = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->getOriginal('logo_url'));
-                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($oldPath, '/'));
+                self::deleteImageFile($model->getOriginal('logo_url'));
             }
         });
 
         static::forceDeleted(function ($model) {
-            if ($model->logo_url) {
-                $path = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->logo_url);
-                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($path, '/'));
-            }
+            self::deleteImageFile($model->getRawOriginal('logo_url'));
         });
     }
 
@@ -41,6 +39,11 @@ class VehicleMakeModel extends BaseModel
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function getLogoUrlAttribute(?string $value): ?string
+    {
+        return self::toRelativeUrl($value);
+    }
 
     public function models(): HasMany
     {

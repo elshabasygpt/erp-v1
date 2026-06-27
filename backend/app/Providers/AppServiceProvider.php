@@ -41,8 +41,10 @@ use App\Infrastructure\Eloquent\Repositories\HR\EloquentPayrollRepository;
 use App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeRepository;
 // Auth
 use App\Infrastructure\Eloquent\Repositories\Treasury\EloquentSafeTransactionRepository;
+use App\Infrastructure\Eloquent\Models\TenantPersonalAccessToken;
 use App\Infrastructure\Validation\TenantPresenceVerifier;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 
 // Partnerships
 // use App\Domain\Partnerships\Repositories\PartnerRepositoryInterface;
@@ -91,6 +93,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Sanctum::usePersonalAccessTokenModel(TenantPersonalAccessToken::class);
+
         $this->app->singleton('validation.presence', function ($app) {
             return new TenantPresenceVerifier($app['db']);
         });

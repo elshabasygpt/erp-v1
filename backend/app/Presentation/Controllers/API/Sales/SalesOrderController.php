@@ -34,7 +34,7 @@ class SalesOrderController extends BaseTenantController
 
         if ($request->has('search')) {
             $search = $request->query('search');
-            $query->where('so_number', 'ilike', "%{$search}%");
+            $query->where('so_number', 'like', "%{$search}%");
         }
 
         $salesOrders = $query->paginate((int) $limit);

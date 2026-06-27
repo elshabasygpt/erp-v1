@@ -17,13 +17,18 @@ export function ShiftManagementModal({ isOpen, onShiftOpened, isRTL = false }: S
   if (!isOpen) return null;
 
   const handleOpenShift = async () => {
-    if (!openingCash) {
+    const cash = parseFloat(openingCash);
+    if (!openingCash || isNaN(cash)) {
       toast.error(isRTL ? 'يجب إدخال رصيد الصندوق الافتتاحي' : 'Opening cash is required');
+      return;
+    }
+    if (cash < 0) {
+      toast.error(isRTL ? 'لا يمكن أن يكون رصيد الصندوق سالباً' : 'Opening cash cannot be negative');
       return;
     }
     setLoading(true);
     try {
-      const res = await posApi.openShift({ opening_cash: parseFloat(openingCash), notes });
+      const res = await posApi.openShift({ opening_cash: cash, notes });
       toast.success(isRTL ? 'تم فتح الوردية بنجاح' : 'Shift opened successfully');
       onShiftOpened(res.data?.data || res.data);
     } catch (error: any) {
@@ -56,6 +61,8 @@ export function ShiftManagementModal({ isOpen, onShiftOpened, isRTL = false }: S
             <div className="relative">
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 value={openingCash}
                 onChange={e => setOpeningCash(e.target.value)}
                 className="w-full h-12 px-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-lg font-black text-slate-800 dark:text-white outline-none focus:border-blue-500 transition-all text-center"

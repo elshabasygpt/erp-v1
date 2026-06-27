@@ -43,6 +43,9 @@ class AccountMappingService
         'accumulated_depreciation' => 'account.accumulated_depreciation',
         'depreciation_expense' => 'account.depreciation_expense',
         'bank_fees' => 'account.bank_fees',
+        'retained_earnings' => 'account.retained_earnings',
+        'unrealized_fx_gain_loss' => 'account.unrealized_fx_gain_loss',
+        'asset_disposal_gain_loss' => 'account.asset_disposal_gain_loss',
     ];
 
     private ?array $resolved = null;

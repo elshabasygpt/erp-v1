@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface AddPayrollItemModalProps {
     payroll: { id: string; employee_id: string; employee: any; month: number; year: number };
@@ -21,6 +22,7 @@ const typeConfig = {
 };
 
 export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess }: AddPayrollItemModalProps) {
+    const { currencySymbol } = useCurrencyFormatter();
     const [type, setType] = useState<keyof typeof typeConfig>('bonus');
     const [reason, setReason] = useState('');
     const [amount, setAmount] = useState('');
@@ -110,7 +112,7 @@ export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess
                                 className="input-field pr-12"
                             />
                             <span className="absolute right-3 top-2.5 text-gray-400 font-bold">
-                                {isRTL ? 'ريال' : 'SAR'}
+                                {currencySymbol}
                             </span>
                         </div>
                     </div>

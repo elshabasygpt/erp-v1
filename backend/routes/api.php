@@ -2,12 +2,18 @@
 
 use App\Presentation\Controllers\API\Accounting\AccountingSettingsController;
 use App\Presentation\Controllers\API\Accounting\BankAccountController;
+use App\Presentation\Controllers\API\Accounting\BudgetController;
 use App\Presentation\Controllers\API\Accounting\ChartOfAccountsController;
+use App\Presentation\Controllers\API\Accounting\CostCenterController;
+use App\Presentation\Controllers\API\Accounting\FinancialReportsController;
 use App\Presentation\Controllers\API\Accounting\JournalEntryController;
 use App\Presentation\Controllers\API\Accounting\CreditNoteController;
 use App\Presentation\Controllers\API\Accounting\FixedAssetController;
+use App\Presentation\Controllers\API\Accounting\RecurringJournalEntryController;
 use App\Presentation\Controllers\API\Accounting\ReportsController;
+use App\Presentation\Controllers\API\Reports\SalesAnalyticsController;
 use App\Presentation\Controllers\API\Analytics\AdvancedAnalyticsController;
+use App\Presentation\Controllers\API\Analytics\AnalyticsController;
 use App\Presentation\Controllers\API\Analytics\ForecastingController;
 use App\Presentation\Controllers\API\Approvals\ApprovalController;
 use App\Presentation\Controllers\API\Auth\AuthController;
@@ -21,6 +27,7 @@ use App\Presentation\Controllers\API\CRM\PayableController;
 use App\Presentation\Controllers\API\CRM\SalesFollowUpController;
 use App\Presentation\Controllers\API\CRM\SupplierController;
 use App\Presentation\Controllers\API\CRM\VoucherController;
+use App\Presentation\Controllers\API\CRM\CustomerProductPriceController;
 use App\Presentation\Controllers\API\HR\AttendanceController;
 use App\Presentation\Controllers\API\HR\EmployeeController;
 use App\Presentation\Controllers\API\HR\LeaveController;
@@ -34,13 +41,18 @@ use App\Presentation\Controllers\API\Inventory\BranchController;
 use App\Presentation\Controllers\API\Inventory\CategoryController;
 use App\Presentation\Controllers\API\Inventory\InventoryValuationController;
 use App\Presentation\Controllers\API\Inventory\ProductController;
+use App\Presentation\Controllers\API\Inventory\ProductLabelController;
 use App\Presentation\Controllers\API\Inventory\StockMovementController;
 use App\Presentation\Controllers\API\Inventory\StocktakeController;
 use App\Presentation\Controllers\API\Inventory\StockTransferController;
 use App\Presentation\Controllers\API\Inventory\UnitController;
 use App\Presentation\Controllers\API\Inventory\VehicleController;
 use App\Presentation\Controllers\API\Inventory\WarehouseController;
+use App\Presentation\Controllers\API\Inventory\BinLocationController;
+use App\Presentation\Controllers\API\Inventory\BrandController;
 use App\Presentation\Controllers\API\Inventory\InventoryReconciliationController;
+use App\Presentation\Controllers\API\Inventory\StockWriteOffController;
+use App\Presentation\Controllers\API\Accounting\ExpenseVoucherController;
 use App\Presentation\Controllers\API\Partnerships\PartnerController;
 use App\Presentation\Controllers\API\Partnerships\ProfitDistributionController;
 use App\Presentation\Controllers\API\Portal\PartnerAuthController;
@@ -64,6 +76,9 @@ use App\Presentation\Controllers\API\Sales\SalesOrderController;
 use App\Presentation\Controllers\API\Sales\SalesReturnController;
 use App\Presentation\Controllers\API\Sales\ShippingController;
 use App\Presentation\Controllers\API\Sales\WarrantyController;
+use App\Presentation\Controllers\API\Sales\CustomerCoreReturnController;
+use App\Presentation\Controllers\API\Sales\RmaController;
+use App\Presentation\Controllers\API\Sales\WorkshopController;
 use App\Presentation\Controllers\API\Sales\ZatcaOnboardingController;
 use App\Presentation\Controllers\API\Settings\BackupController;
 use App\Presentation\Controllers\API\Settings\WebhookController;
@@ -72,6 +87,10 @@ use App\Presentation\Controllers\API\Subscription\SubscriptionController;
 use App\Presentation\Controllers\API\Treasury\ExpenseController;
 use App\Presentation\Controllers\API\Treasury\TreasuryController;
 use App\Presentation\Controllers\API\Tasks\TaskController;
+use App\Presentation\Controllers\API\Inventory\ProductAliasController;
+use App\Presentation\Controllers\API\Inventory\ProductImportExportController;
+use App\Presentation\Controllers\API\Automation\WorkflowController;
+use App\Presentation\Controllers\API\Sales\CommissionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -96,7 +115,7 @@ Route::prefix('auth')->group(function () {
 });
 
 // Tenant-scoped, authenticated routes
-Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:120,1'])->group(function () {
+Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->group(function () {
 
     Route::apiResource('roles', \App\Presentation\Controllers\API\Auth\RoleController::class);
     Route::get('permissions', [\App\Presentation\Controllers\API\Auth\PermissionController::class, 'index']);
@@ -125,6 +144,12 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::post('/pos/shifts/open', [PosShiftController::class, 'open']);
         Route::post('/pos/shifts/close', [PosShiftController::class, 'close']);
 
+        // POS Barcode Scanner — resolves barcode/SKU to a ready-to-add line item
+        // {barcode} uses .+ so slashes/pluses in barcode strings are captured verbatim
+        Route::get('/pos/scan/{barcode}', [PosShiftController::class, 'scanBarcode'])
+            ->where('barcode', '.+')
+            ->middleware('throttle:300,1');  // 300 scans / min per cashier
+
         // Advanced Sales Reports
         Route::get('/advanced-reports/kpis', [AdvancedSalesReportController::class, 'getDashboardKPIs']);
         Route::get('/advanced-reports/charts', [AdvancedSalesReportController::class, 'getDashboardCharts']);
@@ -134,6 +159,31 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::post('/returns', [SalesReturnController::class, 'store']);
         Route::get('/returns/{id}', [SalesReturnController::class, 'show']);
         Route::put('/returns/{id}/status', [SalesReturnController::class, 'updateStatus']);
+
+        // Customer Core Returns (core deposit refunds from customers)
+        Route::get('/core-returns', [CustomerCoreReturnController::class, 'index']);
+        Route::post('/core-returns', [CustomerCoreReturnController::class, 'store']);
+        Route::get('/core-returns/{id}', [CustomerCoreReturnController::class, 'show']);
+        Route::post('/core-returns/{id}/receive', [CustomerCoreReturnController::class, 'receive']);
+        Route::post('/core-returns/{id}/credit', [CustomerCoreReturnController::class, 'credit']);
+
+        // RMA Requests (Return Merchandise Authorization)
+        Route::get('/rma/reason-categories', [RmaController::class, 'reasonCategories']);
+        Route::get('/rma', [RmaController::class, 'index']);
+        Route::post('/rma', [RmaController::class, 'store']);
+        Route::get('/rma/{id}', [RmaController::class, 'show']);
+        Route::post('/rma/{id}/under-review', [RmaController::class, 'markUnderReview']);
+        Route::post('/rma/{id}/approve', [RmaController::class, 'approve']);
+        Route::post('/rma/{id}/reject', [RmaController::class, 'reject']);
+        Route::post('/rma/{id}/fulfill', [RmaController::class, 'fulfill']);
+        Route::post('/rma/{id}/cancel', [RmaController::class, 'cancel']);
+
+        // Workshop / Job Cards
+        Route::get('/workshop/job-cards', [WorkshopController::class, 'index']);
+        Route::post('/workshop/job-cards', [WorkshopController::class, 'store']);
+        Route::get('/workshop/job-cards/{id}', [WorkshopController::class, 'show']);
+        Route::put('/workshop/job-cards/{id}', [WorkshopController::class, 'update']);
+        Route::post('/workshop/job-cards/{id}/convert-to-invoice', [WorkshopController::class, 'convertToInvoice']);
 
         // Warranties
         Route::prefix('warranties')->group(function () {
@@ -189,6 +239,8 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/journal-entries', [JournalEntryController::class, 'index']);
         Route::post('/journal-entries', [JournalEntryController::class, 'store']);
         Route::get('/journal-entries/{id}', [JournalEntryController::class, 'show']);
+        Route::post('/journal-entries/{id}/post', [JournalEntryController::class, 'post']);
+        Route::post('/journal-entries/{id}/reverse', [JournalEntryController::class, 'reverse']);
     });
 
     // HR
@@ -226,6 +278,9 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::post('/categories', [ExpenseController::class, 'storeCategory']);
         Route::get('/', [ExpenseController::class, 'index']);
         Route::post('/', [ExpenseController::class, 'store']);
+        // Expense Vouchers (formal accounting vouchers)
+        Route::post('/vouchers', [ExpenseVoucherController::class, 'store']);
+        Route::post('/vouchers/{id}/approve', [ExpenseVoucherController::class, 'approve']);
     });
 
     // Reports
@@ -242,10 +297,13 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
 
         // Auto Parts Specialized Reports
         Route::prefix('auto-parts')->group(function () {
-            Route::get('/slow-moving',    [AutoPartsReportController::class, 'slowMovingParts']);
-            Route::get('/top-by-make',    [AutoPartsReportController::class, 'topPartsByMake']);
-            Route::get('/missing-parts',  [AutoPartsReportController::class, 'missingParts']);
-            Route::get('/profit-by-brand',[AutoPartsReportController::class, 'profitByBrand']);
+            Route::get('/slow-moving',       [AutoPartsReportController::class, 'slowMovingParts']);
+            Route::get('/top-by-make',       [AutoPartsReportController::class, 'topPartsByMake']);
+            Route::get('/missing-parts',     [AutoPartsReportController::class, 'missingParts']);
+            Route::get('/profit-by-brand',   [AutoPartsReportController::class, 'profitByBrand']);
+            Route::get('/dead-stock-months', [AutoPartsReportController::class, 'deadStockByMonths']);
+            Route::get('/turnover-by-make',  [AutoPartsReportController::class, 'turnoverByMake']);
+            Route::get('/top-by-model',      [AutoPartsReportController::class, 'topPartsByModel']);
         });
     });
 
@@ -259,6 +317,7 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('discount-analysis', [AdvancedAnalyticsController::class, 'discountAnalysis']);
         Route::get('top-categories', [AdvancedAnalyticsController::class, 'topCategories']);
         Route::get('conversion-funnel', [AdvancedAnalyticsController::class, 'conversionFunnel']);
+        Route::get('predictive-dashboard', [AnalyticsController::class, 'getPredictiveDashboard']);
     });
 
     // Inventory
@@ -267,9 +326,19 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::apiResource('branches', BranchController::class);
         Route::apiResource('warehouses', WarehouseController::class);
 
-        // Categories & Units
+        // Categories, Units & Brands
         Route::apiResource('categories', CategoryController::class);
         Route::apiResource('units', UnitController::class);
+        Route::apiResource('brands', BrandController::class);
+
+        // Bin Locations
+        Route::get('/bin-locations', [BinLocationController::class, 'index']);
+        Route::post('/bin-locations', [BinLocationController::class, 'store']);
+        Route::get('/bin-locations/tree', [BinLocationController::class, 'tree']);
+        Route::get('/bin-locations/{id}', [BinLocationController::class, 'show']);
+        Route::put('/bin-locations/{id}', [BinLocationController::class, 'update']);
+        Route::delete('/bin-locations/{id}', [BinLocationController::class, 'destroy']);
+        Route::post('/bin-locations/bulk-generate', [BinLocationController::class, 'bulkGenerate']);
 
         // Stock Transfers
         Route::get('/stock-transfers', [StockTransferController::class, 'index']);
@@ -286,10 +355,24 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('/products/search', [ProductController::class, 'search']);
         Route::get('/products/low-stock', [ProductController::class, 'lowStock']);
         Route::get('/products/barcode/{barcode}', [ProductController::class, 'scanBarcode']);
+        Route::post('/products/labels', [ProductLabelController::class, 'bulk']);
+        Route::get('/products/check-unique', [ProductController::class, 'checkUnique']);
+        Route::post('/products/import', [ProductImportExportController::class, 'import']);
+        Route::get('/products/imports/history', [ProductImportExportController::class, 'history']);
         Route::get('/products/{id}', [ProductController::class, 'show']);
         Route::put('/products/{id}', [ProductController::class, 'update']);
         Route::put('/products/{id}/bin-location', [ProductController::class, 'updateBinLocation']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+        Route::get('/products/{id}/label', [ProductLabelController::class, 'single']);
+        Route::get('/products/{id}/resolve-price', [ProductController::class, 'resolvePrice']);
+
+        // Product Aliases
+        Route::get('/products/{id}/aliases', [ProductAliasController::class, 'index']);
+        Route::post('/products/{id}/aliases', [ProductAliasController::class, 'store']);
+        Route::put('/products/{id}/aliases/{aliasId}', [ProductAliasController::class, 'update']);
+        Route::delete('/products/{id}/aliases/{aliasId}', [ProductAliasController::class, 'destroy']);
+        Route::get('/products/{id}/resolve-alias', [ProductAliasController::class, 'resolveAlias']);
+        Route::post('/products/{id}/customer-aliases', [ProductAliasController::class, 'storeCustomerAlias']);
 
         // Product Alternatives
         Route::get('/products/{id}/alternatives', [ProductController::class, 'getAlternatives']);
@@ -308,6 +391,11 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         // Inventory Valuation & Reconciliation
         Route::get('/valuation', [InventoryValuationController::class, 'report']);
         Route::get('/reconciliation', [InventoryReconciliationController::class, 'generate']);
+
+        // Stock Write-Offs (Scrap / Damaged / Obsolete)
+        Route::get('/write-offs', [StockWriteOffController::class, 'index']);
+        Route::post('/write-offs', [StockWriteOffController::class, 'store']);
+        Route::get('/write-offs/{id}', [StockWriteOffController::class, 'show']);
 
         // Adjustments & Stocktakes
         Route::get('/adjustments', [AdjustmentController::class, 'index']);
@@ -362,6 +450,7 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::post('receivables/collect', [ReceivableController::class, 'collectPayment']);
 
         Route::get('payables/aging', [PayableController::class, 'agingReport']);
+        Route::get('payables/statement/{supplierId}', [PayableController::class, 'statement']);
 
         Route::get('customers/export', [CustomerController::class, 'export']);
         Route::post('customers/import', [CustomerController::class, 'import']);
@@ -378,6 +467,12 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
 
         // Customer Vehicles
         Route::get('customers/vehicles/search', [CustomerVehicleController::class, 'searchByPlate']);
+        // Customer-Specific Product Prices
+        Route::get('customer-prices/lookup', [CustomerProductPriceController::class, 'lookup']);
+        Route::get('customers/{customerId}/prices', [CustomerProductPriceController::class, 'index']);
+        Route::post('customers/{customerId}/prices', [CustomerProductPriceController::class, 'upsert']);
+        Route::delete('customers/{customerId}/prices/{id}', [CustomerProductPriceController::class, 'destroy']);
+
         Route::get('customers/{customerId}/vehicles', [CustomerVehicleController::class, 'index']);
         Route::post('customers/{customerId}/vehicles', [CustomerVehicleController::class, 'store']);
         Route::put('customers/{customerId}/vehicles/{vehicleId}', [CustomerVehicleController::class, 'update']);
@@ -502,10 +597,39 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::post('/reports/zakat/post', [ReportsController::class, 'postZakatEntry']);
         Route::post('/reports/zakat/pay', [ReportsController::class, 'payZakat']);
 
+        // Financial Reports — Accounting
+        Route::get('/reports/customer-statement',          [FinancialReportsController::class, 'customerStatement']);
+        Route::get('/reports/supplier-statement',          [FinancialReportsController::class, 'supplierStatement']);
+        Route::get('/reports/account-statement',           [FinancialReportsController::class, 'accountStatement']);
+        Route::get('/reports/fixed-asset-register',        [FinancialReportsController::class, 'fixedAssetRegister']);
+        Route::get('/reports/monthly-pl',                  [FinancialReportsController::class, 'monthlyPnl']);
+        Route::get('/reports/vat-detail',                  [FinancialReportsController::class, 'vatDetail']);
+        Route::get('/reports/bank-position',               [FinancialReportsController::class, 'bankPosition']);
+        Route::get('/reports/expense-analysis',            [FinancialReportsController::class, 'expenseAnalysis']);
+        Route::get('/reports/depreciation-schedule',       [FinancialReportsController::class, 'depreciationScheduleAll']);
+        Route::get('/reports/budget-utilization',          [FinancialReportsController::class, 'budgetUtilization']);
+        Route::get('/reports/quarterly-vat',               [FinancialReportsController::class, 'quarterlyVat']);
+        Route::get('/reports/dso',                         [FinancialReportsController::class, 'dso']);
+        Route::get('/reports/dpo',                         [FinancialReportsController::class, 'dpo']);
+        Route::get('/reports/credit-note-summary',         [FinancialReportsController::class, 'creditNoteSummary']);
+        Route::get('/reports/bank-reconciliation-status',  [FinancialReportsController::class, 'bankReconciliationStatus']);
+        Route::get('/reports/journal-audit',               [FinancialReportsController::class, 'journalAuditTrail']);
+        Route::get('/reports/expense-voucher-summary',     [FinancialReportsController::class, 'expenseVoucherSummary']);
+
+        // Financial Reports — Sales Analytics
+        Route::get('/reports/revenue-analysis',            [SalesAnalyticsController::class, 'revenueAnalysis']);
+        Route::get('/reports/gross-margin',                [SalesAnalyticsController::class, 'grossMarginByProduct']);
+        Route::get('/reports/inventory-aging',             [SalesAnalyticsController::class, 'inventoryAging']);
+        Route::get('/reports/customer-profitability',      [SalesAnalyticsController::class, 'customerProfitability']);
+        Route::get('/reports/purchases-analysis',          [SalesAnalyticsController::class, 'purchasesAnalysis']);
+        Route::get('/reports/sales-rep-performance',       [SalesAnalyticsController::class, 'salesRepPerformance']);
+        Route::get('/reports/return-rate',                 [SalesAnalyticsController::class, 'returnRateByProduct']);
+
         // Fixed Assets
         Route::apiResource('fixed-assets', FixedAssetController::class);
         Route::post('fixed-assets/{id}/depreciate', [FixedAssetController::class, 'calculateDepreciation']);
         Route::get('fixed-assets/{id}/depreciation-schedule', [FixedAssetController::class, 'depreciationSchedule']);
+        Route::post('fixed-assets/{id}/dispose', [FixedAssetController::class, 'dispose']);
 
         // Account Mappings
         Route::get('/account-mappings', [AccountingSettingsController::class, 'getAccountMappings']);
@@ -530,6 +654,35 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::get('credit-notes', [CreditNoteController::class, 'index']);
         Route::post('credit-notes', [CreditNoteController::class, 'store']);
         Route::post('credit-notes/{id}/apply', [CreditNoteController::class, 'apply']);
+
+        // Budgets
+        Route::get('budgets', [BudgetController::class, 'index']);
+        Route::post('budgets', [BudgetController::class, 'store']);
+        Route::get('budgets/{id}', [BudgetController::class, 'show']);
+        Route::put('budgets/{id}', [BudgetController::class, 'update']);
+        Route::delete('budgets/{id}', [BudgetController::class, 'destroy']);
+        Route::post('budgets/{id}/approve', [BudgetController::class, 'approve']);
+        Route::get('budgets/{id}/variance', [BudgetController::class, 'variance']);
+
+        // Bank Auto-Matching
+        Route::post('reconciliations/{id}/auto-match', [BankAccountController::class, 'autoMatch']);
+
+        // Cost Centers
+        Route::get('cost-centers', [CostCenterController::class, 'index']);
+        Route::get('cost-centers/flat', [CostCenterController::class, 'flat']);
+        Route::post('cost-centers', [CostCenterController::class, 'store']);
+        Route::get('cost-centers/{id}', [CostCenterController::class, 'show']);
+        Route::put('cost-centers/{id}', [CostCenterController::class, 'update']);
+        Route::delete('cost-centers/{id}', [CostCenterController::class, 'destroy']);
+        Route::get('cost-centers-report', [CostCenterController::class, 'report']);
+
+        // Recurring Journal Entries
+        Route::get('recurring-journal-entries', [RecurringJournalEntryController::class, 'index']);
+        Route::post('recurring-journal-entries', [RecurringJournalEntryController::class, 'store']);
+        Route::get('recurring-journal-entries/{id}', [RecurringJournalEntryController::class, 'show']);
+        Route::put('recurring-journal-entries/{id}', [RecurringJournalEntryController::class, 'update']);
+        Route::delete('recurring-journal-entries/{id}', [RecurringJournalEntryController::class, 'destroy']);
+        Route::post('recurring-journal-entries/{id}/post-now', [RecurringJournalEntryController::class, 'postNow']);
     });
 
     // Settings
@@ -644,6 +797,25 @@ Route::middleware(['tenant', 'subscription.active', 'auth:sanctum', 'throttle:12
         Route::delete('/{id}',           [TaskController::class, 'destroy']);
         Route::post('/{id}/comments',    [TaskController::class, 'addComment']);
     });
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Automation — Workflow rules engine
+// ─────────────────────────────────────────────────────────────
+Route::middleware(['tenant.auth', 'subscription.active'])->prefix('automation')->group(function () {
+    Route::get('/workflows', [WorkflowController::class, 'index']);
+    Route::post('/workflows', [WorkflowController::class, 'store']);
+    Route::get('/workflows/{id}', [WorkflowController::class, 'show']);
+    Route::put('/workflows/{id}', [WorkflowController::class, 'update'])->name('workflows.update');
+    Route::delete('/workflows/{id}', [WorkflowController::class, 'destroy']);
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Commissions — Sales commission tracking and payouts
+// ─────────────────────────────────────────────────────────────
+Route::middleware(['tenant.auth', 'subscription.active'])->prefix('sales/commissions')->group(function () {
+    Route::get('/unpaid', [CommissionController::class, 'unpaid']);
+    Route::post('/payout', [CommissionController::class, 'payout']);
 });
 
 // ─────────────────────────────────────────────────────────────

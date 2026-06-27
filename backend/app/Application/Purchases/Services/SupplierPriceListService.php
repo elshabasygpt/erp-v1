@@ -25,10 +25,10 @@ class SupplierPriceListService
         if (!empty($filters['search'])) {
             $s = $filters['search'];
             $query->whereHas('product', fn($q) =>
-                $q->where('name', 'ilike', "%{$s}%")
-                  ->orWhere('sku', 'ilike', "%{$s}%")
-                  ->orWhere('oem_number', 'ilike', "%{$s}%")
-                  ->orWhere('brand', 'ilike', "%{$s}%")
+                $q->where('name', 'like', "%{$s}%")
+                  ->orWhere('sku', 'like', "%{$s}%")
+                  ->orWhere('oem_number', 'like', "%{$s}%")
+                  ->orWhere('brand', 'like', "%{$s}%")
             );
         }
 

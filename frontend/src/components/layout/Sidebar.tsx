@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useSidebar } from '@/providers/SidebarProvider';
 import { logout, getStoredUser } from '@/lib/auth';
+import { tasksApi, approvalsApi } from '@/lib/api';
+import { useSwipe } from '@/hooks/useSwipe';
 import type { Locale } from '@/types';
 
 interface SidebarProps {
@@ -35,12 +37,17 @@ const ICONS = {
     users: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
     settings: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
     car: 'M5 10l1.2-3.6A2 2 0 018.1 5h7.8a2 2 0 011.9 1.4L19 10m-14 0h14m-14 0v6a2 2 0 002 2h10a2 2 0 002-2v-6m-9-2h2',
+    wrench: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
     chevron: 'M19 9l-7 7-7-7',
     collapse: 'M11 19l-7-7 7-7m8 14l-7-7 7-7',
     expand: 'M13 5l7 7-7 7M5 5l7 7-7 7',
     sun: 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z',
     moon: 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z',
     logout: 'M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75',
+    tasks: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+    ai: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+    shield: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+    expenses: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
 };
 
 // ─── Menu Groups ──────────────────────────────────────────────────
@@ -87,7 +94,10 @@ const GROUPS: MenuGroup[] = [
             { key: 'shipping', path: '/shipping', iconKey: 'transfers', labelAr: 'الشحن السريع', labelEn: 'Shipping' },
             { key: 'deliveries', path: '/deliveries', iconKey: 'transfers', labelAr: 'إدارة التوصيل والمقادير', labelEn: 'Delivery Management' },
             { key: 'returns', path: '/returns', iconKey: 'returns', labelAr: 'المرتجعات والتلفيات', labelEn: 'Returns' },
+            { key: 'core_returns', path: '/sales/core-returns', iconKey: 'returns', labelAr: 'استرداد تأمين الأجزاء', labelEn: 'Core Deposit Returns' },
+            { key: 'rma_requests', path: '/sales/rma-requests', iconKey: 'warranty', labelAr: 'طلبات إذن الإرجاع (RMA)', labelEn: 'RMA Requests' },
             { key: 'warranty', path: '/returns/warranty', iconKey: 'warranty', labelAr: 'إدارة الضمانات', labelEn: 'Warranty Management' },
+            { key: 'workshop', path: '/sales/workshop', iconKey: 'wrench', labelAr: 'الورشة وبطاقات العمل', labelEn: 'Workshop & Job Cards' },
         ],
     },
     {
@@ -98,11 +108,20 @@ const GROUPS: MenuGroup[] = [
         color: '#22c55e',
         children: [
             { key: 'inventory', path: '/inventory', iconKey: 'inventory', labelAr: 'الأصناف والمنتجات', labelEn: 'Products' },
+            { key: 'categories', path: '/inventory/categories', iconKey: 'inventory', labelAr: 'فئات المنتجات', labelEn: 'Categories' },
+            { key: 'units', path: '/inventory/units', iconKey: 'inventory', labelAr: 'وحدات القياس', labelEn: 'Units of Measure' },
+            { key: 'brands', path: '/inventory/brands', iconKey: 'inventory', labelAr: 'الماركات والعلامات', labelEn: 'Brands' },
+            { key: 'warehouses', path: '/inventory/warehouses', iconKey: 'inventory', labelAr: 'إدارة المستودعات', labelEn: 'Warehouses' },
+            { key: 'binLocations', path: '/inventory/bin-locations', iconKey: 'inventory', labelAr: 'مواقع التخزين (Bins)', labelEn: 'Bin Locations' },
+            { key: 'labels', path: '/inventory/labels', iconKey: 'reports', labelAr: 'طباعة ملصقات', labelEn: 'Print Labels' },
+            { key: 'valuation', path: '/inventory/valuation', iconKey: 'reports', labelAr: 'تقييم المخزون', labelEn: 'Inventory Valuation' },
+            { key: 'reconciliation', path: '/inventory/reconciliation', iconKey: 'reports', labelAr: 'مطابقة المخزون', labelEn: 'Reconciliation' },
             { key: 'stocktakes', path: '/inventory/stocktakes', iconKey: 'reports', labelAr: 'الجرد الفعلي للمخزون', labelEn: 'Physical Stocktakes' },
             { key: 'stockMovements', path: '/inventory/movements', iconKey: 'movements', labelAr: 'حركات المخزون', labelEn: 'Stock Movements' },
             { key: 'transfers', path: '/inventory/transfers', iconKey: 'transfers', labelAr: 'تحويلات المخازن', labelEn: 'Transfers' },
             { key: 'manufacturing', path: '/manufacturing', iconKey: 'inventory', labelAr: 'التصنيع والتجميع', labelEn: 'Manufacturing' },
             { key: 'vehicles', path: '/inventory/vehicles', iconKey: 'car', labelAr: 'إدارة توافق السيارات', labelEn: 'Vehicle Compatibility' },
+            { key: 'writeoffs', path: '/inventory/write-offs', iconKey: 'returns', labelAr: 'إتلاف وشطب المخزون', labelEn: 'Stock Write-Offs' },
         ],
     },
     {
@@ -129,6 +148,7 @@ const GROUPS: MenuGroup[] = [
         color: '#8b5cf6',
         children: [
             { key: 'accounting', path: '/accounting', iconKey: 'accounting', labelAr: 'القيود اليومية', labelEn: 'Journal Entries' },
+            { key: 'expenseVouchers', path: '/accounting/expense-vouchers', iconKey: 'expenses', labelAr: 'سندات الصرف', labelEn: 'Expense Vouchers' },
             { key: 'banks', path: '/accounting/banks', iconKey: 'accounting', labelAr: 'الحسابات البنكية', labelEn: 'Bank Accounts' },
             { key: 'treasury', path: '/treasury', iconKey: 'accounting', labelAr: 'الخزينة والبنوك', labelEn: 'Treasury & Banks' },
             { key: 'creditNotes', path: '/accounting/credit-notes', iconKey: 'accounting', labelAr: 'الإشعارات الدائنة', labelEn: 'Credit Notes' },
@@ -175,35 +195,46 @@ const GROUPS: MenuGroup[] = [
     },
 ];
 
-const SINGLE_ITEMS: SingleItem[] = [
-    { key: 'tasks', path: '/tasks', iconKey: 'reports', labelAr: 'المهام والمتابعة', labelEn: 'Tasks', badge: { text: 'New', color: '#6366f1' } },
-    { key: 'reports', path: '/reports', iconKey: 'reports', labelAr: 'التقارير الشاملة', labelEn: 'Reports' },
-    { key: 'financialReports', path: '/reports/financial', iconKey: 'reports', labelAr: 'التقارير المالية (P&L, KPIs)', labelEn: 'Financial Reports (P&L)' },
-    { key: 'advancedReports', path: '/reports/advanced', iconKey: 'reports', labelAr: 'تقارير متقدمة (أعمار الديون)', labelEn: 'Advanced Reports (Aging)' },
+// Reports & System admin as collapsible groups (separate from main operations)
+const EXTRA_GROUPS: MenuGroup[] = [
     {
-        key: 'autoPartsReports',
-        path: '/reports/auto-parts',
+        key: 'reports-group',
         iconKey: 'reports',
-        labelAr: 'تقارير قطع الغيار',
-        labelEn: 'Auto Parts Reports',
-        badge: { text: 'قطع غيار', color: '#f59e0b' }
+        labelAr: 'التقارير',
+        labelEn: 'Reports',
+        color: '#0ea5e9',
+        children: [
+            { key: 'reports', path: '/reports', iconKey: 'reports', labelAr: 'التقارير الشاملة', labelEn: 'All Reports' },
+            { key: 'financialReports', path: '/reports/financial', iconKey: 'accounting', labelAr: 'التقارير المالية (P&L)', labelEn: 'Financial Reports (P&L)' },
+            { key: 'advancedReports', path: '/reports/advanced', iconKey: 'reports', labelAr: 'تقارير الديون (Aging)', labelEn: 'Aging Reports' },
+            { key: 'autoPartsReports', path: '/reports/auto-parts', iconKey: 'car', labelAr: 'تقارير قطع الغيار', labelEn: 'Auto Parts Reports' },
+            { key: 'zakatReport', path: '/reports/zakat', iconKey: 'zatca', labelAr: 'حساب زكاة المال', labelEn: 'Zakat Calculator', badge: { text: 'زكاة', color: '#10b981' } },
+            { key: 'analytics', path: '/analytics/ai-assistant', iconKey: 'ai', labelAr: 'المساعد المالي (AI)', labelEn: 'AI Assistant', badge: { text: 'AI', color: '#7c3aed' } },
+        ],
     },
-    { key: 'zakatReport', path: '/reports/zakat', iconKey: 'zatca', labelAr: 'حساب زكاة المال', labelEn: 'Zakat Al-Mal Calculator',
-        badge: { text: 'New', color: '#10b981' } as any,
+    {
+        key: 'system-group',
+        iconKey: 'settings',
+        labelAr: 'إدارة النظام',
+        labelEn: 'System Admin',
+        color: '#64748b',
+        children: [
+            { key: 'branches', path: '/branches', iconKey: 'branches', labelAr: 'الفروع', labelEn: 'Branches' },
+            { key: 'users', path: '/users', iconKey: 'users', labelAr: 'المستخدمون', labelEn: 'Users' },
+            { key: 'roles', path: '/settings/roles', iconKey: 'shield', labelAr: 'الأدوار والصلاحيات', labelEn: 'Roles & Permissions' },
+            { key: 'data', path: '/settings/data', iconKey: 'settings', labelAr: 'إدارة البيانات', labelEn: 'Data Management' },
+            { key: 'settings', path: '/settings', iconKey: 'settings', labelAr: 'الإعدادات العامة', labelEn: 'General Settings' },
+            { key: 'webhooks', path: '/webhooks', iconKey: 'settings', labelAr: 'الـ Webhooks', labelEn: 'Webhooks' },
+            { key: 'subscriptions', path: '/subscriptions', iconKey: 'reports', labelAr: 'الاشتراك', labelEn: 'Subscription' },
+        ],
     },
-    { key: 'analytics', path: '/analytics/ai-assistant', iconKey: 'reports', labelAr: 'المساعد المالي (AI)', labelEn: 'AI Financial Assistant',
-        badge: { text: 'AI', color: '#7c3aed' } as any,
-    },
-    { key: 'branches', path: '/branches', iconKey: 'branches', labelAr: 'الفروع', labelEn: 'Branches' },
-    { key: 'users', path: '/users', iconKey: 'users', labelAr: 'المستخدمون', labelEn: 'Users' },
-    { key: 'roles', path: '/settings/roles', iconKey: 'users', labelAr: 'الأدوار والصلاحيات', labelEn: 'Roles & Permissions' },
-    { key: 'data', path: '/settings/data', iconKey: 'settings', labelAr: 'إدارة البيانات (استيراد)', labelEn: 'Data Management' },
-    { key: 'settings', path: '/settings', iconKey: 'settings', labelAr: 'الإعدادات العامة', labelEn: 'General Settings' },
-    { key: 'approvals', path: '/approvals', iconKey: 'reports', labelAr: 'الموافقات', labelEn: 'Approvals' },
-    { key: 'deliveries', path: '/deliveries', iconKey: 'transfers', labelAr: 'التوصيل', labelEn: 'Deliveries' },
-    { key: 'expenses', path: '/expenses', iconKey: 'accounting', labelAr: 'المصروفات', labelEn: 'Expenses' },
-    { key: 'webhooks', path: '/webhooks', iconKey: 'settings', labelAr: 'الـ Webhooks', labelEn: 'Webhooks' },
-    { key: 'subscriptions', path: '/subscriptions', iconKey: 'reports', labelAr: 'الاشتراك', labelEn: 'Subscription' },
+];
+
+const SINGLE_ITEMS: SingleItem[] = [
+    { key: 'tasks', path: '/tasks', iconKey: 'tasks', labelAr: 'المهام والمتابعة', labelEn: 'Tasks', badge: { text: 'New', color: '#6366f1' } },
+    { key: 'approvals', path: '/approvals', iconKey: 'shield', labelAr: 'الموافقات', labelEn: 'Approvals' },
+    { key: 'expenses', path: '/expenses', iconKey: 'expenses', labelAr: 'المصروفات', labelEn: 'Expenses' },
+    { key: 'activity', path: '/activity', iconKey: 'reports', labelAr: 'سجل النشاطات', labelEn: 'Activity Log' },
 ];
 
 
@@ -241,45 +272,154 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
     const user = typeof window !== 'undefined' ? getStoredUser() : null;
     const isMini = collapsed || mode === 'mini';
 
-    // Track which groups are open
-    const getInitialOpenGroups = () => {
-        const open: Record<string, boolean> = {};
-        GROUPS.forEach(group => {
-            const isGroupActive = group.children.some(child =>
-                pathname?.startsWith(`/${locale}/dashboard${child.path}`)
-            );
-            if (isGroupActive) open[group.key] = true;
+    // ── Helpers ──────────────────────────────────────────────────
+    const lsGet = <T,>(key: string, fallback: T): T => {
+        if (typeof window === 'undefined') return fallback;
+        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+    };
+    const lsSet = (key: string, value: unknown) => {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    };
+
+    // ── Flat item map for search + recent labels ──────────────
+    const allItems = useMemo(() => {
+        const map: Record<string, { labelAr: string; labelEn: string; groupLabelAr?: string; groupLabelEn?: string; groupColor?: string }> = {};
+        [...GROUPS, ...EXTRA_GROUPS].forEach(g => {
+            g.children.forEach(c => { map[c.path] = { labelAr: c.labelAr, labelEn: c.labelEn, groupLabelAr: g.labelAr, groupLabelEn: g.labelEn, groupColor: g.color }; });
+        });
+        SINGLE_ITEMS.forEach(i => { map[i.path] = { labelAr: i.labelAr, labelEn: i.labelEn }; });
+        map['/'] = { labelAr: 'لوحة التحكم', labelEn: 'Dashboard' };
+        return map;
+    }, []);
+
+    // ── Group open state (persisted) ──────────────────────────
+    const getInitialOpenGroups = useCallback(() => {
+        const saved = lsGet<Record<string, boolean>>('sidebar_open_groups', {});
+        const open: Record<string, boolean> = { ...saved };
+        [...GROUPS, ...EXTRA_GROUPS].forEach(group => {
+            if (group.children.some(c => pathname?.startsWith(`/${locale}/dashboard${c.path}`))) {
+                open[group.key] = true;
+            }
         });
         return open;
-    };
+    }, [pathname, locale]);
 
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(getInitialOpenGroups);
     const [isHovering, setIsHovering] = useState(false);
 
-    // Update open groups on pathname change
+    // ── Search ────────────────────────────────────────────────
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchRef = useRef<HTMLInputElement>(null);
+
+    const searchResults = useMemo(() => {
+        if (!searchQuery.trim()) return [];
+        const q = searchQuery.toLowerCase();
+        return Object.entries(allItems)
+            .filter(([, v]) => v.labelAr.includes(searchQuery) || v.labelEn.toLowerCase().includes(q))
+            .slice(0, 8);
+    }, [searchQuery, allItems]);
+
+    // ── Pinned items (persisted) ──────────────────────────────
+    const [pinnedPaths, setPinnedPaths] = useState<string[]>(() => lsGet('sidebar_pinned', []));
+
+    const togglePin = useCallback((path: string) => {
+        setPinnedPaths(prev => {
+            const next = prev.includes(path) ? prev.filter(p => p !== path) : [...prev, path].slice(0, 5);
+            lsSet('sidebar_pinned', next);
+            return next;
+        });
+    }, []);
+
+    // ── Recent pages (persisted) ──────────────────────────────
+    const [recentPaths, setRecentPaths] = useState<string[]>(() => lsGet('sidebar_recent', []));
+
+    // ── Live counts ───────────────────────────────────────────
+    const [liveCounts, setLiveCounts] = useState<{ tasks: number; approvals: number }>({ tasks: 0, approvals: 0 });
+
+    // ── Effects ───────────────────────────────────────────────
+
+    // Open active group when route changes
     useEffect(() => {
         setOpenGroups(getInitialOpenGroups());
     }, [pathname]);
 
+    // Track recent pages
     useEffect(() => {
-        const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && !collapsed) {
+        if (!pathname) return;
+        const dashPrefix = `/${locale}/dashboard`;
+        if (!pathname.startsWith(dashPrefix)) return;
+        const path = pathname.slice(dashPrefix.length) || '/';
+        if (!allItems[path]) return;
+        setRecentPaths(prev => {
+            const next = [path, ...prev.filter(p => p !== path)].slice(0, 4);
+            lsSet('sidebar_recent', next);
+            return next;
+        });
+    }, [pathname, locale]);
+
+    // Fetch live counts every 60s
+    useEffect(() => {
+        const fetch = async () => {
+            const [t, a] = await Promise.allSettled([
+                tasksApi.getTasks({ view: 'assigned', status: 'pending', per_page: 1 }),
+                approvalsApi.getInbox({ per_page: 1 }),
+            ]);
+            setLiveCounts({
+                tasks: t.status === 'fulfilled' ? (t.value.data?.total ?? t.value.data?.data?.length ?? 0) : 0,
+                approvals: a.status === 'fulfilled' ? (a.value.data?.total ?? a.value.data?.data?.length ?? 0) : 0,
+            });
+        };
+        fetch();
+        const id = setInterval(fetch, 60_000);
+        return () => clearInterval(id);
+    }, []);
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handle = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                searchRef.current?.focus();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
                 toggleCollapsed();
             }
+            if (e.key === 'Escape') {
+                if (searchQuery) { setSearchQuery(''); }
+                else if (!collapsed) { toggleCollapsed(); }
+            }
         };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [collapsed, toggleCollapsed]);
+        window.addEventListener('keydown', handle);
+        return () => window.removeEventListener('keydown', handle);
+    }, [collapsed, toggleCollapsed, searchQuery]);
 
+    // ── Handlers ──────────────────────────────────────────────
     const toggleGroup = (key: string) => {
         if (isMini && mode !== 'hover') return;
-        setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
+        setOpenGroups(prev => {
+            const next = { ...prev, [key]: !prev[key] };
+            lsSet('sidebar_open_groups', next);
+            return next;
+        });
     };
 
     const handleLogout = async () => {
         await logout();
         router.push(`/${locale}/login`);
     };
+
+    // ── Mobile swipe gestures ────────────────────────────────────
+    // Close: swipe away from the sidebar edge
+    const swipeClose = useSwipe(
+        isRTL ? null : (!collapsed ? toggleCollapsed : null),
+        isRTL ? (!collapsed ? toggleCollapsed : null) : null,
+    );
+    // Open: thin edge zone swipe toward center
+    const swipeOpen = useSwipe(
+        isRTL ? (collapsed ? toggleCollapsed : null) : null,
+        isRTL ? null : (collapsed ? toggleCollapsed : null),
+    );
 
     const effectivelyExpanded = mode === 'hover' ? (isHovering || !collapsed) : !isMini;
     const sidebarWidth = effectivelyExpanded ? 'w-64' : 'w-16';
@@ -288,6 +428,15 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
 
     return (
         <>
+            {/* Edge swipe zone — لفتح الـ Sidebar بالسحب من حافة الشاشة على الموبايل */}
+            <div
+                className="md:hidden fixed top-0 bottom-0 w-5 z-20"
+                style={{ [isRTL ? 'right' : 'left']: 0 }}
+                onTouchStart={swipeOpen.onTouchStart}
+                onTouchEnd={swipeOpen.onTouchEnd}
+                aria-hidden="true"
+            />
+
             {/* Overlay — موبايل فقط، لما الـ Sidebar مفتوح */}
             {!collapsed && (
                 <div
@@ -297,11 +446,22 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
                 />
             )}
         <aside
-            className={`${sidebarWidth} h-full flex flex-col overflow-hidden fixed top-0 bottom-0 z-50 transition-transform duration-300 ease-in-out ${!collapsed ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'} md:translate-x-0 md:static md:z-auto md:h-screen`}
+            className={`${sidebarWidth} h-screen flex flex-col overflow-hidden fixed top-0 bottom-0 z-30 transition-transform duration-300 ease-in-out ${!collapsed ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'} md:translate-x-0 max-md:z-50`}
             style={{ background: 'var(--bg-sidebar)', borderInlineEnd: '1px solid var(--border-default)' }}
+            aria-label={isRTL ? 'القائمة الجانبية' : 'Sidebar navigation'}
             onMouseEnter={() => mode === 'hover' && setIsHovering(true)}
             onMouseLeave={() => mode === 'hover' && setIsHovering(false)}
+            onTouchStart={swipeClose.onTouchStart}
+            onTouchEnd={swipeClose.onTouchEnd}
         >
+            {/* Skip to main content link for keyboard users */}
+            <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[999] focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:text-white"
+                style={{ background: 'var(--color-primary)' }}
+            >
+                {isRTL ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content'}
+            </a>
             {/* ── Logo ── */}
             <div className="h-16 flex items-center gap-3 px-4 flex-shrink-0 relative"
                 style={{ borderBottom: '1px solid var(--border-default)' }}>
@@ -375,9 +535,56 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
                 </Tooltip>
             </div>
 
-            {/* ── Divider ── */}
+            {/* ── Search ── */}
             {effectivelyExpanded && (
-                <div className="px-4 py-1.5">
+                <div className="px-3 pb-2 flex-shrink-0">
+                    <div className="relative">
+                        <svg className="absolute start-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--text-muted)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                            ref={searchRef}
+                            type="text"
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            placeholder={isRTL ? 'بحث... (Ctrl+K)' : 'Search... (Ctrl+K)'}
+                            className="sidebar-search ps-8 pe-7"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery('')} className="absolute end-2 top-1/2 -translate-y-1/2 p-0.5 rounded" style={{ color: 'var(--text-muted)' }}>
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        )}
+                    </div>
+                    {searchQuery && (
+                        <div className="mt-1.5 rounded-xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-modal)' }}>
+                            {searchResults.length === 0 ? (
+                                <p className="text-xs text-center py-3" style={{ color: 'var(--text-muted)' }}>
+                                    {isRTL ? 'لا توجد نتائج' : 'No results'}
+                                </p>
+                            ) : searchResults.map(([path, item]) => (
+                                <Link key={path} href={`/${locale}/dashboard${path}`} onClick={() => setSearchQuery('')}
+                                    className="flex items-center gap-2 px-3 py-2 transition-all"
+                                    style={{ color: 'var(--text-primary)' }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-surface-hover)')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = '')}>
+                                    <span className="text-xs font-medium truncate flex-1">{isRTL ? item.labelAr : item.labelEn}</span>
+                                    {item.groupLabelAr && (
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0"
+                                            style={{ background: `${item.groupColor}20`, color: item.groupColor }}>
+                                            {isRTL ? item.groupLabelAr : item.groupLabelEn}
+                                        </span>
+                                    )}
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── Main menu label ── */}
+            {effectivelyExpanded && !searchQuery && (
+                <div className="px-4 py-1 flex-shrink-0">
                     <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
                         {isRTL ? 'القوائم الرئيسية' : 'Main Menu'}
                     </p>
@@ -385,25 +592,69 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
             )}
 
             {/* ── Navigation ── */}
-            <nav className="flex-1 px-3 py-1 space-y-0.5 overflow-y-auto overflow-x-hidden">
+            <nav className="flex-1 min-h-0 px-3 py-1 space-y-0.5 overflow-y-auto overflow-x-hidden sidebar-nav">
 
-                {/* Groups with dropdowns */}
-                {GROUPS.map(group => {
+                {/* ── Pinned items ── */}
+                {pinnedPaths.length > 0 && effectivelyExpanded && !searchQuery && (
+                    <div className="mb-2">
+                        <p className="px-1 text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
+                            {isRTL ? 'المفضلة' : 'Pinned'}
+                        </p>
+                        {pinnedPaths.map(path => {
+                            const item = allItems[path];
+                            if (!item) return null;
+                            const href = `/${locale}/dashboard${path}`;
+                            const isActive = pathname?.startsWith(href);
+                            return (
+                                <div key={path} className="group/item flex items-center gap-1">
+                                    <Link href={href} className={`sidebar-link flex-1 py-2 gap-2 ${isActive ? 'active' : ''}`}>
+                                        <svg className="w-3.5 h-3.5 flex-shrink-0 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                        <span className="truncate text-xs">{isRTL ? item.labelAr : item.labelEn}</span>
+                                    </Link>
+                                    <button onClick={() => togglePin(path)} className="sidebar-pin-btn pinned" title={isRTL ? 'إزالة' : 'Unpin'}>
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            );
+                        })}
+                        <div className="mt-1.5 mb-1" style={{ borderBottom: '1px solid var(--border-default)' }} />
+                    </div>
+                )}
+
+                {/* All groups: main ops + reports & admin */}
+                {[...GROUPS, ...EXTRA_GROUPS].map((group, idx) => {
                     const isGroupActive = group.children.some(child =>
                         pathname?.startsWith(`/${locale}/dashboard${child.path}`)
                     );
                     const isOpen = openGroups[group.key] || false;
+                    const isFirstExtra = idx === GROUPS.length;
 
                     return (
                         <div key={group.key}>
+                            {/* Section divider before Reports & Admin */}
+                            {isFirstExtra && (
+                                <div className="pt-2 mt-2 mb-1" style={{ borderTop: '1px solid var(--border-default)' }}>
+                                    {effectivelyExpanded && (
+                                        <p className="px-1 text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
+                                            {isRTL ? 'التقارير والنظام' : 'Reports & Admin'}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Group Header */}
                             <Tooltip label={getLabel(group.labelAr, group.labelEn)} collapsed={!effectivelyExpanded} isRTL={isRTL}>
                                 <button
                                     onClick={() => toggleGroup(group.key)}
+                                    aria-expanded={isOpen}
+                                    aria-controls={`sidebar-group-${group.key}`}
                                     className={`sidebar-link w-full text-start transition-all ${isGroupActive ? 'font-semibold' : ''}`}
                                     style={isGroupActive ? { color: group.color } : {}}
+                                    onMouseEnter={e => { if (!isGroupActive) e.currentTarget.style.background = `${group.color}10`; }}
+                                    onMouseLeave={e => { if (!isGroupActive) e.currentTarget.style.background = ''; }}
                                 >
-                                    {/* Group icon with color dot */}
                                     <div className="icon relative flex-shrink-0">
                                         <Icon path={ICONS[group.iconKey]} />
                                         {isGroupActive && (
@@ -415,7 +666,6 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
                                     {effectivelyExpanded && (
                                         <>
                                             <span className="flex-1 truncate">{getLabel(group.labelAr, group.labelEn)}</span>
-                                            {/* Chevron */}
                                             <svg
                                                 className={`w-4 h-4 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
                                                 fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
@@ -428,26 +678,42 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
                             </Tooltip>
 
                             {/* Dropdown Children */}
-                            <div className={`sidebar-dropdown ${isOpen && effectivelyExpanded ? 'open' : ''}`}>
-                                <div className={`ps-2 space-y-1 pt-1 sidebar-tree`}>
+                            <div
+                                id={`sidebar-group-${group.key}`}
+                                className={`sidebar-dropdown ${isOpen && effectivelyExpanded ? 'open' : ''}`}
+                                role="region"
+                                aria-label={getLabel(group.labelAr, group.labelEn)}
+                            >
+                                <div className="ps-2 space-y-0.5 pt-1 sidebar-tree">
                                     {group.children.map(child => {
                                         const href = `/${locale}/dashboard${child.path}`;
                                         const isActive = pathname?.startsWith(`/${locale}/dashboard${child.path}`);
+                                        const isPinned = pinnedPaths.includes(child.path);
                                         return (
-                                            <Link
-                                                key={child.key}
-                                                href={href}
-                                                className={`sidebar-sub-link ${isActive ? 'active' : ''} ms-4`}
-                                                style={isActive ? { color: group.color } : {}}
-                                            >
-                                                <span className="truncate">{getLabel(child.labelAr, child.labelEn)}</span>
-                                                {child.badge && (
-                                                    <span className="ms-auto text-[9px] px-1.5 py-0.5 rounded-full font-bold"
-                                                        style={{ background: `${child.badge.color}20`, color: child.badge.color }}>
-                                                        {child.badge.text}
-                                                    </span>
-                                                )}
-                                            </Link>
+                                            <div key={child.key} className="group/item flex items-center ms-4 pe-1">
+                                                <Link
+                                                    href={href}
+                                                    className={`sidebar-sub-link flex-1 ${isActive ? 'active' : ''}`}
+                                                    style={isActive ? { color: group.color } : {}}
+                                                >
+                                                    <span className="truncate">{getLabel(child.labelAr, child.labelEn)}</span>
+                                                    {child.badge && (
+                                                        <span className="ms-auto text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                                                            style={{ background: `${child.badge.color}20`, color: child.badge.color }}>
+                                                            {child.badge.text}
+                                                        </span>
+                                                    )}
+                                                </Link>
+                                                <button
+                                                    onClick={() => togglePin(child.path)}
+                                                    className={`sidebar-pin-btn ${isPinned ? 'pinned' : ''}`}
+                                                    title={isPinned ? (isRTL ? 'إلغاء التثبيت' : 'Unpin') : (isRTL ? 'تثبيت' : 'Pin')}
+                                                >
+                                                    <svg className="w-3 h-3" fill={isPinned ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -456,28 +722,69 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
                     );
                 })}
 
-                {/* Divider before single items */}
+                {/* ── Follow-up section with live counts ── */}
                 <div className="pt-2 mt-2" style={{ borderTop: '1px solid var(--border-default)' }}>
                     {effectivelyExpanded && (
                         <p className="px-1 text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                            {isRTL ? 'أخرى' : 'Other'}
+                            {isRTL ? 'المتابعة' : 'Follow-up'}
                         </p>
                     )}
                     {SINGLE_ITEMS.map(item => {
                         const href = `/${locale}/dashboard${item.path}`;
-                        const isActive = item.path === ''
-                            ? pathname === `/${locale}/dashboard`
-                            : pathname?.startsWith(`/${locale}/dashboard${item.path}`);
+                        const isActive = pathname?.startsWith(`/${locale}/dashboard${item.path}`);
+                        const liveCount = item.key === 'tasks' ? liveCounts.tasks : item.key === 'approvals' ? liveCounts.approvals : 0;
                         return (
                             <Tooltip key={item.key} label={getLabel(item.labelAr, item.labelEn)} collapsed={!effectivelyExpanded} isRTL={isRTL}>
                                 <Link href={href} className={`sidebar-link ${isActive ? 'active' : ''}`}>
-                                    <div className="icon shadow-sm"><Icon path={ICONS[item.iconKey]} /></div>
-                                    {effectivelyExpanded && <span className="truncate">{getLabel(item.labelAr, item.labelEn)}</span>}
+                                    <div className="icon shadow-sm relative">
+                                        <Icon path={ICONS[item.iconKey]} />
+                                        {!effectivelyExpanded && liveCount > 0 && (
+                                            <span className="absolute -top-1 -end-1 w-3.5 h-3.5 rounded-full text-[8px] font-bold flex items-center justify-center text-white" style={{ background: '#ef4444' }}>
+                                                {liveCount > 9 ? '9+' : liveCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {effectivelyExpanded && (
+                                        <>
+                                            <span className="truncate flex-1">{getLabel(item.labelAr, item.labelEn)}</span>
+                                            {liveCount > 0 ? (
+                                                <span className="ms-auto text-[9px] min-w-[18px] text-center px-1.5 py-0.5 rounded-full font-bold text-white" style={{ background: '#ef4444' }}>
+                                                    {liveCount > 99 ? '99+' : liveCount}
+                                                </span>
+                                            ) : item.badge && (
+                                                <span className="ms-auto text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                                                    style={{ background: `${item.badge.color}20`, color: item.badge.color }}>
+                                                    {item.badge.text}
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
                                 </Link>
                             </Tooltip>
                         );
                     })}
                 </div>
+
+                {/* ── Recent pages ── */}
+                {recentPaths.length > 0 && effectivelyExpanded && !searchQuery && (
+                    <div className="pt-2 mt-2" style={{ borderTop: '1px solid var(--border-default)' }}>
+                        <p className="px-1 text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
+                            {isRTL ? 'آخر زيارة' : 'Recent'}
+                        </p>
+                        {recentPaths.map(path => {
+                            const item = allItems[path];
+                            if (!item) return null;
+                            return (
+                                <Link key={path} href={`/${locale}/dashboard${path}`} className="sidebar-recent-link">
+                                    <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="truncate">{isRTL ? item.labelAr : item.labelEn}</span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </nav>
 
             {/* ── Bottom Controls ── */}

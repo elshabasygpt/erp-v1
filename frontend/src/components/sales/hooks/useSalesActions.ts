@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { salesApi } from '@/lib/api';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export function useSalesActions(activeTab: string, sellerInfo: any, locale: string) {
     const isRTL = locale === 'ar';
+    const { taxRate } = useRegionalSettings();
     const [showModal, setShowModal] = useState(false);
     const [showSalesOrderModal, setShowSalesOrderModal] = useState(false);
     const [quotationToConvert, setQuotationToConvert] = useState<any>(null);
@@ -53,12 +55,12 @@ export function useSalesActions(activeTab: string, sellerInfo: any, locale: stri
                         crNumber: fullInvoice.customer.commercial_register,
                     } : undefined,
                     items: (fullInvoice.items || []).map((i: any) => ({
-                        code: i.product?.code || 'N/A',
-                        name: isRTL ? (i.product?.name_ar || i.product?.name) : i.product?.name,
+                        code: i.product?.code || i.product?.sku || 'N/A',
+                        name: i.printed_name || (isRTL ? (i.product?.name_ar || i.product?.name) : i.product?.name),
                         qty: i.quantity,
                         unit: i.product?.unit || 'pc',
                         price: i.unit_price,
-                        vatRate: 0.15,
+                        vatRate: (i.vat_rate ? i.vat_rate / 100 : taxRate / 100),
                     })),
                     paymentType: (fullInvoice.payment_method || 'cash') as any,
                     notes: fullInvoice.notes,

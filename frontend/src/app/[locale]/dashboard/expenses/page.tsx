@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { expensesApiNew as expensesApi } from '@/lib/api';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 type Expense = {
   id: string;
@@ -16,6 +17,7 @@ type Category = { id: string; name: string };
 
 export default function ExpensesPage() {
   const { isRTL } = useLanguage();
+  const { currencySymbol } = useCurrencyFormatter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +89,7 @@ export default function ExpensesPage() {
             {isRTL ? 'إجمالي المصروفات' : 'Total Expenses'}
           </p>
           <p className="text-2xl font-bold text-blue-800 mt-1">
-            {total.toLocaleString()} {isRTL ? 'ر.س' : 'SAR'}
+            {total.toLocaleString()} {currencySymbol}
           </p>
         </div>
         <div className="bg-gray-50 rounded-xl p-4">

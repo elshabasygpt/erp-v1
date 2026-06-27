@@ -23,6 +23,7 @@ final class InvoiceItem extends Entity
         private ?string $stockLotId = null,
         private bool $coreChargeApplied = false,
         private float $coreChargeAmount = 0.0,
+        private ?string $printedName = null,
     ) {
         parent::__construct($id);
     }
@@ -92,6 +93,16 @@ final class InvoiceItem extends Entity
         return $this->coreChargeAmount;
     }
 
+    public function getPrintedName(): ?string
+    {
+        return $this->printedName;
+    }
+
+    public function getDisplayName(): string
+    {
+        return $this->printedName ?? $this->productName ?? '';
+    }
+
     public function getSubtotal(): float
     {
         return $this->quantity * $this->unitPrice;
@@ -121,6 +132,7 @@ final class InvoiceItem extends Entity
             'invoice_id' => $this->invoiceId,
             'product_id' => $this->productId,
             'product_name' => $this->productName,
+            'printed_name' => $this->printedName,
             'quantity' => $this->quantity,
             'unit_price' => $this->unitPrice,
             'discount_percent' => $this->discountPercent,

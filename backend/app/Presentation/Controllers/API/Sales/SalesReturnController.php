@@ -29,6 +29,10 @@ class SalesReturnController extends BaseTenantController
             $query->where('status', $status);
         }
 
+        if ($customerId = $request->query('customer_id')) {
+            $query->where('customer_id', $customerId);
+        }
+
         $returns = $query->paginate((int) $limit);
 
         return $this->paginated($returns->toArray(), 'Sales returns retrieved successfully');
@@ -43,6 +47,7 @@ class SalesReturnController extends BaseTenantController
             'return_type' => 'required|string|in:full,partial,line_return',
             'refund_method' => 'required|string|in:store_credit,cash,card,bank_transfer',
             'reason' => 'nullable|string',
+            'defect_type' => 'nullable|in:manufacturing,installation,shipping,other',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|uuid|exists:products,id',
@@ -69,7 +74,7 @@ class SalesReturnController extends BaseTenantController
 
             // Update offline_id if provided
             if (!empty($validated['offline_id'])) {
-                SalesReturnModel::where('id', $salesReturn->getId())->update(['offline_id' => $validated['offline_id']]);
+                SalesReturnModel::where('id', $salesReturn->id)->update(['offline_id' => $validated['offline_id']]);
             }
 
             return $this->created($salesReturn->toArray(), 'Sales return processed successfully');

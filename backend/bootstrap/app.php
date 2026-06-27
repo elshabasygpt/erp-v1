@@ -3,6 +3,7 @@
 use App\Http\Middleware\PartnerAuth;
 use App\Presentation\Middleware\RolePermissionMiddleware;
 use App\Presentation\Middleware\SubscriptionActiveMiddleware;
+use App\Presentation\Middleware\TenantAuthMiddleware;
 use App\Presentation\Middleware\TenantMiddleware;
 use App\Providers\AppServiceProvider;
 use Illuminate\Auth\AuthenticationException;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'tenant' => TenantMiddleware::class,
+            'tenant.auth' => TenantAuthMiddleware::class,
             'subscription.active' => SubscriptionActiveMiddleware::class,
             'role' => RolePermissionMiddleware::class,
             'partner.auth' => PartnerAuth::class,
@@ -69,6 +71,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('approvals:escalate')->hourly();
         $schedule->command('orders:process-reminders')->hourly();
+        $schedule->command('installments:send-reminders')->dailyAt('09:00')->onOneServer();
+        $schedule->command('stock:send-alerts')->dailyAt('08:00')->onOneServer();
         
         $schedule->command('backups:run-daily')
                  ->dailyAt('02:00')
@@ -94,5 +98,9 @@ return Application::configure(basePath: dirname(__DIR__))
                  ->everyFiveMinutes()
                  ->onOneServer()
                  ->emailOutputOnFailure(env('ADMIN_EMAIL', 'sysadmin@erp.com'));
+
+        $schedule->command('accounting:post-recurring')
+                 ->dailyAt('01:00')
+                 ->onOneServer();
     })
     ->create();

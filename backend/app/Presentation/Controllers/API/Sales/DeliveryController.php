@@ -38,7 +38,7 @@ class DeliveryController extends BaseTenantController
 
         if ($request->has('search')) {
             $search = $request->query('search');
-            $query->where('delivery_number', 'ilike', "%{$search}%");
+            $query->where('delivery_number', 'like', "%{$search}%");
         }
 
         $deliveries = $query->paginate((int) $limit);

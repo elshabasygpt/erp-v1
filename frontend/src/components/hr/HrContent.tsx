@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export default function HrContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -52,8 +53,8 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
         queryClient.invalidateQueries({ queryKey: ['hr'] });
     };
 
-    const formatCurrency = (val: number) =>
-        new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 2 }).format(val || 0);
+    const { format: formatCurrencyFn } = useCurrencyFormatter();
+    const formatCurrency = (val: number) => formatCurrencyFn(val || 0);
 
     const handleCreateEmployee = async () => {
         try {

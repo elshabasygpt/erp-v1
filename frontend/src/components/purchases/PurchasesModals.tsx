@@ -1,6 +1,7 @@
 import React, { memo, useState } from 'react';
 import PriceCompareModal from './PriceCompareModal';
 import PurchaseInstallmentsModal from './PurchaseInstallmentsModal';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 interface PurchasesModalsProps {
     isRTL: boolean;
@@ -38,6 +39,7 @@ const PurchasesModals = memo(function PurchasesModals({
     newReturn, setNewReturn, handleSaveReturn, handleCompleteReturn,
     statusConfig, getStatusLabel, formatCurrency
 }: PurchasesModalsProps) {
+    const { taxRate } = useRegionalSettings();
     const [comparingProductId, setComparingProductId] = useState<string | null>(null);
     const [showInstallments, setShowInstallments] = useState(false);
 
@@ -99,7 +101,7 @@ const PurchasesModals = memo(function PurchasesModals({
                                 <h3 className="text-lg font-bold text-surface-900 dark:text-white flex items-center gap-2">
                                     <span>📦</span> {isRTL ? 'الأصناف' : 'Items'}
                                 </h3>
-                                <button onClick={() => setNewOrder({...newOrder, items: [...newOrder.items, {product_id:'', qty:1, unit_price:0, tax_rate:15}]})} className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-bold flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors">
+                                <button onClick={() => setNewOrder({...newOrder, items: [...newOrder.items, {product_id:'', qty:1, unit_price:0, tax_rate:taxRate}]})} className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-bold flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors">
                                     ➕ {isRTL ? 'إضافة صنف' : 'Add Item'}
                                 </button>
                             </div>
@@ -295,7 +297,7 @@ const PurchasesModals = memo(function PurchasesModals({
                                 <h3 className="text-lg font-bold text-surface-900 dark:text-white flex items-center gap-2">
                                     <span>📦</span> {isRTL ? 'الأصناف المرتجعة' : 'Returned Items'}
                                 </h3>
-                                <button onClick={() => setNewReturn({...newReturn, items: [...newReturn.items, {product_id:'', qty:1, unit_price:0, tax_rate:15}]})} className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-bold flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors">
+                                <button onClick={() => setNewReturn({...newReturn, items: [...newReturn.items, {product_id:'', qty:1, unit_price:0, tax_rate:taxRate}]})} className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-bold flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors">
                                     ➕ {isRTL ? 'إضافة صنف' : 'Add Item'}
                                 </button>
                             </div>

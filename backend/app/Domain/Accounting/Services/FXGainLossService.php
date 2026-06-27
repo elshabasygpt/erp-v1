@@ -88,13 +88,49 @@ class FXGainLossService
 
     /**
      * Calculate Unrealized FX Gains/Losses for month-end revaluation.
+     * Idempotent: reverses any existing revaluation for the same period before recreating.
      * @return int Number of journal entries created
      */
     public function calculateUnrealizedGainsLosses(string $tenantId, string $date): int
     {
+        $periodMonth = date('Y-m', strtotime($date)); // e.g. "2025-06"
+
+        // Reverse any existing unrealized revaluation entries for this period to ensure idempotency
+        $existingIds = \DB::connection('tenant')->table('journal_entries')
+            ->where('tenant_id', $tenantId)
+            ->where('reference_type', 'fx_revaluation')
+            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$periodMonth])
+            ->pluck('id');
+
+        if ($existingIds->isNotEmpty()) {
+            \DB::connection('tenant')->table('journal_entry_lines')
+                ->whereIn('journal_entry_id', $existingIds)
+                ->delete();
+            \DB::connection('tenant')->table('journal_entries')
+                ->whereIn('id', $existingIds)
+                ->delete();
+
+            // Also remove the auto-reversal entries for next month that were pre-created
+            $nextMonth = date('Y-m', strtotime($date . ' +1 month'));
+            $reversalIds = \DB::connection('tenant')->table('journal_entries')
+                ->where('tenant_id', $tenantId)
+                ->where('reference_type', 'fx_reversal')
+                ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$nextMonth])
+                ->pluck('id');
+
+            if ($reversalIds->isNotEmpty()) {
+                \DB::connection('tenant')->table('journal_entry_lines')
+                    ->whereIn('journal_entry_id', $reversalIds)
+                    ->delete();
+                \DB::connection('tenant')->table('journal_entries')
+                    ->whereIn('id', $reversalIds)
+                    ->delete();
+            }
+        }
+
         $entriesCreated = 0;
-        
-        // 1. Get latest exchange rates as of the given date for all foreign currencies
+
+        // Get latest exchange rates as of the given date for all foreign currencies
         $rates = \DB::connection('tenant')->table('exchange_rates')
             ->where('tenant_id', $tenantId)
             ->where('date', '<=', $date)
@@ -104,14 +140,14 @@ class FXGainLossService
             ->keyBy('currency_id');
 
         if ($rates->isEmpty()) {
-            return 0; // No foreign currencies to revalue
+            return 0;
         }
 
         $fxAccount = $this->accountMapping->resolve('unrealized_fx_gain_loss');
         $arAccount = $this->accountMapping->resolve('ar');
         $apAccount = $this->accountMapping->resolve('ap');
 
-        // 2. Process AR (Sales Invoices)
+        // Process AR (Sales Invoices)
         $invoices = \DB::connection('tenant')->table('invoices')
             ->where('tenant_id', $tenantId)
             ->whereNotNull('currency_id')
@@ -121,24 +157,22 @@ class FXGainLossService
 
         foreach ($invoices as $inv) {
             if (!isset($rates[$inv->currency_id])) continue;
-            
+
             $eomRate = (float) $rates[$inv->currency_id]->rate;
             $invRate = (float) $inv->exchange_rate;
-            
             if ($eomRate === $invRate) continue;
 
-            $openForeign = (float) $inv->total - (float) $inv->paid_amount;
+            $openForeign     = (float) $inv->total - (float) $inv->paid_amount;
             $historicalLocal = round($openForeign * $invRate, 6);
-            $currentLocal = round($openForeign * $eomRate, 6);
-            
-            $variance = round($currentLocal - $historicalLocal, 6);
+            $currentLocal    = round($openForeign * $eomRate, 6);
+            $variance        = round($currentLocal - $historicalLocal, 6);
             if ($variance == 0) continue;
 
             $this->createRevaluationEntry($tenantId, $date, $variance, $arAccount, $fxAccount, 'ar', $inv->id);
             $entriesCreated++;
         }
 
-        // 3. Process AP (Purchase Invoices)
+        // Process AP (Purchase Invoices)
         $purchases = \DB::connection('tenant')->table('purchase_invoices')
             ->where('tenant_id', $tenantId)
             ->whereNotNull('currency_id')
@@ -148,17 +182,15 @@ class FXGainLossService
 
         foreach ($purchases as $pur) {
             if (!isset($rates[$pur->currency_id])) continue;
-            
+
             $eomRate = (float) $rates[$pur->currency_id]->rate;
             $purRate = (float) $pur->exchange_rate;
-            
             if ($eomRate === $purRate) continue;
 
-            $openForeign = (float) $pur->total - (float) $pur->paid_amount;
+            $openForeign     = (float) $pur->total - (float) $pur->paid_amount;
             $historicalLocal = round($openForeign * $purRate, 6);
-            $currentLocal = round($openForeign * $eomRate, 6);
-            
-            $variance = round($currentLocal - $historicalLocal, 6);
+            $currentLocal    = round($openForeign * $eomRate, 6);
+            $variance        = round($currentLocal - $historicalLocal, 6);
             if ($variance == 0) continue;
 
             $this->createRevaluationEntry($tenantId, $date, $variance, $apAccount, $fxAccount, 'ap', $pur->id);

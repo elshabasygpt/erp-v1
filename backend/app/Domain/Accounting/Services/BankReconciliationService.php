@@ -142,25 +142,158 @@ class BankReconciliationService
     }
 
     /**
+     * Auto-match bank transactions to journal entry lines by amount + date proximity.
+     * Returns ['matched' => int, 'lines' => ReconciliationLineModel[]]
+     */
+    public function autoMatch(string $reconciliationId, int $dateToleanceDays = 5): array
+    {
+        $reconciliation = ReconciliationModel::query()
+            ->with('bankAccount')
+            ->findOrFail($reconciliationId);
+
+        if ($reconciliation->status !== 'draft') {
+            throw new DomainException('Cannot auto-match a completed reconciliation.');
+        }
+
+        $bankAccountId = $reconciliation->bank_account_id;
+        $chartAccountId = $reconciliation->bankAccount->chart_of_account_id ?? null;
+
+        // Unreconciled bank transactions in the reconciliation window
+        $bankTxns = BankTransactionModel::query()
+            ->where('bank_account_id', $bankAccountId)
+            ->where('is_reconciled', false)
+            ->whereBetween('transaction_date', [$reconciliation->start_date, $reconciliation->end_date])
+            ->orderBy('transaction_date')
+            ->get();
+
+        if ($bankTxns->isEmpty()) {
+            return ['matched' => 0, 'lines' => []];
+        }
+
+        // Unmatched journal entry lines for this bank's GL account
+        $matchedLineIds = ReconciliationLineModel::query()
+            ->where('reconciliation_id', $reconciliationId)
+            ->pluck('journal_entry_line_id')
+            ->toArray();
+
+        $glLines = JournalEntryLineModel::query()
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_entry_lines.journal_entry_id')
+            ->where('journal_entry_lines.account_id', $chartAccountId)
+            ->where('journal_entries.is_posted', 1)
+            ->whereBetween('journal_entries.date', [
+                date('Y-m-d', strtotime($reconciliation->start_date . " -{$dateToleanceDays} days")),
+                date('Y-m-d', strtotime($reconciliation->end_date   . " +{$dateToleanceDays} days")),
+            ])
+            ->when(! empty($matchedLineIds), fn($q) => $q->whereNotIn('journal_entry_lines.id', $matchedLineIds))
+            ->select(
+                'journal_entry_lines.id',
+                'journal_entry_lines.debit',
+                'journal_entry_lines.credit',
+                'journal_entry_lines.description',
+                'journal_entries.date',
+                'journal_entries.entry_number',
+            )
+            ->get();
+
+        $created  = [];
+        $usedGlIds = [];
+
+        return DB::connection('tenant')->transaction(function () use ($bankTxns, $glLines, $reconciliationId, &$created, &$usedGlIds) {
+            foreach ($bankTxns as $txn) {
+                $txnAmount = (float) $txn->amount;
+                $txnDate   = strtotime($txn->transaction_date);
+                $best      = null;
+                $bestScore = PHP_INT_MAX;
+
+                foreach ($glLines as $gl) {
+                    if (in_array($gl->id, $usedGlIds)) {
+                        continue;
+                    }
+
+                    // Deposits match debit side; withdrawals/fees match credit side
+                    $glAmount = in_array($txn->type, ['deposit', 'interest'])
+                        ? (float) $gl->debit
+                        : (float) $gl->credit;
+
+                    if (abs($glAmount - $txnAmount) > 0.01) {
+                        continue;
+                    }
+
+                    $daysDiff = abs((int) (($txnDate - strtotime($gl->date)) / 86400));
+                    if ($daysDiff < $bestScore) {
+                        $bestScore = $daysDiff;
+                        $best      = $gl;
+                    }
+                }
+
+                if ($best === null) {
+                    continue;
+                }
+
+                $line = ReconciliationLineModel::query()->create([
+                    'id'                   => Str::uuid()->toString(),
+                    'reconciliation_id'    => $reconciliationId,
+                    'bank_transaction_id'  => $txn->id,
+                    'journal_entry_line_id'=> $best->id,
+                    'status'               => 'matched',
+                ]);
+
+                $txn->update([
+                    'is_reconciled'    => true,
+                    'reconciliation_id'=> $reconciliationId,
+                ]);
+
+                $usedGlIds[] = $best->id;
+                $created[]   = $line;
+            }
+
+            return ['matched' => count($created), 'lines' => $created];
+        });
+    }
+
+    /**
      * Complete a bank reconciliation.
      */
-    public function completeReconciliation(string $reconciliationId, string $userId): ReconciliationModel
+    public function completeReconciliation(string $reconciliationId, string $userId, bool $forceComplete = false): ReconciliationModel
     {
-        return DB::connection('tenant')->transaction(function () use ($reconciliationId, $userId) {
+        return DB::connection('tenant')->transaction(function () use ($reconciliationId, $userId, $forceComplete) {
             $reconciliation = ReconciliationModel::query()->lockForUpdate()->findOrFail($reconciliationId);
 
             if ($reconciliation->status === 'completed') {
                 throw new DomainException('Reconciliation is already completed.');
             }
 
-            // Check if difference is zero (or within tolerance)
-            // We'll recalculate the difference based on matched lines here in a real implementation
-            // For now, let's assume it's valid to complete if they requested it.
+            // Recalculate actual difference from matched bank transactions
+            $matchedBankTotal = BankTransactionModel::query()
+                ->where('reconciliation_id', $reconciliationId)
+                ->where('is_reconciled', true)
+                ->selectRaw("SUM(CASE WHEN type IN ('deposit','interest') THEN amount ELSE -amount END) as net")
+                ->value('net') ?? 0;
+
+            $unmatchedBankTotal = BankTransactionModel::query()
+                ->where('bank_account_id', $reconciliation->bank_account_id)
+                ->where('is_reconciled', false)
+                ->whereBetween('transaction_date', [$reconciliation->start_date, $reconciliation->end_date])
+                ->selectRaw("SUM(CASE WHEN type IN ('deposit','interest') THEN amount ELSE -amount END) as net")
+                ->value('net') ?? 0;
+
+            $actualDifference = round(
+                (float) $reconciliation->statement_balance - (float) $reconciliation->system_balance,
+                2
+            );
+
+            if (!$forceComplete && abs($actualDifference) > 0.01) {
+                throw new DomainException(
+                    "Cannot complete reconciliation: difference of {$actualDifference} remains. " .
+                    'Ensure all transactions are matched or use force_complete to override.'
+                );
+            }
 
             $reconciliation->update([
-                'status' => 'completed',
-                'completed_by' => $userId,
-                'completed_at' => now(),
+                'status'         => 'completed',
+                'difference'     => $actualDifference,
+                'completed_by'   => $userId,
+                'completed_at'   => now(),
             ]);
 
             return $reconciliation;

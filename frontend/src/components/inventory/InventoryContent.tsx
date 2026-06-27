@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api';
 import { ManageGroupsModal, ManageUnitsModal, PrintBarcodeModal, StockMovementsModal, InventoryAdjustmentModal, AssembleProductModal } from './InventoryModals';
@@ -72,7 +73,8 @@ export default function InventoryContent({ dict, locale }: Props) {
     const [showAdjustment, setShowAdjustment] = useState(false);
     const [showAssembly, setShowAssembly] = useState(false);
 
-    const formatCurrency = useCallback((v: number) => new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(v), [isRTL]);
+    const { format: formatCurrencyFn } = useCurrencyFormatter();
+    const formatCurrency = useCallback((v: number) => formatCurrencyFn(v), [formatCurrencyFn]);
     const getGroupName = useCallback((mainId: string) => { const g = groups.find(g => g.id === mainId); return g ? (isRTL ? g.nameAr : g.name) : '-'; }, [groups, isRTL]);
     const getSubGroupName = useCallback((mainId: string, subId: string) => { const g = groups.find(g => g.id === mainId); const s = g?.subGroups.find(sub => sub.id === subId); return s ? (isRTL ? s.nameAr : s.name) : '-'; }, [groups, isRTL]);
     const getUnitSymbol = useCallback((unitId: string) => units.find(u => u.id === unitId)?.symbol || '-', [units]);

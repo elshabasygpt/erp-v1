@@ -24,6 +24,7 @@ use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Infrastructure\Eloquent\Models\SafeModel;
 use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
 use App\Infrastructure\Eloquent\Models\SafeUserModel;
+use App\Infrastructure\Eloquent\Models\UserModel;
 use App\Jobs\SubmitZatcaInvoiceJob;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -69,18 +70,33 @@ class ConfirmInvoiceUseCase
             // Change status
             $invoice->confirm();
 
-            // Generate ZATCA Phase 1 QR Code
-            $sellerName = 'شركة تجريبية'; // Should be fetched from tenant_settings
-            $vatNumber = '300000000000003';
+            // Generate ZATCA Phase 1 QR Code — Saudi Arabia only, and only when explicitly configured
+            $tenantSettings = DB::connection('tenant')
+                ->table('tenant_settings')
+                ->whereIn('key', ['country', 'company_name', 'vat_number'])
+                ->pluck('value', 'key');
 
-            $qrCode = $this->zatcaPhase1Service->generateQrBase64(
-                $sellerName,
-                $vatNumber,
-                $invoice->getInvoiceDate(),
-                $invoice->getTotal(),
-                $invoice->getVatAmount()
-            );
-            $invoice->setZatcaQrCode($qrCode);
+            $tenantCountry = $tenantSettings['country'] ?? null;
+
+            if ($tenantCountry === 'SA') {
+                $sellerName = $tenantSettings['company_name'] ?? 'شركة';
+                $vatNumber  = $tenantSettings['vat_number'] ?? '';
+
+                if ($vatNumber) {
+                    $qrCode = $this->zatcaPhase1Service->generateQrBase64(
+                        $sellerName,
+                        $vatNumber,
+                        $invoice->getInvoiceDate(),
+                        $invoice->getTotal(),
+                        $invoice->getVatAmount()
+                    );
+                    $invoice->setZatcaQrCode($qrCode);
+                } else {
+                    \Illuminate\Support\Facades\Log::warning('ZATCA QR skipped: Saudi tenant has no vat_number configured', [
+                        'invoice_id' => $invoice->getId(),
+                    ]);
+                }
+            }
 
             $this->invoiceRepository->update($invoice);
 
@@ -178,6 +194,21 @@ class ConfirmInvoiceUseCase
                         'status' => 'active',
                         'created_by' => $userId,
                     ]);
+                }
+            }
+
+            // ── Commission accrual ──
+            $invoiceModelForCommission = InvoiceModel::query()->find($invoice->getId());
+            if ($invoiceModelForCommission && $invoiceModelForCommission->salesperson_id) {
+                $salesperson = UserModel::query()->find($invoiceModelForCommission->salesperson_id);
+                if ($salesperson && (float) ($salesperson->commission_rate ?? 0) > 0 && $totalCogs > 0) {
+                    $revenue = $invoice->getSubtotal() - $invoice->getDiscountAmount();
+                    $profit = $revenue - $totalCogs;
+                    if ($profit > 0) {
+                        $commissionAmount = round($profit * (float) $salesperson->commission_rate / 100, 2);
+                        $invoiceModelForCommission->commission_amount = $commissionAmount;
+                        $invoiceModelForCommission->save();
+                    }
                 }
             }
 

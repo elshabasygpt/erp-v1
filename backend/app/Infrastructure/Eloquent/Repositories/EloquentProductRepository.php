@@ -84,14 +84,19 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     public function paginate(int $perPage = 15, array $filters = []): array
     {
         $query = ProductModel::query()->select([
-            'id', 'name', 'name_ar', 'sku', 'barcode', 'cost_price',
-            'sell_price', 'wholesale_price', 'semi_wholesale_price', 'image_url', 'superseded_by_id'
-        ])->with(['warehouseStocks', 'units', 'supersededBy']);
+            'id', 'name', 'name_ar', 'sku', 'barcode', 'oem_number', 'part_number', 'cost_price',
+            'sell_price', 'wholesale_price', 'semi_wholesale_price', 'image_url', 'superseded_by_id',
+            'brand_id', 'brand', 'quality_grade', 'country_of_origin', 'warranty_months',
+            'has_core_charge', 'core_charge_amount', 'is_kit', 'stock_alert_level',
+            'description', 'category_id', 'unit_of_measure', 'is_active', 'tenant_id',
+        ])->with(['warehouseStocks', 'units', 'supersededBy', 'brandModel']);
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('name', 'ilike', "%{$filters['search']}%")
-                    ->orWhere('sku', 'ilike', "%{$filters['search']}%")
-                    ->orWhere('barcode', 'ilike', "%{$filters['search']}%");
+                $q->where('name', 'like', "%{$filters['search']}%")
+                    ->orWhere('sku', 'like', "%{$filters['search']}%")
+                    ->orWhere('barcode', 'like', "%{$filters['search']}%")
+                    ->orWhere('oem_number', 'like', "%{$filters['search']}%")
+                    ->orWhere('part_number', 'like', "%{$filters['search']}%");
             });
         }
         if (isset($filters['is_active'])) {
@@ -161,10 +166,12 @@ final class EloquentProductRepository implements ProductRepositoryInterface
     {
         return ProductModel::query()->where('is_active', true)
             ->where(function ($q) use ($query) {
-                $q->where('name', 'ilike', "%{$query}%")
-                    ->orWhere('name_ar', 'ilike', "%{$query}%")
-                    ->orWhere('sku', 'ilike', "%{$query}%")
-                    ->orWhere('barcode', $query);
+                $q->where('name', 'like', "%{$query}%")
+                    ->orWhere('name_ar', 'like', "%{$query}%")
+                    ->orWhere('sku', 'like', "%{$query}%")
+                    ->orWhere('barcode', $query)
+                    ->orWhere('oem_number', 'like', "%{$query}%")
+                    ->orWhere('part_number', 'like', "%{$query}%");
             })
             ->with(['supersededBy', 'warehouseStocks'])
             ->limit($limit)

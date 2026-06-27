@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import SalesAnalyticsTab from '@/components/analytics/SalesAnalyticsTab';
 import CustomerAnalyticsTab from '@/components/analytics/CustomerAnalyticsTab';
 import InventoryValuationTab from '@/components/analytics/InventoryValuationTab';
@@ -9,16 +10,8 @@ import AIForecastingTab from '@/components/analytics/AIForecastingTab';
 
 export default function AdvancedAnalyticsPage() {
     const { isRTL, locale } = useLanguage();
+    const { format: formatCurrency } = useCurrencyFormatter();
     const [activeTab, setActiveTab] = useState<'sales' | 'customers' | 'inventory' | 'ai'>('sales');
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', {
-            style: 'currency',
-            currency: 'SAR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        }).format(value);
-    };
 
     const tabs = [
         { id: 'sales', label: isRTL ? 'أداء المبيعات والربحية' : 'Sales & Profitability', icon: '📈' },

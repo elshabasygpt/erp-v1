@@ -43,7 +43,7 @@ class VehicleController extends BaseTenantController
         $years = VehicleYearModel::query()->where('model_id', $modelId)
             ->where('is_active', true)
             ->orderBy('year_from', 'desc')
-            ->get(['id', 'year_from', 'year_to', 'engine_size', 'engine_code', 'fuel_type', 'engine_image_url']);
+            ->get(['id', 'year_from', 'year_to', 'engine_size', 'engine_code', 'fuel_type', 'transmission', 'engine_image_url']);
 
         return $this->success($years, 'Vehicle years retrieved successfully');
     }
@@ -62,7 +62,7 @@ class VehicleController extends BaseTenantController
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
             $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/makes/{$filename}";
             \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['logo_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $validated['logo_url'] = '/storage/' . $path;
         }
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -97,7 +97,7 @@ class VehicleController extends BaseTenantController
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
             $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/models/{$filename}";
             \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $validated['image_url'] = '/storage/' . $path;
         }
 
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -121,6 +121,7 @@ class VehicleController extends BaseTenantController
             'engine_size' => 'nullable|string|max:50',
             'engine_code' => 'nullable|string|max:100',
             'fuel_type' => 'nullable|in:petrol,diesel,hybrid,electric',
+            'transmission' => 'nullable|in:manual,automatic,cvt,semi_automatic',
             'engine_image' => 'nullable|file|max:2048',
         ]);
 
@@ -134,7 +135,7 @@ class VehicleController extends BaseTenantController
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
             $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/years/{$filename}";
             \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['engine_image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $validated['engine_image_url'] = '/storage/' . $path;
         }
 
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -167,7 +168,7 @@ class VehicleController extends BaseTenantController
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
             $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/makes/{$filename}";
             \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['logo_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $validated['logo_url'] = '/storage/' . $path;
         }
 
         $make->update($validated);
@@ -194,7 +195,7 @@ class VehicleController extends BaseTenantController
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
             $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/models/{$filename}";
             \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $validated['image_url'] = '/storage/' . $path;
         }
 
         $modelRec->update($validated);
@@ -210,6 +211,7 @@ class VehicleController extends BaseTenantController
             'engine_size' => 'nullable|string|max:50',
             'engine_code' => 'nullable|string|max:100',
             'fuel_type' => 'nullable|in:petrol,diesel,hybrid,electric',
+            'transmission' => 'nullable|in:manual,automatic,cvt,semi_automatic',
             'engine_image' => 'nullable|file|max:2048',
         ]);
 
@@ -223,7 +225,7 @@ class VehicleController extends BaseTenantController
             $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
             $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/years/{$filename}";
             \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['engine_image_url'] = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $validated['engine_image_url'] = '/storage/' . $path;
         }
 
         $yearRec->update($validated);

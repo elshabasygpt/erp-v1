@@ -155,14 +155,30 @@ class BankAccountController extends BaseTenantController
         }
     }
 
-    public function completeReconciliation(string $reconciliationId): JsonResponse
+    public function completeReconciliation(Request $request, string $reconciliationId): JsonResponse
     {
+        $forceComplete = (bool) $request->input('force_complete', false);
         try {
-            $reconciliation = $this->bankReconciliationService->completeReconciliation($reconciliationId, auth()->id() ?? '');
+            $reconciliation = $this->bankReconciliationService->completeReconciliation(
+                $reconciliationId,
+                auth()->id() ?? '',
+                $forceComplete
+            );
 
             return $this->success($reconciliation, 'Reconciliation completed successfully');
         } catch (\Exception $e) {
             return $this->error('Failed to complete reconciliation: '.$e->getMessage(), 422);
+        }
+    }
+
+    public function autoMatch(Request $request, string $reconciliationId): JsonResponse
+    {
+        $days = (int) $request->input('date_tolerance_days', 5);
+        try {
+            $result = $this->bankReconciliationService->autoMatch($reconciliationId, $days);
+            return $this->success($result, "Auto-matched {$result['matched']} transaction(s)");
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
         }
     }
 }

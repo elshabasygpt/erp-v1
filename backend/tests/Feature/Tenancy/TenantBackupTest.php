@@ -163,12 +163,14 @@ class TenantBackupTest extends TestCase
         $old2->refresh();
         $recent->refresh();
 
+        // pruneOldBackups() marks records as 'pruned' for audit history but does NOT delete
+        // the underlying storage objects — S3 Object Lock / lifecycle policies handle physical deletion.
         $this->assertEquals('pruned', $old1->status);
         $this->assertEquals('pruned', $old2->status);
         $this->assertEquals('completed', $recent->status);
 
-        Storage::disk('backups')->assertMissing($old1->db_dump_path);
-        Storage::disk('backups')->assertMissing($old2->db_dump_path);
+        Storage::disk('backups')->assertExists($old1->db_dump_path);
+        Storage::disk('backups')->assertExists($old2->db_dump_path);
         Storage::disk('backups')->assertExists($recent->db_dump_path);
     }
 }

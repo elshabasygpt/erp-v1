@@ -23,8 +23,8 @@ export default function PurchaseInstallmentsModal({ invoice, isRTL, onClose, for
     const fetchInstallments = () => {
         setLoading(true);
         purchasesApi.getInstallments(invoice.id)
-            .then(data => {
-                setInstallments(data || []);
+            .then((res: any) => {
+                setInstallments(res?.data?.data || res?.data || []);
             })
             .catch(err => toast.error('Failed to load installments'))
             .finally(() => setLoading(false));

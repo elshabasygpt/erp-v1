@@ -95,7 +95,7 @@ function InvoiceFormLayout() {
   }, [items]);
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-[#0a0a10] pb-32 animate-in fade-in duration-500 print:bg-white print:p-0 ${isRTL ? 'font-sans' : ''}`}>
+    <div dir={isRTL ? 'rtl' : 'ltr'} className={`min-h-screen bg-slate-50 dark:bg-[#0a0a10] pb-32 animate-in fade-in duration-500 print:bg-white print:p-0 ${isRTL ? 'font-sans' : ''}`}>
       
       {/* HEADER SECTION */}
       <div className="bg-white dark:bg-[#1a1a2e] border-b border-slate-200 dark:border-white/5 px-4 sm:px-6 lg:px-8 py-6 mb-8 print:hidden">

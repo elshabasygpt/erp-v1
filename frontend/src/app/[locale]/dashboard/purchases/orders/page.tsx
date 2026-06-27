@@ -4,8 +4,10 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { purchasesApi, suppliersApi, inventoryApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export default function PurchaseOrdersPage() {
+    const { taxRate } = useRegionalSettings();
     const [orders, setOrders] = useState<any[]>([]);
     const [suppliers, setSuppliers] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
@@ -14,7 +16,7 @@ export default function PurchaseOrdersPage() {
 
     // Form
     const [supplierId, setSupplierId] = useState('');
-    const [items, setItems] = useState<any[]>([{ product_id: '', quantity: 1, unit_price: 0, tax_rate: 15 }]);
+    const [items, setItems] = useState<any[]>([{ product_id: '', quantity: 1, unit_price: 0, tax_rate: taxRate }]);
 
     useEffect(() => {
         fetchOrders();
@@ -100,7 +102,7 @@ export default function PurchaseOrdersPage() {
                                 }} />
                             </div>
                         ))}
-                        <Button variant="outline" onClick={() => setItems([...items, { product_id: '', quantity: 1, unit_price: 0, tax_rate: 15 }])}>إضافة صنف آخر</Button>
+                        <Button variant="outline" onClick={() => setItems([...items, { product_id: '', quantity: 1, unit_price: 0, tax_rate: taxRate }])}>إضافة صنف آخر</Button>
 
                         <div className="flex justify-end pt-4">
                             <Button className="bg-indigo-600" onClick={handleCreate}>حفظ أمر الشراء</Button>

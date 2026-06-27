@@ -126,6 +126,12 @@ class ProcurementController extends BaseTenantController
             return $this->error('Purchase request does not have a suggested supplier', 422);
         }
 
+        $taxRatePct = (float) (DB::connection('tenant')
+            ->table('tenant_settings')
+            ->where('key', 'tax_rate')
+            ->value('value') ?? 15);
+        $taxRateFraction = $taxRatePct / 100;
+
         // Prevent Duplicate POs
         if (PurchaseOrderModel::query()->where(['purchase_request_id' => $pr->id])->exists()) {
             return $this->error('يوجد أمر شراء بالفعل مرتبط بهذا الطلب', 422);
@@ -156,7 +162,7 @@ class ProcurementController extends BaseTenantController
                 
                 $unitPrice = $priceList ? $priceList->unit_price : 0;
                 $lineSubtotal = $item->quantity * $unitPrice;
-                $lineVat = $lineSubtotal * 0.15;
+                $lineVat = $lineSubtotal * $taxRateFraction;
 
                 $subtotal += $lineSubtotal;
                 $vatTotal += $lineVat;
@@ -165,7 +171,7 @@ class ProcurementController extends BaseTenantController
                     'product_id' => $item->product_id,
                     'quantity'   => $item->quantity,
                     'unit_price' => $unitPrice,
-                    'vat_rate'   => 15,
+                    'vat_rate'   => $taxRatePct,
                     'vat_amount' => round($lineVat, 6),
                     'total'      => round($lineSubtotal + $lineVat, 6),
                 ];

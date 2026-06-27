@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 import { useRouter } from 'next/navigation';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, BarChart, Bar,
@@ -51,6 +53,7 @@ interface Props { dict: any; locale: string; }
 export default function ReturnsContent({ dict, locale }: Props) {
     const isRTL = locale === 'ar';
     const r = dict.returns;
+    const { taxRate } = useRegionalSettings();
 
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
@@ -68,7 +71,8 @@ export default function ReturnsContent({ dict, locale }: Props) {
     // Form state
     const [newReturn, setNewReturn] = useState({ type: 'salesReturn', invoice: '', customer: '', product: '', qty: 1, unitPrice: 0, reason: 'defective', condition: 'resellable', compensation: 'cashRefund', notes: '' });
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(val);
+    const { format: formatCurrencyFn } = useCurrencyFormatter();
+    const formatCurrency = (val: number) => formatCurrencyFn(val);
 
     // ── Filtered records ──
     const filteredRecords = useMemo(() => {
@@ -429,8 +433,8 @@ export default function ReturnsContent({ dict, locale }: Props) {
                             {/* Summary */}
                             <div className="glass-card p-4 space-y-2">
                                 <div className="flex justify-between text-sm"><span style={{ color: 'var(--text-muted)' }}>{isRTL ? 'المجموع' : 'Subtotal'}</span><span style={{ color: 'var(--text-primary)' }}>{formatCurrency(newReturn.qty * newReturn.unitPrice)}</span></div>
-                                <div className="flex justify-between text-sm"><span style={{ color: 'var(--text-muted)' }}>{isRTL ? 'الضريبة 15%' : 'VAT 15%'}</span><span style={{ color: 'var(--text-secondary)' }}>{formatCurrency(newReturn.qty * newReturn.unitPrice * 0.15)}</span></div>
-                                <div className="flex justify-between text-base font-bold pt-2" style={{ borderTop: '1px solid var(--border-default)' }}><span style={{ color: 'var(--text-primary)' }}>{r.refundAmount}</span><span className="text-red-400">{formatCurrency(newReturn.qty * newReturn.unitPrice * 1.15)}</span></div>
+                                <div className="flex justify-between text-sm"><span style={{ color: 'var(--text-muted)' }}>{isRTL ? `الضريبة ${taxRate}%` : `VAT ${taxRate}%`}</span><span style={{ color: 'var(--text-secondary)' }}>{formatCurrency(newReturn.qty * newReturn.unitPrice * (taxRate / 100))}</span></div>
+                                <div className="flex justify-between text-base font-bold pt-2" style={{ borderTop: '1px solid var(--border-default)' }}><span style={{ color: 'var(--text-primary)' }}>{r.refundAmount}</span><span className="text-red-400">{formatCurrency(newReturn.qty * newReturn.unitPrice * (1 + taxRate / 100))}</span></div>
                             </div>
                         </div>
                         <div className="flex items-center justify-end gap-3 p-5 border-t" style={{ borderColor: 'var(--border-default)' }}>

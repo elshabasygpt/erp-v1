@@ -12,6 +12,7 @@ export interface Product {
     oemNumber?: string;
     partNumber?: string;
     brand?: string;
+    brand_id?: string;
     qualityGrade?: string;
     countryOfOrigin?: string;
     isKit?: boolean;
@@ -95,7 +96,8 @@ export function useInventoryData() {
                 imageUrl: p.image_url || '',
                 oemNumber: p.oem_number || '',
                 partNumber: p.part_number || '',
-                brand: p.brand || '',
+                brand: p.brand_model?.name || p.brand || '',
+                brand_id: p.brand_id || null,
                 qualityGrade: p.quality_grade || '',
                 binLocation: p.warehouseStocks && p.warehouseStocks.length > 0 ? p.warehouseStocks[0].bin_location : '',
             })) as Product[];

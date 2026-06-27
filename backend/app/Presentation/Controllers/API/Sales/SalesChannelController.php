@@ -79,7 +79,7 @@ class SalesChannelController extends BaseTenantController
             $path = "uploads/tenant_".$this->getTenantId($request)."/channels/{$filename}";
             \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
             
-            $url = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            $url = '/storage/'.$path;
 
             return response()->json([
                 'status' => 'success',

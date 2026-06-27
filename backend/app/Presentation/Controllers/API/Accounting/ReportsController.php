@@ -40,19 +40,52 @@ class ReportsController extends BaseTenantController
 
     public function incomeStatement(Request $request): JsonResponse
     {
-        $from = new \DateTimeImmutable($request->get('from', date('Y-m-01')));
-        $to = new \DateTimeImmutable($request->get('to', date('Y-m-d')));
+        $from         = new \DateTimeImmutable($request->get('from', date('Y-m-01')));
+        $to           = new \DateTimeImmutable($request->get('to', date('Y-m-d')));
         $costCenterId = $request->get('cost_center_id');
+        $tenantId     = (string) $this->getTenantId($request);
 
-        return $this->success($this->accountingService->generateIncomeStatement($from, $to, (string) $this->getTenantId($request), costCenterId: $costCenterId));
+        $current = $this->accountingService->generateIncomeStatement($from, $to, $tenantId, costCenterId: $costCenterId);
+
+        // Comparative period support (e.g. same period last year)
+        if ($request->has('compare_from') && $request->has('compare_to')) {
+            $compareFrom = new \DateTimeImmutable($request->get('compare_from'));
+            $compareTo   = new \DateTimeImmutable($request->get('compare_to'));
+            $comparative = $this->accountingService->generateIncomeStatement($compareFrom, $compareTo, $tenantId, costCenterId: $costCenterId);
+
+            return $this->success([
+                'current'     => $current,
+                'comparative' => $comparative,
+                'period'      => ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')],
+                'compare_period' => ['from' => $compareFrom->format('Y-m-d'), 'to' => $compareTo->format('Y-m-d')],
+            ]);
+        }
+
+        return $this->success($current);
     }
 
     public function balanceSheet(Request $request): JsonResponse
     {
-        $asOf = new \DateTimeImmutable($request->get('as_of', date('Y-m-d')));
+        $asOf         = new \DateTimeImmutable($request->get('as_of', date('Y-m-d')));
         $costCenterId = $request->get('cost_center_id');
+        $tenantId     = (string) $this->getTenantId($request);
 
-        return $this->success($this->accountingService->generateBalanceSheet($asOf, (string) $this->getTenantId($request), costCenterId: $costCenterId));
+        $current = $this->accountingService->generateBalanceSheet($asOf, $tenantId, costCenterId: $costCenterId);
+
+        // Comparative balance sheet
+        if ($request->has('compare_as_of')) {
+            $compareAsOf = new \DateTimeImmutable($request->get('compare_as_of'));
+            $comparative = $this->accountingService->generateBalanceSheet($compareAsOf, $tenantId, costCenterId: $costCenterId);
+
+            return $this->success([
+                'current'     => $current,
+                'comparative' => $comparative,
+                'as_of'          => $asOf->format('Y-m-d'),
+                'compare_as_of'  => $compareAsOf->format('Y-m-d'),
+            ]);
+        }
+
+        return $this->success($current);
     }
 
     public function cashFlow(Request $request): JsonResponse

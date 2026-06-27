@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { crmApi } from '@/lib/api';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
 
 export default function CRMPipelinePage() {
     const { isRTL } = useLanguage();
+    const { format: formatCurrency } = useCurrencyFormatter();
     const [stages, setStages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [totalValue, setTotalValue] = useState(0);
@@ -42,13 +44,6 @@ export default function CRMPipelinePage() {
         }
     };
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', {
-            style: 'currency',
-            currency: 'SAR',
-            maximumFractionDigits: 0
-        }).format(value);
-    };
 
     const handleDragEnd = async (result: DropResult) => {
         if (!result.destination) return;

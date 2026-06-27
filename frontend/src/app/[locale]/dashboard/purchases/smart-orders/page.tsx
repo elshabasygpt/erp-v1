@@ -5,9 +5,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { purchasesApi, inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export default function SmartOrdersPage({ params }: { params: { locale: string } }) {
     const isRTL = params.locale === 'ar';
+    const { format: formatCurrency } = useCurrencyFormatter();
     const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState<'lowStock' | 'schedules'>('lowStock');
 
@@ -175,11 +177,6 @@ export default function SmartOrdersPage({ params }: { params: { locale: string }
         });
     };
 
-    const formatCurrency = (val: number) =>
-        new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', {
-            style: 'currency',
-            currency: 'SAR',
-        }).format(val || 0);
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">

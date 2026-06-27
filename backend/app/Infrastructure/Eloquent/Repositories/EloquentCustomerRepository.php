@@ -39,7 +39,7 @@ final class EloquentCustomerRepository implements CustomerRepositoryInterface
     {
         $q = CustomerModel::query();
         if (! empty($filters['search'])) {
-            $q->where('name', 'ilike', "%{$filters['search']}%");
+            $q->where('name', 'like', "%{$filters['search']}%");
         }
 
 return $q->orderBy('name')->paginate($perPage)->toArray();
@@ -47,7 +47,7 @@ return $q->orderBy('name')->paginate($perPage)->toArray();
 
     public function search(string $query, int $limit = 20): array
     {
-        return CustomerModel::query()->where('is_active', true)->where(fn ($q) => $q->where('name', 'ilike', "%{$query}%")->orWhere('phone', 'ilike', "%{$query}%"))->limit($limit)->get()->toArray();
+        return CustomerModel::query()->where('is_active', true)->where(fn ($q) => $q->where('name', 'like', "%{$query}%")->orWhere('phone', 'like', "%{$query}%"))->limit($limit)->get()->toArray();
     }
 
     public function getStatement(string $customerId, ?\DateTimeImmutable $from = null, ?\DateTimeImmutable $to = null): array

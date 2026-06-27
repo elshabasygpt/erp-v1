@@ -12,6 +12,7 @@ class SalesReturnModel extends BaseModel
 
     protected $fillable = [
         'return_number',
+        'rma_number',
         'invoice_id',
         'customer_id',
         'warehouse_id',
@@ -23,6 +24,7 @@ class SalesReturnModel extends BaseModel
         'return_type',
         'refund_method',
         'reason',
+        'defect_type',
         'approval_status',
         'notes',
         'commission_amount',

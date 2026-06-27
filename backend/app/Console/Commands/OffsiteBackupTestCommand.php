@@ -9,8 +9,8 @@ use App\Domain\Tenancy\Services\OffSiteBackupValidationService;
 
 class OffsiteBackupTestCommand extends Command
 {
-    protected $signature = 'backup:test-offsite';
-    protected $description = 'Execute a full cycle off-site backup validation workflow.';
+    protected $signature = 'backup:test-offsite-validation';
+    protected $description = 'Execute a simulated off-site backup validation workflow (non-destructive).';
 
     public function handle(OffSiteBackupValidationService $service): int
     {

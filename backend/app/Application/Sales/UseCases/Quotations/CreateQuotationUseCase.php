@@ -14,18 +14,19 @@ final class CreateQuotationUseCase
 {
     public function execute(CreateQuotationDTO $dto, string $userId): QuotationModel
     {
-        return DB::connection('tenant')->transaction(function () use ($dto, $userId) {
+        $defaultVatRate = (float) (DB::connection('tenant')
+            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+
+        return DB::connection('tenant')->transaction(function () use ($dto, $userId, $defaultVatRate) {
 
             $subtotal = 0;
             $vatAmount = 0;
 
-            // Calculate totals manually or rely on DTO items
-            // Assuming $dto->items is an array of arrays from request for simplicity
             $itemsData = [];
             foreach ($dto->items as $item) {
                 $qty = (float) $item['quantity'];
                 $price = (float) $item['unit_price'];
-                $vatRate = (float) ($item['vat_rate'] ?? 15);
+                $vatRate = (float) ($item['vat_rate'] ?? $defaultVatRate);
 
                 $lineSubtotal = $qty * $price;
                 $lineVat = $lineSubtotal * ($vatRate / 100);

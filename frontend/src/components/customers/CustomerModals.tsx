@@ -5,6 +5,7 @@ import { exportTableToPDF } from '@/lib/pdf-export';
 import CustomerVehiclesTab from './CustomerVehiclesTab';
 import CustomerInsightsTab from './CustomerInsightsTab';
 import CustomerInteractionsTab from './CustomerInteractionsTab';
+import CustomerPricesTab from './CustomerPricesTab';
 
 interface DeleteConfirmProps {
     dict: any;
@@ -61,7 +62,7 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
     const c = dict.customers;
     const usedPercent = customer.creditLimit > 0 ? Math.round((customer.balance / customer.creditLimit) * 100) : 0;
 
-    const [activeTab, setActiveTab] = useState<'account' | 'insights' | 'interactions' | 'vehicles'>('account');
+    const [activeTab, setActiveTab] = useState<'account' | 'insights' | 'interactions' | 'vehicles' | 'prices'>('account');
 
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState('');
@@ -212,6 +213,13 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
                     >
                         {isRTL ? 'سياراته' : 'Vehicles'}
                     </button>
+                    <button
+                        onClick={() => setActiveTab('prices')}
+                        className={`pb-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap
+                            ${activeTab === 'prices' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500'}`}
+                    >
+                        {isRTL ? 'أسعار خاصة' : 'Custom Prices'}
+                    </button>
                 </div>
 
                 <div className="overflow-y-auto max-h-[75vh]">
@@ -352,6 +360,9 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
                 )}
                 {activeTab === 'interactions' && (
                     <CustomerInteractionsTab locale={locale} customerId={customer.id} insightsData={insightsData} onRefresh={loadInsights} />
+                )}
+                {activeTab === 'prices' && (
+                    <CustomerPricesTab customerId={customer.id} locale={locale} />
                 )}
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { settingsApi } from '@/lib/api';
 
 const STEPS = [
     { id: 'company', en: 'Company Info', ar: 'بيانات الشركة' },
@@ -17,6 +18,7 @@ export default function OnboardingWizard() {
     const router = useRouter();
 
     const [step, setStep] = useState(0);
+    const [finishing, setFinishing] = useState(false);
     const [data, setData] = useState({
         company_name: '',
         company_name_ar: '',
@@ -24,7 +26,7 @@ export default function OnboardingWizard() {
         phone: '',
         industry: '',
         employees: '',
-        currency: 'SAR',
+        currency: '',
         warehouses: ['المستودع الرئيسي'],
     });
 
@@ -41,8 +43,19 @@ export default function OnboardingWizard() {
     const handleBack = () => setStep(s => Math.max(s - 1, 0));
 
     const handleFinish = async () => {
-        // TODO: Call API to save company settings
-        router.push(`/${locale}/dashboard`);
+        setFinishing(true);
+        try {
+            await settingsApi.updateSettings({
+                company_name: data.company_name || data.company_name_ar,
+                phone: data.phone,
+                vat_number: data.vat_number,
+            });
+        } catch {
+            // Settings save failed — still redirect so user isn't stuck
+        } finally {
+            setFinishing(false);
+            router.push(`/${locale}/dashboard`);
+        }
     };
 
     return (
@@ -139,7 +152,7 @@ export default function OnboardingWizard() {
                                     <input
                                         value={data.phone}
                                         onChange={e => setData({...data, phone: e.target.value})}
-                                        placeholder="+966 5X XXX XXXX"
+                                        placeholder={isRTL ? '+966 5X XXX XXXX أو +20 1X XXXX XXXX' : '+966 5X XXX XXXX or +20 1X XXXX XXXX'}
                                         className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none transition"
                                     />
                                 </div>
@@ -274,9 +287,12 @@ export default function OnboardingWizard() {
                         ) : (
                             <button
                                 onClick={handleFinish}
-                                className="px-8 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold text-sm transition shadow-lg shadow-emerald-500/20"
+                                disabled={finishing}
+                                className="px-8 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white rounded-xl font-bold text-sm transition shadow-lg shadow-emerald-500/20"
                             >
-                                {isRTL ? '🚀 انطلق!' : '🚀 Get Started!'}
+                                {finishing
+                                    ? (isRTL ? '⏳ جاري الحفظ...' : '⏳ Saving...')
+                                    : (isRTL ? '🚀 انطلق!' : '🚀 Get Started!')}
                             </button>
                         )}
                     </div>

@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export default function NewPurchaseReturnPage() {
     const router = useRouter();
     const { isRTL } = useLanguage();
+    const { taxRate } = useRegionalSettings();
 
     const { data: invoicesRes } = useQuery({ queryKey: ['purchase_invoices', 'confirmed'], queryFn: () => purchasesApi.getInvoices({ status: 'confirmed' }) });
     const { data: warehousesRes } = useQuery({ queryKey: ['warehouses'], queryFn: () => inventoryApi.getWarehouses() });
@@ -43,7 +45,7 @@ export default function NewPurchaseReturnPage() {
     });
 
     const handleAddItem = () => {
-        setItems([...items, { product_id: '', quantity: 1, unit_price: 0, tax_rate: 15 }]);
+        setItems([...items, { product_id: '', quantity: 1, unit_price: 0, tax_rate: taxRate }]);
     };
 
     const handleRemoveItem = (index: number) => {

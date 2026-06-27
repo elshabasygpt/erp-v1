@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSafes, useExpenses } from '@/hooks/useAccounting';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export default function AccountingContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -29,8 +30,8 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
 
     const [transferData, setTransferData] = useState({ from_safe_id: '', to_safe_id: '', amount: 0, description: '' });
 
-    const formatCurrency = (val: number) =>
-        new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 2 }).format(val || 0);
+    const { format: formatCurrencyFn } = useCurrencyFormatter();
+    const formatCurrency = (val: number) => formatCurrencyFn(val || 0);
 
     const handleCreateSafe = async () => {
         try {

@@ -1,9 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useParams } from 'next/navigation';
 import api, { crmApi, inventoryApi } from '@/lib/api';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export interface InvoiceFormState {
   customer_id: string;
@@ -27,6 +29,7 @@ export interface InvoiceFormState {
 
 interface InvoiceContextProps {
   isRTL: boolean;
+  locale: string;
   loading: boolean;
   setLoading: (loading: boolean) => void;
   form: InvoiceFormState;
@@ -51,7 +54,7 @@ interface InvoiceContextProps {
 
   addItem: (product: any) => void;
   removeItem: (index: number) => void;
-  updateItem: (index: number, field: string, value: number) => void;
+  updateItem: (index: number, field: string, value: number | string) => void;
   handleSubmit: (status: string) => Promise<void>;
   
   showPrintPreview: boolean;
@@ -65,7 +68,10 @@ interface InvoiceContextProps {
 const InvoiceFormContext = createContext<InvoiceContextProps | undefined>(undefined);
 
 export function InvoiceFormProvider({ children }: { children: ReactNode }) {
-  const isRTL = true;
+  const params = useParams();
+  const locale = (params?.locale as string) || 'en';
+  const isRTL = locale === 'ar';
+  const { taxRate } = useRegionalSettings();
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -115,7 +121,7 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
     api.get('/accounting/currencies').then(res => setCurrencies(extractArray(res))).catch(() => setCurrencies([]));
   }, []);
 
-  const calculateAdjustedPrice = (basePrice: number, channelId: string, vatRate: number = 15) => {
+  const calculateAdjustedPrice = (basePrice: number, channelId: string, vatRate: number = taxRate) => {
     if (!channelId) return basePrice;
     const channel = salesChannels.find(c => c.id === channelId);
     if (!channel) return basePrice;
@@ -152,9 +158,9 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
         code: product.sku || product.barcode || '',
         quantity: 1,
         base_unit_price: product.sell_price || 0,
-        unit_price: calculateAdjustedPrice(product.sell_price || 0, form.sales_channel_id, product.vat_rate || 15),
+        unit_price: calculateAdjustedPrice(product.sell_price || 0, form.sales_channel_id, product.vat_rate || taxRate),
         discount_percent: 0,
-        vat_rate: product.vat_rate || 15,
+        vat_rate: product.vat_rate || taxRate,
         stock: product.warehouseStocks ? (product.warehouseStocks.reduce((a:any, b:any) => a + Number(b.quantity), 0)) : 0,
       }]);
     }
@@ -164,7 +170,7 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const updateItem = (index: number, field: string, value: number) => {
+  const updateItem = (index: number, field: string, value: number | string) => {
     const newItems = [...items];
     newItems[index][field] = value;
     setItems(newItems);
@@ -181,19 +187,22 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
   const dueAmount = grandTotal - form.paid_amount;
 
   const handleSubmit = async (status: string) => {
-    if (items.length === 0) { toast.error(isRTL ? 'الرجاء إضافة منتج واحد على الأقل' : 'Please add at least one item'); return; }
-    if (!form.warehouse_id) { toast.error(isRTL ? 'الرجاء اختيار المستودع' : 'Please select a warehouse'); return; }
-    if (form.type === 'credit' && !form.customer_id) { toast.error(isRTL ? 'مطلوب اختيار العميل في الفاتورة الآجلة' : 'Customer is required for credit invoice'); return; }
-    
-    // Check stock
-    const outOfStock = items.find(i => i.quantity > i.stock);
-    if (outOfStock) { toast.error(isRTL ? `الكمية المطلوبة من ${outOfStock.name} أكبر من المخزون المتوفر (${outOfStock.stock})` : `Quantity for ${outOfStock.name} exceeds available stock (${outOfStock.stock})`); return; }
+    if (status === 'confirmed') {
+      if (items.length === 0) { toast.error(isRTL ? 'الرجاء إضافة منتج واحد على الأقل' : 'Please add at least one item'); return; }
+      if (!form.warehouse_id) { toast.error(isRTL ? 'الرجاء اختيار المستودع' : 'Please select a warehouse'); return; }
+      if (form.type === 'credit' && !form.customer_id) { toast.error(isRTL ? 'مطلوب اختيار العميل في الفاتورة الآجلة' : 'Customer is required for credit invoice'); return; }
+      const outOfStock = items.find(i => i.quantity > i.stock);
+      if (outOfStock) { toast.error(isRTL ? `الكمية المطلوبة من ${outOfStock.name} أكبر من المخزون المتوفر (${outOfStock.stock})` : `Quantity for ${outOfStock.name} exceeds available stock (${outOfStock.stock})`); return; }
+    }
     
     setLoading(true);
     try {
       const payload = {
         ...form,
         customer_id: form.customer_id || undefined,
+        branch_id: form.branch_id || undefined,
+        due_date: form.due_date || undefined,
+        reference_no: form.reference_no || undefined,
         cost_center_id: form.cost_center_id || undefined,
         currency_id: form.currency_id || undefined,
         exchange_rate: form.exchange_rate,
@@ -201,6 +210,7 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
         status,
         items: items.map(i => ({
           product_id: i.product_id,
+          printed_name: i.printed_name || i.name || undefined,
           quantity: i.quantity,
           unit_price: Math.round(i.unit_price * 100) / 100,
           base_unit_price: Math.round((i.base_unit_price || i.unit_price) * 100) / 100,
@@ -214,11 +224,11 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
       const res = await api.post('/sales/invoices', payload);
       
       if (status === 'confirmed') {
-          setSavedInvoiceData({ ...payload, id: res.data.data?.id, total: grandTotal, subtotal, vat_amount: taxTotal, invoice_number: 'NEW' });
+          setSavedInvoiceData({ ...payload, id: res.data.data?.id, total: grandTotal, subtotal, vat_amount: taxTotal, invoice_number: res.data.data?.invoice_number || res.data.data?.id || '-' });
           setShowPrintPreview(true);
       } else {
           toast.success(isRTL ? 'تم حفظ المسودة بنجاح!' : 'Draft saved successfully!');
-          window.location.href = '/dashboard/sales/list';
+          window.location.href = `/${locale}/dashboard/sales/list`;
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || (isRTL ? 'خطأ في حفظ الفاتورة' : 'Error saving invoice'));
@@ -230,17 +240,17 @@ export function InvoiceFormProvider({ children }: { children: ReactNode }) {
   const handlePrintConfirm = () => {
       window.print();
       setTimeout(() => {
-          window.location.href = '/dashboard/sales/list';
+          window.location.href = `/${locale}/dashboard/sales/list`;
       }, 1000);
   };
 
   const handlePrintSkip = () => {
-      window.location.href = '/dashboard/sales/list';
+      window.location.href = `/${locale}/dashboard/sales/list`;
   };
 
   return (
     <InvoiceFormContext.Provider value={{
-      isRTL, loading, setLoading, form, setForm, items, setItems,
+      isRTL, locale, loading, setLoading, form, setForm, items, setItems,
       customers, products, branches, warehouses, salesChannels, employees,
       costCenters, currencies,
       subtotal, discountTotal, netSubtotal, taxTotal, grandTotal, dueAmount,

@@ -34,8 +34,8 @@ class TaskController extends BaseTenantController
         if ($request->filled('category')) $query->where('category', $request->category);
         if ($request->filled('search')) {
             $q = $request->search;
-            $query->where(fn($qr) => $qr->where('title', 'ilike', "%{$q}%")
-                                         ->orWhere('description', 'ilike', "%{$q}%"));
+            $query->where(fn($qr) => $qr->where('title', 'like', "%{$q}%")
+                                         ->orWhere('description', 'like', "%{$q}%"));
         }
 
         // فلتر الوقت الذكي

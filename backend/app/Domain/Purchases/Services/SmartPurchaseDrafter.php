@@ -32,7 +32,13 @@ class SmartPurchaseDrafter
             ];
         }
 
-        return DB::connection('tenant')->transaction(function () use ($forecasts, $warehouseId, $userId) {
+        $taxRatePct = (float) (DB::connection('tenant')
+            ->table('tenant_settings')
+            ->where('key', 'tax_rate')
+            ->value('value') ?? 15);
+        $taxRateFraction = $taxRatePct / 100;
+
+        return DB::connection('tenant')->transaction(function () use ($forecasts, $warehouseId, $userId, $taxRateFraction, $taxRatePct) {
 
             // Get a default supplier, or create one for "Smart Autodraft" if none exist
             $supplier = SupplierModel::query()->first();
@@ -93,8 +99,7 @@ class SmartPurchaseDrafter
             }
 
             // Update PO totals
-            // Assume 15% VAT for simplicity in auto-draft
-            $vat = round($total * 0.15, 6);
+            $vat = round($total * $taxRateFraction, 6);
             $purchase->update([
                 'subtotal' => $total,
                 'vat_amount' => $vat,

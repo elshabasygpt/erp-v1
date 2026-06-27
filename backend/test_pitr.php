@@ -1,0 +1,1 @@
+<?php require 'vendor/autoload.php'; $app = require_once 'bootstrap/app.php'; $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class); $kernel->bootstrap(); $service = app('App\Domain\Tenancy\Services\PitrRecoveryService'); try { dump($service->executeActiveValidation()); } catch (\Exception $e) { dump($e->getMessage()); }

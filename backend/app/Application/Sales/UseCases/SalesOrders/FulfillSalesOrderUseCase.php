@@ -19,7 +19,10 @@ final class FulfillSalesOrderUseCase
 
     public function execute(string $salesOrderId, string $userId): Invoice
     {
-        return DB::connection('tenant')->transaction(function () use ($salesOrderId, $userId) {
+        $defaultVatRate = (float) (DB::connection('tenant')
+            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+
+        return DB::connection('tenant')->transaction(function () use ($salesOrderId, $userId, $defaultVatRate) {
             $salesOrder = SalesOrderModel::query()->with('items')->findOrFail($salesOrderId);
 
             if ($salesOrder->status === 'fulfilled') {
@@ -75,7 +78,7 @@ final class FulfillSalesOrderUseCase
                 'items' => $invoiceItems,
                 'reference_no' => $salesOrder->so_number,
                 'salesperson_id' => $salesOrder->created_by,
-            ]);
+            ], $defaultVatRate);
 
             $invoice = $this->createInvoiceUseCase->execute($dto, $userId);
 

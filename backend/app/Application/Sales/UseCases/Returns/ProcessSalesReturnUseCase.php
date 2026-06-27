@@ -70,10 +70,11 @@ final class ProcessSalesReturnUseCase
             $commissionRate = (float) ($currentUser->commission_rate ?? 0);
             $commissionAmount = -($totalProfit * ($commissionRate / 100));
 
-            // Generate Return Number
+            // Generate Return Number and RMA Number
             $lastReturn = SalesReturnModel::latest('created_at')->first();
             $nextNum = $lastReturn ? ((int) str_replace('RET-', '', $lastReturn->return_number)) + 1 : 1;
             $returnNumber = 'RET-'.str_pad((string) $nextNum, 6, '0', STR_PAD_LEFT);
+            $rmaNumber = 'RMA-' . strtoupper(\Illuminate\Support\Str::random(8));
 
             // 4.5. Evaluate Approvals
             $triggers = $this->approvalService->evaluateReturn($dto);
@@ -82,6 +83,7 @@ final class ProcessSalesReturnUseCase
                 $salesReturn = SalesReturnModel::query()->create([
                     'id' => Str::uuid()->toString(),
                     'return_number' => $returnNumber,
+                    'rma_number' => $rmaNumber,
                     'invoice_id' => $invoice->id,
                     'customer_id' => $customer->id,
                     'warehouse_id' => $dto->warehouseId,
@@ -94,6 +96,7 @@ final class ProcessSalesReturnUseCase
                     'return_type' => $dto->returnType,
                     'refund_method' => $dto->refundMethod,
                     'reason' => $dto->reason,
+                    'defect_type' => $dto->defectType,
                     'approval_status' => 'pending',
                     'notes' => $dto->notes,
                     'created_by' => $userId,
@@ -122,6 +125,7 @@ final class ProcessSalesReturnUseCase
             $salesReturn = SalesReturnModel::query()->create([
                 'id' => Str::uuid()->toString(),
                 'return_number' => $returnNumber,
+                'rma_number' => $rmaNumber,
                 'invoice_id' => $invoice->id,
                 'customer_id' => $customer->id,
                 'warehouse_id' => $dto->warehouseId,
@@ -134,6 +138,7 @@ final class ProcessSalesReturnUseCase
                 'return_type' => $dto->returnType,
                 'refund_method' => $dto->refundMethod,
                 'reason' => $dto->reason,
+                'defect_type' => $dto->defectType,
                 'approval_status' => 'approved',
                 'notes' => $dto->notes,
                 'created_by' => $userId,

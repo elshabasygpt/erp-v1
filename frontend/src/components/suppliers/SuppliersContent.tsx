@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DeleteConfirmModal, ViewAccountModal, SupplierCategoriesModal, ImportSuppliersModal } from './SupplierModals';
 import { crmApi } from '@/lib/api';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface Supplier {
     id: string; name: string; nameAr: string; phone: string; email: string; address: string;
@@ -81,7 +82,8 @@ export default function SuppliersContent({ dict, locale }: Props) {
     const emptyForm = { name: '', nameAr: '', phone: '', email: '', address: '', category: 'local', paymentType: 'cash' as 'cash' | 'credit', creditLimit: 0, paymentTerms: 0, taxNumber: '', commercialRegister: '' };
     const [form, setForm] = useState(emptyForm);
 
-    const formatCurrency = (v: number) => new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(v);
+    const { format: formatCurrencyFn } = useCurrencyFormatter();
+    const formatCurrency = (v: number) => formatCurrencyFn(v);
     const catLabel = (c: string) => ({ local: s.catLocal, importer: s.catImporter, manufacturer: s.catManufacturer, distributor: s.catDistributor }[c] || c);
     const catBadge = (c: string) => ({ local: 'badge-success', importer: 'badge-info', manufacturer: 'badge-warning', distributor: 'badge bg-surface-200/10 text-surface-200/60' }[c] || 'badge-info');
 

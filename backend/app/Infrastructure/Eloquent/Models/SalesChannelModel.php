@@ -2,12 +2,13 @@
 
 namespace App\Infrastructure\Eloquent\Models;
 
+use App\Infrastructure\Eloquent\Traits\NormalizesImageUrls;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SalesChannelModel extends BaseModel
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, NormalizesImageUrls;
 
     protected $table = 'sales_channels';
 
@@ -16,17 +17,13 @@ class SalesChannelModel extends BaseModel
         parent::booted();
 
         static::updated(function ($model) {
-            if ($model->isDirty('image_url') && $model->getOriginal('image_url')) {
-                $oldPath = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->getOriginal('image_url'));
-                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($oldPath, '/'));
+            if ($model->isDirty('logo_url') && $model->getOriginal('logo_url')) {
+                self::deleteImageFile($model->getOriginal('logo_url'));
             }
         });
 
         static::forceDeleted(function ($model) {
-            if ($model->image_url) {
-                $path = str_replace(\Illuminate\Support\Facades\Storage::disk('public')->url(''), '', $model->image_url);
-                \Illuminate\Support\Facades\Storage::disk('public')->delete(ltrim($path, '/'));
-            }
+            self::deleteImageFile($model->getRawOriginal('logo_url'));
         });
     }
 
@@ -42,6 +39,11 @@ class SalesChannelModel extends BaseModel
         'sort_order',
         'logo_url',
     ];
+
+    public function getLogoUrlAttribute(?string $value): ?string
+    {
+        return self::toRelativeUrl($value);
+    }
 
     protected $casts = [
         'markup_percentage' => 'float',

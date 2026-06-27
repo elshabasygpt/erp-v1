@@ -1,6 +1,7 @@
 import React, { memo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePosCustomer } from './hooks/usePosCustomer';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 interface PosCartSidebarProps {
     isRTL: boolean;
@@ -28,6 +29,7 @@ const PosCartSidebar = memo(function PosCartSidebar({
     const [quickAddName, setQuickAddName] = useState('');
     const [quickAddPhone, setQuickAddPhone] = useState('');
     const { createCustomer, loading: customerLoading } = usePosCustomer();
+    const { taxRate, currencySymbol } = useRegionalSettings();
     const queryClient = useQueryClient();
 
     return (
@@ -173,7 +175,7 @@ const PosCartSidebar = memo(function PosCartSidebar({
                 ) : (
                     activeSession.cart.map((item: any) => {
                         const lineExcl = item.qty * item.product.price * (1 - item.discount / 100);
-                        const lineVat = lineExcl * 0.15;
+                        const lineVat = lineExcl * (taxRate / 100);
                         const lineTotal = lineExcl + lineVat;
                         return (
                             <div key={item.product.id} className="bg-white dark:bg-surface-900 border rounded-xl p-3 shadow-sm flex flex-col gap-2 relative group">
@@ -261,12 +263,12 @@ const PosCartSidebar = memo(function PosCartSidebar({
                         </div>
                     )}
                     <div className="flex justify-between text-xs font-medium text-purple-500">
-                        <span>{isRTL ? '+ ضريبة القيمة المضافة (15%)' : '+ VAT (15%)'}</span>
+                        <span>{isRTL ? `+ ضريبة القيمة المضافة (${taxRate}%)` : `+ VAT (${taxRate}%)`}</span>
                         <span className="font-mono">{cartVat.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-end pt-2 border-t font-black">
                         <span className="text-sm">{isRTL ? 'الإجمالي المطلوب' : 'Total Due'}</span>
-                        <span className="text-3xl text-indigo-600 dark:text-indigo-400 tracking-tight">{cartTotal.toFixed(2)} <span className="text-xs">SAR</span></span>
+                        <span className="text-3xl text-indigo-600 dark:text-indigo-400 tracking-tight">{cartTotal.toFixed(2)} <span className="text-xs">{currencySymbol}</span></span>
                     </div>
                 </div>
 

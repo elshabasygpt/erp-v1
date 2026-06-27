@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Presentation\Controllers\API;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class BaseController extends Controller
@@ -25,6 +26,11 @@ class BaseController extends Controller
             'message' => $message,
             'errors' => $errors,
         ], $code);
+    }
+
+    protected function getTenantId(Request $request): string
+    {
+        return (string) ($request->user()?->tenant_id ?? '');
     }
 
     protected function paginated(array $paginatedData, string $message = 'Success'): JsonResponse

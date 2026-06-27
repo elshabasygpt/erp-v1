@@ -4,13 +4,15 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 export default function BankAccountsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
     const queryClient = useQueryClient();
+    const { currency: defaultCurrency } = useCurrencyFormatter();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingBank, setEditingBank] = useState<any>(null);
-    const [form, setForm] = useState({ name: '', account_number: '', bank_name: '', currency: 'SAR', opening_balance: 0 });
+    const [form, setForm] = useState({ name: '', account_number: '', bank_name: '', currency: defaultCurrency, opening_balance: 0 });
 
     const [selectedBank, setSelectedBank] = useState<any>(null);
     const [isReconModalOpen, setIsReconModalOpen] = useState(false);
@@ -48,7 +50,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             }
             setIsFormOpen(false);
             setEditingBank(null);
-            setForm({ name: '', account_number: '', bank_name: '', currency: 'SAR', opening_balance: 0 });
+            setForm({ name: '', account_number: '', bank_name: '', currency: defaultCurrency, opening_balance: 0 });
             loadBanks();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Error saving bank account');
@@ -120,7 +122,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                     </p>
                 </div>
                 <button 
-                    onClick={() => { setEditingBank(null); setForm({ name: '', account_number: '', bank_name: '', currency: 'SAR', opening_balance: 0 }); setIsFormOpen(true); }}
+                    onClick={() => { setEditingBank(null); setForm({ name: '', account_number: '', bank_name: '', currency: defaultCurrency, opening_balance: 0 }); setIsFormOpen(true); }}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition"
                 >
                     + {isRTL ? 'حساب بنكي جديد' : 'New Bank Account'}

@@ -21,9 +21,9 @@ class CustomerVehicleController extends BaseTenantController
         }
 
         $vehicles = CustomerVehicleModel::query()->where(function ($q) use ($query) {
-            $q->where('plate_number', 'ilike', "%{$query}%")
-                ->orWhere('plate_number_en', 'ilike', "%{$query}%")
-                ->orWhere('vin', 'ilike', "%{$query}%");
+            $q->where('plate_number', 'like', "%{$query}%")
+                ->orWhere('plate_number_en', 'like', "%{$query}%")
+                ->orWhere('vin', 'like', "%{$query}%");
         })
             ->with(['customer:id,name,phone', 'vehicleYear.vehicleModel.make'])
             ->limit(10)
@@ -62,6 +62,7 @@ class CustomerVehicleController extends BaseTenantController
                     'year_range' => $v->vehicleYear ? ($v->vehicleYear->year_from
                                       .($v->vehicleYear->year_to ? '-'.$v->vehicleYear->year_to : '+')) : null,
                     'fuel_type' => $v->vehicleYear?->fuel_type,
+                    'transmission' => $v->vehicleYear?->transmission,
                 ]);
             });
 

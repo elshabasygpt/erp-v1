@@ -1,9 +1,10 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import type { MainGroup, Unit } from './InventoryModals';
 import type { Product } from './hooks/useInventoryData';
 import { ProductCompatibilityTab } from './ProductCompatibilityTab';
 import { ProductAlternativesTab } from './ProductAlternativesTab';
 import { ProductComponentsTab } from './ProductComponentsTab';
+import { inventoryApi } from '@/lib/api';
 
 type TabType = 'basic' | 'compatibility' | 'alternatives' | 'components';
 
@@ -25,20 +26,48 @@ interface InventoryFormModalProps {
     products?: Product[];
 }
 
+interface BrandOption { id: string; name: string; name_ar: string | null; image_url: string | null; country_of_origin: string | null; }
+
 const InventoryFormModal = memo(function InventoryFormModal({
     isRTL, inv, common, showAddEdit, setShowAddEdit, editingProduct, form, setForm,
     saveProduct, generateBarcode, groups, units, setPromptModal, updateCostAndProfit, products = []
 }: InventoryFormModalProps) {
+    // ALL hooks must be declared before any conditional return (Rules of Hooks)
+    const [activeTab, setActiveTab] = React.useState<TabType>('basic');
+    const [brands, setBrands] = useState<BrandOption[]>([]);
+    const [brandOpen, setBrandOpen] = useState(false);
+    const [brandSearch, setBrandSearch] = useState('');
+    const brandRef = React.useRef<HTMLDivElement>(null);
+
+    // Close brand dropdown on outside click
+    useEffect(() => {
+        if (!brandOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (brandRef.current && !brandRef.current.contains(e.target as Node)) setBrandOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [brandOpen]);
+
+    // Reset tab when modal opens
+    React.useEffect(() => {
+        if (showAddEdit) { setActiveTab('basic'); setBrandOpen(false); setBrandSearch(''); }
+    }, [showAddEdit]);
+
+    // Fetch brands when modal opens
+    useEffect(() => {
+        if (!showAddEdit) return;
+        inventoryApi.getBrands().then(res => {
+            const data = res.data?.data ?? res.data ?? [];
+            setBrands(Array.isArray(data) ? data : []);
+        }).catch(() => {});
+    }, [showAddEdit]);
+
+    // Conditional return AFTER all hooks
     if (!showAddEdit) return null;
+
     const availableSubs = form.mainGroupId ? groups.find(g => g.id === form.mainGroupId)?.subGroups || [] : [];
     const lblCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
-
-    const [activeTab, setActiveTab] = React.useState<TabType>('basic');
-
-    // Reset tab when modal opens/closes
-    React.useEffect(() => {
-        if (showAddEdit) setActiveTab('basic');
-    }, [showAddEdit]);
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddEdit(false)}>
@@ -48,36 +77,39 @@ const InventoryFormModal = memo(function InventoryFormModal({
                     <button onClick={() => setShowAddEdit(false)} className="btn-icon"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
                 
-                {editingProduct && (
-                    <div className="px-5 pt-3 flex gap-4 border-b" style={{ borderColor: 'var(--border-default)' }}>
-                        <button 
-                            className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'basic' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                            onClick={() => setActiveTab('basic')}
-                        >
-                            {isRTL ? 'البيانات الأساسية' : 'Basic Info'}
-                        </button>
-                        <button 
-                            className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'compatibility' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                            onClick={() => setActiveTab('compatibility')}
-                        >
-                            {isRTL ? 'التوافق مع السيارات' : 'Vehicle Compatibility'}
-                        </button>
-                        <button 
-                            className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'alternatives' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                <div className="px-5 pt-3 flex gap-4 border-b overflow-x-auto" style={{ borderColor: 'var(--border-default)' }}>
+                    <button
+                        className={`pb-2 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${activeTab === 'basic' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => setActiveTab('basic')}
+                    >
+                        {isRTL ? 'البيانات الأساسية' : 'Basic Info'}
+                    </button>
+                    <button
+                        className={`pb-2 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${activeTab === 'compatibility' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => setActiveTab('compatibility')}
+                    >
+                        {isRTL ? 'التوافق مع السيارات' : 'Vehicle Compatibility'}
+                        {!editingProduct && form.pendingVehicles?.length > 0 && (
+                            <span className="mr-1 inline-flex items-center justify-center w-4 h-4 text-xs rounded-full bg-blue-500 text-white">{form.pendingVehicles.length}</span>
+                        )}
+                    </button>
+                    {editingProduct && (
+                        <button
+                            className={`pb-2 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${activeTab === 'alternatives' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                             onClick={() => setActiveTab('alternatives')}
                         >
                             {isRTL ? 'القطع البديلة والمطابقات' : 'Cross-References'}
                         </button>
-                        {form.isKit && (
-                            <button 
-                                className={`pb-2 text-sm font-bold border-b-2 transition-colors ${activeTab === 'components' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setActiveTab('components')}
-                            >
-                                {isRTL ? 'مكونات الطقم' : 'Kit Components'}
-                            </button>
-                        )}
-                    </div>
-                )}
+                    )}
+                    {editingProduct && form.isKit && (
+                        <button
+                            className={`pb-2 text-sm font-bold border-b-2 whitespace-nowrap transition-colors ${activeTab === 'components' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                            onClick={() => setActiveTab('components')}
+                        >
+                            {isRTL ? 'مكونات الطقم' : 'Kit Components'}
+                        </button>
+                    )}
+                </div>
 
                 <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
                     {activeTab === 'basic' ? (
@@ -203,9 +235,90 @@ const InventoryFormModal = memo(function InventoryFormModal({
                                     <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Part Number (PN)</label>
                                     <input className="input-field w-full font-mono" value={form.partNumber || ''} onChange={e => setForm((f:any) => ({ ...f, partNumber: e.target.value }))} />
                                 </div>
-                                <div>
+                                <div ref={brandRef} className="relative">
                                     <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Brand</label>
-                                    <input className="input-field w-full" value={form.brand || ''} onChange={e => setForm((f:any) => ({ ...f, brand: e.target.value }))} placeholder="e.g. Bosch, Denso..." />
+                                    {/* Custom brand dropdown with logo */}
+                                    <button
+                                        type="button"
+                                        className="input-field w-full flex items-center gap-2 text-right cursor-pointer"
+                                        onClick={() => { setBrandOpen(o => !o); setBrandSearch(''); }}
+                                    >
+                                        {(() => {
+                                            const sel = brands.find(b => b.id === form.brandId);
+                                            return sel ? (
+                                                <>
+                                                    {sel.image_url
+                                                        ? <img src={sel.image_url} alt={sel.name} className="w-6 h-6 object-contain rounded flex-shrink-0" />
+                                                        : <span className="w-6 h-6 rounded bg-purple-100 flex items-center justify-center text-purple-500 text-xs flex-shrink-0">B</span>
+                                                    }
+                                                    <span className="flex-1 truncate">{sel.name_ar ? `${sel.name_ar} — ${sel.name}` : sel.name}</span>
+                                                </>
+                                            ) : (
+                                                <span className="flex-1 text-gray-400">{isRTL ? '-- اختر الماركة --' : '-- Select Brand --'}</span>
+                                            );
+                                        })()}
+                                        <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    </button>
+
+                                    {brandOpen && (
+                                        <div className="absolute z-50 mt-1 w-full rounded-lg border shadow-lg bg-white dark:bg-gray-800 dark:border-gray-600" style={{ maxHeight: 260, overflowY: 'auto' }}>
+                                            {/* Search */}
+                                            <div className="p-2 border-b dark:border-gray-600">
+                                                <input
+                                                    autoFocus
+                                                    className="input-field w-full text-sm py-1"
+                                                    placeholder={isRTL ? 'بحث...' : 'Search...'}
+                                                    value={brandSearch}
+                                                    onChange={e => setBrandSearch(e.target.value)}
+                                                    onClick={e => e.stopPropagation()}
+                                                />
+                                            </div>
+                                            {/* Clear option */}
+                                            <button
+                                                type="button"
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                onClick={() => { setForm((f: any) => ({ ...f, brandId: null, brand: '' })); setBrandOpen(false); }}
+                                            >
+                                                {isRTL ? '-- بدون ماركة --' : '-- No Brand --'}
+                                            </button>
+                                            {brands
+                                                .filter(b => {
+                                                    const q = brandSearch.toLowerCase();
+                                                    return !q || b.name.toLowerCase().includes(q) || (b.name_ar ?? '').includes(brandSearch);
+                                                })
+                                                .map(b => (
+                                                    <button
+                                                        key={b.id}
+                                                        type="button"
+                                                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20 ${form.brandId === b.id ? 'bg-purple-50 dark:bg-purple-900/30 font-semibold' : ''}`}
+                                                        onClick={() => {
+                                                            setForm((f: any) => ({
+                                                                ...f,
+                                                                brandId: b.id,
+                                                                brand: b.name,
+                                                                countryOfOrigin: f.countryOfOrigin || b.country_of_origin || '',
+                                                            }));
+                                                            setBrandOpen(false);
+                                                        }}
+                                                    >
+                                                        {b.image_url
+                                                            ? <img src={b.image_url} alt={b.name} className="w-7 h-7 object-contain rounded flex-shrink-0" />
+                                                            : <span className="w-7 h-7 rounded bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center text-purple-500 text-xs font-bold flex-shrink-0">{b.name[0]?.toUpperCase()}</span>
+                                                        }
+                                                        <span className="flex-1 text-right truncate">
+                                                            {b.name_ar ? `${b.name_ar} — ` : ''}{b.name}
+                                                        </span>
+                                                    </button>
+                                                ))
+                                            }
+                                            {brands.filter(b => {
+                                                const q = brandSearch.toLowerCase();
+                                                return !q || b.name.toLowerCase().includes(q) || (b.name_ar ?? '').includes(brandSearch);
+                                            }).length === 0 && (
+                                                <p className="p-3 text-center text-sm text-gray-400">{isRTL ? 'لا توجد نتائج' : 'No results'}</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Quality Grade</label>
@@ -346,7 +459,12 @@ const InventoryFormModal = memo(function InventoryFormModal({
                     </div>
                         </>
                     ) : activeTab === 'compatibility' ? (
-                        <ProductCompatibilityTab productId={editingProduct!.id} isRTL={isRTL} />
+                        <ProductCompatibilityTab
+                            productId={editingProduct?.id || ''}
+                            isRTL={isRTL}
+                            pendingVehicles={!editingProduct ? form.pendingVehicles : undefined}
+                            onPendingChange={!editingProduct ? (v: any[]) => setForm((f: any) => ({ ...f, pendingVehicles: v })) : undefined}
+                        />
                     ) : activeTab === 'components' ? (
                         <ProductComponentsTab productId={editingProduct!.id} isRTL={isRTL} />
                     ) : (
@@ -355,7 +473,7 @@ const InventoryFormModal = memo(function InventoryFormModal({
                 </div>
                 <div className="p-5 border-t flex justify-end gap-3" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-secondary)' }}>
                     <button onClick={() => setShowAddEdit(false)} className="btn-secondary px-6">{common.cancel}</button>
-                    {activeTab === 'basic' && (
+                    {(activeTab === 'basic' || (activeTab === 'compatibility' && !editingProduct)) && (
                         <button onClick={saveProduct} disabled={!form.name && !form.nameAr} className="btn-primary px-8 disabled:opacity-50">{common.save}</button>
                     )}
                 </div>

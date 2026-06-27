@@ -142,6 +142,7 @@ final class TenantBackupService
 
         $workDir = storage_path('app/tmp/restore/'.Str::uuid());
         File::ensureDirectoryExists($workDir);
+        $startTime = now();
 
         try {
             $dbDumpLocal = "{$workDir}/db.sql";

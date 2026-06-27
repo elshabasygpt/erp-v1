@@ -2,10 +2,15 @@
 
 namespace App\Domain\Sales\Entities;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class PosShift extends Model
 {
+    use HasUuids;
+
+    protected $connection = 'tenant';
+
     protected $fillable = [
         'tenant_id',
         'user_id',
@@ -17,6 +22,7 @@ class PosShift extends Model
         'closed_at',
         'status',
         'notes',
+        'created_by',
     ];
 
     protected $casts = [

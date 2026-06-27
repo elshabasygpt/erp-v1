@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { salesApi, customersApi, productsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 const STATUS_STYLES: Record<string, string> = {
     draft:    'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
 
 export default function QuotationsPage() {
     const { d, isRTL, locale } = useLanguage();
+    const { taxRate } = useRegionalSettings();
     const [quotations, setQuotations] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
@@ -49,7 +51,7 @@ export default function QuotationsPage() {
         productsApi.getProducts({ limit: 200 }).then(r => setProducts(r.data?.data || r.data || [])).catch(() => {});
     }, []);
 
-    const openNew = () => { setForm({ ...EMPTY_FORM, items: [{ product_id: '', quantity: 1, unit_price: 0, vat_rate: 15 }] }); setIsModalOpen(true); };
+    const openNew = () => { setForm({ ...EMPTY_FORM, items: [{ product_id: '', quantity: 1, unit_price: 0, vat_rate: taxRate }] }); setIsModalOpen(true); };
     const openEdit = (q: any) => {
         setForm({
             id: q.id,
@@ -95,7 +97,7 @@ export default function QuotationsPage() {
         } catch (err: any) { toast.error(err?.response?.data?.message || 'Error converting'); }
     };
 
-    const addItem = () => setForm((f: any) => ({ ...f, items: [...f.items, { product_id: '', quantity: 1, unit_price: 0, vat_rate: 15 }] }));
+    const addItem = () => setForm((f: any) => ({ ...f, items: [...f.items, { product_id: '', quantity: 1, unit_price: 0, vat_rate: taxRate }] }));
     const removeItem = (i: number) => setForm((f: any) => ({ ...f, items: f.items.filter((_: any, idx: number) => idx !== i) }));
     const updateItem = (i: number, field: string, val: any) => setForm((f: any) => {
         const items = [...f.items];
@@ -268,7 +270,7 @@ export default function QuotationsPage() {
                                                 <select value={item.vat_rate} onChange={e => updateItem(i, 'vat_rate', +e.target.value)} className="w-full p-1.5 text-xs border rounded bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600">
                                                     <option value={0}>0%</option>
                                                     <option value={5}>5%</option>
-                                                    <option value={15}>15%</option>
+                                                    {![0, 5].includes(taxRate) && <option value={taxRate}>{taxRate}%</option>}
                                                 </select>
                                             </div>
                                             <div className="col-span-1 flex justify-center">

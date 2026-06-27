@@ -63,6 +63,7 @@ final class CreateInvoiceUseCase
                     adjustmentAmount: $itemDTO->adjustmentAmount,
                     coreChargeApplied: $itemDTO->coreChargeApplied,
                     coreChargeAmount: $itemDTO->coreChargeAmount,
+                    printedName: $itemDTO->printedName,
                 );
             }
 
@@ -114,16 +115,24 @@ final class CreateInvoiceUseCase
             if ($dto->status === 'confirmed') {
                 if ($dto->type === 'credit' && $dto->customerId) {
                     $customer = CustomerModel::query()->find($dto->customerId);
-                    if ($customer) {
+                    if ($customer && (float) $customer->credit_limit > 0) {
                         $dueAmount = $invoice->getTotal() - $dto->paidAmount;
-                        if ($dueAmount > 0 && ($customer->balance + $dueAmount) > $customer->credit_limit) {
+                        if ($dueAmount > 0 && ((float) $customer->balance + $dueAmount) > (float) $customer->credit_limit) {
                             if (! $dto->creditLimitOverride) {
                                 throw new \DomainException("Credit Limit Exceeded. Customer balance is {$customer->balance}, Credit Limit is {$customer->credit_limit}, and Due Amount is {$dueAmount}. Manager override required.");
-                            } else {
-                                // Verify if user has permission to override
-                                // Normally done via Gate or auth()->user()->hasPermissionTo('approve_credit_limit_override')
-                                // Since we might not have a full permission system implemented, we assume if they passed override=true, the UI verified it.
-                                // To be absolutely safe, let's pretend we checked it or just allow it if $dto->creditLimitOverride is true.
+                            }
+                            // Override requested: verify role meta_attributes.can_override_credit_limit
+                            $hasOverridePermission = false;
+                            if ($userId) {
+                                $user = \App\Infrastructure\Eloquent\Models\UserModel::query()->find($userId);
+                                if ($user && $user->role_id) {
+                                    $role = DB::connection('tenant')->table('roles')->where('id', $user->role_id)->first();
+                                    $meta = json_decode($role->meta_attributes ?? '{}', true);
+                                    $hasOverridePermission = (bool) ($meta['can_override_credit_limit'] ?? false);
+                                }
+                            }
+                            if (!$hasOverridePermission) {
+                                throw new \DomainException('You do not have permission to override the customer credit limit.');
                             }
                         }
                     }

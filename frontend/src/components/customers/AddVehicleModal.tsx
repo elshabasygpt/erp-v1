@@ -150,7 +150,15 @@ export default function AddVehicleModal({ customerId, vehicle, isOpen, onClose, 
                                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'سنة الصنع / الفئة' : 'Year / Trim'}</label>
                                 <select required disabled={!selectedModel} value={form.vehicle_year_id} onChange={e => setForm({ ...form, vehicle_year_id: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border disabled:opacity-50" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-input)' }}>
                                     <option value="">{isRTL ? 'اختر السنة...' : 'Select year...'}</option>
-                                    {years.map(y => <option key={y.id} value={y.id}>{y.year_from}{y.year_to ? `-${y.year_to}` : '+'} {y.engine_size ? `(${y.engine_size})` : ''}</option>)}
+                                    {years.map(y => {
+                                        const parts = [
+                                            `${y.year_from}${y.year_to ? `-${y.year_to}` : '+'}`,
+                                            y.engine_size || '',
+                                            y.fuel_type || '',
+                                            y.transmission || '',
+                                        ].filter(Boolean);
+                                        return <option key={y.id} value={y.id}>{parts.join(' · ')}</option>;
+                                    })}
                                 </select>
                             </div>
                         </div>

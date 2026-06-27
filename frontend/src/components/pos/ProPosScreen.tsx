@@ -22,6 +22,7 @@ import { PosAlternativesModal } from './PosAlternativesModal';
 import toast from 'react-hot-toast';
 import { ShiftManagementModal } from './ShiftManagementModal';
 import { cacheProducts, cacheCustomers, getCachedProducts, getCachedCustomers, searchCachedCustomers, enqueueOfflineAction, getSyncQueue, removeFromQueue } from '@/lib/offline-store';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface CartItem {
@@ -57,19 +58,19 @@ function getProductPrice(product: any, level: PriceLevel): number {
     return retail;
 }
 
-function getProductPriceWithChannel(product: any, level: PriceLevel, channelId: string | undefined, salesChannels: any[]): number {
+function getProductPriceWithChannel(product: any, level: PriceLevel, channelId: string | undefined, salesChannels: any[], defaultTaxRate = 15): number {
     let basePrice = getProductPrice(product, level);
     if (!channelId || !salesChannels) return basePrice;
     const channel = salesChannels.find(c => c.id === channelId);
     if (!channel) return basePrice;
-    
+
     if (channel.pricing_method === 'percentage') {
         return basePrice * (1 + (channel.markup_percentage / 100));
     } else {
         if (channel.apply_before_tax) {
             return basePrice + channel.fixed_markup;
         } else {
-            const vatRate = product.vat_rate || 15;
+            const vatRate = product.vat_rate || defaultTaxRate;
             return basePrice + (channel.fixed_markup / (1 + (vatRate / 100)));
         }
     }
@@ -93,6 +94,7 @@ const generateNewTab = (currentTabs: InvoiceTab[] = [], o: Partial<InvoiceTab> =
 
 export default function ProPosScreen({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
+    const { taxRate, currencySymbol } = useRegionalSettings();
     const [products,   setProducts]   = useState<any[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
     const [customers,  setCustomers]  = useState<any[]>([]);
@@ -396,15 +398,15 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     }, [activeTab?.cart]);
 
     const changePriceLevel = useCallback((level: PriceLevel) => {
-        setTabs(prev => prev.map(t => t.id !== activeTabId ? t : { ...t, priceLevel: level, cart: t.cart.map(i => ({ ...i, price: getProductPriceWithChannel(i.product, level, t.salesChannelId, salesChannels) })) }));
+        setTabs(prev => prev.map(t => t.id !== activeTabId ? t : { ...t, priceLevel: level, cart: t.cart.map(i => ({ ...i, price: getProductPriceWithChannel(i.product, level, t.salesChannelId, salesChannels, taxRate) })) }));
     }, [activeTabId, salesChannels]);
 
     const changeSalesChannel = useCallback((channelId: string | undefined) => {
-        setTabs(prev => prev.map(t => t.id !== activeTabId ? t : { ...t, salesChannelId: channelId, cart: t.cart.map(i => ({ ...i, price: getProductPriceWithChannel(i.product, t.priceLevel, channelId, salesChannels) })) }));
+        setTabs(prev => prev.map(t => t.id !== activeTabId ? t : { ...t, salesChannelId: channelId, cart: t.cart.map(i => ({ ...i, price: getProductPriceWithChannel(i.product, t.priceLevel, channelId, salesChannels, taxRate) })) }));
         setShowChannelSelect(false);
     }, [activeTabId, salesChannels]);
 
-    const addToCart = useCallback((product: any) => {
+    const addToCart = useCallback((product: any, qty = 1) => {
         if (!currentShift) {
             toast.error(isRTL ? 'يجب فتح وردية أولاً' : 'You must open a shift first');
             setShowShiftModal(true);
@@ -412,12 +414,54 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
         }
         setTabs(prev => prev.map(t => {
             if (t.id !== activeTabId) return t;
-            const price = getProductPriceWithChannel(product, t.priceLevel, t.salesChannelId, salesChannels);
+            const price = getProductPriceWithChannel(product, t.priceLevel, t.salesChannelId, salesChannels, taxRate);
             const exist = t.cart.find(i => i.product.id === product.id);
-            if (exist) return { ...t, cart: t.cart.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i) };
-            return { ...t, cart: [...t.cart, { id: Math.random().toString(36).slice(2), product, quantity: 1, price }] };
+            if (exist) return { ...t, cart: t.cart.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + qty } : i) };
+            return { ...t, cart: [...t.cart, { id: Math.random().toString(36).slice(2), product, quantity: qty, price }] };
         }));
     }, [activeTabId, salesChannels]);
+
+    // API barcode scan — called when scanned code isn't in the local product list
+    const handleBarcodeScan = useCallback(async (code: string) => {
+        const warehouseId = activeTab?.warehouseId ?? null;
+        try {
+            const res = await posApi.scanBarcode(code, warehouseId);
+            const item = res.data?.data;
+            if (!item) {
+                toast.error(isRTL ? `لم يُعثر على: ${code}` : `Not found: ${code}`);
+                return;
+            }
+            if (!item.is_active) {
+                toast.error(isRTL
+                    ? `تحذير: المنتج "${item.name_ar || item.name}" غير نشط`
+                    : `Warning: "${item.name}" is inactive`);
+            }
+            if (item.superseded_by) {
+                toast(isRTL
+                    ? `هذا المنتج استُبدل بـ: ${item.superseded_by.name_ar || item.superseded_by.name}`
+                    : `Replaced by: ${item.superseded_by.name}`,
+                    { icon: '⚠️', duration: 5000 });
+            }
+            const product = {
+                id: item.product_id,
+                name: item.name,
+                name_ar: item.name_ar,
+                sku: item.sku,
+                barcode: item.barcode,
+                sell_price: item.sell_price,
+                wholesale_price: item.wholesale_price,
+                semi_wholesale_price: item.semi_wholesale_price,
+                vat_rate: item.vat_rate,
+                has_core_charge: item.has_core_charge,
+                core_charge_amount: item.core_charge_amount,
+                image_url: item.image_url,
+                unit_of_measure: item.unit_of_measure,
+            };
+            addToCart(product, item.quantity);
+        } catch (e: any) {
+            toast.error(isRTL ? `لم يُعثر على باركود: ${code}` : `Barcode not found: ${code}`);
+        }
+    }, [activeTab?.warehouseId, addToCart, isRTL]);
 
     // Global Barcode Listener (Moved here to have access to addToCart)
     useEffect(() => {
@@ -427,9 +471,15 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
 
             if (e.key === 'Enter' && barcodeBuffer.current.length > 2) {
                 const code = barcodeBuffer.current;
-                const matched = products.find(p => p.barcode === code || p.code === code);
-                if (matched) addToCart(matched);
                 barcodeBuffer.current = '';
+                // Fast path: product already loaded in the grid
+                const matched = products.find(p => p.barcode === code || p.sku === code || p.code === code);
+                if (matched) {
+                    addToCart(matched);
+                } else {
+                    // Slow path: fetch from backend (handles unit barcodes, SKUs not in grid, etc.)
+                    handleBarcodeScan(code);
+                }
             } else if (e.key.length === 1) {
                 barcodeBuffer.current += e.key;
                 if (barcodeTimeout.current) clearTimeout(barcodeTimeout.current);
@@ -438,7 +488,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
         };
         window.addEventListener('keydown', handleGlobalKeyDown);
         return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, [products, addToCart, showPaymentModal, isAddingCustomer, showHoldPanel]);
+    }, [products, addToCart, handleBarcodeScan, showPaymentModal, isAddingCustomer, showHoldPanel]);
 
     const updateQty = (id: string, d: number) => setTabs(prev => prev.map(t => {
         if (t.id !== activeTabId) return t;
@@ -481,8 +531,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     const itemsSubt = cartWithMarkup.reduce((s, i) => s + (i.adjustedPrice * i.quantity) - (i.discount || 0), 0);
     const globalDiscAmount = parseFloat(activeTab?.orderDiscount as any) || 0;
     const finalSubt = Math.max(0, itemsSubt - globalDiscAmount);
-    // Assuming 15% VAT on the post-discount amount
-    const vat = finalSubt * 0.15;
+    const vat = finalSubt * (taxRate / 100);
     const total = finalSubt + vat;
 
     const handlePayNumPad = (k: string) => {
@@ -597,10 +646,10 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                         ).join('')}
                         <div class="dashed"></div>
                         <div class="flex"><span>المجموع:</span><span>${itemsSubt.toFixed(2)}</span></div>
-                        <div class="flex"><span>الضريبة (15%):</span><span>${vat.toFixed(2)}</span></div>
+                        <div class="flex"><span>الضريبة (${taxRate}%):</span><span>${vat.toFixed(2)}</span></div>
                         ${globalDiscAmount > 0 ? `<div class="flex"><span>خصم:</span><span>-${globalDiscAmount.toFixed(2)}</span></div>` : ''}
                         <div class="dashed"></div>
-                        <div class="flex bold" style="font-size:14px;"><span>الإجمالي المستحق:</span><span>${total.toFixed(2)} SAR</span></div>
+                        <div class="flex bold" style="font-size:14px;"><span>الإجمالي المستحق:</span><span>${total.toFixed(2)} ${currencySymbol}</span></div>
                         <div class="flex" style="margin-top:8px;"><span>طريقة الدفع:</span><span>${paymentMethod}</span></div>
                         <div class="center" style="margin-top:15px; font-weight:bold;">شكراً لزيارتكم</div>
                     </body>
@@ -724,7 +773,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                                     className="w-full h-12 px-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-lg font-black text-slate-800 dark:text-white outline-none focus:border-rose-500 transition-all text-center"
                                     placeholder="0.00"
                                 />
-                                <div className="absolute top-1/2 -translate-y-1/2 left-4 text-xs font-bold text-slate-400">SAR</div>
+                                <div className="absolute top-1/2 -translate-y-1/2 left-4 text-xs font-bold text-slate-400">{currencySymbol}</div>
                             </div>
                         </div>
                         <div className="mt-6 pt-6 border-t border-slate-100 dark:border-white/5 flex gap-3">
@@ -899,7 +948,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                                     return null;
                                 })()}
                                 {item.note && <p className="text-[9px] text-slate-400 dark:text-white/40 mt-1 line-clamp-1 italic font-bold max-w-full"><span className="text-amber-500">Note:</span> {item.note}</p>}
-                                {item.discount ? <p className="text-[9px] text-red-500 dark:text-red-400 font-bold mt-0.5 max-w-full">-{item.discount} SAR Discount</p> : null}
+                                {item.discount ? <p className="text-[9px] text-red-500 dark:text-red-400 font-bold mt-0.5 max-w-full">-{item.discount} {currencySymbol} Discount</p> : null}
                                 
                                 {item.product.has_core_charge && (
                                     <div className="flex items-center gap-2 mt-2 bg-slate-100 dark:bg-white/5 p-1.5 rounded-lg border border-slate-200 dark:border-white/10 w-fit" onClick={(e) => e.stopPropagation()}>
@@ -909,11 +958,11 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                                         <label htmlFor={`core-${item.id}`} className="text-[10px] font-bold text-slate-600 dark:text-white/70 whitespace-nowrap cursor-pointer">
                                             {isRTL ? 'تجاوز رسوم التالف (تم الإرجاع)' : 'Core Returned?'}
                                         </label>
-                                        {!item.coreReturned && <span className="text-[10px] font-black text-red-500">+{parseFloat(item.product.core_charge_amount || 0).toFixed(2)} SAR</span>}
+                                        {!item.coreReturned && <span className="text-[10px] font-black text-red-500">+{parseFloat(item.product.core_charge_amount || 0).toFixed(2)} {currencySymbol}</span>}
                                     </div>
                                 )}
 
-                                <p className="text-[13px] text-blue-600 dark:text-blue-400 font-black mt-2 tabular-nums">{(item.price).toFixed(2)} <span className="text-[9px] font-bold text-slate-400 dark:text-white/30">SAR</span></p>
+                                <p className="text-[13px] text-blue-600 dark:text-blue-400 font-black mt-2 tabular-nums">{(item.price).toFixed(2)} <span className="text-[9px] font-bold text-slate-400 dark:text-white/30">{currencySymbol}</span></p>
                             </div>
                             <div className="flex flex-col gap-1 items-center justify-center">
                                 <button onClick={(e)=>{e.stopPropagation(); setEditingItem(item); setEditItemSubState({ discount: item.discount||0, note: item.note||'' });}} className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg bg-slate-50 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 transition-colors">
@@ -940,7 +989,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                                 <input type="number" min="0" value={activeTab?.orderDiscount || ''} onChange={e=>updateTab('orderDiscount', parseFloat(e.target.value)||0)} className="w-20 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg text-right px-2 py-0.5 text-[12px] font-black text-emerald-700 dark:text-emerald-300 outline-none focus:border-emerald-400" placeholder="0.00" />
                             </div>
                         </div>
-                        <div className="flex justify-between text-[12px] font-black text-slate-500 dark:text-white/50 uppercase tracking-widest"><span>{isRTL ? 'الضريبة (15%)' : 'VAT (15%)'}</span><span className="tabular-nums text-slate-800 dark:text-white/80">{vat.toFixed(2)}</span></div>
+                        <div className="flex justify-between text-[12px] font-black text-slate-500 dark:text-white/50 uppercase tracking-widest"><span>{isRTL ? `الضريبة (${taxRate}%)` : `VAT (${taxRate}%)`}</span><span className="tabular-nums text-slate-800 dark:text-white/80">{vat.toFixed(2)}</span></div>
                     </div>
                     
                     <div className="h-24 bg-gradient-to-r from-blue-700 to-blue-600 dark:from-blue-600 dark:to-blue-500 rounded-[24px] flex items-center justify-between px-7 shadow-2xl shadow-blue-600/30 dark:shadow-blue-600/10 relative overflow-hidden group">
@@ -1080,7 +1129,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                             </div>
                             
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-white/40 mb-2">{isRTL ? 'المبلغ المطلوب دفعه' : 'Amount to pay'}</p>
-                            <p className="text-6xl font-black text-slate-800 dark:text-white tabular-nums tracking-tighter mb-8 leading-none">{total.toFixed(2)} <span className="text-xl font-bold text-slate-400 dark:text-white/30">SAR</span></p>
+                            <p className="text-6xl font-black text-slate-800 dark:text-white tabular-nums tracking-tighter mb-8 leading-none">{total.toFixed(2)} <span className="text-xl font-bold text-slate-400 dark:text-white/30">{currencySymbol}</span></p>
                             
                             <div className="space-y-3 w-full mb-8">
                                 {['cash','card','other'].map(m=>(

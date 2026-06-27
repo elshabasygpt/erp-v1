@@ -11,27 +11,29 @@ final class InvoiceItemDTO
         public readonly float $quantity,
         public readonly float $unitPrice,
         public readonly float $discountPercent = 0,
-        public readonly float $vatRate = 15, // Default 15% VAT
+        public readonly float $vatRate = 15,
         public readonly ?float $baseUnitPrice = 0.0,
         public readonly ?float $adjustedUnitPrice = 0.0,
         public readonly ?float $adjustmentAmount = 0.0,
         public readonly bool $coreChargeApplied = false,
         public readonly float $coreChargeAmount = 0.0,
+        public readonly ?string $printedName = null,
     ) {}
 
-    public static function fromArray(array $data): self
+    public static function fromArray(array $data, float $defaultVatRate = 15): self
     {
         return new self(
             productId: $data['product_id'],
             quantity: (float) $data['quantity'],
             unitPrice: (float) $data['unit_price'],
             discountPercent: (float) ($data['discount_percent'] ?? 0),
-            vatRate: (float) ($data['vat_rate'] ?? 15),
+            vatRate: (float) ($data['vat_rate'] ?? $defaultVatRate),
             baseUnitPrice: isset($data['base_unit_price']) ? (float) $data['base_unit_price'] : (float) $data['unit_price'],
             adjustedUnitPrice: isset($data['adjusted_unit_price']) ? (float) $data['adjusted_unit_price'] : (float) $data['unit_price'],
             adjustmentAmount: isset($data['adjustment_amount']) ? (float) $data['adjustment_amount'] : 0.0,
             coreChargeApplied: isset($data['core_charge_applied']) ? (bool) $data['core_charge_applied'] : false,
             coreChargeAmount: isset($data['core_charge_amount']) ? (float) $data['core_charge_amount'] : 0.0,
+            printedName: isset($data['printed_name']) && $data['printed_name'] !== '' ? (string) $data['printed_name'] : null,
         );
     }
 }

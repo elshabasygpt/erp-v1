@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Inventory\Services;
 
+use App\Application\Approvals\Services\ApprovalWorkflowService;
+use App\Infrastructure\Eloquent\Models\Approvals\ApprovalRequestModel;
 use App\Infrastructure\Eloquent\Models\StockMovementModel;
 use App\Infrastructure\Eloquent\Models\StockTransferModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
@@ -13,6 +15,13 @@ use Illuminate\Support\Str;
 
 class StockTransferService
 {
+    public function __construct(private ?ApprovalWorkflowService $approvalService = null) {}
+
+    private function approvals(): ApprovalWorkflowService
+    {
+        return $this->approvalService ??= app(ApprovalWorkflowService::class);
+    }
+
     /**
      * Create a new draft stock transfer
      */
@@ -44,10 +53,54 @@ class StockTransferService
      */
     public function approveTransfer(string $transferId, string $userId): StockTransferModel
     {
-        return DB::connection('tenant')->transaction(function () use ($transferId, $userId) {
-            $transfer = StockTransferModel::query()->with('items')->findOrFail($transferId);
+        // Pre-checks run OUTSIDE the transaction so that approval requests survive even if we throw.
+        $transfer = StockTransferModel::query()->with('items')->findOrFail($transferId);
 
-            if ($transfer->status !== 'draft') {
+        if ($transfer->status !== 'draft') {
+            throw new Exception('Only draft transfers can be approved.');
+        }
+
+        // Block if there is already a pending approval request
+        $pendingApproval = ApprovalRequestModel::query()
+            ->where('entity_type', 'stock_transfer')
+            ->where('entity_id', $transferId)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($pendingApproval) {
+            throw new Exception('This transfer is pending approval. It cannot be approved until the approval request is resolved.');
+        }
+
+        // Calculate total transfer value and evaluate approval rules
+        $totalValue = 0.0;
+        foreach ($transfer->items as $item) {
+            $stock = WarehouseProductModel::query()
+                ->where('warehouse_id', $transfer->from_warehouse_id)
+                ->where('product_id', $item->product_id)
+                ->first();
+            $totalValue += ($stock?->average_cost ?? 0) * $item->quantity;
+        }
+
+        // If an approval was already granted for this transfer, skip rule evaluation
+        $alreadyApproved = ApprovalRequestModel::query()
+            ->where('entity_type', 'stock_transfer')
+            ->where('entity_id', $transferId)
+            ->where('status', 'approved')
+            ->exists();
+
+        if (!$alreadyApproved) {
+            $triggers = $this->approvals()->evaluateStockTransfer($transferId, $totalValue);
+            if (!empty($triggers)) {
+                // Persist the approval request BEFORE throwing — not inside a transaction
+                $this->approvals()->requestApproval('stock_transfer', $transferId, $triggers, $userId);
+                throw new Exception('Transfer requires manager approval due to: '.$triggers[0]['reason']);
+            }
+        }
+
+        return DB::connection('tenant')->transaction(function () use ($transferId, $userId, $transfer) {
+            // Re-acquire the transfer with a pessimistic lock to prevent duplicate concurrent approvals.
+            $locked = StockTransferModel::query()->lockForUpdate()->findOrFail($transferId);
+            if ($locked->status !== 'draft') {
                 throw new Exception('Only draft transfers can be approved.');
             }
 
@@ -76,13 +129,13 @@ class StockTransferService
                 ]);
             }
 
-            $transfer->update([
+            $locked->update([
                 'status' => 'in_transit',
                 'approved_by' => $userId,
                 'approved_at' => now(),
             ]);
 
-            return $transfer;
+            return $locked;
         });
     }
 

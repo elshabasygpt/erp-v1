@@ -1,15 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useInvoiceForm } from './InvoiceFormContext';
-import { Search, Trash2, Package } from 'lucide-react';
+import { Search, Trash2, Package, Link2 } from 'lucide-react';
+import { PosAlternativesModal } from '@/components/pos/PosAlternativesModal';
 
 export function ProductsTable() {
-  const { 
-    isRTL, items, products, addItem, updateItem, removeItem 
+  const {
+    isRTL, items, products, addItem, updateItem, removeItem
   } = useInvoiceForm();
-  
+
   const [searchProduct, setSearchProduct] = useState('');
+  const [alternativesProduct, setAlternativesProduct] = useState<any>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchProduct('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleAddItem = (p: any) => {
     addItem(p);
@@ -25,7 +38,7 @@ export function ProductsTable() {
         </h3>
       </div>
 
-      <div className="relative mb-6">
+      <div className="relative mb-6" ref={searchRef}>
         <Search className="w-5 h-5 absolute top-1/2 -translate-y-1/2 start-4 text-blue-500" />
         <input 
           type="text" 
@@ -77,10 +90,29 @@ export function ProductsTable() {
               const itemNet = (item.quantity * item.unit_price) * (1 - (item.discount_percent / 100));
               const itemTotal = itemNet * (1 + (item.vat_rate / 100));
               return (
-                <tr key={index} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors group">
+                <tr key={index} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors group/row">
                   <td className="px-4 py-3">
-                    <div className="font-bold text-slate-800 dark:text-white line-clamp-1">{item.name}</div>
-                    <div className="text-[10px] text-slate-500 tracking-wider mt-0.5">{item.code}</div>
+                    <input
+                      type="text"
+                      value={item.printed_name ?? item.name}
+                      onChange={e => updateItem(index, 'printed_name', e.target.value)}
+                      className="w-full bg-transparent border-b border-dashed border-slate-300 dark:border-white/20 outline-none text-slate-800 dark:text-white font-bold focus:border-blue-500 transition-colors pb-0.5"
+                      title={isRTL ? 'اسم الصنف في الفاتورة' : 'Item name on invoice'}
+                    />
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-slate-500 tracking-wider">{item.code}</span>
+                      {item.stock === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setAlternativesProduct({ id: item.product_id, name: item.name, name_ar: item.name })}
+                          className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:hover:bg-orange-500/30 transition-colors"
+                          title={isRTL ? 'عرض القطع البديلة' : 'Show alternatives'}
+                        >
+                          <Link2 className="w-2.5 h-2.5" />
+                          {isRTL ? 'بدائل' : 'Alternatives'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <input type="number" min="0" step="any" value={item.unit_price} onChange={e=>updateItem(index, 'unit_price', Math.max(0, Number(e.target.value)))} className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 outline-none text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-blue-500/20 transition-all" />
@@ -98,7 +130,7 @@ export function ProductsTable() {
                     {itemTotal.toFixed(2)}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <button onClick={() => removeItem(index)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                    <button onClick={() => removeItem(index)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 p-2 rounded-xl transition-all opacity-100 md:opacity-0 md:group-hover/row:opacity-100">
                       <Trash2 className="w-4 h-4"/>
                     </button>
                   </td>
@@ -118,6 +150,18 @@ export function ProductsTable() {
           </tbody>
         </table>
       </div>
+
+      {alternativesProduct && (
+        <PosAlternativesModal
+          product={alternativesProduct}
+          isRTL={isRTL}
+          onClose={() => setAlternativesProduct(null)}
+          onAddAlternative={(alt) => {
+            addItem(alt);
+            setAlternativesProduct(null);
+          }}
+        />
+      )}
     </div>
   );
 }

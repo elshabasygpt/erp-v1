@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { salesReturnsApi, salesApi, inventoryApi, customersApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -11,22 +11,33 @@ import { useLanguage } from '@/i18n/LanguageContext';
 
 export default function NewSalesReturnPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { isRTL } = useLanguage();
 
-    const { data: invoicesRes } = useQuery({ queryKey: ['invoices'], queryFn: () => salesApi.getInvoices({ status: 'paid' }) });
+    const preselectedInvoiceId = searchParams.get('invoice_id') ?? '';
+
+    // Fetch confirmed invoices only — 'paid' is not a valid status value
+    const { data: invoicesRes } = useQuery({ queryKey: ['invoices-confirmed'], queryFn: () => salesApi.getInvoices({ status: 'confirmed', limit: 200 }) });
     const { data: warehousesRes } = useQuery({ queryKey: ['warehouses'], queryFn: () => inventoryApi.getWarehouses() });
     const { data: customersRes } = useQuery({ queryKey: ['customers'], queryFn: () => customersApi.getCustomers() });
     const { data: productsRes } = useQuery({ queryKey: ['products'], queryFn: () => inventoryApi.getProducts({ per_page: 1000 }) });
 
-    const invoices = invoicesRes?.data?.data?.data || [];
+    const invoices = invoicesRes?.data?.data?.data || invoicesRes?.data?.data || [];
     const warehouses = warehousesRes?.data?.data || [];
-    const customers = customersRes?.data?.data?.data || [];
+    const customers = customersRes?.data?.data?.data || customersRes?.data?.data || [];
     const products = productsRes?.data?.data?.data || [];
 
-    const [invoiceId, setInvoiceId] = useState('');
+    const [invoiceId, setInvoiceId] = useState(preselectedInvoiceId);
     const [warehouseId, setWarehouseId] = useState('');
     const [customerId, setCustomerId] = useState('');
     const [returnType, setReturnType] = useState('partial');
+
+    // When invoices load, auto-fill customer from the pre-selected invoice
+    useEffect(() => {
+        if (!preselectedInvoiceId || !invoices.length) return;
+        const inv = invoices.find((i: any) => i.id === preselectedInvoiceId);
+        if (inv?.customer_id) setCustomerId(inv.customer_id);
+    }, [invoices, preselectedInvoiceId]);
     const [refundMethod, setRefundMethod] = useState('cash');
     const [reason, setReason] = useState('defective');
     const [notes, setNotes] = useState('');

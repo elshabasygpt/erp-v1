@@ -7,11 +7,15 @@ import Sidebar from '@/components/layout/Sidebar';
 import SmartSearchModal from '@/components/layout/SmartSearchModal';
 import HelpDrawer from '@/components/layout/HelpDrawer';
 import { SidebarProvider, useSidebar } from '@/providers/SidebarProvider';
+import { RegionalSettingsProvider } from '@/providers/RegionalSettingsProvider';
 import { getStoredUser, isMockMode } from '@/lib/auth';
 import { LanguageProvider } from '@/i18n/LanguageContext';
 import MobileHeader from '@/components/layout/MobileHeader';
 import BottomNav from '@/components/layout/BottomNav';
 import AiChatWidget from '@/components/ui/AiChatWidget';
+import NotificationCenter from '@/components/ui/NotificationCenter';
+import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
+import OfflineIndicator from '@/components/ui/OfflineIndicator';
 
 
 // ── Breadcrumb helper ─────────────────────────────────────────────
@@ -21,6 +25,7 @@ const ROUTE_LABELS: Record<string, { ar: string; en: string }> = {
     inventory:          { ar: 'المخزون',             en: 'Inventory' },
     movements:          { ar: 'حركات المخزون',       en: 'Stock Movements' },
     transfers:          { ar: 'تحويلات المخازن',     en: 'Stock Transfers' },
+    warehouses:         { ar: 'إدارة المستودعات',    en: 'Warehouses' },
     purchases:          { ar: 'المشتريات',           en: 'Purchases' },
     accounting:         { ar: 'المحاسبة',            en: 'Accounting' },
     customers:          { ar: 'العملاء',             en: 'Customers' },
@@ -67,6 +72,7 @@ function DashboardLayoutInner({
     const [isMock, setIsMock] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
+    const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
     useEffect(() => {
         setIsMock(isMockMode());
@@ -74,9 +80,19 @@ function DashboardLayoutInner({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Ctrl+K → search
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
                 setIsSearchOpen(prev => !prev);
+                return;
+            }
+            // ? → shortcuts (only when not in an input)
+            const tag = (e.target as HTMLElement).tagName;
+            const editable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) ||
+                (e.target as HTMLElement).isContentEditable;
+            if (e.key === '?' && !editable && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                setIsShortcutsOpen(prev => !prev);
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -101,7 +117,7 @@ function DashboardLayoutInner({
 
     // Sidebar effective width for main margin
     const isEffectivelyCollapsed = collapsed || mode === 'mini';
-    const sidebarW = isEffectivelyCollapsed ? 'lg:ms-16' : 'lg:ms-64';
+    const sidebarW = isEffectivelyCollapsed ? 'md:ms-16' : 'md:ms-64';
 
     if (isPosMode) {
         return (
@@ -116,7 +132,7 @@ function DashboardLayoutInner({
             <LanguageProvider initialDict={dict}>
                 <div className="min-h-screen transition-colors duration-300" style={{ background: 'var(--bg-body)' }}>
                     {/* Mobile Header — يظهر على الموبايل فقط */}
-                    <MobileHeader isRTL={isRTL} title={dict.common?.appName || 'ERP'} />
+                    <MobileHeader isRTL={isRTL} title={dict.common?.appName || 'ERP'} onSearchClick={() => setIsSearchOpen(true)} />
 
                     {/* Mock Mode Banner */}
                     {isMock && (
@@ -196,8 +212,19 @@ function DashboardLayoutInner({
                                 </div>
                             </div>
 
-                            {/* Right: Notifications + User */}
+                            {/* Right: Shortcuts + Notifications + User */}
                             <div className="flex items-center gap-2.5 flex-shrink-0">
+                                {/* Keyboard Shortcuts Hint */}
+                                <button
+                                    onClick={() => setIsShortcutsOpen(true)}
+                                    className="hidden md:flex w-9 h-9 rounded-xl items-center justify-center transition-all relative hover:scale-105 hover:bg-primary-50 dark:hover:bg-primary-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                                    style={{ background: 'var(--bg-input)', border: '1px solid var(--border-default)' }}
+                                    title={isRTL ? 'اختصارات لوحة المفاتيح (?)' : 'Keyboard shortcuts (?)'}
+                                    aria-label={isRTL ? 'اختصارات لوحة المفاتيح' : 'Keyboard shortcuts'}
+                                >
+                                    <span className="text-xs font-bold" style={{ color: 'var(--text-muted)' }}>?</span>
+                                </button>
+
                                 {/* Help Button */}
                                 <button
                                     onClick={() => setIsHelpOpen(true)}
@@ -211,17 +238,7 @@ function DashboardLayoutInner({
                                 </button>
 
                                 {/* Notifications */}
-                                <button
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all relative hover:scale-105"
-                                    style={{ background: 'var(--bg-input)', border: '1px solid var(--border-default)' }}
-                                    title={isRTL ? 'الإشعارات' : 'Notifications'}
-                                >
-                                    <svg className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                    </svg>
-                                    <span className="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-red-500 border border-white/20" />
-                                </button>
+                                <NotificationCenter isRTL={isRTL} />
 
                                 {/* User info */}
                                 <div
@@ -247,20 +264,26 @@ function DashboardLayoutInner({
                         </header>
 
                         {/* Page Content */}
-                        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+                        <div id="main-content" className="p-4 sm:p-6 lg:p-8">{children}</div>
 
-                        <SmartSearchModal 
-                            isOpen={isSearchOpen} 
-                            onClose={() => setIsSearchOpen(false)} 
-                            locale={locale} 
-                            dict={dict} 
+                        <SmartSearchModal
+                            isOpen={isSearchOpen}
+                            onClose={() => setIsSearchOpen(false)}
+                            locale={locale}
+                            dict={dict}
                         />
                         <HelpDrawer
                             isOpen={isHelpOpen}
                             onClose={() => setIsHelpOpen(false)}
                             locale={locale}
                         />
+                        <KeyboardShortcutsModal
+                            isOpen={isShortcutsOpen}
+                            onClose={() => setIsShortcutsOpen(false)}
+                            isRTL={isRTL}
+                        />
                         <AiChatWidget />
+                        <OfflineIndicator isRTL={isRTL} />
                     </main>
                     </div>
                     {/* Bottom Navigation — يظهر على الموبايل فقط */}
@@ -281,10 +304,12 @@ export default function DashboardLayout({
 }) {
     const locale = params.locale || 'en';
     return (
-        <SidebarProvider>
-            <DashboardLayoutInner locale={locale}>
-                {children}
-            </DashboardLayoutInner>
-        </SidebarProvider>
+        <RegionalSettingsProvider>
+            <SidebarProvider>
+                <DashboardLayoutInner locale={locale}>
+                    {children}
+                </DashboardLayoutInner>
+            </SidebarProvider>
+        </RegionalSettingsProvider>
     );
 }

@@ -53,9 +53,9 @@ class WarrantyController extends BaseTenantController
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('warranty_number', 'ILIKE', "%{$search}%")
+                $q->where('warranty_number', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($cq) use ($search) {
-                        $cq->where('name', 'ILIKE', "%{$search}%");
+                        $cq->where('name', 'like', "%{$search}%");
                     });
             });
         }
@@ -209,7 +209,36 @@ class WarrantyController extends BaseTenantController
             }
         }
 
-        return $this->success($claim, 'Claim updated successfully');
+        $replacementPayload = null;
+        if ($claim->status === 'resolved' && $claim->claim_type === 'replacement' && ! $claim->replacement_invoice_id) {
+            $warranty = WarrantyModel::query()->with(['product:id,name,sell_price,vat_rate', 'invoice:id,warehouse_id'])->find($warrantyId);
+            if ($warranty) {
+                $defaultVatRate = (float) (DB::connection('tenant')
+                    ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+                $replacementPayload = [
+                    'customer_id'  => $warranty->customer_id,
+                    'warehouse_id' => $warranty->invoice?->warehouse_id,
+                    'type'         => 'cash',
+                    'notes'        => 'استبدال ضمان — مطالبة رقم: ' . $claim->claim_number,
+                    'items'        => [[
+                        'product_id' => $warranty->product_id,
+                        'quantity'   => (float) $warranty->quantity,
+                        'unit_price' => 0,
+                        'discount_percent' => 0,
+                        'vat_rate'   => $warranty->product?->vat_rate ?? $defaultVatRate,
+                        'printed_name' => $warranty->product?->name,
+                    ]],
+                ];
+            }
+        }
+
+        // Merge payload into the claim array to preserve backward-compatible response shape.
+        // Consumers already reading res.data.data.status etc. remain unaffected.
+        $claimData = $claim->fresh()->toArray();
+        if ($replacementPayload !== null) {
+            $claimData['replacement_invoice_payload'] = $replacementPayload;
+        }
+        return $this->success($claimData, 'Claim updated successfully');
     }
 
     public function report(Request $request): JsonResponse

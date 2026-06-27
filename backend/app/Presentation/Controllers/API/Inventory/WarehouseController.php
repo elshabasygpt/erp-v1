@@ -13,14 +13,14 @@ class WarehouseController extends BaseTenantController
 {
     public function index(Request $request): JsonResponse
     {
-        $warehouses = WarehouseModel::query()->where('tenant_id', $this->getTenantId($request))->with('branch')->get();
+        $warehouses = WarehouseModel::query()->where('tenant_id', $this->getTenantId($request))->with('branch')->withCount('warehouseProducts')->get();
 
         return $this->success(['warehouses' => $warehouses]);
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $warehouse = WarehouseModel::query()->where('tenant_id', $this->getTenantId($request))->with('branch')->findOrFail($id);
+        $warehouse = WarehouseModel::query()->where('tenant_id', $this->getTenantId($request))->with('branch')->withCount('warehouseProducts')->findOrFail($id);
 
         return $this->success(['warehouse' => $warehouse]);
     }

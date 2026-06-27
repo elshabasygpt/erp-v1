@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { salesApi, reportsApi, inventoryApi, usersApi, settingsApi } from '@/lib/api';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export function useSalesData(filters: any, locale: string) {
     const { activeTab, dateFrom, dateTo, statusFilter, paymentFilter, warehouseFilter, employeeFilter, search } = filters;
     const isRTL = locale === 'ar';
+    const { taxRate } = useRegionalSettings();
 
     const params = useMemo(() => ({
         from: dateFrom || undefined,
@@ -77,8 +79,8 @@ export function useSalesData(filters: any, locale: string) {
             return {
                 todaySales: (kpis.summary?.today_sales ?? (kpis.summary?.total_sales / 30)) || 0,
                 avgInvoice: data.length ? (data.reduce((s: number, i: any) => s + Number(i.total || 0), 0) / data.length) : 0,
-                pendingAmount: kpis.summary?.pending_amount || (kpis.summary?.total_sales * 0.15) || 0,
-                totalTax: kpis.summary?.total_tax || (kpis.summary?.total_sales * 0.15) || 0,
+                pendingAmount: kpis.summary?.pending_amount || (kpis.summary?.total_sales * (taxRate / 100)) || 0,
+                totalTax: kpis.summary?.total_tax || (kpis.summary?.total_sales * (taxRate / 100)) || 0,
                 totalProfit: totalProf,
                 totalCommission: totalComm,
                 trend: trendData

@@ -220,6 +220,10 @@ export const salesApi = {
     createDelivery: (data: any) => api.post('/sales/deliveries', data),
     assignDelivery: (id: string, data: any) => api.post(`/sales/deliveries/${id}/assign`, data),
     updateDeliveryStatus: (id: string, data: { status: string; notes?: string }) => api.put(`/sales/deliveries/${id}/status`, data),
+
+    // Commissions
+    getUnpaidCommissions: (params?: Record<string, any>) => api.get('/sales/commissions/unpaid', { params }),
+    payCommission: (data: { salesperson_id: string; invoice_ids: string[]; safe_id?: string }) => api.post('/sales/commissions/pay', data),
 };
 
 export const approvalsApi = {
@@ -251,6 +255,9 @@ export const treasuryApi = {
     createExpenseCategory: (data: any) => api.post('/expenses/categories', data),
     getExpenses: (params?: Record<string, any>) => api.get('/expenses', { params }),
     createExpense: (data: any) => api.post('/expenses', data),
+    // Expense Vouchers (formal accounting)
+    createExpenseVoucher: (data: any) => api.post('/expenses/vouchers', data),
+    approveExpenseVoucher: (id: string) => api.post(`/expenses/vouchers/${id}/approve`),
 };
 
 export const inventoryApi = {
@@ -277,6 +284,10 @@ export const inventoryApi = {
 
     // Warehouses
     getWarehouses: (params?: Record<string, any>) => api.get('/inventory/warehouses', { params }),
+    getWarehouse: (id: string) => api.get(`/inventory/warehouses/${id}`),
+    createWarehouse: (data: any) => api.post('/inventory/warehouses', data),
+    updateWarehouse: (id: string, data: any) => api.put(`/inventory/warehouses/${id}`, data),
+    deleteWarehouse: (id: string) => api.delete(`/inventory/warehouses/${id}`),
 
     // Stock Transfers
     getStockTransfers: (params?: Record<string, any>) => api.get('/inventory/stock-transfers', { params }),
@@ -334,8 +345,23 @@ export const inventoryApi = {
     importStocktake: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/import`, data),
     requestStocktakeRecount: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/recount`, data),
 
-    // Bin Locations
-    updateBinLocation: (productId: string, data: any) => api.put(`/inventory/products/${productId}/bin-location`, data),
+    // Bin Locations (warehouse management)
+    getBinLocations: (warehouseId: string, params?: Record<string, any>) => api.get('/inventory/bin-locations', { params: { warehouse_id: warehouseId, ...params } }),
+    getBinLocationTree: (warehouseId: string) => api.get('/inventory/bin-locations/tree', { params: { warehouse_id: warehouseId } }),
+    getBinLocation: (id: string) => api.get(`/inventory/bin-locations/${id}`),
+    createBinLocation: (data: any) => api.post('/inventory/bin-locations', data),
+    updateBinLocation: (id: string, data: any) => api.put(`/inventory/bin-locations/${id}`, data),
+    deleteBinLocation: (id: string) => api.delete(`/inventory/bin-locations/${id}`),
+    bulkGenerateBinLocations: (data: any) => api.post('/inventory/bin-locations/bulk-generate', data),
+    updateProductBinLocation: (productId: string, data: any) => api.put(`/inventory/products/${productId}/bin-location`, data),
+
+    // Inventory Reports
+    getInventoryValuation: () => api.get('/inventory/valuation'),
+    getInventoryReconciliation: () => api.get('/inventory/reconciliation'),
+
+    // Product Labels
+    printProductLabel: (productId: string, qty: number = 1) => `/api/inventory/products/${productId}/label?qty=${qty}`,
+    printBulkLabels: (data: { ids: string[]; qty?: number }) => api.post('/inventory/products/labels', data, { responseType: 'text' }),
 
     // Alternatives
     getAlternatives: (productId: string) => api.get(`/inventory/products/${productId}/alternatives`),
@@ -391,6 +417,29 @@ export const inventoryApi = {
     deleteVehicleMake: (id: string) => api.delete(`/inventory/vehicles/makes/${id}`),
     deleteVehicleModel: (id: string) => api.delete(`/inventory/vehicles/models/${id}`),
     deleteVehicleYear: (id: string) => api.delete(`/inventory/vehicles/years/${id}`),
+
+    // Brands
+    getBrands: (params?: Record<string, any>) => api.get('/inventory/brands', { params }),
+    createBrand: (data: any) =>
+        data instanceof FormData
+            ? api.post('/inventory/brands', data, { headers: { 'Content-Type': undefined } })
+            : api.post('/inventory/brands', data),
+    updateBrand: (id: string, data: any) => {
+        if (data instanceof FormData) {
+            data.append('_method', 'PUT');
+            return api.post(`/inventory/brands/${id}`, data, { headers: { 'Content-Type': undefined } });
+        }
+        return api.put(`/inventory/brands/${id}`, data);
+    },
+    deleteBrand: (id: string) => api.delete(`/inventory/brands/${id}`),
+
+    // Product Aliases
+    getAliases: (productId: string) => api.get(`/inventory/products/${productId}/aliases`),
+    getCustomerAliases: (productId: string) => api.get(`/inventory/products/${productId}/customer-aliases`),
+    createAlias: (productId: string, data: any) => api.post(`/inventory/products/${productId}/aliases`, data),
+    updateAlias: (productId: string, aliasId: string, data: any) => api.put(`/inventory/products/${productId}/aliases/${aliasId}`, data),
+    deleteAlias: (productId: string, aliasId: string) => api.delete(`/inventory/products/${productId}/aliases/${aliasId}`),
+    deleteCustomerAlias: (productId: string, aliasId: string) => api.delete(`/inventory/products/${productId}/customer-aliases/${aliasId}`),
 };
 
 export const crmApi = {
@@ -467,6 +516,29 @@ export const crmApi = {
     markFollowUpCompleted: (followUpId: string) => api.put(`/crm/follow-ups/${followUpId}/complete`),
     getCustomerInsights: (customerId: string) => api.get(`/crm/customers/${customerId}/insights`),
     getFollowUps: (params?: any) => api.get('/crm/follow-ups', { params }),
+
+    // ── Customer-Specific Prices ──────────────────────────────────────────────
+    getCustomerPrices: (customerId: string) =>
+        api.get(`/crm/customers/${customerId}/prices`),
+
+    upsertCustomerPrice: (customerId: string, data: {
+        product_id: string;
+        price: number;
+        valid_from?: string | null;
+        valid_until?: string | null;
+        notes?: string;
+    }) => api.post(`/crm/customers/${customerId}/prices`, data),
+
+    deleteCustomerPrice: (customerId: string, priceId: string) =>
+        api.delete(`/crm/customers/${customerId}/prices/${priceId}`),
+
+    lookupCustomerPrice: (customerId: string, productId: string) =>
+        api.get('/crm/customer-prices/lookup', { params: { customer_id: customerId, product_id: productId } }),
+
+    // CRM Pipeline (Kanban deals)
+    getStagesWithDeals: () => api.get('/crm/pipeline/stages'),
+    moveDeal: (id: string, data: any) => api.put(`/crm/pipeline/deals/${id}/move`, data),
+    createDeal: (data: any) => api.post('/crm/pipeline/deals', data),
 };
 
 // Convenience aliases used by some pages
@@ -545,6 +617,19 @@ export const purchasesApi = {
         supplier_id: string;
         items: { product_id: string; unit_price: number; supplier_sku?: string; min_quantity?: number }[];
     }) => api.post('/purchases/supplier-prices/bulk', data),
+
+    // Purchase Requests → PO conversion
+    convertPrToPo: (id: string) => api.post(`/purchases/requests/${id}/convert`),
+
+    // Smart Orders
+    getSmartOrderLowStock: () => api.get('/purchases/smart-orders/low-stock'),
+    getSmartOrderUpcoming: () => api.get('/purchases/smart-orders/upcoming'),
+    draftSmartOrder: (data: any) => api.post('/purchases/smart-orders/draft', data),
+
+    // Purchase Installments
+    getInstallments: (invoiceId: string) => api.get(`/purchases/invoices/${invoiceId}/installments`),
+    saveInstallments: (invoiceId: string, data: any) => api.post(`/purchases/invoices/${invoiceId}/installments`, data),
+    payInstallment: (installmentId: string, data: any) => api.post(`/purchases/installments/${installmentId}/pay`, data),
 };
 
 export const purchaseReturnsApi = {
@@ -593,7 +678,7 @@ export const accountingApi = {
         api.get('/accounting/reports/income-statement', { params }),
     getBalanceSheet: (asOf?: string) =>
         api.get('/accounting/reports/balance-sheet', { params: { as_of: asOf } }),
-    getGeneralLedger: (params?: { from?: string; to?: string }) =>
+    getGeneralLedger: (params?: Record<string, any>) =>
         api.get('/accounting/reports/general-ledger', { params }),
     getZakatReport: (params?: Record<string, any>) =>
         api.get('/accounting/reports/zakat', { params }),
@@ -629,6 +714,36 @@ export const accountingApi = {
     getCreditNotes: (params?: any) => api.get('/accounting/credit-notes', { params }),
     createCreditNote: (data: any) => api.post('/accounting/credit-notes', data),
     applyCreditNote: (id: string, data: any) => api.post(`/accounting/credit-notes/${id}/apply`, data),
+
+    // Aging Reports
+    getReceivableAging: (asOf?: string) => api.get('/crm/receivables/aging', { params: asOf ? { as_of: asOf } : undefined }),
+    getPayableAging: (asOf?: string) => api.get('/crm/payables/aging', { params: asOf ? { as_of: asOf } : undefined }),
+
+    // Chart of Accounts (tree + CRUD)
+    getAccountsTree: () => api.get('/accounting/chart-of-accounts/tree'),
+    createAccount: (data: any) => api.post('/accounting/chart-of-accounts', data),
+    updateAccount: (id: string, data: any) => api.put(`/accounting/chart-of-accounts/${id}`, data),
+    deleteAccount: (id: string) => api.delete(`/accounting/chart-of-accounts/${id}`),
+
+    // Journal Entries
+    createJournalEntry: (data: any) => api.post('/accounting/journal-entries', data),
+
+    // Budgets
+    getBudgets: (params?: Record<string, any>) => api.get('/accounting/budgets', { params }),
+    getBudget: (id: string) => api.get(`/accounting/budgets/${id}`),
+    createBudget: (data: any) => api.post('/accounting/budgets', data),
+    updateBudget: (id: string, data: any) => api.put(`/accounting/budgets/${id}`, data),
+    deleteBudget: (id: string) => api.delete(`/accounting/budgets/${id}`),
+    getBudgetVariance: (id: string) => api.get(`/accounting/budgets/${id}/variance`),
+    approveBudget: (id: string) => api.post(`/accounting/budgets/${id}/approve`),
+    autoMatchReconciliation: (reconciliationId: string, days?: number) =>
+        api.post(`/accounting/reconciliations/${reconciliationId}/auto-match`, { date_tolerance_days: days ?? 5 }),
+
+    // Opening Balances
+    getOpeningBalances: () => api.get('/accounting/opening-balances'),
+    setAccountOpeningBalance: (data: any) => api.post('/accounting/opening-balances/account', data),
+    setCustomerOpeningBalance: (data: any) => api.post('/accounting/opening-balances/customer', data),
+    setSupplierOpeningBalance: (data: any) => api.post('/accounting/opening-balances/supplier', data),
 };
 
 export const fixedAssetsApi = {
@@ -638,6 +753,7 @@ export const fixedAssetsApi = {
     updateAsset: (id: string, data: any) => api.put(`/accounting/fixed-assets/${id}`, data),
     deleteAsset: (id: string) => api.delete(`/accounting/fixed-assets/${id}`),
     calculateDepreciation: (id: string) => api.post(`/accounting/fixed-assets/${id}/depreciate`),
+    getDepreciationSchedule: (id: string) => api.get(`/accounting/fixed-assets/${id}/schedule`),
 };
 
 
@@ -657,6 +773,7 @@ export const analyticsApi = {
     getSalesPerformance: (params?: any) => api.get('/analytics/sales-performance', { params }),
     getProfitability: (params?: any) => api.get('/analytics/profitability', { params }),
     getReturnsAnalysis: (params?: any) => api.get('/analytics/returns-analysis', { params }),
+    getPredictiveDashboard: () => api.get('/analytics/predictive-dashboard'),
     chat: (data: any) => api.post('/analytics/chat', data),
 };
 
@@ -675,7 +792,7 @@ export const reportsApi = {
     getProfitAndLoss: (params?: any) => api.get('/reports/pl', { params }),
     getInventoryReport: () => api.get('/reports/inventory'),
     getAccountsReport: () => api.get('/reports/accounts'),
-    getGeneralKpis: () => api.get('/reports/kpis'),
+    getGeneralKpis: (params?: { period?: string }) => api.get('/reports/kpis', { params }),
     getVatReport: (params?: { year?: string; period?: 'monthly' | 'quarterly'; value?: string }) => 
         api.get('/reports/vat-report', { params }),
     getAgingReport: (type: 'receivable' | 'payable') => 
@@ -709,6 +826,26 @@ export const reportsApi = {
         date_to?: string;
         group_by?: 'brand' | 'quality_grade';
     }) => api.get('/reports/auto-parts/profit-by-brand', { params }),
+
+    getDeadStockByMonths: (params?: {
+        warehouse_id?: string;
+        category_id?: string;
+        min_stock?: number;
+    }) => api.get('/reports/auto-parts/dead-stock-months', { params }),
+
+    getTurnoverByMake: (params?: {
+        date_from?: string;
+        date_to?: string;
+        warehouse_id?: string;
+    }) => api.get('/reports/auto-parts/turnover-by-make', { params }),
+
+    getTopPartsByModel: (params?: {
+        date_from?: string;
+        date_to?: string;
+        make_id?: string;
+        model_id?: string;
+        limit?: number;
+    }) => api.get('/reports/auto-parts/top-by-model', { params }),
 };
 
 export const settingsApi = {
@@ -864,6 +1001,7 @@ export const deliveriesApiNew = {
     api.put(`/sales/deliveries/${id}/status`, { status }),
   assign: (id: string, driverId: string) =>
     api.post(`/sales/deliveries/${id}/assign`, { driver_id: driverId }),
+  getMapData: () => api.get('/sales/deliveries/map'),
 };
 
 // Expenses
@@ -952,4 +1090,65 @@ export const posApi = {
     getCurrentShift: () => api.get('/sales/pos/shifts/current'),
     openShift: (data: { opening_cash: number; notes?: string }) => api.post('/sales/pos/shifts/open', data),
     closeShift: (data: { closing_cash: number; notes?: string }) => api.post('/sales/pos/shifts/close', data),
+    /** Resolve a barcode / SKU to a POS line-item payload from the backend. */
+    scanBarcode: (barcode: string, warehouseId?: string | null) =>
+        api.get(`/sales/pos/scan/${encodeURIComponent(barcode)}`, {
+            params: warehouseId ? { warehouse_id: warehouseId } : undefined,
+        }),
+};
+
+// Customer Core Returns
+export const customerCoreReturnsApi = {
+    getAll: (params?: Record<string, any>) => api.get('/sales/core-returns', { params }),
+    getOne: (id: string) => api.get(`/sales/core-returns/${id}`),
+    create: (data: any) => api.post('/sales/core-returns', data),
+    receive: (id: string, data: any) => api.post(`/sales/core-returns/${id}/receive`, data),
+    credit: (id: string, data: { refund_method: string }) => api.post(`/sales/core-returns/${id}/credit`, data),
+};
+
+// Workshop / Job Cards
+export const workshopApi = {
+    getAll: (params?: Record<string, any>) => api.get('/sales/workshop/job-cards', { params }),
+    getOne: (id: string) => api.get(`/sales/workshop/job-cards/${id}`),
+    create: (data: any) => api.post('/sales/workshop/job-cards', data),
+    update: (id: string, data: any) => api.put(`/sales/workshop/job-cards/${id}`, data),
+    convertToInvoice: (id: string, warehouseId: string) =>
+        api.post(`/sales/workshop/job-cards/${id}/convert-to-invoice`, { warehouse_id: warehouseId }),
+};
+
+// Stock Write-Offs (Scrap / Damaged / Obsolete)
+export const writeOffApi = {
+    getAll: (params?: Record<string, any>) => api.get('/inventory/write-offs', { params }),
+    getOne: (id: string) => api.get(`/inventory/write-offs/${id}`),
+    create: (data: any) => api.post('/inventory/write-offs', data),
+};
+
+// RMA Requests
+export const rmaApi = {
+    getAll: (params?: Record<string, any>) => api.get('/sales/rma', { params }),
+    getOne: (id: string) => api.get(`/sales/rma/${id}`),
+    create: (data: any) => api.post('/sales/rma', data),
+    approve: (id: string, data?: { notes?: string }) => api.post(`/sales/rma/${id}/approve`, data ?? {}),
+    reject: (id: string, data: { rejection_reason: string }) => api.post(`/sales/rma/${id}/reject`, data),
+    fulfill: (id: string, data: { reference_type: string; reference_id: string }) => api.post(`/sales/rma/${id}/fulfill`, data),
+    markUnderReview: (id: string, data?: { notes?: string }) => api.post(`/sales/rma/${id}/under-review`, data ?? {}),
+    cancel: (id: string) => api.post(`/sales/rma/${id}/cancel`),
+    getReasonCategories: () => api.get('/sales/rma/reason-categories'),
+};
+
+// Supplier Core Returns (returns to supplier to get credit)
+export const coreReturnsApi = {
+    getCoreReturns: (params?: Record<string, any>) => api.get('/purchases/core-returns', { params }),
+    getCoreReturn: (id: string) => api.get(`/purchases/core-returns/${id}`),
+    createCoreReturn: (data: any) => api.post('/purchases/core-returns', data),
+    shipCoreReturn: (id: string) => api.post(`/purchases/core-returns/${id}/ship`),
+    creditCoreReturn: (id: string, data?: any) => api.post(`/purchases/core-returns/${id}/credit`, data ?? {}),
+};
+
+// Sales Returns (alias providing createSalesReturn method name used in some pages)
+export const salesReturnsApi = {
+    getSalesReturns: (params?: Record<string, any>) => api.get('/sales/returns', { params }),
+    getSalesReturn: (id: string) => api.get(`/sales/returns/${id}`),
+    createSalesReturn: (data: any) => api.post('/sales/returns', data),
+    updateSalesReturnStatus: (id: string, status: string) => api.put(`/sales/returns/${id}/status`, { status }),
 };

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { hrApi } from '@/lib/api';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface PayslipModalProps {
     payrollId: string;
@@ -9,6 +10,7 @@ interface PayslipModalProps {
 }
 
 export default function PayslipModal({ payrollId, isRTL, onClose }: PayslipModalProps) {
+    const { currencySymbol } = useCurrencyFormatter();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const printRef = useRef<HTMLDivElement>(null);
@@ -270,7 +272,7 @@ export default function PayslipModal({ payrollId, isRTL, onClose }: PayslipModal
                                 <p className="text-4xl font-black text-blue-800" style={{color: '#1e40af', fontSize: '36px', fontWeight: '900'}}>
                                     {Number(data?.totals?.net_salary).toFixed(2)}
                                     <span className="text-lg font-normal text-blue-500 mr-2" style={{fontSize: '18px', fontWeight: 'normal', color: '#3b82f6'}}>
-                                        {isRTL ? 'ريال' : 'SAR'}
+                                        {currencySymbol}
                                     </span>
                                 </p>
                             </div>

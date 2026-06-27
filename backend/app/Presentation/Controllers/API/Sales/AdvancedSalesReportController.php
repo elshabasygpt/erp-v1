@@ -147,8 +147,9 @@ class AdvancedSalesReportController extends BaseTenantController
         });
 
         $paymentMethods = (clone $query)
-            ->select('type', DB::raw('SUM(subtotal - discount_amount) as total'))
-            ->groupBy('type')
+            ->whereNotNull('payment_method')
+            ->select('payment_method as type', DB::raw('SUM(subtotal - discount_amount) as total'))
+            ->groupBy('payment_method')
             ->get()
             ->map(fn($item) => ['type' => $item->type, 'total' => (float) $item->total]);
 

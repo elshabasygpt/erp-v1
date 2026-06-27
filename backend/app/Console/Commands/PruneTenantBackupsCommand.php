@@ -16,8 +16,8 @@ class PruneTenantBackupsCommand extends Command
 
     public function handle(TenantBackupService $service): int
     {
-        $retentionDays = (int) env('BACKUP_RETENTION_DAYS', 30);
-        $keepMinimum = (int) env('BACKUP_KEEP_MINIMUM', 3);
+        $retentionDays = (int) config('backup.retention_days', env('BACKUP_RETENTION_DAYS', 30));
+        $keepMinimum = (int) config('backup.keep_minimum', env('BACKUP_KEEP_MINIMUM', 3));
 
         $tenants = TenantModel::query()->get();
         $totalPruned = 0;

@@ -38,7 +38,7 @@ final class EloquentSupplierRepository implements SupplierRepositoryInterface
     {
         $q = SupplierModel::query();
         if (! empty($filters['search'])) {
-            $q->where('name', 'ilike', "%{$filters['search']}%");
+            $q->where('name', 'like', "%{$filters['search']}%");
         }
 
 return $q->orderBy('name')->paginate($perPage)->toArray();
@@ -46,7 +46,7 @@ return $q->orderBy('name')->paginate($perPage)->toArray();
 
     public function search(string $query, int $limit = 20): array
     {
-        return SupplierModel::query()->where('is_active', true)->where(fn ($q) => $q->where('name', 'ilike', "%{$query}%"))->limit($limit)->get()->toArray();
+        return SupplierModel::query()->where('is_active', true)->where(fn ($q) => $q->where('name', 'like', "%{$query}%"))->limit($limit)->get()->toArray();
     }
 
     private function toDomain(SupplierModel $m): Supplier

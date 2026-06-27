@@ -158,3 +158,8 @@ export function exportTableToPDF(
 export function formatSAR(amount: number): string {
     return new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(amount);
 }
+
+export function formatMoney(amount: number, currency: string = 'SAR'): string {
+    const locale = currency === 'EGP' ? 'ar-EG' : 'ar-SA';
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+}

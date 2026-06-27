@@ -10,7 +10,11 @@ use App\Application\Sales\UseCases\ConfirmInvoiceUseCase;
 use App\Application\Sales\UseCases\CreateInvoiceUseCase;
 use App\Application\Sales\UseCases\UpdateInvoiceUseCase;
 use App\Application\Services\Webhooks\WebhookService;
+use App\Infrastructure\Eloquent\Models\CustomerProductPriceModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Infrastructure\Eloquent\Models\ProductComponentModel;
+use App\Infrastructure\Eloquent\Models\ProductModel;
+use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\WarrantyModel;
 use App\Presentation\Controllers\API\BaseTenantController;
 use Carbon\Carbon;
@@ -54,7 +58,7 @@ class InvoiceController extends BaseTenantController
             $query->where('status', $status);
         }
         if ($invoiceNumber) {
-            $query->where('invoice_number', 'ilike', "%{$invoiceNumber}%");
+            $query->where('invoice_number', 'like', "%{$invoiceNumber}%");
         }
         if ($dateFrom) {
             $query->whereDate('invoice_date', '>=', $dateFrom);
@@ -104,7 +108,9 @@ class InvoiceController extends BaseTenantController
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.vat_rate' => 'nullable|numeric|min:0|max:100',
             'items.*.discount_percent' => 'nullable|numeric|min:0|max:100',
+            'items.*.printed_name' => 'nullable|string|max:255',
             'due_date' => 'nullable|date',
+            'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'reference_no' => 'nullable|string',
             'paid_amount' => 'nullable|numeric|min:0',
@@ -130,28 +136,66 @@ class InvoiceController extends BaseTenantController
                 }
             }
 
-            $dto = CreateInvoiceDTO::fromRequest($validated);
-            \Log::info('Tenant transaction level: '.\DB::connection('tenant')->transactionLevel().' spl: '.spl_object_id(\DB::connection('tenant')));
-            $invoice = $this->createInvoiceUseCase->execute($dto, auth()->id() ?? '');
+            // Down payment permission check for credit invoices
+            $paidAmount = (float) ($validated['paid_amount'] ?? 0);
+            if (($validated['type'] ?? 'cash') === 'credit' && $paidAmount > 0) {
+                $user = auth()->user();
+                $hasPermission = false;
+                if ($user && $user->role_id) {
+                    $hasPermission = DB::connection('tenant')
+                        ->table('role_permissions')
+                        ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
+                        ->where('role_permissions.role_id', $user->role_id)
+                        ->where('permissions.name', 'collect_payments')
+                        ->exists();
+                }
+                if (!$hasPermission) {
+                    throw new \DomainException('You do not have permission to record a down payment on a credit invoice. Ask a manager to collect the payment instead.');
+                }
+            }
+
+            // ── Server-side item enrichment ──────────────────────────────────
+            [$validated['items'], $warnings] = $this->_enrichItems(
+                $validated['items'],
+                $validated['warehouse_id'],
+                $validated['customer_id'] ?? null,
+            );
+            // ────────────────────────────────────────────────────────────────
+
+            $defaultVatRate = (float) (DB::connection('tenant')
+                ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+            $dto = CreateInvoiceDTO::fromRequest($validated, $defaultVatRate);
+
+            // Atomic create + confirm: if confirmation fails, creation is rolled back
+            $invoice = DB::connection('tenant')->transaction(function () use ($dto, $validated) {
+                $inv = $this->createInvoiceUseCase->execute($dto, auth()->id() ?? '');
+
+                if ($validated['status'] === 'confirmed') {
+                    $confirmUseCase = app(ConfirmInvoiceUseCase::class);
+                    $confirmUseCase->execute($inv->getId(), auth()->id() ?? '');
+                    $this->_createWarrantiesForInvoice($inv->getId());
+                }
+
+                return $inv;
+            });
 
             // Update offline_id if provided
             if (!empty($validated['offline_id'])) {
                 InvoiceModel::where('id', $invoice->getId())->update(['offline_id' => $validated['offline_id']]);
             }
 
-            if ($validated['status'] === 'confirmed') {
-                $confirmUseCase = app(ConfirmInvoiceUseCase::class);
-                $confirmUseCase->execute($invoice->getId(), auth()->id() ?? '');
-                $this->_createWarrantiesForInvoice($invoice->getId());
+            $response = ['id' => $invoice->getId()];
+            if (! empty($warnings)) {
+                $response['warnings'] = $warnings;
             }
 
-            return $this->success(['id' => $invoice->getId()], 'Sales Invoice created successfully', 201);
+            return $this->success($response, 'Sales Invoice created successfully', 201);
         } catch (\DomainException $e) {
             return $this->error($e->getMessage(), 422);
         } catch (\Exception $e) {
             \Log::error('Invoice creation failed: '.$e->getMessage());
 
-            return $this->error('Failed to create invoice: '.$e->getMessage().' Trace: '.$e->getTraceAsString(), 500);
+            return $this->error('Failed to create invoice: '.$e->getMessage(), 500);
         }
     }
 
@@ -181,7 +225,9 @@ class InvoiceController extends BaseTenantController
 
         try {
             $validated['tenant_id'] = $this->getTenantId($request);
-            $dto = UpdateInvoiceDTO::fromRequest($id, $validated);
+            $defaultVatRate = (float) (DB::connection('tenant')
+                ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+            $dto = UpdateInvoiceDTO::fromRequest($id, $validated, $defaultVatRate);
             $invoice = $this->updateInvoiceUseCase->execute($dto, auth()->id() ?? '');
 
             return $this->success(['id' => $invoice->getId()], 'Sales invoice updated successfully');
@@ -207,6 +253,7 @@ class InvoiceController extends BaseTenantController
 
         $validated = $request->validate([
             'status' => 'required|string|in:draft,confirmed,cancelled',
+            'credit_limit_override' => 'nullable|boolean',
         ]);
 
         if ($invoice->status === 'confirmed' && $validated['status'] !== 'confirmed') {
@@ -215,9 +262,32 @@ class InvoiceController extends BaseTenantController
 
         if ($invoice->status !== 'confirmed' && $validated['status'] === 'confirmed') {
             try {
+                // Credit limit check before confirmation
+                if ($invoice->type === 'credit' && $invoice->customer_id) {
+                    $customer = \App\Infrastructure\Eloquent\Models\CustomerModel::query()->find($invoice->customer_id);
+                    if ($customer && (float) $customer->credit_limit > 0) {
+                        $dueAmount = (float) $invoice->total - (float) $invoice->paid_amount;
+                        if ($dueAmount > 0 && ((float) $customer->balance + $dueAmount) > (float) $customer->credit_limit) {
+                            if (empty($validated['credit_limit_override'])) {
+                                throw new \DomainException("Credit Limit Exceeded. Customer balance is {$customer->balance}, Credit Limit is {$customer->credit_limit}, and Due Amount is {$dueAmount}. Manager override required.");
+                            }
+                            // Permission check for override
+                            $user = auth()->user();
+                            $hasOverridePermission = false;
+                            if ($user && $user->role_id) {
+                                $role = DB::connection('tenant')->table('roles')->where('id', $user->role_id)->first();
+                                $meta = json_decode($role->meta_attributes ?? '{}', true);
+                                $hasOverridePermission = (bool) ($meta['can_override_credit_limit'] ?? false);
+                            }
+                            if (!$hasOverridePermission) {
+                                throw new \DomainException('You do not have permission to override the customer credit limit.');
+                            }
+                        }
+                    }
+                }
+
                 $confirmUseCase = app(ConfirmInvoiceUseCase::class);
                 $confirmUseCase->execute($invoice->id, auth()->id() ?? '');
-                // The use case changes status to confirmed and persists.
                 $invoice->refresh();
 
                 $this->_createWarrantiesForInvoice($invoice->id);
@@ -229,6 +299,8 @@ class InvoiceController extends BaseTenantController
                 );
 
                 return $this->success($invoice->toArray(), 'Sales invoice confirmed successfully');
+            } catch (\DomainException $e) {
+                return $this->error($e->getMessage(), 422);
             } catch (\Exception $e) {
                 \Log::error('Confirmation failed: '.$e->getMessage());
 
@@ -312,6 +384,91 @@ class InvoiceController extends BaseTenantController
         ];
 
         return $this->success($report, 'Sales report generated');
+    }
+
+    /**
+     * Enrich invoice items before DTO creation:
+     *   1. Auto-set core_charge_applied + core_charge_amount for products with has_core_charge
+     *   2. Apply customer-specific price override (if active today)
+     *   3. Detect kit products and check component stock — return non-blocking warnings
+     *
+     * Returns [enrichedItems, warnings[]]
+     */
+    private function _enrichItems(array $items, string $warehouseId, ?string $customerId): array
+    {
+        $productIds = array_column($items, 'product_id');
+        if (empty($productIds)) {
+            return [$items, []];
+        }
+
+        // Batch-load products (core_charge, kit flag)
+        $products = ProductModel::query()
+            ->whereIn('id', $productIds)
+            ->get(['id', 'name', 'sku', 'has_core_charge', 'core_charge_amount', 'is_kit'])
+            ->keyBy('id');
+
+        // Batch-load active customer-specific prices for this customer
+        $customerPrices = collect();
+        if ($customerId) {
+            $today = now()->toDateString();
+            $customerPrices = CustomerProductPriceModel::query()
+                ->where('customer_id', $customerId)
+                ->whereIn('product_id', $productIds)
+                ->where(fn($q) => $q->whereNull('valid_from')->orWhere('valid_from', '<=', $today))
+                ->where(fn($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', $today))
+                ->get(['product_id', 'price'])
+                ->keyBy('product_id');
+        }
+
+        $warnings = [];
+        $enriched = [];
+
+        foreach ($items as $item) {
+            $product = $products->get($item['product_id']);
+
+            // 1. Customer-specific price override
+            if ($customerPrices->has($item['product_id'])) {
+                $item['unit_price'] = (float) $customerPrices->get($item['product_id'])->price;
+            }
+
+            // 2. Core charge auto-add
+            if ($product && $product->has_core_charge && empty($item['core_charge_applied'])) {
+                $item['core_charge_applied'] = true;
+                $item['core_charge_amount']  = (float) $product->core_charge_amount;
+            }
+
+            // 3. Kit component stock check (non-blocking warning)
+            if ($product && $product->is_kit) {
+                $components = ProductComponentModel::query()
+                    ->where('parent_product_id', $product->id)
+                    ->with('component:id,name,sku')
+                    ->get();
+
+                foreach ($components as $component) {
+                    $needed = (float) $component->quantity_required * (float) $item['quantity'];
+                    $stock  = WarehouseProductModel::query()
+                        ->where('product_id', $component->child_product_id)
+                        ->where('warehouse_id', $warehouseId)
+                        ->value('quantity') ?? 0;
+
+                    if ((float) $stock < $needed) {
+                        $warnings[] = [
+                            'type'         => 'kit_stock',
+                            'kit_product'  => $product->name,
+                            'component'    => $component->component?->name ?? $component->child_product_id,
+                            'component_sku'=> $component->component?->sku,
+                            'needed'       => $needed,
+                            'available'    => (float) $stock,
+                            'message'      => "مكوّن «{$component->component?->name}» في الكيت «{$product->name}»: متاح {$stock} والمطلوب {$needed}",
+                        ];
+                    }
+                }
+            }
+
+            $enriched[] = $item;
+        }
+
+        return [$enriched, $warnings];
     }
 
     private function _createWarrantiesForInvoice(string $invoiceId): void

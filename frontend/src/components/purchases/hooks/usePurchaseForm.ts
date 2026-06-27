@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import { purchasesApi, purchaseReturnsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoices: () => void, fetchReturns: () => void) {
+    const { taxRate } = useRegionalSettings();
     const [activeTab, setActiveTab] = useState<'purchases' | 'returns'>('purchases');
     
     const [searchInvoice, setSearchInvoice] = useState('');
@@ -28,8 +30,8 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
         cost_center_id: '',
         currency_id: '',
         exchange_rate: 1.0,
-        items: [{ product_id: '', qty: 1, unit_price: 0, tax_rate: 15 }],
-    }), []);
+        items: [{ product_id: '', qty: 1, unit_price: 0, tax_rate: taxRate }],
+    }), [taxRate]);
 
     const initReturnForm = useCallback(() => ({
         id: null,
@@ -38,8 +40,8 @@ export function usePurchaseForm(invoices: any[], warehouses: any[], fetchInvoice
         purchase_invoice_id: '',
         issue_date: new Date().toISOString().split('T')[0],
         notes: '',
-        items: [{ product_id: '', qty: 1, unit_price: 0, tax_rate: 15 }],
-    }), []);
+        items: [{ product_id: '', qty: 1, unit_price: 0, tax_rate: taxRate }],
+    }), [taxRate]);
 
     const handleSaveOrder = async (status: string) => {
         try {

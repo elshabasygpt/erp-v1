@@ -60,6 +60,7 @@ final class UpdateInvoiceUseCase
                 baseUnitPrice: $itemDTO->baseUnitPrice,
                 adjustedUnitPrice: $itemDTO->adjustedUnitPrice,
                 adjustmentAmount: $itemDTO->adjustmentAmount,
+                printedName: $itemDTO->printedName,
             );
         }
 
@@ -80,7 +81,7 @@ final class UpdateInvoiceUseCase
             vatAmount: 0,
             discountAmount: 0,
             total: 0,
-            status: $dto->status,
+            status: $invoice->getStatus(),
             notes: $dto->notes,
             warehouseId: $dto->warehouseId,
             createdBy: $invoice->getCreatedBy(),
@@ -174,6 +175,7 @@ final class UpdateInvoiceUseCase
                     'base_unit_price' => $item->getBaseUnitPrice(),
                     'adjusted_unit_price' => $item->getAdjustedUnitPrice(),
                     'adjustment_amount' => $item->getAdjustmentAmount(),
+                    'printed_name' => $item->getPrintedName(),
                 ]);
             }
 

@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { salesApi, inventoryApi, crmApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 interface POSItem {
     id: number;
@@ -26,6 +28,8 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
     const isRTL = locale === 'ar';
     const s = dict.sales;
     const common = dict.common;
+    const { format: formatCurrency } = useCurrencyFormatter();
+    const { taxRate: tenantTaxRate } = useRegionalSettings();
 
     // ── State ────────────────────────────────────────────────────────────────
     const [invoiceNum] = useState('INV-' + String(Math.floor(Math.random() * 900000) + 100000));
@@ -121,8 +125,6 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
     }, [items, invoiceDiscount, selectedCustomer, paidAmount]);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    const formatCurrency = (val: number) =>
-        new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(val);
 
     const getPrice = (product: any) => {
         if (priceType === 'wholesale') return product.wholesale_price || product.price;
@@ -196,7 +198,7 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
     }, [invoiceDiscount, invoiceDiscMode, itemsSubtotal]);
 
     const subtotal = itemsSubtotal - invoiceDiscAmount;
-    const taxRate = 0.15;
+    const taxRate = tenantTaxRate / 100;
     const taxAmount = useMemo(() => {
         if (taxMode === 'included') return subtotal - (subtotal / (1 + taxRate));
         return subtotal * taxRate;

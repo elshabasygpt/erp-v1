@@ -76,6 +76,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
                     'id' => $item->getId(),
                     'invoice_id' => $model->id,
                     'product_id' => $item->getProductId(),
+                    'printed_name' => $item->getPrintedName(),
                     'quantity' => $item->getQuantity(),
                     'unit_price' => $item->getUnitPrice(),
                     'discount_percent' => $item->getDiscountPercent(),
@@ -146,7 +147,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
         }
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('invoice_number', 'ilike', "%{$filters['search']}%");
+                $q->where('invoice_number', 'like', "%{$filters['search']}%");
             });
         }
 
@@ -234,6 +235,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
                 adjustmentAmount: $itemModel->adjustment_amount ? (float) $itemModel->adjustment_amount : null,
                 coreChargeApplied: (bool) $itemModel->core_charge_applied,
                 coreChargeAmount: (float) $itemModel->core_charge_amount,
+                printedName: $itemModel->printed_name,
             );
         })->toArray();
 

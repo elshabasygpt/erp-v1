@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { PosSession } from './usePosState';
 import toast from 'react-hot-toast';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export function usePosPayment(
     activeSession: PosSession,
@@ -25,6 +26,7 @@ export function usePosPayment(
     warehouses: any[]
 ) {
     const [successMsg, setSuccessMsg] = useState('');
+    const { taxRate } = useRegionalSettings();
 
     const generatePayload = useCallback(() => {
         const uuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `offline-${Date.now()}`;
@@ -44,7 +46,7 @@ export function usePosPayment(
                 quantity: i.qty,
                 unit: i.product.unit_of_measure || 'pcs',
                 unit_price: i.product.price,
-                vat_rate: 15,
+                vat_rate: taxRate,
                 discount_percent: i.discount,
             })),
             paid_amount: cartTotal, // Fully paid if cash
@@ -52,7 +54,7 @@ export function usePosPayment(
             sales_channel_id: undefined, // Optional
             internal_notes: `POS Invoice. Total: ${cartTotal}, Change: ${change}`,
         };
-    }, [activeSession, cartTotal, change, lastInvoiceNum, sellerInfo, isRTL, allCustomers, warehouses]);
+    }, [activeSession, cartTotal, change, lastInvoiceNum, sellerInfo, isRTL, allCustomers, warehouses, taxRate]);
 
     const handleCompletePurchase = useCallback(async (print: boolean) => {
         if ((activeSession.paymentType === 'cash' || activeSession.paymentType === 'split') && (totalPaidCNum + totalPaidCardNum) < cartTotal) {

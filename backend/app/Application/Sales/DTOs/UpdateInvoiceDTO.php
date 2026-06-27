@@ -26,10 +26,10 @@ final class UpdateInvoiceDTO
         public readonly ?float $exchangeRate = null,
     ) {}
 
-    public static function fromRequest(string $id, array $data): self
+    public static function fromRequest(string $id, array $data, float $defaultVatRate = 15): self
     {
         $items = array_map(
-            fn (array $item) => InvoiceItemDTO::fromArray($item),
+            fn (array $item) => InvoiceItemDTO::fromArray($item, $defaultVatRate),
             $data['items'] ?? []
         );
 

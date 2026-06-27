@@ -9,6 +9,67 @@ use Illuminate\Support\Facades\DB;
 
 final class CashFlowService
 {
+    /**
+     * reference_type → cash flow category map.
+     * Operating: day-to-day business transactions.
+     * Investing: long-term asset transactions.
+     * Financing: debt/equity transactions.
+     */
+    private const REFERENCE_CATEGORY_MAP = [
+        // Operating
+        'sales_invoice'      => 'operating',
+        'customer_payment'   => 'operating',
+        'purchase_invoice'   => 'operating',
+        'supplier_payment'   => 'operating',
+        'expense'            => 'operating',
+        'expense_voucher'    => 'operating',
+        'sales_return'       => 'operating',
+        'purchase_return'    => 'operating',
+        'credit_note'        => 'operating',
+        'inventory'          => 'operating',
+        'zakat'              => 'operating',
+        'payroll'            => 'operating',
+        // Investing
+        'fixed_asset'        => 'investing',
+        'fixed_asset_purchase'  => 'investing',
+        'fixed_asset_disposal'  => 'investing',
+        'asset_depreciation' => 'investing',
+        // Financing
+        'loan'               => 'financing',
+        'loan_repayment'     => 'financing',
+        'equity_injection'   => 'financing',
+        'dividend'           => 'financing',
+        'bank_transfer'      => 'financing',
+    ];
+
+    // Human-readable labels (Arabic + English)
+    private const LABELS = [
+        'sales_invoice'         => 'إيرادات المبيعات / Sales Revenue',
+        'customer_payment'      => 'مدفوعات العملاء / Customer Receipts',
+        'purchase_invoice'      => 'مشتريات / Purchases',
+        'supplier_payment'      => 'مدفوعات الموردين / Supplier Payments',
+        'expense'               => 'مصروفات / Expenses',
+        'expense_voucher'       => 'سندات صرف / Expense Vouchers',
+        'sales_return'          => 'مردودات مبيعات / Sales Returns',
+        'purchase_return'       => 'مردودات مشتريات / Purchase Returns',
+        'credit_note'           => 'إشعارات دائنة / Credit Notes',
+        'inventory'             => 'مخزون / Inventory Adjustments',
+        'zakat'                 => 'زكاة / Zakat',
+        'payroll'               => 'رواتب / Payroll',
+        'fixed_asset'           => 'أصول ثابتة / Fixed Assets',
+        'fixed_asset_purchase'  => 'شراء أصول / Asset Purchase',
+        'fixed_asset_disposal'  => 'بيع أصول / Asset Disposal',
+        'asset_depreciation'    => 'إهلاك / Depreciation',
+        'loan'                  => 'قروض / Loans',
+        'loan_repayment'        => 'سداد قروض / Loan Repayments',
+        'equity_injection'      => 'رأس مال / Capital Injection',
+        'dividend'              => 'أرباح موزعة / Dividends',
+        'bank_transfer'         => 'تحويلات بنكية / Bank Transfers',
+        'other'                 => 'أخرى / Other',
+        'reversal'              => 'قيود عكسية / Reversals',
+        'fx_revaluation'        => 'فروق عملة / FX Revaluation',
+    ];
+
     public function __construct(
         private readonly AccountMappingService $accountMapping
     ) {}
@@ -17,57 +78,94 @@ final class CashFlowService
     {
         $cashAccountId = $this->accountMapping->resolve('cash');
         $bankAccountId = $this->accountMapping->resolve('bank');
-        $cashAccounts = [$cashAccountId, $bankAccountId];
+        $cashAccounts  = array_unique([$cashAccountId, $bankAccountId]);
 
-        // Identify all transactions that hit the cash or bank accounts
-        // And group them by reference_type or opposite account
+        // Fetch all GL lines that hit cash/bank accounts in the period
         $cashLines = DB::connection('tenant')->table('journal_entry_lines')
             ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
             ->where('journal_entries.tenant_id', $tenantId)
             ->whereIn('journal_entry_lines.account_id', $cashAccounts)
-            ->where('journal_entries.is_posted', true)
+            ->where('journal_entries.is_posted', 1)
             ->whereBetween('journal_entries.date', [$from->format('Y-m-d'), $to->format('Y-m-d')])
-            ->selectRaw('journal_entries.reference_type, SUM(journal_entry_lines.debit) as inflow, SUM(journal_entry_lines.credit) as outflow')
+            ->selectRaw(
+                'journal_entries.reference_type,
+                 SUM(journal_entry_lines.debit) as inflow,
+                 SUM(journal_entry_lines.credit) as outflow'
+            )
             ->groupBy('journal_entries.reference_type')
+            ->orderBy('journal_entries.reference_type')
             ->get();
 
-        $operatingActivities = [];
-        $investingActivities = [];
-        $financingActivities = [];
+        // Opening cash balance (before period)
+        $openingBalance = DB::connection('tenant')->table('journal_entry_lines')
+            ->join('journal_entries', 'journal_entry_lines.journal_entry_id', '=', 'journal_entries.id')
+            ->where('journal_entries.tenant_id', $tenantId)
+            ->whereIn('journal_entry_lines.account_id', $cashAccounts)
+            ->where('journal_entries.is_posted', 1)
+            ->where('journal_entries.date', '<', $from->format('Y-m-d'))
+            ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as balance')
+            ->value('balance') ?? 0;
 
-        $totalInflow = 0;
-        $totalOutflow = 0;
+        $operating  = [];
+        $investing  = [];
+        $financing  = [];
 
-        foreach ($cashLines as $line) {
-            $inflow = (float) $line->inflow;
-            $outflow = (float) $line->outflow;
+        $operatingNet = 0.0;
+        $investingNet = 0.0;
+        $financingNet = 0.0;
 
-            $totalInflow += $inflow;
-            $totalOutflow += $outflow;
+        foreach ($cashLines as $row) {
+            $refType = $row->reference_type ?? 'other';
+            $inflow  = (float) $row->inflow;
+            $outflow = (float) $row->outflow;
+            $net     = $inflow - $outflow;
 
-            $net = $inflow - $outflow;
-            $type = $line->reference_type ?? 'other';
+            $category = self::REFERENCE_CATEGORY_MAP[$refType] ?? 'operating';
+            $label    = self::LABELS[$refType] ?? $refType;
 
-            // Very simple mapping to activities
-            // We could be more precise but this illustrates the concept
-            if (in_array($type, ['sales_invoice', 'supplier_payment', 'expense', 'customer_payment'])) {
-                $operatingActivities[] = ['type' => $type, 'amount' => $net];
-            } elseif ($type === 'fixed_asset_purchase') {
-                $investingActivities[] = ['type' => $type, 'amount' => $net];
+            $item = [
+                'reference_type' => $refType,
+                'label'          => $label,
+                'inflow'         => round($inflow, 2),
+                'outflow'        => round($outflow, 2),
+                'net'            => round($net, 2),
+            ];
+
+            if ($category === 'investing') {
+                $investing[]  = $item;
+                $investingNet += $net;
+            } elseif ($category === 'financing') {
+                $financing[]  = $item;
+                $financingNet += $net;
             } else {
-                // Everything else into operating for now
-                $operatingActivities[] = ['type' => $type, 'amount' => $net];
+                $operating[]  = $item;
+                $operatingNet += $net;
             }
         }
 
+        $netCashFlow   = $operatingNet + $investingNet + $financingNet;
+        $closingBalance = (float) $openingBalance + $netCashFlow;
+
         return [
-            'period' => ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')],
-            'operating_activities' => $operatingActivities,
-            'investing_activities' => $investingActivities,
-            'financing_activities' => $financingActivities,
-            'net_cash_flow' => $totalInflow - $totalOutflow,
-            'total_inflow' => $totalInflow,
-            'total_outflow' => $totalOutflow,
+            'period' => [
+                'from' => $from->format('Y-m-d'),
+                'to'   => $to->format('Y-m-d'),
+            ],
+            'opening_cash_balance'  => round((float) $openingBalance, 2),
+            'operating_activities'  => [
+                'items' => $operating,
+                'total' => round($operatingNet, 2),
+            ],
+            'investing_activities'  => [
+                'items' => $investing,
+                'total' => round($investingNet, 2),
+            ],
+            'financing_activities'  => [
+                'items' => $financing,
+                'total' => round($financingNet, 2),
+            ],
+            'net_cash_flow'         => round($netCashFlow, 2),
+            'closing_cash_balance'  => round($closingBalance, 2),
         ];
     }
 }

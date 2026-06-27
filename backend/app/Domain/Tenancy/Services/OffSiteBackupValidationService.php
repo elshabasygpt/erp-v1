@@ -11,7 +11,6 @@ use Illuminate\Support\Str;
 class OffSiteBackupValidationService
 {
     private string $disk = 'backups';
-    private string $encryptionKey = 'enterprise-AES-256-encryption-key-simulation';
 
     public function executeValidationWorkflow(): array
     {
@@ -96,14 +95,43 @@ class OffSiteBackupValidationService
 
     private function encryptPayload(string $data): string
     {
-        // Simulate AES-256-CBC encryption
-        return base64_encode(str_rot13($data . "_ENCRYPTED"));
+        $key = env('BACKUP_ENCRYPTION_KEY');
+        if (empty($key)) {
+            throw new \RuntimeException('BACKUP_ENCRYPTION_KEY is not set in environment.');
+        }
+
+        $iv = random_bytes(16);
+        $derivedKey = hash('sha256', $key, true);
+        $encrypted = openssl_encrypt($data, 'AES-256-CBC', $derivedKey, OPENSSL_RAW_DATA, $iv);
+
+        if ($encrypted === false) {
+            throw new \RuntimeException('AES-256-CBC encryption failed: ' . openssl_error_string());
+        }
+
+        return base64_encode($iv . $encrypted);
     }
 
     private function decryptPayload(string $data): string
     {
-        // Simulate AES-256-CBC decryption
-        $decoded = str_rot13(base64_decode($data));
-        return str_replace("_ENCRYPTED", "", $decoded);
+        $key = env('BACKUP_ENCRYPTION_KEY');
+        if (empty($key)) {
+            throw new \RuntimeException('BACKUP_ENCRYPTION_KEY is not set in environment.');
+        }
+
+        $decoded = base64_decode($data, true);
+        if ($decoded === false || strlen($decoded) <= 16) {
+            throw new \RuntimeException('Decryption failed: invalid payload format.');
+        }
+
+        $iv = substr($decoded, 0, 16);
+        $ciphertext = substr($decoded, 16);
+        $derivedKey = hash('sha256', $key, true);
+        $decrypted = openssl_decrypt($ciphertext, 'AES-256-CBC', $derivedKey, OPENSSL_RAW_DATA, $iv);
+
+        if ($decrypted === false) {
+            throw new \RuntimeException('AES-256-CBC decryption failed: ' . openssl_error_string());
+        }
+
+        return $decrypted;
     }
 }

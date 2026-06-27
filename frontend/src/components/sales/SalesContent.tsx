@@ -11,6 +11,7 @@ import SalesCharts from './SalesCharts';
 import SalesModals from './SalesModals';
 import { exportTableToPDF, exportDetailedReportToPDF } from '@/lib/pdf-export';
 import { useRef } from 'react';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface SalesContentProps {
     dict: any;
@@ -31,8 +32,8 @@ export default function SalesContent({ dict, locale, initialTab = 'invoices' }: 
     
     const exportMenuRef = useRef<HTMLDivElement>(null);
 
-    const formatCurrency = (val: number) =>
-        new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(val || 0);
+    const { format: formatCurrencyFn } = useCurrencyFormatter();
+    const formatCurrency = (val: number) => formatCurrencyFn(val || 0);
 
     const handleExportPDF = () => {
         const title = isRTL 

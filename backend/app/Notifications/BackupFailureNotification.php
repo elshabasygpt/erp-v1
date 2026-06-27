@@ -6,8 +6,8 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\SlackMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Http;
 
 class BackupFailureNotification extends Notification
 {
@@ -31,28 +31,20 @@ class BackupFailureNotification extends Notification
     public function via($notifiable): array
     {
         $channels = [];
-        
-        if (config('services.slack.webhook_url')) {
-            $channels[] = 'slack';
-        }
-        
-        if (config('services.telegram.bot_token')) {
-            $channels[] = 'telegram';
-        }
 
-        // Fallback to mail if others aren't configured, or append it
         if (config('mail.mailers.smtp.host')) {
             $channels[] = 'mail';
         }
 
-        // Return configured channels, or just array log if none configured
-        return count($channels) > 0 ? $channels : ['log'];
+        return $channels ?: ['log'];
     }
 
     public function toMail($notifiable): MailMessage
     {
         $sizeMB = $this->fileSizeBytes ? round($this->fileSizeBytes / 1024 / 1024, 2) . ' MB' : 'Unknown';
-        
+
+        $this->notifySlack($sizeMB);
+
         return (new MailMessage)
             ->error()
             ->subject("CRITICAL: Backup Failure - Tenant {$this->tenantId}")
@@ -67,23 +59,22 @@ class BackupFailureNotification extends Notification
             ->action('View Logs', url('/'));
     }
 
-    public function toSlack($notifiable): SlackMessage
+    private function notifySlack(string $sizeMB): void
     {
-        $sizeMB = $this->fileSizeBytes ? round($this->fileSizeBytes / 1024 / 1024, 2) . ' MB' : 'Unknown';
-        
-        return (new SlackMessage)
-            ->error()
-            ->content("🚨 *CRITICAL ERP BACKUP FAILURE* 🚨\n" .
+        $webhook = config('services.slack.webhook_url');
+        if (! $webhook) {
+            return;
+        }
+
+        Http::post($webhook, [
+            'text' => "🚨 *CRITICAL ERP BACKUP FAILURE* 🚨\n" .
                       "*Server:* " . gethostname() . "\n" .
                       "*Tenant:* {$this->tenantId}\n" .
                       "*Type:* {$this->backupType}\n" .
                       "*Duration:* {$this->durationSeconds}s\n" .
                       "*File Size:* {$sizeMB}\n" .
                       "*Timestamp:* " . now()->toIso8601String() . "\n" .
-                      "*Error:* `{$this->errorMessage}`");
+                      "*Error:* `{$this->errorMessage}`",
+        ]);
     }
-
-    // Telegram can be sent via an external package or custom driver, 
-    // omitting specific toTelegram method here for standard Laravel compliance, 
-    // but the channel handles it if the package is installed.
 }

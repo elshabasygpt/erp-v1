@@ -30,6 +30,7 @@ export default function SalesReturnModal({ dict, locale, onClose, onSuccess }: S
     const [returnType, setReturnType] = useState('full'); // full, partial, line_return
     const [refundMethod, setRefundMethod] = useState('store_credit');
     const [reason, setReason] = useState('customer_request');
+    const [defectType, setDefectType] = useState('');
     const [notes, setNotes] = useState('');
 
     const [returnItems, setReturnItems] = useState<any[]>([]);
@@ -113,6 +114,7 @@ export default function SalesReturnModal({ dict, locale, onClose, onSuccess }: S
                 return_type: returnType,
                 refund_method: refundMethod,
                 reason: reason,
+                defect_type: reason === 'defective' ? defectType || undefined : undefined,
                 notes: notes,
                 items: itemsToProcess.map(i => ({
                     product_id: i.product_id,
@@ -199,13 +201,26 @@ export default function SalesReturnModal({ dict, locale, onClose, onSuccess }: S
 
                             <div>
                                 <label className={lblCls}>{isRTL ? 'سبب المرتجع' : 'Reason'}</label>
-                                <select className="select-field w-full" value={reason} onChange={e => setReason(e.target.value)}>
+                                <select className="select-field w-full" value={reason} onChange={e => { setReason(e.target.value); setDefectType(''); }}>
                                     <option value="customer_request">{isRTL ? 'طلب العميل' : 'Customer Request'}</option>
                                     <option value="defective">{isRTL ? 'منتج معيب / تالف' : 'Defective / Damaged'}</option>
                                     <option value="wrong_item">{isRTL ? 'صنف خاطئ' : 'Wrong Item'}</option>
                                     <option value="exchange">{isRTL ? 'استبدال' : 'Exchange'}</option>
                                 </select>
                             </div>
+
+                            {reason === 'defective' && (
+                                <div>
+                                    <label className={lblCls}>{isRTL ? 'تصنيف سبب العيب' : 'Defect Classification'}</label>
+                                    <select className="select-field w-full border-orange-500/40" value={defectType} onChange={e => setDefectType(e.target.value)}>
+                                        <option value="">{isRTL ? '-- حدد نوع العيب --' : '-- Select Defect Type --'}</option>
+                                        <option value="manufacturing">{isRTL ? 'عيب مصنعي' : 'Manufacturing Defect'}</option>
+                                        <option value="installation">{isRTL ? 'خطأ تركيب' : 'Installation Error'}</option>
+                                        <option value="shipping">{isRTL ? 'تلف أثناء الشحن' : 'Shipping Damage'}</option>
+                                        <option value="other">{isRTL ? 'أخرى' : 'Other'}</option>
+                                    </select>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex-1 overflow-auto p-4">

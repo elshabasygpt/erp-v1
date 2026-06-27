@@ -133,6 +133,29 @@ class ApprovalWorkflowService
     }
 
     /**
+     * Evaluate a stock transfer against approval rules.
+     */
+    public function evaluateStockTransfer(string $transferId, float $totalValue): array
+    {
+        $triggers = [];
+        $rules = ApprovalRuleModel::query()->where('entity_type', 'stock_transfer')->where('is_active', true)->get();
+
+        if ($rules->isEmpty()) {
+            return $triggers;
+        }
+
+        $highValueRule = $rules->firstWhere('trigger_type', 'high_value_transfer');
+        if ($highValueRule && $totalValue > (float) $highValueRule->threshold) {
+            $triggers[] = [
+                'rule' => $highValueRule,
+                'reason' => "Transfer value {$totalValue} exceeds threshold of {$highValueRule->threshold}.",
+            ];
+        }
+
+        return $triggers;
+    }
+
+    /**
      * Create an approval request
      */
     public function requestApproval(string $entityType, string $entityId, array $triggers, string $userId, array $payload = []): void

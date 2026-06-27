@@ -7,6 +7,7 @@ import { DeleteConfirmModal, ViewAccountModal, CustomerGroupsModal, ImportCustom
 import { FollowUpsModal } from './FollowUpsModal';
 import { exportTableToPDF } from '@/lib/pdf-export';
 import { crmApi } from '@/lib/api';
+import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 // ── Types ──
 interface Customer {
@@ -89,7 +90,8 @@ export default function CustomersContent({ dict, locale }: Props) {
     const emptyForm = { name: '', nameAr: '', phone: '', email: '', address: '', group: 'retail', paymentType: 'cash' as 'cash' | 'credit', creditLimit: 0, paymentTerms: 0, taxNumber: '', commercialRegister: '' };
     const [form, setForm] = useState(emptyForm);
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 }).format(val);
+    const { format: formatCurrencyFn } = useCurrencyFormatter();
+    const formatCurrency = (val: number) => formatCurrencyFn(val);
     const groupLabel = (g: string) => ({ vip: c.groupVip, wholesale: c.groupWholesale, retail: c.groupRetail, individual: c.groupIndividual }[g] || g);
     const groupBadge = (g: string) => ({ vip: 'badge-warning', wholesale: 'badge-info', retail: 'badge-success', individual: 'badge bg-surface-200/10 text-surface-200/60' }[g] || 'badge-info');
 

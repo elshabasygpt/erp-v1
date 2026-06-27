@@ -20,4 +20,9 @@ class WarehouseModel extends BaseModel
     {
         return $this->belongsTo(BranchModel::class, 'branch_id');
     }
+
+    public function warehouseProducts()
+    {
+        return $this->hasMany(WarehouseProductModel::class, 'warehouse_id')->withoutGlobalScopes();
+    }
 }

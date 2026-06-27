@@ -13,6 +13,7 @@ final class ProcessSalesReturnDTO
         public readonly string $returnType, // full, partial, line_return
         public readonly string $refundMethod, // store_credit, cash, bank_transfer
         public readonly ?string $reason = null,
+        public readonly ?string $defectType = null,
         public readonly ?string $notes = null,
         public readonly array $items = [], // Array of ['productId', 'quantity', 'condition']
     ) {}
@@ -26,6 +27,7 @@ final class ProcessSalesReturnDTO
             returnType: $data['return_type'],
             refundMethod: $data['refund_method'],
             reason: $data['reason'] ?? null,
+            defectType: $data['defect_type'] ?? null,
             notes: $data['notes'] ?? null,
             items: array_map(fn ($i) => [
                 'productId' => $i['product_id'],

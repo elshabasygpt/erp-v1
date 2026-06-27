@@ -4,6 +4,7 @@ namespace App\Application\Reports\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ReportingService
 {
@@ -104,6 +105,10 @@ class ReportingService
                 ->take(10)
                 ->get();
         } catch (\Exception $e) {
+            Log::error('ReportingService::getInventoryReport failed', [
+                'tenant_id' => $this->tenantId,
+                'error'     => $e->getMessage(),
+            ]);
             $totalItems = 0;
             $inventoryValue = 0;
             $lowStockItems = [];
@@ -335,7 +340,7 @@ class ReportingService
             }
             return $logs->toArray();
         } catch (\Exception $e) {
-            // Table might not exist yet if migration isn't run, fallback to empty
+            Log::warning('ReportingService: activity log table unavailable', ['error' => $e->getMessage()]);
             return [];
         }
     }
@@ -357,6 +362,10 @@ class ReportingService
 
             return $expenses->toArray();
         } catch (\Exception $e) {
+            Log::error('ReportingService::getExpensesBreakdown failed', [
+                'tenant_id' => $this->tenantId,
+                'error'     => $e->getMessage(),
+            ]);
             return [];
         }
     }

@@ -1,11 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import { PosSession } from './usePosState';
 import toast from 'react-hot-toast';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 export function usePosCart(
-    activeSession: PosSession, 
+    activeSession: PosSession,
     updateActiveSession: (updates: Partial<PosSession>) => void
 ) {
+    const { taxRate } = useRegionalSettings();
+    const vatFraction = taxRate / 100;
+
     const cartSubtotalExcl = useMemo(() => {
         if (!activeSession) return 0;
         return activeSession.cart.reduce((sum, item) => {
@@ -14,9 +18,9 @@ export function usePosCart(
             return sum + (linePrice - disc);
         }, 0);
     }, [activeSession]);
-    
+
     const discountedExcl = Math.max(0, cartSubtotalExcl - (activeSession?.invoiceDiscount || 0));
-    const cartVat = discountedExcl * 0.15;
+    const cartVat = discountedExcl * vatFraction;
     const cartTotal = discountedExcl + cartVat;
 
     const totalPaidCNum = parseFloat(activeSession?.cashPaid || '0') || 0;

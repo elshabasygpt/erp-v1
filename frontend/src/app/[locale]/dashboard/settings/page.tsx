@@ -8,7 +8,9 @@ import SalesChannelsSettings from '@/components/settings/SalesChannelsSettings';
 import BarcodeSettingsSection from '@/components/settings/BarcodeSettingsSection';
 import InvoiceSettingsSection from '@/components/settings/InvoiceSettingsSection';
 import BackupsSettingsSection from '@/components/settings/BackupsSettingsSection';
+import RegionalSettingsSection from '@/components/settings/RegionalSettingsSection';
 import { useSidebar, type SidebarMode } from '@/providers/SidebarProvider';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -19,6 +21,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const { mode: sidebarMode, setMode: setSidebarMode } = useSidebar();
+    const { country } = useRegionalSettings();
     const [form, setForm] = useState({
         company_name: '',
         phone: '',
@@ -39,7 +42,7 @@ export default function SettingsPage() {
                 const data = res.data?.data || res.data || {};
                 setForm({
                     company_name: data.company_name || (isRTL ? 'شركتي التجارية' : 'My Trading Company'),
-                    phone: data.phone || '+966 11 000 0000',
+                    phone: data.phone || '',
                     email: data.email || 'info@company.com',
                     website: data.website || 'www.company.com',
                 });
@@ -196,11 +199,16 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
+                {/* ── Regional Settings (Country / Currency) ── */}
+                <RegionalSettingsSection isRTL={isRTL} />
+
                 {/* ── Sales Channels ── */}
                 <SalesChannelsSettings isRTL={isRTL} />
 
-                {/* ── ZATCA / e-Invoicing ── */}
-                <ZatcaSettingsSection dict={dict} locale={locale as any} />
+                {/* ── ZATCA / e-Invoicing — Saudi Arabia only ── */}
+                {country === 'SA' && (
+                    <ZatcaSettingsSection dict={dict} locale={locale as any} />
+                )}
 
                 {/* ── Barcode Settings ── */}
                 <BarcodeSettingsSection dict={dict} locale={locale} />

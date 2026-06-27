@@ -110,9 +110,10 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
                             </div>
                             <div className="text-sm space-y-1" style={{ color: 'var(--text-secondary)' }}>
                                 <p>
-                                    <span className="font-medium">{isRTL ? 'اللون:' : 'Color:'}</span> {vehicle.color || '---'} | 
+                                    <span className="font-medium">{isRTL ? 'اللون:' : 'Color:'}</span> {vehicle.color || '---'} |
                                     <span className="font-medium ms-2">{isRTL ? 'الكيلو:' : 'Mileage:'}</span> {vehicle.mileage?.toLocaleString() || '---'} |
-                                    <span className="font-medium ms-2">{isRTL ? 'الوقود:' : 'Fuel:'}</span> {vehicle.fuel_type || '---'}
+                                    <span className="font-medium ms-2">{isRTL ? 'الوقود:' : 'Fuel:'}</span> {vehicle.fuel_type || '---'} |
+                                    <span className="font-medium ms-2">{isRTL ? 'ناقل الحركة:' : 'Trans:'}</span> {vehicle.transmission || '---'}
                                 </p>
                                 <p>
                                     <span className="font-medium">{isRTL ? 'رقم اللوحة:' : 'Plate:'}</span> {vehicle.plate_number || '---'} 

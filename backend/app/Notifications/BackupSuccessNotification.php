@@ -6,8 +6,8 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\SlackMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Http;
 
 class BackupSuccessNotification extends Notification
 {
@@ -29,26 +29,20 @@ class BackupSuccessNotification extends Notification
     public function via($notifiable): array
     {
         $channels = [];
-        
-        if (config('services.slack.webhook_url')) {
-            $channels[] = 'slack';
-        }
-        
-        if (config('services.telegram.bot_token')) {
-            $channels[] = 'telegram';
-        }
 
         if (config('mail.mailers.smtp.host')) {
             $channels[] = 'mail';
         }
 
-        return count($channels) > 0 ? $channels : ['log'];
+        return $channels ?: ['log'];
     }
 
     public function toMail($notifiable): MailMessage
     {
         $sizeMB = round($this->fileSizeBytes / 1024 / 1024, 2) . ' MB';
-        
+
+        $this->notifySlack($sizeMB);
+
         return (new MailMessage)
             ->success()
             ->subject("SUCCESS: Backup Completed - Tenant {$this->tenantId}")
@@ -62,18 +56,21 @@ class BackupSuccessNotification extends Notification
             ->action('View Vault', url('/'));
     }
 
-    public function toSlack($notifiable): SlackMessage
+    private function notifySlack(string $sizeMB): void
     {
-        $sizeMB = round($this->fileSizeBytes / 1024 / 1024, 2) . ' MB';
-        
-        return (new SlackMessage)
-            ->success()
-            ->content("✅ *ERP BACKUP SUCCESS* ✅\n" .
+        $webhook = config('services.slack.webhook_url');
+        if (! $webhook) {
+            return;
+        }
+
+        Http::post($webhook, [
+            'text' => "✅ *ERP BACKUP SUCCESS* ✅\n" .
                       "*Server:* " . gethostname() . "\n" .
                       "*Tenant:* {$this->tenantId}\n" .
                       "*Type:* {$this->backupType}\n" .
                       "*Duration:* {$this->durationSeconds}s\n" .
                       "*File Size:* {$sizeMB}\n" .
-                      "*Timestamp:* " . now()->toIso8601String());
+                      "*Timestamp:* " . now()->toIso8601String(),
+        ]);
     }
 }
