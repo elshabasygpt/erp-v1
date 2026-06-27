@@ -47,6 +47,7 @@ services:
       - FILESYSTEM_DISK_PUBLIC=s3
     volumes:
       - ./backend:/var/www/backend
+      - erp_uploads:/var/www/backend/public/uploads
     networks:
       - erp_network
 
@@ -69,3 +70,7 @@ services:
 networks:
   erp_network:
     driver: overlay # Required for Docker Swarm scaling across multiple nodes
+
+volumes:
+  erp_uploads:
+    driver: local

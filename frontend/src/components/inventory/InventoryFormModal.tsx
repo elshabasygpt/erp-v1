@@ -1,9 +1,11 @@
 import React, { memo, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import type { MainGroup, Unit } from './InventoryModals';
 import type { Product } from './hooks/useInventoryData';
 import { ProductCompatibilityTab } from './ProductCompatibilityTab';
 import { ProductAlternativesTab } from './ProductAlternativesTab';
 import { ProductComponentsTab } from './ProductComponentsTab';
+import { CrossReferenceManagerModal } from './CrossReferenceManagerModal';
 import { inventoryApi } from '@/lib/api';
 
 type TabType = 'basic' | 'compatibility' | 'alternatives' | 'components';
@@ -38,6 +40,7 @@ const InventoryFormModal = memo(function InventoryFormModal({
     const [brandOpen, setBrandOpen] = useState(false);
     const [brandSearch, setBrandSearch] = useState('');
     const brandRef = React.useRef<HTMLDivElement>(null);
+    const [showXrefModal, setShowXrefModal] = useState(false);
 
     // Close brand dropdown on outside click
     useEffect(() => {
@@ -70,6 +73,7 @@ const InventoryFormModal = memo(function InventoryFormModal({
     const lblCls = "block text-xs font-medium mb-1.5 uppercase tracking-wider";
 
     return (
+        <>
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddEdit(false)}>
             <div className="modal-content !max-w-3xl">
                 <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
@@ -122,13 +126,15 @@ const InventoryFormModal = memo(function InventoryFormModal({
                         </h3>
                         <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-secondary)' }}>
                             <div className="relative w-24 h-24 rounded-lg overflow-hidden flex items-center justify-center text-4xl border" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-input)' }}>
-                                {form.imageUrl ? (
+                                {form._uploadingImage ? (
+                                    <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full" />
+                                ) : form.imageUrl ? (
                                     <img src={form.imageUrl} alt="Product preview" className="w-full h-full object-cover" />
                                 ) : (
                                     '📦'
                                 )}
-                                {form.imageUrl && (
-                                    <button 
+                                {form.imageUrl && !form._uploadingImage && (
+                                    <button
                                         onClick={() => setForm((f:any) => ({ ...f, imageUrl: '' }))}
                                         className="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] hover:bg-red-600 transition-colors"
                                         type="button"
@@ -148,16 +154,32 @@ const InventoryFormModal = memo(function InventoryFormModal({
                                     <span className="btn-secondary text-xs px-3 py-1.5 cursor-pointer">
                                         {isRTL ? 'اختر ملف' : 'Choose File'}
                                     </span>
-                                    <input 
-                                        type="file" 
-                                        className="hidden" 
+                                    <input
+                                        type="file"
+                                        className="hidden"
                                         accept="image/png, image/jpeg, image/webp"
-                                        onChange={(e) => {
+                                        onChange={async (e) => {
                                             const file = e.target.files?.[0];
-                                            if (file) {
-                                                const reader = new FileReader();
-                                                reader.onload = (ev) => setForm((f:any) => ({ ...f, imageUrl: ev.target?.result as string }));
-                                                reader.readAsDataURL(file);
+                                            if (!file) return;
+
+                                            if (file.size > 2 * 1024 * 1024) {
+                                                toast.error(isRTL ? 'حجم الصورة أكبر من 2 ميجابايت' : 'Image larger than 2MB');
+                                                return;
+                                            }
+
+                                            const localPreview = URL.createObjectURL(file);
+                                            setForm((f: any) => ({ ...f, imageUrl: localPreview, _uploadingImage: true }));
+
+                                            try {
+                                                const res = await inventoryApi.uploadProductImage(file);
+                                                const url = res.data?.data?.image_url || res.data?.image_url;
+                                                if (!url) throw new Error('No URL returned');
+                                                setForm((f: any) => ({ ...f, imageUrl: url, _uploadingImage: false }));
+                                                URL.revokeObjectURL(localPreview);
+                                            } catch {
+                                                toast.error(isRTL ? 'فشل رفع الصورة' : 'Image upload failed');
+                                                setForm((f: any) => ({ ...f, imageUrl: '', _uploadingImage: false }));
+                                                URL.revokeObjectURL(localPreview);
                                             }
                                         }}
                                     />
@@ -229,7 +251,20 @@ const InventoryFormModal = memo(function InventoryFormModal({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                 <div>
                                     <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>OEM Number</label>
-                                    <input className="input-field w-full font-mono" value={form.oemNumber || ''} onChange={e => setForm((f:any) => ({ ...f, oemNumber: e.target.value }))} placeholder="e.g. 1122334455" />
+                                    <div className="flex gap-2">
+                                        <input className="input-field flex-1 font-mono" value={form.oemNumber || ''} onChange={e => setForm((f:any) => ({ ...f, oemNumber: e.target.value }))} placeholder="e.g. 1122334455" />
+                                        {editingProduct && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowXrefModal(true)}
+                                                className="flex-shrink-0 text-xs px-2.5 py-1.5 rounded-lg border font-medium whitespace-nowrap"
+                                                style={{ borderColor: 'var(--border-default)', color: 'var(--text-secondary)', background: 'var(--bg-secondary)' }}
+                                                title={isRTL ? 'إدارة أرقام بديلة' : 'Manage cross-reference numbers'}
+                                            >
+                                                {isRTL ? 'أرقام بديلة' : 'X-Refs'}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className={lblCls} style={{ color: 'var(--text-secondary)' }}>Part Number (PN)</label>
@@ -474,11 +509,20 @@ const InventoryFormModal = memo(function InventoryFormModal({
                 <div className="p-5 border-t flex justify-end gap-3" style={{ borderColor: 'var(--border-default)', background: 'var(--bg-surface-secondary)' }}>
                     <button onClick={() => setShowAddEdit(false)} className="btn-secondary px-6">{common.cancel}</button>
                     {(activeTab === 'basic' || (activeTab === 'compatibility' && !editingProduct)) && (
-                        <button onClick={saveProduct} disabled={!form.name && !form.nameAr} className="btn-primary px-8 disabled:opacity-50">{common.save}</button>
+                        <button onClick={saveProduct} disabled={(!form.name && !form.nameAr) || !!form._uploadingImage} className="btn-primary px-8 disabled:opacity-50">{common.save}</button>
                     )}
                 </div>
             </div>
         </div>
+        {showXrefModal && editingProduct && (
+            <CrossReferenceManagerModal
+                productId={editingProduct.id}
+                productName={editingProduct.name || editingProduct.nameAr || ''}
+                isRTL={isRTL}
+                onClose={() => setShowXrefModal(false)}
+            />
+        )}
+    </>
     );
 });
 

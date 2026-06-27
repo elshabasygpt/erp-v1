@@ -9,6 +9,7 @@ use App\Infrastructure\Eloquent\Models\VehicleMakeModel;
 use App\Infrastructure\Eloquent\Models\VehicleModelModel;
 use App\Infrastructure\Eloquent\Models\VehicleYearModel;
 use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Controllers\API\Concerns\HandlesImageUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ use Illuminate\Support\Str;
 
 class VehicleController extends BaseTenantController
 {
+    use HandlesImageUploads;
     public function getMakes(Request $request): JsonResponse
     {
         $makes = VehicleMakeModel::query()->where('is_active', true)
@@ -58,11 +60,11 @@ class VehicleController extends BaseTenantController
         ]);
 
         if ($request->hasFile('logo')) {
-            $file = $request->file('logo');
-            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/makes/{$filename}";
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['logo_url'] = '/storage/' . $path;
+            $validated['logo_url'] = $this->storeUploadedImage(
+                $request->file('logo'),
+                (string) $this->getTenantId($request),
+                'vehicles/makes'
+            );
         }
 
         $make = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -93,11 +95,11 @@ class VehicleController extends BaseTenantController
         }
 
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/models/{$filename}";
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['image_url'] = '/storage/' . $path;
+            $validated['image_url'] = $this->storeUploadedImage(
+                $request->file('image'),
+                (string) $this->getTenantId($request),
+                'vehicles/models'
+            );
         }
 
         $model = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -131,11 +133,11 @@ class VehicleController extends BaseTenantController
         }
 
         if ($request->hasFile('engine_image')) {
-            $file = $request->file('engine_image');
-            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/years/{$filename}";
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['engine_image_url'] = '/storage/' . $path;
+            $validated['engine_image_url'] = $this->storeUploadedImage(
+                $request->file('engine_image'),
+                (string) $this->getTenantId($request),
+                'vehicles/years'
+            );
         }
 
         $year = DB::connection('tenant')->transaction(function () use ($validated, $request) {
@@ -164,11 +166,11 @@ class VehicleController extends BaseTenantController
         }
 
         if ($request->hasFile('logo')) {
-            $file = $request->file('logo');
-            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/makes/{$filename}";
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['logo_url'] = '/storage/' . $path;
+            $validated['logo_url'] = $this->storeUploadedImage(
+                $request->file('logo'),
+                (string) $this->getTenantId($request),
+                'vehicles/makes'
+            );
         }
 
         $make->update($validated);
@@ -191,11 +193,11 @@ class VehicleController extends BaseTenantController
         }
 
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/models/{$filename}";
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['image_url'] = '/storage/' . $path;
+            $validated['image_url'] = $this->storeUploadedImage(
+                $request->file('image'),
+                (string) $this->getTenantId($request),
+                'vehicles/models'
+            );
         }
 
         $modelRec->update($validated);
@@ -221,11 +223,11 @@ class VehicleController extends BaseTenantController
         }
 
         if ($request->hasFile('engine_image')) {
-            $file = $request->file('engine_image');
-            $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
-            $path = "uploads/tenant_".$this->getTenantId($request)."/vehicles/years/{$filename}";
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            $validated['engine_image_url'] = '/storage/' . $path;
+            $validated['engine_image_url'] = $this->storeUploadedImage(
+                $request->file('engine_image'),
+                (string) $this->getTenantId($request),
+                'vehicles/years'
+            );
         }
 
         $yearRec->update($validated);

@@ -3,7 +3,7 @@ import type { Product } from './useInventoryData';
 import toast from 'react-hot-toast';
 
 export function useProductForm(products: Product[], setProducts: any, groups: any[], setGroups: any, units: any[], setUnits: any, isRTL: boolean) {
-    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', brandId: '', qualityGrade: '', countryOfOrigin: '', warrantyMonths: 0, hasCoreCharge: false, coreChargeAmount: 0, isKit: false, supersededById: '', binLocation: '', pendingVehicles: [] as any[] };
+    const emptyForm = { code: '', name: '', nameAr: '', barcode: '', mainGroupId: '', subGroupId: '', unitId: '', costPrice: 0, sellPrice: 0, wholesalePrice: 0, semiWholesalePrice: 0, profitPercent: 0, discount: 0, minStock: 5, description: '', imageUrl: '', oemNumber: '', partNumber: '', brand: '', brandId: '', qualityGrade: '', countryOfOrigin: '', warrantyMonths: 0, hasCoreCharge: false, coreChargeAmount: 0, isKit: false, supersededById: '', binLocation: '', pendingVehicles: [] as any[], _uploadingImage: false };
     const [form, setForm] = useState(emptyForm);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -47,7 +47,7 @@ export function useProductForm(products: Product[], setProducts: any, groups: an
                 wholesale_price: form.wholesalePrice !== null && form.wholesalePrice !== undefined && !Number.isNaN(form.wholesalePrice) ? form.wholesalePrice : null,
                 semi_wholesale_price: form.semiWholesalePrice !== null && form.semiWholesalePrice !== undefined && !Number.isNaN(form.semiWholesalePrice) ? form.semiWholesalePrice : null,
                 purchase_price: form.costPrice,
-                image_url: form.imageUrl || null,
+                image_url: (form.imageUrl && !form.imageUrl.startsWith('data:') && !form.imageUrl.startsWith('blob:')) ? form.imageUrl : null,
                 category_id: form.mainGroupId?.length === 36 ? form.mainGroupId : null,
                 unit_of_measure: form.unitId || null,
                 stock_alert_level: form.minStock,

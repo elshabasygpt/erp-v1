@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Presentation\Controllers\API\Sales;
 
+use App\Application\Sales\DTOs\CreateInvoiceDTO;
+use App\Application\Sales\UseCases\ConfirmInvoiceUseCase;
+use App\Application\Sales\UseCases\CreateInvoiceUseCase;
 use App\Infrastructure\Eloquent\Models\WarrantyClaimModel;
 use App\Infrastructure\Eloquent\Models\WarrantyModel;
 use App\Presentation\Controllers\API\BaseTenantController;
@@ -14,6 +17,11 @@ use Illuminate\Support\Facades\DB;
 
 class WarrantyController extends BaseTenantController
 {
+    public function __construct(
+        private readonly CreateInvoiceUseCase $createInvoiceUseCase,
+        private readonly ConfirmInvoiceUseCase $confirmInvoiceUseCase,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
@@ -177,68 +185,101 @@ class WarrantyController extends BaseTenantController
             'replacement_invoice_id' => 'nullable|uuid|exists:invoices,id',
         ]);
 
-        $claim = WarrantyClaimModel::query()->where('tenant_id', $this->getTenantId($request))->where('warranty_id', $warrantyId)->find($claimId);
+        $tenantId = $this->getTenantId($request);
+        $userId   = (string) ($request->user()?->id ?? '');
+
+        $claim = WarrantyClaimModel::query()
+            ->where('tenant_id', $tenantId)
+            ->where('warranty_id', $warrantyId)
+            ->find($claimId);
+
         if (! $claim) {
             return $this->error('Claim not found', 404);
         }
 
-        if (isset($validated['status'])) {
-            $claim->status = $validated['status'];
-            if ($validated['status'] === 'resolved') {
-                $claim->resolved_at = now();
-            }
+        try {
+            $claim = DB::connection('tenant')->transaction(function () use ($validated, $claim, $warrantyId, $userId) {
+                // ── 1. Apply claim updates ──
+                if (isset($validated['status'])) {
+                    $claim->status = $validated['status'];
+                    if ($validated['status'] === 'resolved') {
+                        $claim->resolved_at = now();
+                    }
+                }
+                if (array_key_exists('resolution', $validated)) {
+                    $claim->resolution = $validated['resolution'];
+                }
+                if (array_key_exists('replacement_invoice_id', $validated)) {
+                    $claim->replacement_invoice_id = $validated['replacement_invoice_id'];
+                }
+                $claim->save();
+
+                // ── 2. Rejection → reactivate warranty if no other open claims ──
+                if ($claim->status === 'rejected') {
+                    $otherOpenClaims = WarrantyClaimModel::query()
+                        ->where('warranty_id', $warrantyId)
+                        ->whereIn('status', ['open', 'in_progress'])
+                        ->where('id', '!=', $claim->id)
+                        ->exists();
+
+                    if (! $otherOpenClaims) {
+                        WarrantyModel::query()->where('id', $warrantyId)->update(['status' => 'active']);
+                    }
+                }
+
+                // ── 3. Auto-create + confirm replacement invoice ──
+                if ($claim->status === 'resolved'
+                    && $claim->claim_type === 'replacement'
+                    && ! $claim->replacement_invoice_id
+                ) {
+                    $warranty = WarrantyModel::query()
+                        ->with(['product:id,name,sell_price,vat_rate', 'invoice:id,warehouse_id'])
+                        ->find($warrantyId);
+
+                    if ($warranty && $warranty->product_id) {
+                        $warehouseId = $warranty->invoice?->warehouse_id
+                            ?? DB::connection('tenant')->table('warehouses')->value('id');
+
+                        if (! $warehouseId) {
+                            throw new \DomainException('لا يوجد مخزن متاح لإصدار فاتورة الاستبدال.');
+                        }
+
+                        $defaultVatRate = (float) (DB::connection('tenant')
+                            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+
+                        $payload = [
+                            'customer_id'  => $warranty->customer_id,
+                            'warehouse_id' => $warehouseId,
+                            'type'         => 'cash',
+                            'status'       => 'draft',
+                            'notes'        => 'استبدال ضمان — مطالبة رقم: ' . $claim->claim_number,
+                            'items'        => [[
+                                'product_id'       => $warranty->product_id,
+                                'quantity'         => (float) $warranty->quantity,
+                                'unit_price'       => 0,
+                                'discount_percent' => 0,
+                                'vat_rate'         => $warranty->product?->vat_rate ?? $defaultVatRate,
+                                'printed_name'     => $warranty->product?->name,
+                            ]],
+                        ];
+
+                        $dto = CreateInvoiceDTO::fromRequest($payload, $defaultVatRate);
+
+                        $replacementInvoice = $this->createInvoiceUseCase->execute($dto, $userId);
+                        $this->confirmInvoiceUseCase->execute($replacementInvoice->getId(), $userId);
+
+                        $claim->replacement_invoice_id = $replacementInvoice->getId();
+                        $claim->save();
+                    }
+                }
+
+                return $claim->fresh();
+            });
+        } catch (\DomainException $e) {
+            return $this->error('تعذّر إصدار فاتورة الاستبدال: ' . $e->getMessage(), 422);
         }
 
-        if (array_key_exists('resolution', $validated)) {
-            $claim->resolution = $validated['resolution'];
-        }
-        if (array_key_exists('replacement_invoice_id', $validated)) {
-            $claim->replacement_invoice_id = $validated['replacement_invoice_id'];
-        }
-
-        $claim->save();
-
-        if ($claim->status === 'rejected') {
-            $otherOpenClaims = WarrantyClaimModel::query()->where('warranty_id', $warrantyId)
-                ->whereIn('status', ['open', 'in_progress'])
-                ->where('id', '!=', $claim->id)
-                ->exists();
-
-            if (! $otherOpenClaims) {
-                WarrantyModel::query()->where('id', $warrantyId)->update(['status' => 'active']);
-            }
-        }
-
-        $replacementPayload = null;
-        if ($claim->status === 'resolved' && $claim->claim_type === 'replacement' && ! $claim->replacement_invoice_id) {
-            $warranty = WarrantyModel::query()->with(['product:id,name,sell_price,vat_rate', 'invoice:id,warehouse_id'])->find($warrantyId);
-            if ($warranty) {
-                $defaultVatRate = (float) (DB::connection('tenant')
-                    ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
-                $replacementPayload = [
-                    'customer_id'  => $warranty->customer_id,
-                    'warehouse_id' => $warranty->invoice?->warehouse_id,
-                    'type'         => 'cash',
-                    'notes'        => 'استبدال ضمان — مطالبة رقم: ' . $claim->claim_number,
-                    'items'        => [[
-                        'product_id' => $warranty->product_id,
-                        'quantity'   => (float) $warranty->quantity,
-                        'unit_price' => 0,
-                        'discount_percent' => 0,
-                        'vat_rate'   => $warranty->product?->vat_rate ?? $defaultVatRate,
-                        'printed_name' => $warranty->product?->name,
-                    ]],
-                ];
-            }
-        }
-
-        // Merge payload into the claim array to preserve backward-compatible response shape.
-        // Consumers already reading res.data.data.status etc. remain unaffected.
-        $claimData = $claim->fresh()->toArray();
-        if ($replacementPayload !== null) {
-            $claimData['replacement_invoice_payload'] = $replacementPayload;
-        }
-        return $this->success($claimData, 'Claim updated successfully');
+        return $this->success($claim->toArray(), 'Claim updated successfully');
     }
 
     public function report(Request $request): JsonResponse

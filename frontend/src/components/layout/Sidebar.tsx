@@ -111,6 +111,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'categories', path: '/inventory/categories', iconKey: 'inventory', labelAr: 'فئات المنتجات', labelEn: 'Categories' },
             { key: 'units', path: '/inventory/units', iconKey: 'inventory', labelAr: 'وحدات القياس', labelEn: 'Units of Measure' },
             { key: 'brands', path: '/inventory/brands', iconKey: 'inventory', labelAr: 'الماركات والعلامات', labelEn: 'Brands' },
+            { key: 'crossReference', path: '/inventory/cross-reference', iconKey: 'inventory', labelAr: 'البحث بأرقام OEM', labelEn: 'OEM Cross-Reference' },
             { key: 'warehouses', path: '/inventory/warehouses', iconKey: 'inventory', labelAr: 'إدارة المستودعات', labelEn: 'Warehouses' },
             { key: 'binLocations', path: '/inventory/bin-locations', iconKey: 'inventory', labelAr: 'مواقع التخزين (Bins)', labelEn: 'Bin Locations' },
             { key: 'labels', path: '/inventory/labels', iconKey: 'reports', labelAr: 'طباعة ملصقات', labelEn: 'Print Labels' },

@@ -88,6 +88,7 @@ use App\Presentation\Controllers\API\Treasury\ExpenseController;
 use App\Presentation\Controllers\API\Treasury\TreasuryController;
 use App\Presentation\Controllers\API\Tasks\TaskController;
 use App\Presentation\Controllers\API\Inventory\ProductAliasController;
+use App\Presentation\Controllers\API\Inventory\CrossReferenceController;
 use App\Presentation\Controllers\API\Inventory\ProductImportExportController;
 use App\Presentation\Controllers\API\Automation\WorkflowController;
 use App\Presentation\Controllers\API\Sales\CommissionController;
@@ -348,6 +349,9 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::post('/stock-transfers/{id}/receive', [StockTransferController::class, 'receive']);
         Route::delete('/stock-transfers/{id}', [StockTransferController::class, 'destroy']);
 
+        // OEM / Cross-Reference lookup (قبل /products/{id} لتفادي تعارض الـ wildcard)
+        Route::get('/cross-reference/lookup', [CrossReferenceController::class, 'lookup']);
+
         // Products
         Route::get('/products', [ProductController::class, 'index']);
         Route::post('/products', [ProductController::class, 'store']);
@@ -373,6 +377,12 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::delete('/products/{id}/aliases/{aliasId}', [ProductAliasController::class, 'destroy']);
         Route::get('/products/{id}/resolve-alias', [ProductAliasController::class, 'resolveAlias']);
         Route::post('/products/{id}/customer-aliases', [ProductAliasController::class, 'storeCustomerAlias']);
+
+        // Product Cross-References
+        Route::get('/products/{productId}/cross-references',            [CrossReferenceController::class, 'index']);
+        Route::post('/products/{productId}/cross-references',           [CrossReferenceController::class, 'store']);
+        Route::post('/products/{productId}/cross-references/bulk',      [CrossReferenceController::class, 'bulkStore']);
+        Route::delete('/products/{productId}/cross-references/{refId}', [CrossReferenceController::class, 'destroy']);
 
         // Product Alternatives
         Route::get('/products/{id}/alternatives', [ProductController::class, 'getAlternatives']);

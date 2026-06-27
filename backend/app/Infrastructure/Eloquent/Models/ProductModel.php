@@ -140,6 +140,11 @@ class ProductModel extends BaseModel
         return $this->hasMany(ProductComponentModel::class, 'child_product_id');
     }
 
+    public function crossReferences()
+    {
+        return $this->hasMany(ProductCrossReferenceModel::class, 'product_id');
+    }
+
     public function defaultSupplier()
     {
         return $this->hasOne(ProductDefaultSupplierModel::class, 'product_id')

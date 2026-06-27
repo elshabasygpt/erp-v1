@@ -440,6 +440,25 @@ export const inventoryApi = {
     updateAlias: (productId: string, aliasId: string, data: any) => api.put(`/inventory/products/${productId}/aliases/${aliasId}`, data),
     deleteAlias: (productId: string, aliasId: string) => api.delete(`/inventory/products/${productId}/aliases/${aliasId}`),
     deleteCustomerAlias: (productId: string, aliasId: string) => api.delete(`/inventory/products/${productId}/customer-aliases/${aliasId}`),
+
+    // Cross-Reference (OEM / interchange)
+    lookupCrossReference: (number: string) =>
+        api.get('/inventory/cross-reference/lookup', { params: { number } }),
+    getCrossReferences: (productId: string) =>
+        api.get(`/inventory/products/${productId}/cross-references`),
+    addCrossReference: (productId: string, data: {
+        reference_number: string;
+        reference_brand?: string;
+        reference_type: 'oem' | 'aftermarket' | 'equivalent' | 'superseded';
+        notes?: string;
+    }) => api.post(`/inventory/products/${productId}/cross-references`, data),
+    deleteCrossReference: (productId: string, refId: string) =>
+        api.delete(`/inventory/products/${productId}/cross-references/${refId}`),
+    bulkAddCrossReferences: (productId: string, items: {
+        reference_number: string;
+        reference_brand?: string;
+        reference_type?: 'oem' | 'aftermarket' | 'equivalent' | 'superseded';
+    }[]) => api.post(`/inventory/products/${productId}/cross-references/bulk`, { items }),
 };
 
 export const crmApi = {
@@ -621,10 +640,39 @@ export const purchasesApi = {
     // Purchase Requests → PO conversion
     convertPrToPo: (id: string) => api.post(`/purchases/requests/${id}/convert`),
 
-    // Smart Orders
-    getSmartOrderLowStock: () => api.get('/purchases/smart-orders/low-stock'),
-    getSmartOrderUpcoming: () => api.get('/purchases/smart-orders/upcoming'),
-    draftSmartOrder: (data: any) => api.post('/purchases/smart-orders/draft', data),
+    // Smart Orders — backend route prefix is SINGULAR: /purchases/smart-order/...
+    getSmartOrderLowStock: () => api.get('/purchases/smart-order/low-stock'),
+    getSmartOrderUpcoming: () => api.get('/purchases/smart-order/upcoming'),
+    // items must each be { product_id, order_qty, unit_price } (matches SupplierOrderController::draftForSupplier)
+    draftSmartOrder: (data: { supplier_id: string; warehouse_id?: string; items: any[] }) =>
+        api.post('/purchases/smart-order/draft', data),
+    // server-side "draft for every supplier at once" (alternative to looping draftSmartOrder client-side)
+    draftAllSmartOrders: (warehouseId?: string) =>
+        api.post('/purchases/smart-order/draft-all', { warehouse_id: warehouseId }),
+
+    // Supplier order schedules (مواعيد طلب الموردين)
+    getOrderSchedules: () => api.get('/purchases/order-schedules'),
+    saveOrderSchedule: (data: {
+        supplier_id: string;
+        order_day_of_week: number;      // 0=الأحد ... 6=السبت
+        lead_time_days: number;
+        frequency_weeks: number;
+        order_time?: string;            // 'HH:mm'
+        reminder_enabled?: boolean;
+        reminder_hours_before?: number;
+        responsible_email?: string;
+        notes?: string;
+    }) => api.post('/purchases/order-schedules', data),
+    deleteOrderSchedule: (id: string) => api.delete(`/purchases/order-schedules/${id}`),
+
+    // Default supplier per product (used by the smart-ordering grouping)
+    setProductDefaultSupplier: (data: {
+        product_id: string;
+        supplier_id: string;
+        reorder_quantity?: number;
+        preferred_unit_price?: number;
+        priority?: number;
+    }) => api.post('/purchases/product-suppliers', data),
 
     // Purchase Installments
     getInstallments: (invoiceId: string) => api.get(`/purchases/invoices/${invoiceId}/installments`),

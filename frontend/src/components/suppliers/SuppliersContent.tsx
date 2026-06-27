@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { DeleteConfirmModal, ViewAccountModal, SupplierCategoriesModal, ImportSuppliersModal } from './SupplierModals';
 import { crmApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import DataState from '@/components/ui/DataState';
 
 interface Supplier {
     id: string; name: string; nameAr: string; phone: string; email: string; address: string;
@@ -52,7 +53,7 @@ export default function SuppliersContent({ dict, locale }: Props) {
     };
 
     // Fetch data using React Query
-    const { data: suppliers = [], isLoading: loading } = useQuery({
+    const { data: suppliers = [], isLoading: loading, isError, error, refetch } = useQuery({
         queryKey: ['suppliers'],
         queryFn: async () => {
             const res = await crmApi.getSuppliers();
@@ -263,39 +264,51 @@ export default function SuppliersContent({ dict, locale }: Props) {
                         <select className="select-field py-2 text-sm w-auto" value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)}><option value="all">{s.paymentType}</option><option value="cash">{s.cashSupplier}</option><option value="credit">{s.creditSupplier}</option></select>
                     </div>
 
-                    {filtered.length === 0 ? (
-                        <div className="text-center py-12"><span className="text-4xl mb-3 block">🔍</span><p style={{ color: 'var(--text-muted)' }}>{s.noSuppliers}</p></div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="data-table text-sm">
-                                <thead><tr><th>{s.code}</th><th>{s.supplierName}</th><th>{s.phone}</th><th>{s.category}</th><th>{s.paymentType}</th><th>{s.totalPurchases}</th><th>{s.balance}</th><th>{s.status}</th><th>{dict.common.actions}</th></tr></thead>
-                                <tbody>
-                                    {filtered.map((su: Supplier) => {
-                                        const pct = su.creditLimit > 0 ? Math.round((su.balance / su.creditLimit) * 100) : 0;
-                                        return (
-                                            <tr key={su.id}>
-                                                <td className="font-mono text-primary-400 font-medium">{su.id}</td>
-                                                <td><div style={{ color: 'var(--text-primary)' }} className="font-medium">{isRTL ? su.nameAr : su.name}</div><div className="text-xs" style={{ color: 'var(--text-muted)' }}>{su.email}</div></td>
-                                                <td style={{ color: 'var(--text-secondary)' }}>{su.phone}</td>
-                                                <td><span className={`badge ${catBadge(su.category)}`}>{catLabel(su.category)}</span></td>
-                                                <td><span className={`badge ${su.paymentType === 'credit' ? 'badge-info' : 'badge-success'}`}>{su.paymentType === 'credit' ? s.creditSupplier : s.cashSupplier}</span></td>
-                                                <td style={{ color: 'var(--text-primary)' }} className="font-medium">{formatCurrency(su.totalPurchases)}</td>
-                                                <td>{su.paymentType === 'credit' ? (<div><span className={`font-medium ${su.balance > 0 ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(su.balance)}</span>{su.creditLimit > 0 && (<div className="mt-1"><div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface-secondary)' }}><div className={`h-full rounded-full ${pct > 80 ? 'bg-red-500' : pct > 50 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} /></div><span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{pct}%</span></div>)}</div>) : <span className="text-green-500">—</span>}</td>
-                                                <td><span className={`inline-flex items-center gap-1.5 text-xs ${su.status === 'active' ? 'text-green-500' : 'text-red-400'}`}><span className={`w-1.5 h-1.5 rounded-full ${su.status === 'active' ? 'bg-green-500' : 'bg-red-400'}`} />{su.status === 'active' ? s.active : s.inactive}</span></td>
-                                                <td>
-                                                    <div className="flex items-center gap-1">
-                                                        <button onClick={() => setShowAccount(su)} className="btn-icon text-xs" style={{ color: 'var(--text-muted)' }}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
-                                                        <button onClick={() => openEdit(su)} className="btn-icon text-xs" style={{ color: 'var(--text-muted)' }}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
-                                                        <button onClick={() => setShowDelete(su)} className="btn-icon text-xs hover:!text-red-400" style={{ color: 'var(--text-muted)' }}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                    <DataState
+                        isLoading={loading}
+                        isError={isError}
+                        error={error}
+                        data={suppliers}
+                        onRetry={refetch}
+                        isRTL={isRTL}
+                        skeleton="table"
+                        skeletonCount={8}
+                        empty={{ icon: '🏭', title: isRTL ? 'لا يوجد موردون بعد' : 'No suppliers yet', description: isRTL ? 'أضف أول مورد للبدء' : 'Add your first supplier to get started' }}
+                    >
+                        {() => filtered.length === 0 ? (
+                            <div className="text-center py-12"><span className="text-4xl mb-3 block">🔍</span><p style={{ color: 'var(--text-muted)' }}>{s.noSuppliers}</p></div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="data-table text-sm">
+                                    <thead><tr><th>{s.code}</th><th>{s.supplierName}</th><th>{s.phone}</th><th>{s.category}</th><th>{s.paymentType}</th><th>{s.totalPurchases}</th><th>{s.balance}</th><th>{s.status}</th><th>{dict.common.actions}</th></tr></thead>
+                                    <tbody>
+                                        {filtered.map((su: Supplier) => {
+                                            const pct = su.creditLimit > 0 ? Math.round((su.balance / su.creditLimit) * 100) : 0;
+                                            return (
+                                                <tr key={su.id}>
+                                                    <td className="font-mono text-primary-400 font-medium">{su.id}</td>
+                                                    <td><div style={{ color: 'var(--text-primary)' }} className="font-medium">{isRTL ? su.nameAr : su.name}</div><div className="text-xs" style={{ color: 'var(--text-muted)' }}>{su.email}</div></td>
+                                                    <td style={{ color: 'var(--text-secondary)' }}>{su.phone}</td>
+                                                    <td><span className={`badge ${catBadge(su.category)}`}>{catLabel(su.category)}</span></td>
+                                                    <td><span className={`badge ${su.paymentType === 'credit' ? 'badge-info' : 'badge-success'}`}>{su.paymentType === 'credit' ? s.creditSupplier : s.cashSupplier}</span></td>
+                                                    <td style={{ color: 'var(--text-primary)' }} className="font-medium">{formatCurrency(su.totalPurchases)}</td>
+                                                    <td>{su.paymentType === 'credit' ? (<div><span className={`font-medium ${su.balance > 0 ? 'text-red-500' : 'text-green-500'}`}>{formatCurrency(su.balance)}</span>{su.creditLimit > 0 && (<div className="mt-1"><div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface-secondary)' }}><div className={`h-full rounded-full ${pct > 80 ? 'bg-red-500' : pct > 50 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} /></div><span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{pct}%</span></div>)}</div>) : <span className="text-green-500">—</span>}</td>
+                                                    <td><span className={`inline-flex items-center gap-1.5 text-xs ${su.status === 'active' ? 'text-green-500' : 'text-red-400'}`}><span className={`w-1.5 h-1.5 rounded-full ${su.status === 'active' ? 'bg-green-500' : 'bg-red-400'}`} />{su.status === 'active' ? s.active : s.inactive}</span></td>
+                                                    <td>
+                                                        <div className="flex items-center gap-1">
+                                                            <button onClick={() => setShowAccount(su)} className="btn-icon text-xs" style={{ color: 'var(--text-muted)' }}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
+                                                            <button onClick={() => openEdit(su)} className="btn-icon text-xs" style={{ color: 'var(--text-muted)' }}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
+                                                            <button onClick={() => setShowDelete(su)} className="btn-icon text-xs hover:!text-red-400" style={{ color: 'var(--text-muted)' }}><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </DataState>
                 </div>
             </div>
 

@@ -13,6 +13,7 @@ import InventoryToolbar from './InventoryToolbar';
 import InventoryTable from './InventoryTable';
 import InventoryCardGrid from './InventoryCardGrid';
 import InventoryFormModal from './InventoryFormModal';
+import DataState from '@/components/ui/DataState';
 import toast from 'react-hot-toast';
 
 interface Props { dict: any; locale: string; }
@@ -22,7 +23,7 @@ export default function InventoryContent({ dict, locale }: Props) {
     const inv = dict.inventory;
 
     const {
-        products, setProducts, groups, setGroups, units, setUnits, isLoading
+        products, setProducts, groups, setGroups, units, setUnits, isLoading, isError, refetch
     } = useInventoryData();
 
     const queryClient = useQueryClient();
@@ -111,15 +112,6 @@ export default function InventoryContent({ dict, locale }: Props) {
         const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'products.csv'; a.click(); URL.revokeObjectURL(url);
     }, [products, getGroupName, getUnitSymbol, isRTL]);
 
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-                <div className="w-12 h-12 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
-                <div className="text-surface-500 dark:text-surface-400 font-medium">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
-            </div>
-        );
-    }
-
     const totalValue = products.reduce((a, p) => a + p.stock * p.costPrice, 0);
     const lowStockCount = products.filter(p => p.stock > 0 && p.stock <= p.minStock).length;
     const outOfStockCount = products.filter(p => p.stock === 0).length;
@@ -207,7 +199,7 @@ export default function InventoryContent({ dict, locale }: Props) {
 
             {/* Product List Section */}
             <div className="glass-card p-6">
-                <InventoryToolbar 
+                <InventoryToolbar
                     isRTL={isRTL} inv={inv} filteredCount={filtered.length}
                     viewMode={viewMode} setViewMode={setViewMode}
                     search={search} setSearch={setSearch}
@@ -216,21 +208,32 @@ export default function InventoryContent({ dict, locale }: Props) {
                     groups={groups}
                 />
 
-                {filtered.length === 0 ? (
-                    <div className="text-center py-12"><span className="text-4xl mb-3 block">🔍</span><p style={{ color: 'var(--text-muted)' }}>{inv.noProducts}</p></div>
-                ) : viewMode === 'table' ? (
-                    <InventoryTable 
-                        isRTL={isRTL} inv={inv} common={dict.common} filtered={filtered}
-                        stockStatus={stockStatus} getGroupName={getGroupName} getSubGroupName={getSubGroupName} getUnitSymbol={getUnitSymbol} formatCurrency={formatCurrency}
-                        setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} openDuplicate={openDuplicate} setShowDelete={setShowDelete}
-                    />
-                ) : (
-                    <InventoryCardGrid 
-                        isRTL={isRTL} inv={inv} filtered={filtered}
-                        stockStatus={stockStatus} getGroupName={getGroupName} getUnitSymbol={getUnitSymbol} formatCurrency={formatCurrency}
-                        setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} openDuplicate={openDuplicate} setShowDelete={setShowDelete}
-                    />
-                )}
+                <DataState
+                    isLoading={isLoading}
+                    isError={isError}
+                    onRetry={refetch}
+                    data={products}
+                    isRTL={isRTL}
+                    skeleton="table"
+                    skeletonCount={8}
+                    empty={{ icon: '📦', title: isRTL ? 'لا توجد منتجات' : 'No products', description: isRTL ? 'أضف أول منتج للبدء' : 'Add your first product to get started' }}
+                >
+                    {() => filtered.length === 0 ? (
+                        <div className="text-center py-12"><span className="text-4xl mb-3 block">🔍</span><p style={{ color: 'var(--text-muted)' }}>{inv.noProducts}</p></div>
+                    ) : viewMode === 'table' ? (
+                        <InventoryTable
+                            isRTL={isRTL} inv={inv} common={dict.common} filtered={filtered}
+                            stockStatus={stockStatus} getGroupName={getGroupName} getSubGroupName={getSubGroupName} getUnitSymbol={getUnitSymbol} formatCurrency={formatCurrency}
+                            setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} openDuplicate={openDuplicate} setShowDelete={setShowDelete}
+                        />
+                    ) : (
+                        <InventoryCardGrid
+                            isRTL={isRTL} inv={inv} filtered={filtered}
+                            stockStatus={stockStatus} getGroupName={getGroupName} getUnitSymbol={getUnitSymbol} formatCurrency={formatCurrency}
+                            setShowMovements={setShowMovements} setShowBarcode={setShowBarcode} openEdit={openEdit} openDuplicate={openDuplicate} setShowDelete={setShowDelete}
+                        />
+                    )}
+                </DataState>
             </div>
 
             <InventoryFormModal 

@@ -8,6 +8,7 @@ use App\Application\Sales\UseCases\DeleteSalesChannelUseCase;
 use App\Application\Sales\UseCases\ListSalesChannelsUseCase;
 use App\Application\Sales\UseCases\UpdateSalesChannelUseCase;
 use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Controllers\API\Concerns\HandlesImageUploads;
 use App\Presentation\Requests\Sales\SaveSalesChannelRequest;
 use App\Presentation\Resources\Sales\SalesChannelResource;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,7 @@ use Illuminate\Http\Request;
 
 class SalesChannelController extends BaseTenantController
 {
+    use HandlesImageUploads;
     public function __construct(
         private readonly ListSalesChannelsUseCase $listUseCase,
         private readonly CreateSalesChannelUseCase $createUseCase,
@@ -73,24 +75,16 @@ class SalesChannelController extends BaseTenantController
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
-            $path = "uploads/tenant_".$this->getTenantId($request)."/channels/{$filename}";
-            \Illuminate\Support\Facades\Storage::disk('public')->put($path, file_get_contents($file->getRealPath()), 'public');
-            
-            $url = '/storage/'.$path;
-
-            return response()->json([
-                'status' => 'success',
-                'data' => ['image_url' => $url],
-                'message' => 'Image uploaded successfully',
-            ]);
+        if (! $request->hasFile('image')) {
+            return $this->error('Failed to upload image', 400);
         }
 
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Failed to upload image',
-        ], 400);
+        $url = $this->storeUploadedImage(
+            $request->file('image'),
+            (string) $this->getTenantId($request),
+            'channels'
+        );
+
+        return $this->success(['image_url' => $url], 'Image uploaded successfully');
     }
 }

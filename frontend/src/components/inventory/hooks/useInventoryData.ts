@@ -64,7 +64,7 @@ export function useInventoryData() {
         }
     });
 
-    const { data: products = [], isLoading: isLoadingProducts, error } = useQuery({
+    const { data: products = [], isLoading: isLoadingProducts, isError: isErrorProducts, refetch: refetchProducts, error } = useQuery({
         queryKey: ['products'],
         queryFn: async () => {
             const res = await inventoryApi.getProducts({ limit: 100 });
@@ -107,10 +107,12 @@ export function useInventoryData() {
     const isLoading = isLoadingProducts || isLoadingGroups || isLoadingUnits;
 
     return {
-        products, 
+        products,
         setProducts: () => {}, // Deprecated, will be removed later
-        groups, setGroups: setLocalGroups, 
-        units, setUnits: setLocalUnits, 
-        isLoading
+        groups, setGroups: setLocalGroups,
+        units, setUnits: setLocalUnits,
+        isLoading,
+        isError: isErrorProducts,
+        refetch: refetchProducts,
     };
 }

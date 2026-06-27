@@ -28,7 +28,7 @@ services:
       - REDIS_HOST=redis
     volumes:
       - ./backend:/var/www/backend
-      - erp_storage:/var/www/backend/storage/app/public
+      - erp_uploads:/var/www/backend/public/uploads
     networks:
       - erp_network
     depends_on:
@@ -79,4 +79,4 @@ networks:
 volumes:
   erp_db_data:
   erp_redis_data:
-  erp_storage:
+  erp_uploads:

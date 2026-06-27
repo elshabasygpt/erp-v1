@@ -6,12 +6,14 @@ namespace App\Presentation\Controllers\API\Inventory;
 
 use App\Infrastructure\Eloquent\Models\BrandModel;
 use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Controllers\API\Concerns\HandlesImageUploads;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 
 class BrandController extends BaseTenantController
 {
+    use HandlesImageUploads;
     public function index(Request $request): JsonResponse
     {
         $tenantId = $this->getTenantId($request);
@@ -42,10 +44,7 @@ class BrandController extends BaseTenantController
 
         $imageUrl = null;
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time().'_'.uniqid().'.'.$file->extension();
-            $file->move(public_path("uploads/tenant_{$tenantId}/brands"), $filename);
-            $imageUrl = "/uploads/tenant_{$tenantId}/brands/{$filename}";
+            $imageUrl = $this->storeUploadedImage($request->file('image'), (string) $tenantId, 'brands');
         }
 
         $brand = BrandModel::create([
@@ -73,10 +72,9 @@ class BrandController extends BaseTenantController
         ]);
 
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time().'_'.uniqid().'.'.$file->extension();
-            $file->move(public_path("uploads/tenant_{$tenantId}/brands"), $filename);
-            $brand->image_url = "/uploads/tenant_{$tenantId}/brands/{$filename}";
+            $newUrl = $this->storeUploadedImage($request->file('image'), (string) $tenantId, 'brands');
+            $this->deleteUploadedImage($brand->image_url);
+            $brand->image_url = $newUrl;
         }
 
         if ($request->has('name')) $brand->name = $request->name;

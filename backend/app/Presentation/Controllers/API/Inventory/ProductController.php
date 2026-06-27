@@ -7,6 +7,7 @@ namespace App\Presentation\Controllers\API\Inventory;
 use App\Domain\Inventory\Repositories\ProductRepositoryInterface;
 use App\Infrastructure\Eloquent\Models\ProductModel;
 use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Controllers\API\Concerns\HandlesImageUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 
 class ProductController extends BaseTenantController
 {
+    use HandlesImageUploads;
     public function __construct(private ProductRepositoryInterface $productRepository) {}
 
     public function index(Request $request): JsonResponse
@@ -68,10 +70,18 @@ class ProductController extends BaseTenantController
             ->pluck('product_id')
             ->toArray();
 
+        $normalized = \App\Infrastructure\Eloquent\Models\ProductCrossReferenceModel::normalize($query);
+        $xrefProductIds = $normalized !== '' ? DB::connection('tenant')
+            ->table('product_cross_references')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->where('normalized_number', 'like', $normalized . '%')
+            ->pluck('product_id')->toArray() : [];
+
         return ProductModel::query()
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
-            ->where(function ($q) use ($query, $aliasProductIds) {
+            ->where(function ($q) use ($query, $aliasProductIds, $xrefProductIds) {
                 $q->where('name', 'like', "%{$query}%")
                     ->orWhere('name_ar', 'like', "%{$query}%")
                     ->orWhere('sku', 'like', "%{$query}%")
@@ -80,6 +90,9 @@ class ProductController extends BaseTenantController
                     ->orWhere('part_number', 'like', "%{$query}%");
                 if (!empty($aliasProductIds)) {
                     $q->orWhereIn('id', $aliasProductIds);
+                }
+                if (!empty($xrefProductIds)) {
+                    $q->orWhereIn('id', $xrefProductIds);
                 }
             })
             ->limit(20)
@@ -356,22 +369,17 @@ class ProductController extends BaseTenantController
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
 
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
-
-            $destDir  = public_path('uploads/products');
-            if (!is_dir($destDir)) {
-                mkdir($destDir, 0755, true);
-            }
-            $file->move($destDir, $filename);
-
-            $url = '/uploads/products/'.$filename;
-
-            return $this->success(['image_url' => $url], 'Image uploaded successfully');
+        if (! $request->hasFile('image')) {
+            return $this->error('Failed to upload image', 400);
         }
 
-        return $this->error('Failed to upload image', 400);
+        $url = $this->storeUploadedImage(
+            $request->file('image'),
+            (string) $this->getTenantId($request),
+            'products'
+        );
+
+        return $this->success(['image_url' => $url], 'Image uploaded successfully');
     }
 
     public function getAlternatives(Request $request, string $id): JsonResponse
