@@ -15,8 +15,7 @@ final class CreateSalesOrderUseCase
 {
     public function execute(CreateSalesOrderDTO $dto, string $userId): SalesOrderModel
     {
-        $defaultVatRate = (float) (DB::connection('tenant')
-            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+        $defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
 
         return DB::connection('tenant')->transaction(function () use ($dto, $userId, $defaultVatRate) {
 

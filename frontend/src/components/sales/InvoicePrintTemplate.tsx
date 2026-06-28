@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { generateZatcaQRDataURI, formatSAR } from '@/lib/zatca-qr';
+import { generateZatcaQRDataURI } from '@/lib/zatca-qr';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 interface InvoiceItem {
@@ -63,7 +63,7 @@ const PAYMENT_LABELS: Record<string, { ar: string; en: string }> = {
 export default function InvoicePrintTemplate({ invoice, locale, onClose }: InvoicePrintTemplateProps) {
     const isRTL = locale === 'ar';
     const printRef = useRef<HTMLDivElement>(null);
-    const { country, taxRate } = useRegionalSettings();
+    const { country, taxRate, formatAmount } = useRegionalSettings();
 
     const [settings, setSettings] = useState({
         invoice_default_size: 'A4',
@@ -229,7 +229,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                                 <td style={{ padding: '4px 0', textAlign: isRTL ? 'right' : 'left' }}>
                                                     <div style={{ fontWeight: 'bold' }}>{line.name}</div>
                                                     <div style={{ fontSize: 9 }}>
-                                                        {formatSAR(line.price)}
+                                                        {formatAmount(line.price)}
                                                         {line.binLocation && (
                                                             <span style={{ display: 'inline-block', padding: '0 4px', margin: '0 4px', background: '#f1f5f9', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
                                                                 {isRTL ? 'الرف: ' : 'Bin: '}{line.binLocation}
@@ -238,7 +238,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                                     </div>
                                                 </td>
                                                 <td style={{ padding: '4px 0', textAlign: 'center' }}>{line.qty}</td>
-                                                <td style={{ padding: '4px 0', textAlign: isRTL ? 'left' : 'right', fontWeight: 'bold' }}>{formatSAR(line.inclVat)}</td>
+                                                <td style={{ padding: '4px 0', textAlign: isRTL ? 'left' : 'right', fontWeight: 'bold' }}>{formatAmount(line.inclVat)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -247,15 +247,15 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                 <div style={{ fontSize: 11, textAlign: 'right', marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '10px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>{isRTL ? 'المجموع قبل الضريبة' : 'Subtotal'}</span>
-                                        <span>{formatSAR(subtotalExcl)}</span>
+                                        <span>{formatAmount(subtotalExcl)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <span>{isRTL ? `الضريبة (${taxRate}%)` : `VAT (${taxRate}%)`}</span>
-                                        <span>{formatSAR(totalVat)}</span>
+                                        <span>{formatAmount(totalVat)}</span>
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: 13, marginTop: 4 }}>
                                         <span>{isRTL ? 'الإجمالي' : 'Total'}</span>
-                                        <span>{formatSAR(grandTotal)}</span>
+                                        <span>{formatAmount(grandTotal)}</span>
                                     </div>
                                 </div>
 
@@ -379,9 +379,9 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                         </td>
                                         <td style={{ padding: '7px 10px', textAlign: 'center' }}>{line.qty}</td>
                                         <td style={{ padding: '7px 10px', textAlign: 'center', color: '#64748b', fontSize: 12 }}>{line.unit}</td>
-                                        <td style={{ padding: '7px 10px', textAlign: 'center' }}>{formatSAR(line.price)}</td>
-                                        <td style={{ padding: '7px 10px', textAlign: 'center', color: '#7c3aed' }}>{formatSAR(line.vat)}</td>
-                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 700 }}>{formatSAR(line.inclVat)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center' }}>{formatAmount(line.price)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', color: '#7c3aed' }}>{formatAmount(line.vat)}</td>
+                                        <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 700 }}>{formatAmount(line.inclVat)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -412,15 +412,15 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                     <tbody>
                                         <tr>
                                             <td style={{ color: '#64748b', padding: '4px 0' }}>{isRTL ? 'المجموع قبل الضريبة' : 'Subtotal (excl. VAT)'}</td>
-                                            <td style={{ textAlign: 'end', fontWeight: 600 }}>{formatSAR(subtotalExcl)}</td>
+                                            <td style={{ textAlign: 'end', fontWeight: 600 }}>{formatAmount(subtotalExcl)}</td>
                                         </tr>
                                         <tr>
                                             <td style={{ color: '#7c3aed', padding: '4px 0' }}>{isRTL ? `ضريبة القيمة المضافة (${taxRate}%)` : `VAT (${taxRate}%)`}</td>
-                                            <td style={{ textAlign: 'end', color: '#7c3aed', fontWeight: 600 }}>{formatSAR(totalVat)}</td>
+                                            <td style={{ textAlign: 'end', color: '#7c3aed', fontWeight: 600 }}>{formatAmount(totalVat)}</td>
                                         </tr>
                                         <tr style={{ borderTop: '2px solid #4f46e5' }}>
                                             <td style={{ fontWeight: 700, fontSize: 15, padding: '8px 0 0' }}>{isRTL ? 'الإجمالي شامل الضريبة' : 'Total (incl. VAT)'}</td>
-                                            <td style={{ textAlign: 'end', fontWeight: 800, fontSize: 18, color: '#4f46e5', padding: '8px 0 0' }}>{formatSAR(grandTotal)}</td>
+                                            <td style={{ textAlign: 'end', fontWeight: 800, fontSize: 18, color: '#4f46e5', padding: '8px 0 0' }}>{formatAmount(grandTotal)}</td>
                                         </tr>
                                     </tbody>
                                 </table>

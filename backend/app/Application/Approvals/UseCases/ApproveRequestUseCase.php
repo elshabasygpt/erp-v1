@@ -38,7 +38,10 @@ class ApproveRequestUseCase
             // Other entity types are completed by their own flows: `stock_transfer`
             // is gated inside StockTransferService, `return` by the returns flow.
             if ($request->requestableType === 'invoice') {
-                $this->confirmInvoice->execute($request->requestableId, $approverId);
+                // A manager approval IS the credit-limit override authorization — allow the
+                // confirm to proceed even if the invoice exceeds the customer's credit limit
+                // (often the very reason it was sent for approval).
+                $this->confirmInvoice->execute($request->requestableId, $approverId, true);
             }
         });
     }

@@ -8,6 +8,7 @@ import PurchasesStats from './PurchasesStats';
 import PurchasesTable from './PurchasesTable';
 import PurchaseReturnsTable from './PurchaseReturnsTable';
 import PurchasesModals from './PurchasesModals';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 interface PurchasesContentProps {
     dict: any;
@@ -34,7 +35,7 @@ export default function PurchasesContent({ dict, locale }: PurchasesContentProps
         handleSaveOrder, handleUpdateOrderStatus, handleSaveReturn, handleCompleteReturn
     } = usePurchaseForm(invoices, warehouses, fetchInvoices, fetchReturns);
 
-    const formatCurrency = (amount: number) => `${Number(amount || 0).toLocaleString()} ر.س`;
+    const { formatAmount: formatCurrency } = useRegionalSettings();
 
     const statusConfig: any = {
         confirmed: { color: '#10b981', bg: 'rgba(16,185,129,0.12)', label: 'مؤكد/مستلم', labelEn: 'Confirmed' },

@@ -6,8 +6,6 @@ namespace App\Domain\Sales\Services;
 
 use App\Domain\Inventory\Services\InventoryValuationService;
 use App\Infrastructure\Eloquent\Models\SalesReturnModel;
-use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
-use Illuminate\Support\Str;
 
 class SalesReturnService
 {
@@ -21,33 +19,29 @@ class SalesReturnService
     public function processInventoryReturn(string $tenantId, SalesReturnModel $salesReturn, string $userId): void
     {
         foreach ($salesReturn->items as $item) {
-            // Restore reserved stock if needed, or physical stock
+            // Restore physical stock. recordMovement() handles the warehouse_products row
+            // (firstOrCreate + quantity update) itself, so we must NOT also bump quantity here —
+            // doing both double-counted returned stock.
             if ($item->condition === 'good') {
-                $wp = WarehouseProductModel::query()->firstOrCreate(
-                    ['warehouse_id' => $salesReturn->warehouse_id, 'product_id' => $item->product_id],
-                    ['id' => Str::uuid()->toString(), 'quantity' => 0, 'reserved_quantity' => 0]
-                );
-
-                $wp->quantity += $item->quantity;
-                $wp->save();
-
                 $this->inventoryValuationService->recordMovement(
                     $item->product_id,
                     $salesReturn->warehouse_id,
                     (float) $item->quantity,
                     (float) ($item->cost_price ?? $item->unit_price),
-                    'sales_return',
+                    'return',
                     $salesReturn->id,
                     $userId
                 );
             } else {
-                // Damaged goods: log 'in' then 'out' for quarantine
+                // Damaged goods: log 'in' then 'out' for quarantine. The stock_ledger enum only
+                // allows purchase/sale/transfer/adjustment/return — 'sales_return'/'damaged_goods'
+                // violated the constraint and made every real sales return fail at the DB layer.
                 $this->inventoryValuationService->recordMovement(
                     $item->product_id,
                     $salesReturn->warehouse_id,
                     (float) $item->quantity,
                     (float) ($item->cost_price ?? $item->unit_price),
-                    'sales_return',
+                    'return',
                     $salesReturn->id,
                     $userId
                 );
@@ -57,7 +51,7 @@ class SalesReturnService
                     $salesReturn->warehouse_id,
                     -(float) $item->quantity,
                     (float) ($item->cost_price ?? $item->unit_price),
-                    'damaged_goods',
+                    'adjustment',
                     $salesReturn->id,
                     $userId
                 );

@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 interface PurchasesStatsProps {
     isRTL: boolean;
@@ -9,7 +10,7 @@ interface PurchasesStatsProps {
 }
 
 const PurchasesStats = memo(function PurchasesStats({ isRTL, totalPurchasesValue, pendingInvoices, totalReturnsValue, suppliersCount }: PurchasesStatsProps) {
-    const formatCurrency = (amount: number) => `${Number(amount || 0).toLocaleString()} ر.س`;
+    const { formatAmount: formatCurrency } = useRegionalSettings();
     
     const stats = [
         { label: isRTL ? 'إجمالي المشتريات' : 'Total Purchases', value: formatCurrency(totalPurchasesValue), icon: '🛒', gradient: 'from-blue-500/20 to-blue-600/5', accent: 'text-blue-500' },

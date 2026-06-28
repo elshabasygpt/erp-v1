@@ -63,8 +63,7 @@ class ProductImport implements ToModel, WithHeadingRow, WithStartRow, WithValida
         $this->importId = $importId;
         $this->importMode = $importMode;
         $this->isDryRun = $isDryRun;
-        $this->defaultVatRate = (float) (DB::connection('tenant')
-            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+        $this->defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
         // Pre-load categories for fast lookup to minimize DB queries
         $cats = CategoryModel::where('tenant_id', $tenantId)->get(['id', 'name']);
         foreach ($cats as $c) {

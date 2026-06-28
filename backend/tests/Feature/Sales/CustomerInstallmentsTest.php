@@ -83,6 +83,52 @@ class CustomerInstallmentsTest extends TestCase
             ->where('invoice_id', $invoiceId)->whereNull('deleted_at')->count());
     }
 
+    public function test_collecting_a_payment_pays_down_installments_oldest_first(): void
+    {
+        $this->actingAsAuthenticatedUser();
+        $invoiceId = $this->creditInvoice(1000);
+        $customerId = DB::connection('tenant')->table('invoices')->where('id', $invoiceId)->value('customer_id');
+
+        // Plan: 600 due Aug, 400 due Sep (saved out of order on purpose).
+        $this->postJson("/api/sales/invoices/{$invoiceId}/installments", [
+            'installments' => [
+                ['due_date' => '2026-09-01', 'amount' => 400],
+                ['due_date' => '2026-08-01', 'amount' => 600],
+            ],
+        ])->assertStatus(201);
+
+        // Pay 600 → the earliest (Aug) installment is fully paid, the later one untouched.
+        $this->postJson('/api/crm/receivables/collect', [
+            'customer_id' => $customerId,
+            'payment_date' => '2026-08-05',
+            'amount' => 600,
+            'payment_method' => 'cash',
+            'allocations' => [['invoice_id' => $invoiceId, 'amount' => 600]],
+        ])->assertStatus(201);
+
+        $rows = DB::connection('tenant')->table('invoice_installments')
+            ->where('invoice_id', $invoiceId)->orderBy('due_date')->get();
+
+        $this->assertSame('paid', $rows[0]->status);
+        $this->assertEquals(600.0, (float) $rows[0]->paid_amount);
+        $this->assertSame('unpaid', $rows[1]->status);
+        $this->assertEquals(0.0, (float) $rows[1]->paid_amount);
+
+        // Pay the remaining 400 → the later (Sep) installment is now paid too.
+        $this->postJson('/api/crm/receivables/collect', [
+            'customer_id' => $customerId,
+            'payment_date' => '2026-09-05',
+            'amount' => 400,
+            'payment_method' => 'cash',
+            'allocations' => [['invoice_id' => $invoiceId, 'amount' => 400]],
+        ])->assertStatus(201);
+
+        $later = DB::connection('tenant')->table('invoice_installments')
+            ->where('invoice_id', $invoiceId)->orderBy('due_date')->get()[1];
+        $this->assertSame('paid', $later->status);
+        $this->assertEquals(400.0, (float) $later->paid_amount);
+    }
+
     public function test_cannot_regenerate_a_plan_once_an_installment_is_paid(): void
     {
         $this->actingAsAuthenticatedUser();

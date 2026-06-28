@@ -20,6 +20,19 @@ final class EloquentJournalEntryRepository implements JournalEntryRepositoryInte
 
     public function create(JournalEntry $entry): JournalEntry
     {
+        // Hard invariant: every persisted journal entry must balance (SUM debit == SUM credit).
+        // Several use-cases construct entries with isPosted=true and never call JournalEntry::post(),
+        // which would otherwise be the balance gate. Enforce it centrally here so no path can
+        // silently write an unbalanced (corrupt) entry to the general ledger.
+        if (! $entry->isBalanced()) {
+            throw new \DomainException(sprintf(
+                'Refusing to persist unbalanced journal entry %s: debit %.6F != credit %.6F.',
+                $entry->getEntryNumber(),
+                $entry->getTotalDebit(),
+                $entry->getTotalCredit()
+            ));
+        }
+
         $closure = function () use ($entry) {
             $tenantId = null;
             if (app()->has('current_tenant')) {
