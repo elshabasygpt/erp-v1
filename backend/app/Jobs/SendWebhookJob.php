@@ -4,20 +4,20 @@ namespace App\Jobs;
 
 use App\Infrastructure\Eloquent\Models\WebhookEndpointModel;
 use App\Infrastructure\Eloquent\Models\WebhookLogModel;
+use App\Jobs\Concerns\RunsInTenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SendWebhookJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RunsInTenantContext, SerializesModels;
 
     public int $tries = 5;
 
@@ -38,8 +38,20 @@ class SendWebhookJob implements ShouldQueue
 
     public function handle(): void
     {
-        DB::setDefaultConnection('tenant');
+        $tenant = $this->bootTenantContext($this->tenantId);
+        if (! $tenant) {
+            return;
+        }
 
+        try {
+            $this->process();
+        } finally {
+            $this->shutdownTenantContext();
+        }
+    }
+
+    private function process(): void
+    {
         $webhook = WebhookEndpointModel::query()->find($this->webhookId);
 
         if (! $webhook || ! $webhook->is_active) {
@@ -128,18 +140,27 @@ class SendWebhookJob implements ShouldQueue
             'error' => $exception->getMessage(),
         ]);
 
-        // Mark webhook as failed in logs
-        WebhookLogModel::query()->create([
-            'id' => Str::uuid(),
-            'webhook_id' => $this->webhookId,
-            'event' => $this->event,
-            'payload' => json_encode($this->payload),
-            'status_code' => 0,
-            'response' => 'Permanently failed: '.$exception->getMessage(),
-            'duration_ms' => 0,
-            'success' => false,
-            'attempt' => $this->attempts(),
-            'created_at' => now(),
-        ]);
+        $tenant = $this->bootTenantContext($this->tenantId);
+        if (! $tenant) {
+            return;
+        }
+
+        try {
+            // Mark webhook as failed in logs
+            WebhookLogModel::query()->create([
+                'id' => Str::uuid(),
+                'webhook_id' => $this->webhookId,
+                'event' => $this->event,
+                'payload' => json_encode($this->payload),
+                'status_code' => 0,
+                'response' => 'Permanently failed: '.$exception->getMessage(),
+                'duration_ms' => 0,
+                'success' => false,
+                'attempt' => $this->attempts(),
+                'created_at' => now(),
+            ]);
+        } finally {
+            $this->shutdownTenantContext();
+        }
     }
 }

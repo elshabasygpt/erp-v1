@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Infrastructure\Eloquent\Models\EmployeeModel;
 use App\Infrastructure\Eloquent\Models\PayrollModel;
 use App\Infrastructure\Eloquent\Models\EmployeeLoanInstallmentModel;
+use App\Jobs\Concerns\RunsInTenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
 
 class GeneratePayrollJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RunsInTenantContext, SerializesModels;
 
     public int $tries = 3;
 
@@ -32,8 +33,10 @@ class GeneratePayrollJob implements ShouldQueue
 
     public function handle(): void
     {
-        // Switch to tenant DB context
-        DB::setDefaultConnection('tenant');
+        $tenant = $this->bootTenantContext($this->tenantId);
+        if (! $tenant) {
+            return;
+        }
 
         Log::info('GeneratePayrollJob started', [
             'tenant_id' => $this->tenantId,
@@ -174,6 +177,8 @@ class GeneratePayrollJob implements ShouldQueue
             ]);
 
             throw $e; // يخلي الـ Queue يعمل retry
+        } finally {
+            $this->shutdownTenantContext();
         }
     }
 

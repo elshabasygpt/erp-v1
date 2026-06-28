@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Infrastructure\Eloquent\Models\SupplierOrderingScheduleModel;
+use App\Jobs\Concerns\RunsInTenantContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,16 +17,31 @@ use Illuminate\Support\Facades\Mail;
 
 class SendOrderReminderJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RunsInTenantContext, SerializesModels;
 
     public int $tries = 3;
 
     public function __construct(
+        public readonly string $tenantId,
         public readonly string $scheduleId,
         public readonly int    $lowStockCount,
     ) {}
 
     public function handle(): void
+    {
+        $tenant = $this->bootTenantContext($this->tenantId);
+        if (! $tenant) {
+            return;
+        }
+
+        try {
+            $this->process();
+        } finally {
+            $this->shutdownTenantContext();
+        }
+    }
+
+    private function process(): void
     {
         $schedule = SupplierOrderingScheduleModel::with('supplier')
             ->find($this->scheduleId);
@@ -73,5 +89,14 @@ class SendOrderReminderJob implements ShouldQueue
         });
 
         Log::info("Order reminder sent to {$email} for supplier {$supplierName}");
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('SendOrderReminderJob permanently failed', [
+            'tenant_id'   => $this->tenantId,
+            'schedule_id' => $this->scheduleId,
+            'error'       => $exception->getMessage(),
+        ]);
     }
 }

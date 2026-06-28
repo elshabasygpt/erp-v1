@@ -89,10 +89,16 @@ class AttendanceController extends BaseTenantController
         // 3. لو متأخر → أرسل إشعار للمسؤول (كـ Job في الخلفية)
         if ($lateMinutes > 0) {
             SendLateAttendanceNotificationJob::dispatch(
-                $attendance,
-                $employee,
                 (string) $this->getTenantId($request),
-                $penaltyResult,
+                (string) $attendance->id,
+                (string) $employee->id,
+                [
+                    'effective_late_minutes' => $penaltyResult['effective_late_minutes'] ?? 0,
+                    'penalty_amount'         => $penaltyResult['penalty_amount'] ?? 0,
+                    'penalty_rule_label'     => $penaltyResult['rule']?->label_ar
+                                                  ?? $penaltyResult['rule']?->label
+                                                  ?? 'غير محدد',
+                ],
             );
         }
 

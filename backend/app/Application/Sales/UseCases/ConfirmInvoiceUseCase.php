@@ -361,19 +361,24 @@ class ConfirmInvoiceUseCase
             ));
         }
 
-        // Credit: Revenue (net of discount)
+        // Credit: Revenue (net of discount). Skipped when zero — e.g. a zero-price
+        // warranty replacement invoice — so we never post an empty (0/0) journal line
+        // (the domain rejects those). Normal invoices always have net revenue > 0,
+        // so this guard is behaviour-neutral for them.
         $netRevenue = round($invoice->getSubtotal() - $invoice->getDiscountAmount(), 6);
-        $journalEntry->addLine(new JournalEntryLine(
-            id: null,
-            journalEntryId: '',
-            accountId: $this->accountMapping->resolve('revenue'),
-            debit: 0,
-            credit: round($netRevenue * $exchangeRate, 6),
-            transactionDebit: 0.0,
-            transactionCredit: round($netRevenue, 6),
-            description: 'Sales revenue',
-            costCenterId: $costCenterId,
-        ));
+        if ($netRevenue > 0) {
+            $journalEntry->addLine(new JournalEntryLine(
+                id: null,
+                journalEntryId: '',
+                accountId: $this->accountMapping->resolve('revenue'),
+                debit: 0,
+                credit: round($netRevenue * $exchangeRate, 6),
+                transactionDebit: 0.0,
+                transactionCredit: round($netRevenue, 6),
+                description: 'Sales revenue',
+                costCenterId: $costCenterId,
+            ));
+        }
 
         // Credit: VAT Payable
         if ($invoice->getVatAmount() > 0) {

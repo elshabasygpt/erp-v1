@@ -28,12 +28,12 @@ class WarrantyModel extends BaseModel
 
     public function invoice()
     {
-        return $this->belongsTo(App\Infrastructure\Eloquent\Models\InvoiceModel::class, 'invoice_id');
+        return $this->belongsTo(InvoiceModel::class, 'invoice_id');
     }
 
     public function invoiceItem()
     {
-        return $this->belongsTo(App\Infrastructure\Eloquent\Models\InvoiceItemModel::class, 'invoice_item_id');
+        return $this->belongsTo(InvoiceItemModel::class, 'invoice_item_id');
     }
 
     public function product()
@@ -43,7 +43,7 @@ class WarrantyModel extends BaseModel
 
     public function customer()
     {
-        return $this->belongsTo(App\Infrastructure\Eloquent\Models\CustomerModel::class, 'customer_id');
+        return $this->belongsTo(CustomerModel::class, 'customer_id');
     }
 
     public function claims()

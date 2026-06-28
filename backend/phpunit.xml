@@ -31,5 +31,6 @@
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
         <env name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <env name="BACKUP_ENCRYPTION_KEY" value="test_backup_encryption_key_32bytes" force="true"/>
     </php>
 </phpunit>

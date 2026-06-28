@@ -37,40 +37,58 @@ return new class extends Migration
             }
         });
 
+        // Postgres and SQLite (test env) need different back-fill SQL: Postgres
+        // supports the efficient `UPDATE ... FROM` and `::date` cast; SQLite does
+        // not, so it gets equivalent correlated subqueries and an un-cast column.
+        $isPg = DB::connection('tenant')->getDriverName() === 'pgsql';
+
         // ── 2. Backfill paid_amount from confirmed installment payments ──
         // Invoices with no installments keep the default 0.
         if (Schema::connection('tenant')->hasTable('purchase_installments')) {
-            DB::connection('tenant')->statement(<<<'SQL'
-                UPDATE purchase_invoices pi
-                SET paid_amount = COALESCE(s.total_paid, 0)
-                FROM (
-                    SELECT purchase_invoice_id, SUM(paid_amount) AS total_paid
-                    FROM purchase_installments
-                    WHERE deleted_at IS NULL
-                    GROUP BY purchase_invoice_id
-                ) s
-                WHERE s.purchase_invoice_id = pi.id
-            SQL);
+            if ($isPg) {
+                DB::connection('tenant')->statement(<<<'SQL'
+                    UPDATE purchase_invoices pi
+                    SET paid_amount = COALESCE(s.total_paid, 0)
+                    FROM (
+                        SELECT purchase_invoice_id, SUM(paid_amount) AS total_paid
+                        FROM purchase_installments
+                        WHERE deleted_at IS NULL
+                        GROUP BY purchase_invoice_id
+                    ) s
+                    WHERE s.purchase_invoice_id = pi.id
+                SQL);
+            } else {
+                DB::connection('tenant')->statement(<<<'SQL'
+                    UPDATE purchase_invoices
+                    SET paid_amount = COALESCE((
+                        SELECT SUM(pii.paid_amount)
+                        FROM purchase_installments pii
+                        WHERE pii.purchase_invoice_id = purchase_invoices.id
+                          AND pii.deleted_at IS NULL
+                    ), 0)
+                SQL);
+            }
         }
 
         // ── 3. Backfill due_date: earliest unpaid installment due date, else the invoice date ──
+        $invoiceDateExpr = $isPg ? 'invoice_date::date' : 'invoice_date';
         if (Schema::connection('tenant')->hasTable('purchase_installments')) {
-            DB::connection('tenant')->statement(<<<'SQL'
-                UPDATE purchase_invoices pi
+            DB::connection('tenant')->statement(<<<SQL
+                UPDATE purchase_invoices
                 SET due_date = COALESCE(
                     (
                         SELECT MIN(pii.due_date)
                         FROM purchase_installments pii
-                        WHERE pii.purchase_invoice_id = pi.id
+                        WHERE pii.purchase_invoice_id = purchase_invoices.id
                           AND pii.deleted_at IS NULL
                     ),
-                    pi.invoice_date::date
+                    {$invoiceDateExpr}
                 )
-                WHERE pi.due_date IS NULL
+                WHERE due_date IS NULL
             SQL);
         } else {
             DB::connection('tenant')->statement(
-                "UPDATE purchase_invoices SET due_date = invoice_date::date WHERE due_date IS NULL"
+                "UPDATE purchase_invoices SET due_date = {$invoiceDateExpr} WHERE due_date IS NULL"
             );
         }
 
@@ -106,13 +124,22 @@ return new class extends Migration
         });
     }
 
-    /** Postgres-safe index existence check on the tenant connection. */
+    /** Index existence check that works on both Postgres and SQLite (test env). */
     private function indexExists(string $table, string $index): bool
     {
-        $result = DB::connection('tenant')->select(
-            'SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ? LIMIT 1',
-            [$table, $index]
-        );
+        $connection = DB::connection('tenant');
+
+        if ($connection->getDriverName() === 'pgsql') {
+            $result = $connection->select(
+                'SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ? LIMIT 1',
+                [$table, $index]
+            );
+        } else {
+            $result = $connection->select(
+                "SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ? LIMIT 1",
+                [$index]
+            );
+        }
 
         return ! empty($result);
     }

@@ -48,7 +48,7 @@ class ProcessOrderReminders extends Command
                     })
                     ->count();
 
-                SendOrderReminderJob::dispatch($schedule->id, $lowCount);
+                SendOrderReminderJob::dispatch($tenantId, $schedule->id, $lowCount);
                 $sent++;
 
                 $this->info("Reminder queued: {$schedule->supplier->name} ({$lowCount} low stock items)");
