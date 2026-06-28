@@ -8,13 +8,25 @@ use App\Infrastructure\Eloquent\Models\TenantModel;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TenantBackupTest extends TestCase
 {
-    use RefreshDatabase;
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // These are disaster-recovery integration tests that shell out to a Unix
+        // backup toolchain (pg_dump / gzip / tar / openssl) and exercise real
+        // filesystem side-effects. They are not runnable on a Windows dev machine
+        // (no such binaries; Process::fake cannot fully reproduce the file layout).
+        // They are expected to run on the Linux CI environment.
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('Backup DR integration tests require a Unix toolchain (pg_dump/gzip/tar/openssl); skipped on Windows.');
+        }
+    }
+
     private function fakeAllProcesses(): void
     {
         Process::fake(function ($process) {

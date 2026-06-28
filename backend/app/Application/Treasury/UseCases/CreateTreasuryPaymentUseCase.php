@@ -34,7 +34,9 @@ final class CreateTreasuryPaymentUseCase
                 throw new DomainException('Amount must be greater than zero.');
             }
 
-            $safe = SafeModel::query()->where('tenant_id', $tenantId)->find($safeId);
+            // Lock the safe row so the balance check and the subsequent decrement are atomic
+            // (prevents concurrent withdrawals from both passing the funds check and overdrawing).
+            $safe = SafeModel::query()->where('tenant_id', $tenantId)->lockForUpdate()->find($safeId);
             if (! $safe) {
                 throw new DomainException('Safe not found.');
             }

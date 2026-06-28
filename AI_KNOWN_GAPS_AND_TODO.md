@@ -155,20 +155,19 @@ acting on any item, **re-verify the file/line still matches** — code moves.
   observed (every query already filters manually), but it's fragile — any
   future query that forgets the manual filter would leak cross-tenant data.
 
-## Known pre-existing test fragility (found 2026-06-27, not caused by any fix
-## in this file, do not chase as part of an unrelated task)
+## Suite non-determinism — RESOLVED at the source (2026-06-28)
 
-- `tests/Feature/Purchases/PurchaseWorkflowTest::test_confirmed_purchase_adds_stock`
-  and `PurchasesTest::test_can_update_purchase_status` fail with "No treasury
-  safe is configured for cash purchases" **even when run completely alone**
-  on a fresh migrated DB — confirmed via direct `git stash` of unrelated
-  changes to rule out a regression. The test never creates a `SafeModel`
-  fixture itself; it appears to silently depend on a safe seeded by whichever
-  test happens to run before it in the full suite, which is why it passes in
-  some full-suite runs and fails in others depending on ordering. Needs its
-  own `SafeModel::create(['type' => 'cash', ...])` in the test setup — out of
-  scope for whatever you're working on unless you're specifically fixing
-  Purchases tests.
+The run-to-run flakiness (executed-test count drifting 205/207/208, with an
+occasional real failure) traced to a **product bug**, not the harness:
+`CreateSupplierPaymentUseCase` passed a pre-generated UUID to the allocation step
+that `SupplierPaymentModel::create()` never persisted (id not mass-assignable →
+`HasUuids` minted a different one), so the allocation's `findOrFail` 404'd
+intermittently. Fixed in commit `a39d91e`. After that fix the full suite is a
+deterministic **210 tests / 595 assertions / 0 failures** across repeated runs,
+including on the unmodified test harness, and the previously-flaky
+`SupplierPaymentTest` + order-dependent Purchases failures no longer reproduce.
+See `AI_SECURITY_AUDIT_NOTES.md` (Closed, 2026-06-28) for the full write-up,
+including why an initial harness-level hypothesis was ruled out.
 
 ---
 

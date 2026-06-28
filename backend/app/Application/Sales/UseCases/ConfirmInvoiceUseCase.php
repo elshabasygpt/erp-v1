@@ -25,8 +25,10 @@ use App\Infrastructure\Eloquent\Models\SafeModel;
 use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
 use App\Infrastructure\Eloquent\Models\SafeUserModel;
 use App\Infrastructure\Eloquent\Models\UserModel;
+use App\Infrastructure\Eloquent\Models\WarrantyModel;
 use App\Jobs\SubmitZatcaInvoiceJob;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -55,9 +57,9 @@ class ConfirmInvoiceUseCase
         private ZatcaPhase1Service $zatcaPhase1Service,
     ) {}
 
-    public function execute(string $invoiceId, string $userId): void
+    public function execute(string $invoiceId, string $userId, bool $allowCreditOverride = false): void
     {
-        DB::connection('tenant')->transaction(function () use ($invoiceId, $userId) {
+        DB::connection('tenant')->transaction(function () use ($invoiceId, $userId, $allowCreditOverride) {
             $invoice = $this->invoiceRepository->findById($invoiceId);
             if (! $invoice) {
                 throw new \DomainException('Invoice not found.');
@@ -80,7 +82,7 @@ class ConfirmInvoiceUseCase
 
             if ($tenantCountry === 'SA') {
                 $sellerName = $tenantSettings['company_name'] ?? 'شركة';
-                $vatNumber  = $tenantSettings['vat_number'] ?? '';
+                $vatNumber = $tenantSettings['vat_number'] ?? '';
 
                 if ($vatNumber) {
                     $qrCode = $this->zatcaPhase1Service->generateQrBase64(
@@ -92,7 +94,7 @@ class ConfirmInvoiceUseCase
                     );
                     $invoice->setZatcaQrCode($qrCode);
                 } else {
-                    \Illuminate\Support\Facades\Log::warning('ZATCA QR skipped: Saudi tenant has no vat_number configured', [
+                    Log::warning('ZATCA QR skipped: Saudi tenant has no vat_number configured', [
                         'invoice_id' => $invoice->getId(),
                     ]);
                 }
@@ -164,23 +166,23 @@ class ConfirmInvoiceUseCase
                 // ── Auto-generate Warranty ──
                 if ($productModel && $productModel->warranty_months > 0 && $invoice->getCustomerId()) {
                     $invoiceModel = InvoiceModel::query()->find($invoice->getId());
-                    
-                    $lastWarranty = \App\Infrastructure\Eloquent\Models\WarrantyModel::latest('created_at')->first();
+
+                    $lastWarranty = WarrantyModel::latest('created_at')->first();
                     $lastNum = $lastWarranty ? ((int) str_replace('WRN-', '', $lastWarranty->warranty_number)) : 0;
-                    
-                    $maxWarrantyNumber = \App\Infrastructure\Eloquent\Models\WarrantyModel::max('warranty_number');
+
+                    $maxWarrantyNumber = WarrantyModel::max('warranty_number');
                     if ($maxWarrantyNumber) {
                         $maxNum = (int) str_replace('WRN-', '', $maxWarrantyNumber);
                         if ($maxNum > $lastNum) {
                             $lastNum = $maxNum;
                         }
                     }
-                    
-                    $warrantyNumber = 'WRN-' . str_pad((string) ($lastNum + 1), 6, '0', STR_PAD_LEFT);
 
-                    $expiryDate = $invoice->getInvoiceDate()->modify('+' . $productModel->warranty_months . ' months');
+                    $warrantyNumber = 'WRN-'.str_pad((string) ($lastNum + 1), 6, '0', STR_PAD_LEFT);
 
-                    \App\Infrastructure\Eloquent\Models\WarrantyModel::create([
+                    $expiryDate = $invoice->getInvoiceDate()->modify('+'.$productModel->warranty_months.' months');
+
+                    WarrantyModel::create([
                         'tenant_id' => $invoiceModel ? $invoiceModel->tenant_id : request()->header('X-Tenant-ID'),
                         'warranty_number' => $warrantyNumber,
                         'invoice_id' => $invoice->getId(),
@@ -225,6 +227,18 @@ class ConfirmInvoiceUseCase
                     // Credit balance
                     if ($invoice->getType() === 'credit') {
                         $due = $totalAmount - $paidAmount;
+
+                        // Authoritative, race-free credit-limit enforcement: runs under the
+                        // customer-row lock acquired above, immediately before the balance is
+                        // mutated, so two concurrent confirmations cannot both pass a stale check
+                        // and overshoot the limit. Override permission is validated by the caller.
+                        if (! $allowCreditOverride
+                            && $due > 0
+                            && (float) $customerModel->credit_limit > 0
+                            && ((float) $customerModel->balance + $due) > (float) $customerModel->credit_limit) {
+                            throw new \DomainException("Credit Limit Exceeded. Customer balance is {$customerModel->balance}, Credit Limit is {$customerModel->credit_limit}, and Due Amount is {$due}. Manager override required.");
+                        }
+
                         $customerModel->balance += $due;
                     }
 
@@ -331,8 +345,8 @@ class ConfirmInvoiceUseCase
         // Debit: Cash or Bank (for paid amount)
         if ($paidAmount > 0) {
             $paymentMethod = $invoiceModel->payment_method ?? 'cash';
-            $cashAccountId = ($paymentMethod === 'card' || $paymentMethod === 'bank_transfer') 
-                ? $this->accountMapping->resolve('bank') 
+            $cashAccountId = ($paymentMethod === 'card' || $paymentMethod === 'bank_transfer')
+                ? $this->accountMapping->resolve('bank')
                 : $this->accountMapping->resolve('cash');
 
             $journalEntry->addLine(new JournalEntryLine(
@@ -361,19 +375,24 @@ class ConfirmInvoiceUseCase
             ));
         }
 
-        // Credit: Revenue (net of discount)
+        // Credit: Revenue (net of discount). Skipped when zero — e.g. a zero-price
+        // warranty replacement invoice — so we never post an empty (0/0) journal line
+        // (the domain rejects those). Normal invoices always have net revenue > 0,
+        // so this guard is behaviour-neutral for them.
         $netRevenue = round($invoice->getSubtotal() - $invoice->getDiscountAmount(), 6);
-        $journalEntry->addLine(new JournalEntryLine(
-            id: null,
-            journalEntryId: '',
-            accountId: $this->accountMapping->resolve('revenue'),
-            debit: 0,
-            credit: round($netRevenue * $exchangeRate, 6),
-            transactionDebit: 0.0,
-            transactionCredit: round($netRevenue, 6),
-            description: 'Sales revenue',
-            costCenterId: $costCenterId,
-        ));
+        if ($netRevenue > 0) {
+            $journalEntry->addLine(new JournalEntryLine(
+                id: null,
+                journalEntryId: '',
+                accountId: $this->accountMapping->resolve('revenue'),
+                debit: 0,
+                credit: round($netRevenue * $exchangeRate, 6),
+                transactionDebit: 0.0,
+                transactionCredit: round($netRevenue, 6),
+                description: 'Sales revenue',
+                costCenterId: $costCenterId,
+            ));
+        }
 
         // Credit: VAT Payable
         if ($invoice->getVatAmount() > 0) {

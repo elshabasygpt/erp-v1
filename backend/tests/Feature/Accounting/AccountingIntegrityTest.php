@@ -204,7 +204,7 @@ class AccountingIntegrityTest extends TestCase
                 'product_id' => $this->productId, 'quantity' => 50, 'unit_price' => 200, 'vat_rate' => 15, 'total' => 11500
             ]);
 
-            app(ConfirmInvoiceUseCase::class)->execute($salesInvoiceId, $this->warehouseId, $this->userId);
+            app(ConfirmInvoiceUseCase::class)->execute($salesInvoiceId, $this->userId);
             $this->assertFinancialIntegrity();
 
             // STEP 3: PURCHASE RETURN (Return 10 units @ $100 = $1,000)
@@ -221,7 +221,8 @@ class AccountingIntegrityTest extends TestCase
             app(ConfirmPurchaseReturnUseCase::class)->execute($returnId, $this->warehouseId, $this->userId);
             $this->assertFinancialIntegrity();
         } catch (\Exception $e) {
-            dd($e->getMessage(), $e->getTraceAsString());
+            // Surface as a real test failure instead of dd()-halting the whole suite.
+            $this->fail('Financial lifecycle threw: '.$e->getMessage());
         }
 
         // STEP 4: FISCAL YEAR CLOSE
@@ -243,5 +244,115 @@ class AccountingIntegrityTest extends TestCase
         }
 
         $this->assertFinancialIntegrity();
+    }
+
+    /**
+     * Locks the P0-3 fix: paying a supplier must reduce supplier->balance (it previously only
+     * moved the safe, so payables grew on purchase and were never paid down) and post a balanced
+     * journal. Drives the real CreateSupplierPaymentUseCase.
+     */
+    public function test_supplier_payment_reduces_supplier_balance_and_posts_balanced_entry()
+    {
+        $currencyId = DB::connection('tenant')->table('currencies')->where('is_base', 1)->value('id');
+
+        // Credit purchase of 11,500 → supplier balance rises by the owed amount.
+        $pi = PurchaseInvoiceModel::query()->create([
+            'tenant_id' => $this->tenantId, 'supplier_id' => $this->supplierId, 'warehouse_id' => $this->warehouseId,
+            'currency_id' => $currencyId, 'exchange_rate' => 1.0,
+            'invoice_number' => 'PI-PAY', 'invoice_date' => now(), 'subtotal' => 10000, 'vat_amount' => 1500, 'total' => 11500, 'status' => 'draft',
+        ]);
+        PurchaseInvoiceItemModel::query()->create([
+            'tenant_id' => $this->tenantId, 'purchase_invoice_id' => $pi->id,
+            'product_id' => $this->productId, 'quantity' => 100, 'unit_price' => 100, 'vat_rate' => 15, 'total' => 11500,
+        ]);
+        app(ConfirmPurchaseUseCase::class)->execute($pi->id, 'credit', $this->userId);
+
+        $owed = (float) SupplierModel::query()->find($this->supplierId)->balance;
+        $this->assertEqualsWithDelta(11500.0, $owed, 0.01, 'Credit purchase should raise supplier balance.');
+        $this->assertFinancialIntegrity();
+
+        // Pay the supplier in full from a cash safe.
+        $safe = \App\Infrastructure\Eloquent\Models\SafeModel::query()->create([
+            'tenant_id' => $this->tenantId, 'name' => 'Cash', 'name_ar' => 'Cash', 'type' => 'cash', 'balance' => 20000, 'is_active' => true,
+        ]);
+        app(\App\Application\Purchases\UseCases\CreateSupplierPaymentUseCase::class)->execute($this->tenantId, [
+            'safe_id' => $safe->id,
+            'supplier_id' => $this->supplierId,
+            'amount' => $owed,
+            'payment_date' => '2026-01-15',
+        ], $this->userId);
+
+        // Supplier paid down to zero, safe reduced by the payment, ledger still balances.
+        $this->assertEqualsWithDelta(0.0, (float) SupplierModel::query()->find($this->supplierId)->balance, 0.01);
+        $this->assertEqualsWithDelta(20000.0 - $owed, (float) \App\Infrastructure\Eloquent\Models\SafeModel::query()->find($safe->id)->balance, 0.01);
+        $this->assertFinancialIntegrity();
+    }
+
+    /**
+     * Locks the P1-1 fix: confirming a sales return must post a balanced entry that INCLUDES the
+     * COGS/Inventory reversal (the previously-missing lines), so the GL tracks the stock that
+     * processInventoryReturn() puts back. Drives the real Returns\ConfirmSalesReturnUseCase.
+     */
+    public function test_sales_return_confirm_posts_cogs_and_inventory_reversal_and_balances()
+    {
+        $currencyId = DB::connection('tenant')->table('currencies')->where('is_base', 1)->value('id');
+
+        // Buy 100 @ 100 so the product carries stock at a known cost, then sell 50.
+        $pi = PurchaseInvoiceModel::query()->create([
+            'tenant_id' => $this->tenantId, 'supplier_id' => $this->supplierId, 'warehouse_id' => $this->warehouseId,
+            'currency_id' => $currencyId, 'exchange_rate' => 1.0,
+            'invoice_number' => 'PI-RET', 'invoice_date' => now(), 'subtotal' => 10000, 'vat_amount' => 1500, 'total' => 11500, 'status' => 'draft',
+        ]);
+        PurchaseInvoiceItemModel::query()->create([
+            'tenant_id' => $this->tenantId, 'purchase_invoice_id' => $pi->id,
+            'product_id' => $this->productId, 'quantity' => 100, 'unit_price' => 100, 'vat_rate' => 15, 'total' => 11500,
+        ]);
+        app(ConfirmPurchaseUseCase::class)->execute($pi->id, $this->warehouseId, $this->userId);
+
+        $si = InvoiceModel::query()->create([
+            'tenant_id' => $this->tenantId, 'customer_id' => $this->customerId, 'warehouse_id' => $this->warehouseId,
+            'currency_id' => $currencyId, 'exchange_rate' => 1.0,
+            'invoice_number' => 'INV-RET', 'invoice_date' => now(), 'subtotal' => 10000, 'vat_amount' => 1500, 'total' => 11500, 'status' => 'draft', 'type' => 'standard',
+        ]);
+        InvoiceItemModel::query()->create([
+            'tenant_id' => $this->tenantId, 'invoice_id' => $si->id,
+            'product_id' => $this->productId, 'quantity' => 50, 'unit_price' => 200, 'vat_rate' => 15, 'total' => 11500,
+        ]);
+        app(ConfirmInvoiceUseCase::class)->execute($si->id, $this->userId);
+        $this->assertFinancialIntegrity();
+
+        // Return 5 good units. Cost basis = 5 * 100 = 500 → must appear as Inventory debit / COGS credit.
+        $cogsExpected = 500.0;
+        $sr = \App\Infrastructure\Eloquent\Models\SalesReturnModel::query()->create([
+            'tenant_id' => $this->tenantId, 'return_number' => 'RET-RET', 'rma_number' => 'RMA-RET',
+            'invoice_id' => $si->id, 'customer_id' => $this->customerId, 'warehouse_id' => $this->warehouseId,
+            'return_date' => now(), 'subtotal' => 1000, 'vat_amount' => 150, 'total' => 1150, 'commission_amount' => 0,
+            'status' => 'draft', 'return_type' => 'partial', 'refund_method' => 'store_credit', 'approval_status' => 'approved',
+            'created_by' => $this->userId,
+        ]);
+        \App\Infrastructure\Eloquent\Models\SalesReturnItemModel::query()->create([
+            'tenant_id' => $this->tenantId, 'sales_return_id' => $sr->id, 'product_id' => $this->productId,
+            'quantity' => 5, 'unit_price' => 200, 'cost_price' => 100, 'vat_rate' => 15, 'total' => 1150, 'condition' => 'good',
+        ]);
+
+        app(\App\Application\Sales\UseCases\Returns\ConfirmSalesReturnUseCase::class)->execute($sr->id, $this->userId);
+
+        // Whole ledger still balances after the return.
+        $this->assertFinancialIntegrity();
+
+        // The return entry exists and carries the COGS/Inventory reversal lines.
+        // (In the testing env AccountMappingService collapses every key to one dummy account id,
+        // so we identify the reversal lines by their description rather than by account.)
+        $je = JournalEntryModel::query()->where('reference_type', 'sales_return')->where('reference_id', $sr->id)->firstOrFail();
+
+        $invLine = JournalEntryLineModel::query()->where('journal_entry_id', $je->id)
+            ->where('description', 'Inventory return (cost)')->first();
+        $cogsLine = JournalEntryLineModel::query()->where('journal_entry_id', $je->id)
+            ->where('description', 'COGS reversal')->first();
+
+        $this->assertNotNull($invLine, 'Inventory reversal line was not posted on sales return.');
+        $this->assertNotNull($cogsLine, 'COGS reversal line was not posted on sales return.');
+        $this->assertEquals($cogsExpected, round((float) $invLine->debit, 2), 'Inventory restored to the GL at the wrong cost.');
+        $this->assertEquals($cogsExpected, round((float) $cogsLine->credit, 2), 'COGS reversed at the wrong cost.');
     }
 }

@@ -22,11 +22,11 @@ class SendInstallmentRemindersCommand extends Command
 
         foreach ($tenants as $tenantId) {
             $overdueInstallments = DB::connection('tenant')
-                ->table('installment_payments as ip')
+                ->table('invoice_installments as ip')
                 ->join('invoices as i', 'i.id', '=', 'ip.invoice_id')
                 ->join('customers as c', 'c.id', '=', 'i.customer_id')
                 ->where('i.tenant_id', $tenantId)
-                ->where('ip.status', 'pending')
+                ->whereIn('ip.status', ['unpaid', 'partially_paid', 'overdue'])
                 ->where('ip.due_date', '<', $today)
                 ->select([
                     'ip.id as installment_id',
@@ -46,11 +46,11 @@ class SendInstallmentRemindersCommand extends Command
             }
 
             $upcomingInstallments = DB::connection('tenant')
-                ->table('installment_payments as ip')
+                ->table('invoice_installments as ip')
                 ->join('invoices as i', 'i.id', '=', 'ip.invoice_id')
                 ->join('customers as c', 'c.id', '=', 'i.customer_id')
                 ->where('i.tenant_id', $tenantId)
-                ->where('ip.status', 'pending')
+                ->whereIn('ip.status', ['unpaid', 'partially_paid'])
                 ->whereBetween('ip.due_date', [$today, now()->addDays(3)->toDateString()])
                 ->select([
                     'ip.id as installment_id',

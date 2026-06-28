@@ -4,11 +4,12 @@ namespace Tests\Unit\Domain\Approvals;
 
 use App\Application\Approvals\UseCases\ApproveRequestUseCase;
 use App\Application\Approvals\UseCases\RejectRequestUseCase;
+use App\Application\Sales\UseCases\ConfirmInvoiceUseCase;
 use App\Domain\Approvals\Entities\ApprovalRequest;
 use App\Domain\Approvals\Repositories\ApprovalRepositoryInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class ApproveRequestUseCaseTest extends TestCase
 {
@@ -16,7 +17,19 @@ class ApproveRequestUseCaseTest extends TestCase
 
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->repo = $this->createMock(ApprovalRepositoryInterface::class);
+    }
+
+    /**
+     * Approving an invoice triggers ConfirmInvoiceUseCase, but these cases all use
+     * a non-invoice requestable type, so the real (container-resolved) confirm
+     * use-case is wired in but never invoked.
+     */
+    private function approveUseCase(): ApproveRequestUseCase
+    {
+        return new ApproveRequestUseCase($this->repo, app(ConfirmInvoiceUseCase::class));
     }
 
     private function makeRequest(string $status): ApprovalRequest
@@ -43,7 +56,7 @@ class ApproveRequestUseCaseTest extends TestCase
             ->method('updateStatus')
             ->with(1, 'approved', 3, null);
 
-        $useCase = new ApproveRequestUseCase($this->repo);
+        $useCase = $this->approveUseCase();
         $useCase->execute(1, 3);
     }
 
@@ -55,7 +68,7 @@ class ApproveRequestUseCaseTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
 
-        $useCase = new ApproveRequestUseCase($this->repo);
+        $useCase = $this->approveUseCase();
         $useCase->execute(1, 3);
     }
 
@@ -79,7 +92,7 @@ class ApproveRequestUseCaseTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Approval request not found');
 
-        $useCase = new ApproveRequestUseCase($this->repo);
+        $useCase = $this->approveUseCase();
         $useCase->execute(999, 3);
     }
 }

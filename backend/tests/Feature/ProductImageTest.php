@@ -60,14 +60,17 @@ class ProductImageTest extends TestCase
         ]);
 
         $url = $response->json('data.image_url');
-        $this->assertStringContainsString('/uploads/products/', $url);
+        // Uploads are namespaced per tenant: /uploads/tenant_{id}/products/{file}
+        $this->assertStringContainsString('/uploads/tenant_', $url);
+        $this->assertStringContainsString('/products/', $url);
 
-        // Check file exists in target public path
-        $filename = basename($url);
-        $this->assertFileExists(public_path('uploads/products/'.$filename));
+        // Check file exists in target public path (derive path from the returned URL
+        // rather than hard-coding the tenant segment).
+        $relativePath = ltrim($url, '/');
+        $this->assertFileExists(public_path($relativePath));
 
         // Clean up uploaded file
-        @unlink(public_path('uploads/products/'.$filename));
+        @unlink(public_path($relativePath));
     }
 
     public function test_upload_image_validation_fails_for_invalid_type()

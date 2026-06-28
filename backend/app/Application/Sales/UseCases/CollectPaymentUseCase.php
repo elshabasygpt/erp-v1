@@ -12,6 +12,7 @@ use App\Domain\Accounting\Services\AccountMappingService;
 use App\Domain\Accounting\Services\FXGainLossService;
 use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\CustomerPaymentModel;
+use App\Infrastructure\Eloquent\Models\InvoiceInstallmentModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\PaymentAllocationModel;
 use App\Infrastructure\Eloquent\Models\SafeModel;
@@ -46,7 +47,9 @@ class CollectPaymentUseCase
             // 2. Create Payment Record
             $payment = CustomerPaymentModel::query()->create([
                 'id' => Str::uuid()->toString(),
-                'reference_number' => 'REC-'.date('YmdHis'),
+                // Append a short unique suffix: date('YmdHis') alone collided on the unique
+                // reference_number constraint for two payments landing in the same second.
+                'reference_number' => 'REC-'.date('YmdHis').'-'.strtoupper(Str::random(4)),
                 'customer_id' => $customer->id,
                 'currency_id' => $currencyId,
                 'exchange_rate' => $exchangeRate,
@@ -102,6 +105,11 @@ class CollectPaymentUseCase
                 }
                 $invoice->save();
 
+                // Cascade the allocated amount onto this invoice's installment schedule
+                // (oldest due first). Without this the installment rows' paid_amount/status
+                // never moved, so the plan permanently diverged from the actual receivable.
+                $this->applyPaymentToInstallments($invoice->id, $allocAmount);
+
                 $remainingAmount -= $allocAmount;
             }
 
@@ -121,6 +129,45 @@ class CollectPaymentUseCase
         });
     }
 
+    /**
+     * Distribute an allocated amount across an invoice's unpaid installments, oldest due first,
+     * updating each installment's paid_amount and status. No-op when the invoice has no schedule.
+     */
+    private function applyPaymentToInstallments(string $invoiceId, float $amount): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        $installments = InvoiceInstallmentModel::query()
+            ->where('invoice_id', $invoiceId)
+            ->where('status', '!=', 'paid')
+            ->orderBy('due_date')
+            ->lockForUpdate()
+            ->get();
+
+        $remaining = $amount;
+        foreach ($installments as $installment) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $outstanding = (float) $installment->amount - (float) $installment->paid_amount;
+            if ($outstanding <= 0) {
+                continue;
+            }
+
+            $applied = min($remaining, $outstanding);
+            $installment->paid_amount = (float) $installment->paid_amount + $applied;
+            $installment->status = ((float) $installment->paid_amount + 0.0001) >= (float) $installment->amount
+                ? 'paid'
+                : 'partially_paid';
+            $installment->save();
+
+            $remaining -= $applied;
+        }
+    }
+
     private function depositToSafe(string $tenantId, CustomerPaymentModel $payment, string $userId, ?string $costCenterId): void
     {
         // Try getting the primary safe for current user
@@ -137,7 +184,8 @@ class CollectPaymentUseCase
         }
 
         if ($safeId) {
-            $safe = SafeModel::query()->find($safeId);
+            // Lock the safe row so concurrent deposits don't lose updates on the balance.
+            $safe = SafeModel::query()->lockForUpdate()->find($safeId);
             if ($safe) {
                 $safe->balance += $payment->amount;
                 $safe->save();

@@ -10,6 +10,7 @@ use App\Application\Purchases\UseCases\CreatePurchaseUseCase;
 use App\Application\Services\Webhooks\WebhookService;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
 use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Controllers\API\Concerns\HandlesImageUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,6 +18,8 @@ use App\Infrastructure\Eloquent\Models\SupplierPriceListModel;
 
 class PurchaseController extends BaseTenantController
 {
+    use HandlesImageUploads;
+
     public function __construct(
         private readonly CreatePurchaseUseCase $createPurchaseUseCase,
         private readonly ConfirmPurchaseUseCase $confirmPurchaseUseCase,
@@ -31,6 +34,10 @@ class PurchaseController extends BaseTenantController
 
         if ($status && $status !== 'all') {
             $query->where('status', $status);
+        }
+
+        if ($supplierId = $request->query('supplier_id')) {
+            $query->where('supplier_id', $supplierId);
         }
 
         $purchases = $query->paginate((int) $limit);
@@ -108,50 +115,56 @@ class PurchaseController extends BaseTenantController
         ]);
 
         try {
-            // Delete old items and recreate (draft only)
-            $purchase->items()->delete();
+            // One transaction for the whole edit: the draft item rewrite + the
+            // optional confirm must be atomic. Otherwise a confirm that throws
+            // (e.g. no treasury safe / stock issue) would leave the rewritten
+            // items and header committed without the matching stock/journal.
+            \DB::connection('tenant')->transaction(function () use ($validated, $purchase) {
+                // Delete old items and recreate (draft only)
+                $purchase->items()->delete();
 
-            $dto = CreatePurchaseDTO::fromRequest(array_merge($validated, ['supplier_id' => $validated['supplier_id']]));
+                $dto = CreatePurchaseDTO::fromRequest(array_merge($validated, ['supplier_id' => $validated['supplier_id']]));
 
-            $subtotalAmount = 0;
-            $taxAmount = 0;
-            foreach ($dto->items as $item) {
-                $itemSub = round($item['quantity'] * $item['unit_price'], 6);
-                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
-                $subtotalAmount += $itemSub;
-                $taxAmount += $itemTax;
-            }
+                $subtotalAmount = 0;
+                $taxAmount = 0;
+                foreach ($dto->items as $item) {
+                    $itemSub = round($item['quantity'] * $item['unit_price'], 6);
+                    $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
+                    $subtotalAmount += $itemSub;
+                    $taxAmount += $itemTax;
+                }
 
-            $purchase->update([
-                'supplier_id' => $dto->supplierId,
-                'warehouse_id' => $dto->warehouseId,
-                'invoice_date' => $dto->issueDate,
-                'subtotal' => round($subtotalAmount, 6),
-                'vat_amount' => round($taxAmount, 6),
-                'total' => round($subtotalAmount + $taxAmount, 6),
-                'status' => $dto->status === 'confirmed' ? 'draft' : $dto->status,
-                'notes' => $dto->notes,
-            ]);
-
-            foreach ($dto->items as $item) {
-                $itemSub = round($item['quantity'] * $item['unit_price'], 6);
-                $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
-
-                $purchase->items()->create([
-                    'id' => Str::uuid()->toString(),
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'vat_rate' => $item['tax_rate'],
-                    'total' => round($itemSub + $itemTax, 6),
+                $purchase->update([
+                    'supplier_id' => $dto->supplierId,
+                    'warehouse_id' => $dto->warehouseId,
+                    'invoice_date' => $dto->issueDate,
+                    'subtotal' => round($subtotalAmount, 6),
+                    'vat_amount' => round($taxAmount, 6),
+                    'total' => round($subtotalAmount + $taxAmount, 6),
+                    'status' => $dto->status === 'confirmed' ? 'draft' : $dto->status,
+                    'notes' => $dto->notes,
                 ]);
-            }
 
-            // If updating to confirmed, run confirmation
-            if ($dto->status === 'confirmed') {
-                $this->confirmPurchaseUseCase->execute($purchase->id, $dto->paymentType, auth()->id() ?? '');
-                $purchase->refresh();
-            }
+                foreach ($dto->items as $item) {
+                    $itemSub = round($item['quantity'] * $item['unit_price'], 6);
+                    $itemTax = round($itemSub * ($item['tax_rate'] / 100), 6);
+
+                    $purchase->items()->create([
+                        'id' => Str::uuid()->toString(),
+                        'product_id' => $item['product_id'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'vat_rate' => $item['tax_rate'],
+                        'total' => round($itemSub + $itemTax, 6),
+                    ]);
+                }
+
+                // If updating to confirmed, run confirmation
+                if ($dto->status === 'confirmed') {
+                    $this->confirmPurchaseUseCase->execute($purchase->id, $dto->paymentType, auth()->id() ?? '');
+                    $purchase->refresh();
+                }
+            });
 
             return $this->success($purchase->load('items'), 'Purchase invoice updated successfully');
         } catch (\DomainException $e) {
@@ -304,7 +317,9 @@ class PurchaseController extends BaseTenantController
 
         $path = $installment->attachment_path;
         if ($request->hasFile('attachment')) {
-            $path = $request->file('attachment')->store('installments/receipts', 'public');
+            // Store under public/uploads/tenant_{id}/... — the only path mounted on the
+            // Docker uploads volume (the old 'public' disk wrote outside it → lost on redeploy).
+            $path = $this->storeUploadedImage($request->file('attachment'), $this->getTenantId($request), 'installments');
         }
 
         \DB::connection('tenant')->transaction(function () use ($installment, $validated, $amountToPay, $remaining, $path, $request) {

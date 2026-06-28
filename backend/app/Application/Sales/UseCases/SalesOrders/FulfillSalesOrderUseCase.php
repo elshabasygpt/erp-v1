@@ -19,8 +19,7 @@ final class FulfillSalesOrderUseCase
 
     public function execute(string $salesOrderId, string $userId): Invoice
     {
-        $defaultVatRate = (float) (DB::connection('tenant')
-            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+        $defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
 
         return DB::connection('tenant')->transaction(function () use ($salesOrderId, $userId, $defaultVatRate) {
             $salesOrder = SalesOrderModel::query()->with('items')->findOrFail($salesOrderId);

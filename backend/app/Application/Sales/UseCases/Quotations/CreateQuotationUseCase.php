@@ -14,8 +14,7 @@ final class CreateQuotationUseCase
 {
     public function execute(CreateQuotationDTO $dto, string $userId): QuotationModel
     {
-        $defaultVatRate = (float) (DB::connection('tenant')
-            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+        $defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
 
         return DB::connection('tenant')->transaction(function () use ($dto, $userId, $defaultVatRate) {
 

@@ -25,6 +25,7 @@ use App\Presentation\Controllers\API\CRM\CustomerInteractionController;
 use App\Presentation\Controllers\API\CRM\CustomerVehicleController;
 use App\Presentation\Controllers\API\CRM\ReceivableController;
 use App\Presentation\Controllers\API\CRM\PayableController;
+use App\Presentation\Controllers\API\CRM\CrmPipelineController;
 use App\Presentation\Controllers\API\CRM\SalesFollowUpController;
 use App\Presentation\Controllers\API\CRM\SupplierController;
 use App\Presentation\Controllers\API\CRM\VoucherController;
@@ -61,6 +62,7 @@ use App\Presentation\Controllers\API\Portal\PartnerDashboardController;
 use App\Presentation\Controllers\API\Purchases\PurchaseController;
 use App\Presentation\Controllers\API\Purchases\PurchaseReturnController;
 use App\Presentation\Controllers\API\Purchases\SupplierPaymentAllocationController;
+use App\Presentation\Controllers\API\Purchases\SupplierPaymentController;
 use App\Presentation\Controllers\API\Purchases\ProcurementController;
 use App\Presentation\Controllers\API\Purchases\SupplierPriceListController;
 use App\Presentation\Controllers\API\Purchases\SupplierCoreReturnController;
@@ -140,6 +142,8 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
         Route::put('/invoices/{id}', [InvoiceController::class, 'update'])->middleware('throttle:60,1');
         Route::put('/invoices/{id}/status', [InvoiceController::class, 'updateStatus']);
+        Route::get('/invoices/{id}/installments', [InvoiceController::class, 'getInstallments']);
+        Route::post('/invoices/{id}/installments', [InvoiceController::class, 'saveInstallments']);
         Route::get('/reports/sales', [InvoiceController::class, 'salesReport']);
 
         // POS Shifts
@@ -379,7 +383,9 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::put('/products/{id}/aliases/{aliasId}', [ProductAliasController::class, 'update']);
         Route::delete('/products/{id}/aliases/{aliasId}', [ProductAliasController::class, 'destroy']);
         Route::get('/products/{id}/resolve-alias', [ProductAliasController::class, 'resolveAlias']);
+        Route::get('/products/{id}/customer-aliases', [ProductAliasController::class, 'indexCustomerAliases']);
         Route::post('/products/{id}/customer-aliases', [ProductAliasController::class, 'storeCustomerAlias']);
+        Route::delete('/products/{id}/customer-aliases/{aliasId}', [ProductAliasController::class, 'destroyCustomerAlias']);
 
         // Product Cross-References
         Route::get('/products/{productId}/cross-references',            [CrossReferenceController::class, 'index']);
@@ -478,6 +484,11 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::post('follow-ups', [SalesFollowUpController::class, 'store']);
         Route::put('follow-ups/{id}/complete', [SalesFollowUpController::class, 'markCompleted']);
 
+        // CRM Sales Pipeline (Kanban board)
+        Route::get('pipeline/stages', [CrmPipelineController::class, 'stages']);
+        Route::post('pipeline/deals', [CrmPipelineController::class, 'storeDeal']);
+        Route::put('pipeline/deals/{id}/move', [CrmPipelineController::class, 'moveDeal']);
+
         // Customer Vehicles
         Route::get('customers/vehicles/search', [CustomerVehicleController::class, 'searchByPlate']);
         // Customer-Specific Product Prices
@@ -541,6 +552,10 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::get('/core-returns/{id}', [SupplierCoreReturnController::class, 'show']);
         Route::post('/core-returns/{id}/ship', [SupplierCoreReturnController::class, 'ship']);
         Route::post('/core-returns/{id}/credit', [SupplierCoreReturnController::class, 'credit']);
+
+        // Supplier Payments (record + allocate in one step)
+        Route::get('/suppliers/{supplierId}/payments', [SupplierPaymentController::class, 'index']);
+        Route::post('/suppliers/{supplierId}/payments', [SupplierPaymentController::class, 'store']);
 
         // Supplier Payment Allocations
         Route::get('/payments/{paymentId}/allocations', [SupplierPaymentAllocationController::class, 'index']);
@@ -841,10 +856,10 @@ Route::middleware(['tenant.auth', 'subscription.active'])->prefix('sales/commiss
 //  Partner Portal — Separate auth, tenant-scoped via query param
 // ─────────────────────────────────────────────────────────────
 Route::middleware(['tenant'])->prefix('portal')->group(function () {
-    // Public portal auth
-    Route::post('/login', [PartnerAuthController::class, 'login']);
-    Route::post('/magic-link', [PartnerAuthController::class, 'sendMagicLink']);
-    Route::post('/magic-link/verify', [PartnerAuthController::class, 'verifyMagicLink']);
+    // Public portal auth (throttled — public, tenant-scoped auth surface)
+    Route::post('/login', [PartnerAuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/magic-link', [PartnerAuthController::class, 'sendMagicLink'])->middleware('throttle:10,1');
+    Route::post('/magic-link/verify', [PartnerAuthController::class, 'verifyMagicLink'])->middleware('throttle:10,1');
 
     // Protected portal routes (partner token required)
     Route::middleware(['partner.auth'])->group(function () {

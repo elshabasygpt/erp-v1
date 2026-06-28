@@ -186,7 +186,7 @@ class WarrantyController extends BaseTenantController
         ]);
 
         $tenantId = $this->getTenantId($request);
-        $userId   = (string) ($request->user()?->id ?? '');
+        $userId = (string) ($request->user()?->id ?? '');
 
         $claim = WarrantyClaimModel::query()
             ->where('tenant_id', $tenantId)
@@ -244,29 +244,30 @@ class WarrantyController extends BaseTenantController
                             throw new \DomainException('لا يوجد مخزن متاح لإصدار فاتورة الاستبدال.');
                         }
 
-                        $defaultVatRate = (float) (DB::connection('tenant')
-                            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+                        $defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
 
                         $payload = [
-                            'customer_id'  => $warranty->customer_id,
+                            'customer_id' => $warranty->customer_id,
                             'warehouse_id' => $warehouseId,
-                            'type'         => 'cash',
-                            'status'       => 'draft',
-                            'notes'        => 'استبدال ضمان — مطالبة رقم: ' . $claim->claim_number,
-                            'items'        => [[
-                                'product_id'       => $warranty->product_id,
-                                'quantity'         => (float) $warranty->quantity,
-                                'unit_price'       => 0,
+                            'type' => 'cash',
+                            'status' => 'draft',
+                            'notes' => 'استبدال ضمان — مطالبة رقم: '.$claim->claim_number,
+                            'items' => [[
+                                'product_id' => $warranty->product_id,
+                                'quantity' => (float) $warranty->quantity,
+                                'unit_price' => 0,
                                 'discount_percent' => 0,
-                                'vat_rate'         => $warranty->product?->vat_rate ?? $defaultVatRate,
-                                'printed_name'     => $warranty->product?->name,
+                                'vat_rate' => $warranty->product?->vat_rate ?? $defaultVatRate,
+                                'printed_name' => $warranty->product?->name,
                             ]],
                         ];
 
                         $dto = CreateInvoiceDTO::fromRequest($payload, $defaultVatRate);
 
                         $replacementInvoice = $this->createInvoiceUseCase->execute($dto, $userId);
-                        $this->confirmInvoiceUseCase->execute($replacementInvoice->getId(), $userId);
+                        // Warranty replacement is a zero-value internal invoice; don't let a
+                        // customer's credit limit block issuing a warranty replacement.
+                        $this->confirmInvoiceUseCase->execute($replacementInvoice->getId(), $userId, true);
 
                         $claim->replacement_invoice_id = $replacementInvoice->getId();
                         $claim->save();
@@ -276,7 +277,7 @@ class WarrantyController extends BaseTenantController
                 return $claim->fresh();
             });
         } catch (\DomainException $e) {
-            return $this->error('تعذّر إصدار فاتورة الاستبدال: ' . $e->getMessage(), 422);
+            return $this->error('تعذّر إصدار فاتورة الاستبدال: '.$e->getMessage(), 422);
         }
 
         return $this->success($claim->toArray(), 'Claim updated successfully');

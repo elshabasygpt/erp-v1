@@ -242,8 +242,11 @@ final class Invoice extends Entity
 
     public function confirm(): void
     {
-        if ($this->status !== 'draft') {
-            throw new \DomainException('Only draft invoices can be confirmed.');
+        // A draft invoice confirms directly; an invoice that was routed through an
+        // approval rule sits in `pending_approval` until a manager approves it, then
+        // confirms via the same path. Both are valid pre-confirmation states.
+        if (! in_array($this->status, ['draft', 'pending_approval'], true)) {
+            throw new \DomainException('Only draft or pending-approval invoices can be confirmed.');
         }
         $this->status = 'confirmed';
     }

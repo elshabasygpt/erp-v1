@@ -173,6 +173,41 @@ class CreditLimitEnforcementTest extends TestCase
         $allowed->assertStatus(200);
     }
 
+    public function test_confirm_use_case_enforces_credit_limit_even_when_called_directly()
+    {
+        // The authoritative, race-closing check lives inside ConfirmInvoiceUseCase under the
+        // customer-row lock — not only in the controller. Calling the use-case directly (the
+        // path a concurrent confirmation takes) must still reject an over-limit credit invoice.
+        $user = $this->actingAsAuthenticatedUser();
+        [$warehouse, $product] = $this->makeWarehouseAndProduct();
+        $customer = $this->makeCustomer(balance: 100, creditLimit: 100);
+
+        $draftPayload = $this->invoicePayload($warehouse, $product, $customer);
+        $draftPayload['status'] = 'draft';
+        $invoiceId = $this->postJson('/api/sales/invoices', $draftPayload)->json('data.id');
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessageMatches('/Credit Limit Exceeded/');
+        app(\App\Application\Sales\UseCases\ConfirmInvoiceUseCase::class)->execute($invoiceId, $user->id);
+    }
+
+    public function test_confirm_use_case_honours_override_flag_when_called_directly()
+    {
+        $user = $this->actingAsAuthenticatedUser();
+        [$warehouse, $product] = $this->makeWarehouseAndProduct();
+        $customer = $this->makeCustomer(balance: 100, creditLimit: 100);
+
+        $draftPayload = $this->invoicePayload($warehouse, $product, $customer);
+        $draftPayload['status'] = 'draft';
+        $invoiceId = $this->postJson('/api/sales/invoices', $draftPayload)->json('data.id');
+
+        app(\App\Application\Sales\UseCases\ConfirmInvoiceUseCase::class)->execute($invoiceId, $user->id, true);
+
+        $this->assertDatabaseHas('invoices', ['id' => $invoiceId, 'status' => 'confirmed']);
+        // Balance increases by the 115 due (100 + 15% VAT), proving the override path still posts.
+        $this->assertEquals(215.0, (float) CustomerModel::find($customer->id)->balance);
+    }
+
     public function test_create_and_confirm_are_atomic_no_orphaned_draft_when_confirm_fails()
     {
         $this->actingAsAuthenticatedUser();

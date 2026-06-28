@@ -34,7 +34,8 @@ final class CreateTreasuryReceiptUseCase
                 throw new DomainException('Amount must be greater than zero.');
             }
 
-            $safe = SafeModel::query()->where('tenant_id', $tenantId)->find($safeId);
+            // Lock the safe row so the balance read-modify-write is atomic under concurrency.
+            $safe = SafeModel::query()->where('tenant_id', $tenantId)->lockForUpdate()->find($safeId);
             if (! $safe) {
                 throw new DomainException('Safe not found.');
             }

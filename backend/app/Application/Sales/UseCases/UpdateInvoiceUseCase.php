@@ -102,6 +102,7 @@ final class UpdateInvoiceUseCase
             referenceNo: $dto->referenceNo,
             paidAmount: $dto->type === 'cash' ? 0 : $dto->paidAmount,
             salespersonId: $dto->salespersonId ?? $invoice->getSalespersonId(),
+            paymentMethod: $dto->paymentMethod,
         );
 
         $updatedInvoice->setItems($items);
@@ -113,41 +114,42 @@ final class UpdateInvoiceUseCase
                 ->delete();
 
             InvoiceModel::query()->where('id', $updatedInvoice->getId())->update([
-                'customer_id'              => $updatedInvoice->getCustomerId(),
-                'type'                     => $updatedInvoice->getType(),
-                'subtotal'                 => $updatedInvoice->getSubtotal(),
-                'vat_amount'               => $updatedInvoice->getVatAmount(),
-                'discount_amount'          => $updatedInvoice->getDiscountAmount(),
-                'total'                    => $updatedInvoice->getTotal(),
-                'status'                   => $updatedInvoice->getStatus(), // 'draft'
-                'notes'                    => $updatedInvoice->getNotes(),
-                'warehouse_id'             => $updatedInvoice->getWarehouseId(),
-                'updated_by'               => $userId,
-                'sales_channel_id'         => $updatedInvoice->getSalesChannelId(),
-                'sales_channel_name'       => $updatedInvoice->getSalesChannelName(),
-                'pricing_adjustment_type'  => $updatedInvoice->getPricingAdjustmentType(),
+                'customer_id' => $updatedInvoice->getCustomerId(),
+                'type' => $updatedInvoice->getType(),
+                'subtotal' => $updatedInvoice->getSubtotal(),
+                'vat_amount' => $updatedInvoice->getVatAmount(),
+                'discount_amount' => $updatedInvoice->getDiscountAmount(),
+                'total' => $updatedInvoice->getTotal(),
+                'status' => $updatedInvoice->getStatus(), // 'draft'
+                'notes' => $updatedInvoice->getNotes(),
+                'warehouse_id' => $updatedInvoice->getWarehouseId(),
+                'updated_by' => $userId,
+                'sales_channel_id' => $updatedInvoice->getSalesChannelId(),
+                'sales_channel_name' => $updatedInvoice->getSalesChannelName(),
+                'pricing_adjustment_type' => $updatedInvoice->getPricingAdjustmentType(),
                 'pricing_adjustment_value' => $updatedInvoice->getPricingAdjustmentValue(),
-                'due_date'                 => $updatedInvoice->getDueDate(),
-                'internal_notes'           => $updatedInvoice->getInternalNotes(),
-                'reference_no'             => $updatedInvoice->getReferenceNo(),
-                'paid_amount'              => $updatedInvoice->getPaidAmount(),
-                'salesperson_id'           => $updatedInvoice->getSalespersonId(),
+                'due_date' => $updatedInvoice->getDueDate(),
+                'internal_notes' => $updatedInvoice->getInternalNotes(),
+                'reference_no' => $updatedInvoice->getReferenceNo(),
+                'paid_amount' => $updatedInvoice->getPaidAmount(),
+                'salesperson_id' => $updatedInvoice->getSalespersonId(),
+                'payment_method' => $updatedInvoice->getPaymentMethod(),
             ]);
 
             foreach ($updatedInvoice->getItems() as $item) {
                 InvoiceItemModel::query()->create([
-                    'id'                  => $item->getId(),
-                    'invoice_id'          => $updatedInvoice->getId(),
-                    'product_id'          => $item->getProductId(),
-                    'quantity'            => $item->getQuantity(),
-                    'unit_price'          => $item->getUnitPrice(),
-                    'discount_percent'    => $item->getDiscountPercent(),
-                    'vat_rate'            => $item->getVatRate(),
-                    'total'               => $item->getTotal(),
-                    'base_unit_price'     => $item->getBaseUnitPrice(),
+                    'id' => $item->getId(),
+                    'invoice_id' => $updatedInvoice->getId(),
+                    'product_id' => $item->getProductId(),
+                    'quantity' => $item->getQuantity(),
+                    'unit_price' => $item->getUnitPrice(),
+                    'discount_percent' => $item->getDiscountPercent(),
+                    'vat_rate' => $item->getVatRate(),
+                    'total' => $item->getTotal(),
+                    'base_unit_price' => $item->getBaseUnitPrice(),
                     'adjusted_unit_price' => $item->getAdjustedUnitPrice(),
-                    'adjustment_amount'   => $item->getAdjustmentAmount(),
-                    'printed_name'        => $item->getPrintedName(),
+                    'adjustment_amount' => $item->getAdjustmentAmount(),
+                    'printed_name' => $item->getPrintedName(),
                 ]);
             }
 
@@ -156,7 +158,9 @@ final class UpdateInvoiceUseCase
             // transaction (visible because it's the same DB session), then performs the
             // full lifecycle. No confirmation logic is duplicated here.
             if ($dto->status === 'confirmed') {
-                $this->confirmInvoiceUseCase->execute($updatedInvoice->getId(), $userId);
+                // Edit→reconfirm is an internal flow with no override channel of its own; preserve
+                // its prior behaviour (it never blocked on credit limit) by allowing the override.
+                $this->confirmInvoiceUseCase->execute($updatedInvoice->getId(), $userId, true);
             }
 
             return $this->invoiceRepository->findById($updatedInvoice->getId());

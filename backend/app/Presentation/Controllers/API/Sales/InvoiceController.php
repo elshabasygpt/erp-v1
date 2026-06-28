@@ -8,12 +8,15 @@ use App\Application\Sales\DTOs\CreateInvoiceDTO;
 use App\Application\Sales\DTOs\UpdateInvoiceDTO;
 use App\Application\Sales\UseCases\ConfirmInvoiceUseCase;
 use App\Application\Sales\UseCases\CreateInvoiceUseCase;
+use App\Application\Sales\UseCases\SaveInvoiceInstallmentsUseCase;
 use App\Application\Sales\UseCases\UpdateInvoiceUseCase;
 use App\Application\Services\Webhooks\WebhookService;
+use App\Infrastructure\Eloquent\Models\CustomerModel;
 use App\Infrastructure\Eloquent\Models\CustomerProductPriceModel;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
 use App\Infrastructure\Eloquent\Models\ProductComponentModel;
 use App\Infrastructure\Eloquent\Models\ProductModel;
+use App\Infrastructure\Eloquent\Models\WarehouseModel;
 use App\Infrastructure\Eloquent\Models\WarehouseProductModel;
 use App\Infrastructure\Eloquent\Models\WarrantyModel;
 use App\Presentation\Controllers\API\BaseTenantController;
@@ -28,6 +31,7 @@ class InvoiceController extends BaseTenantController
     public function __construct(
         private readonly CreateInvoiceUseCase $createInvoiceUseCase,
         private readonly UpdateInvoiceUseCase $updateInvoiceUseCase,
+        private readonly SaveInvoiceInstallmentsUseCase $saveInstallmentsUseCase,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -89,7 +93,7 @@ class InvoiceController extends BaseTenantController
     public function store(Request $request): JsonResponse
     {
         if (empty($request->input('warehouse_id'))) {
-            $defaultWarehouse = \App\Infrastructure\Eloquent\Models\WarehouseModel::query()
+            $defaultWarehouse = WarehouseModel::query()
                 ->where('tenant_id', $this->getTenantId($request))
                 ->first();
             if ($defaultWarehouse) {
@@ -127,7 +131,7 @@ class InvoiceController extends BaseTenantController
             $validated['tenant_id'] = $tenantId;
 
             // Idempotency Check for offline sync
-            if (!empty($validated['offline_id'])) {
+            if (! empty($validated['offline_id'])) {
                 $existing = InvoiceModel::where('tenant_id', $tenantId)
                     ->where('offline_id', $validated['offline_id'])
                     ->first();
@@ -149,7 +153,7 @@ class InvoiceController extends BaseTenantController
                         ->where('permissions.name', 'collect_payments')
                         ->exists();
                 }
-                if (!$hasPermission) {
+                if (! $hasPermission) {
                     throw new \DomainException('You do not have permission to record a down payment on a credit invoice. Ask a manager to collect the payment instead.');
                 }
             }
@@ -162,8 +166,7 @@ class InvoiceController extends BaseTenantController
             );
             // ────────────────────────────────────────────────────────────────
 
-            $defaultVatRate = (float) (DB::connection('tenant')
-                ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+            $defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
             $dto = CreateInvoiceDTO::fromRequest($validated, $defaultVatRate);
 
             // Atomic create + confirm: if confirmation fails, creation is rolled back
@@ -172,7 +175,9 @@ class InvoiceController extends BaseTenantController
 
                 if ($validated['status'] === 'confirmed') {
                     $confirmUseCase = app(ConfirmInvoiceUseCase::class);
-                    $confirmUseCase->execute($inv->getId(), auth()->id() ?? '');
+                    // CreateInvoiceUseCase already validated override permission above; pass the
+                    // flag so the authoritative locked check in confirm honours a granted override.
+                    $confirmUseCase->execute($inv->getId(), auth()->id() ?? '', ! empty($validated['credit_limit_override']));
                     $this->_createWarrantiesForInvoice($inv->getId());
                 }
 
@@ -180,7 +185,7 @@ class InvoiceController extends BaseTenantController
             });
 
             // Update offline_id if provided
-            if (!empty($validated['offline_id'])) {
+            if (! empty($validated['offline_id'])) {
                 InvoiceModel::where('id', $invoice->getId())->update(['offline_id' => $validated['offline_id']]);
             }
 
@@ -212,7 +217,9 @@ class InvoiceController extends BaseTenantController
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.vat_rate' => 'nullable|numeric|min:0|max:100',
             'items.*.discount_percent' => 'nullable|numeric|min:0|max:100',
+            'items.*.printed_name' => 'nullable|string|max:255',
             'due_date' => 'nullable|date',
+            'notes' => 'nullable|string',
             'internal_notes' => 'nullable|string',
             'reference_no' => 'nullable|string',
             'paid_amount' => 'nullable|numeric|min:0',
@@ -225,8 +232,7 @@ class InvoiceController extends BaseTenantController
 
         try {
             $validated['tenant_id'] = $this->getTenantId($request);
-            $defaultVatRate = (float) (DB::connection('tenant')
-                ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+            $defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
             $dto = UpdateInvoiceDTO::fromRequest($id, $validated, $defaultVatRate);
             $invoice = $this->updateInvoiceUseCase->execute($dto, auth()->id() ?? '');
 
@@ -264,7 +270,7 @@ class InvoiceController extends BaseTenantController
             try {
                 // Credit limit check before confirmation
                 if ($invoice->type === 'credit' && $invoice->customer_id) {
-                    $customer = \App\Infrastructure\Eloquent\Models\CustomerModel::query()->find($invoice->customer_id);
+                    $customer = CustomerModel::query()->find($invoice->customer_id);
                     if ($customer && (float) $customer->credit_limit > 0) {
                         $dueAmount = (float) $invoice->total - (float) $invoice->paid_amount;
                         if ($dueAmount > 0 && ((float) $customer->balance + $dueAmount) > (float) $customer->credit_limit) {
@@ -279,7 +285,7 @@ class InvoiceController extends BaseTenantController
                                 $meta = json_decode($role->meta_attributes ?? '{}', true);
                                 $hasOverridePermission = (bool) ($meta['can_override_credit_limit'] ?? false);
                             }
-                            if (!$hasOverridePermission) {
+                            if (! $hasOverridePermission) {
                                 throw new \DomainException('You do not have permission to override the customer credit limit.');
                             }
                         }
@@ -287,7 +293,9 @@ class InvoiceController extends BaseTenantController
                 }
 
                 $confirmUseCase = app(ConfirmInvoiceUseCase::class);
-                $confirmUseCase->execute($invoice->id, auth()->id() ?? '');
+                // Override permission already validated above; pass it so confirm's locked
+                // credit-limit check honours a granted override instead of re-rejecting it.
+                $confirmUseCase->execute($invoice->id, auth()->id() ?? '', ! empty($validated['credit_limit_override']));
                 $invoice->refresh();
 
                 $this->_createWarrantiesForInvoice($invoice->id);
@@ -414,8 +422,8 @@ class InvoiceController extends BaseTenantController
             $customerPrices = CustomerProductPriceModel::query()
                 ->where('customer_id', $customerId)
                 ->whereIn('product_id', $productIds)
-                ->where(fn($q) => $q->whereNull('valid_from')->orWhere('valid_from', '<=', $today))
-                ->where(fn($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', $today))
+                ->where(fn ($q) => $q->whereNull('valid_from')->orWhere('valid_from', '<=', $today))
+                ->where(fn ($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', $today))
                 ->get(['product_id', 'price'])
                 ->keyBy('product_id');
         }
@@ -434,7 +442,7 @@ class InvoiceController extends BaseTenantController
             // 2. Core charge auto-add
             if ($product && $product->has_core_charge && empty($item['core_charge_applied'])) {
                 $item['core_charge_applied'] = true;
-                $item['core_charge_amount']  = (float) $product->core_charge_amount;
+                $item['core_charge_amount'] = (float) $product->core_charge_amount;
             }
 
             // 3. Kit component stock check (non-blocking warning)
@@ -446,20 +454,20 @@ class InvoiceController extends BaseTenantController
 
                 foreach ($components as $component) {
                     $needed = (float) $component->quantity_required * (float) $item['quantity'];
-                    $stock  = WarehouseProductModel::query()
+                    $stock = WarehouseProductModel::query()
                         ->where('product_id', $component->child_product_id)
                         ->where('warehouse_id', $warehouseId)
                         ->value('quantity') ?? 0;
 
                     if ((float) $stock < $needed) {
                         $warnings[] = [
-                            'type'         => 'kit_stock',
-                            'kit_product'  => $product->name,
-                            'component'    => $component->component?->name ?? $component->child_product_id,
-                            'component_sku'=> $component->component?->sku,
-                            'needed'       => $needed,
-                            'available'    => (float) $stock,
-                            'message'      => "مكوّن «{$component->component?->name}» في الكيت «{$product->name}»: متاح {$stock} والمطلوب {$needed}",
+                            'type' => 'kit_stock',
+                            'kit_product' => $product->name,
+                            'component' => $component->component?->name ?? $component->child_product_id,
+                            'component_sku' => $component->component?->sku,
+                            'needed' => $needed,
+                            'available' => (float) $stock,
+                            'message' => "مكوّن «{$component->component?->name}» في الكيت «{$product->name}»: متاح {$stock} والمطلوب {$needed}",
                         ];
                     }
                 }
@@ -506,5 +514,48 @@ class InvoiceController extends BaseTenantController
                 }
             }
         }
+    }
+
+    /**
+     * GET /sales/invoices/{id}/installments — the customer-side installment plan.
+     */
+    public function getInstallments(Request $request, string $id): JsonResponse
+    {
+        $invoice = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $invoice) {
+            return $this->error('Invoice not found', 404);
+        }
+
+        return $this->success(
+            $invoice->installments()->orderBy('due_date')->get(),
+            'Installments retrieved successfully'
+        );
+    }
+
+    /**
+     * POST /sales/invoices/{id}/installments — (re)generate the installment plan.
+     * Pure schedule data (no journal entry); collection still happens through the
+     * receivables/collect flow. The plan total must equal the outstanding amount.
+     */
+    public function saveInstallments(Request $request, string $id): JsonResponse
+    {
+        $invoice = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $invoice) {
+            return $this->error('Invoice not found', 404);
+        }
+
+        $validated = $request->validate([
+            'installments' => 'required|array|min:1',
+            'installments.*.due_date' => 'required|date',
+            'installments.*.amount' => 'required|numeric|min:0.01',
+        ]);
+
+        try {
+            $plan = $this->saveInstallmentsUseCase->execute($invoice, $validated['installments']);
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        return $this->success($plan, 'Installments saved successfully', 201);
     }
 }

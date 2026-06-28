@@ -193,6 +193,11 @@ export const salesApi = {
         replacement_invoice_id?: string;
     }) => api.put(`/sales/warranties/${warrantyId}/claims/${claimId}`, data),
 
+    // Customer installment plan (schedule only; collection goes through receivables)
+    getInvoiceInstallments: (invoiceId: string) => api.get(`/sales/invoices/${invoiceId}/installments`),
+    saveInvoiceInstallments: (invoiceId: string, installments: { due_date: string; amount: number }[]) =>
+        api.post(`/sales/invoices/${invoiceId}/installments`, { installments }),
+
     // Quotations
     getQuotations: (params?: Record<string, any>) => api.get('/sales/quotations', { params }),
     getQuotation: (id: string) => api.get(`/sales/quotations/${id}`),
@@ -336,7 +341,7 @@ export const inventoryApi = {
     getStocktakes: (params?: any) => api.get('/inventory/stocktakes', { params }),
     getStocktake: (id: string) => api.get(`/inventory/stocktakes/${id}`),
     createStocktake: (data: any) => api.post('/inventory/stocktakes', data),
-    updateStocktakeCounts: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/counts`, data),
+    updateStocktakeCounts: (id: string, data: any) => api.put(`/inventory/stocktakes/${id}/items`, data),
     updateStocktakeStatus: (id: string, data: any) => api.put(`/inventory/stocktakes/${id}/status`, data),
     approveStocktake: (id: string) => api.post(`/inventory/stocktakes/${id}/approve`),
     scanStocktakeBarcode: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/scan`, data),
@@ -678,6 +683,16 @@ export const purchasesApi = {
     getInstallments: (invoiceId: string) => api.get(`/purchases/invoices/${invoiceId}/installments`),
     saveInstallments: (invoiceId: string, data: any) => api.post(`/purchases/invoices/${invoiceId}/installments`, data),
     payInstallment: (installmentId: string, data: any) => api.post(`/purchases/installments/${installmentId}/pay`, data),
+    // Allocate a supplier payment across specific purchase invoices
+    getPaymentAllocations: (paymentId: string) => api.get(`/purchases/payments/${paymentId}/allocations`),
+    savePaymentAllocations: (paymentId: string, allocations: { invoice_id: string; amount: number }[]) =>
+        api.post(`/purchases/payments/${paymentId}/allocations`, { allocations }),
+    // Record a supplier payment + allocate it (deducts safe, posts balanced journal)
+    getSupplierPayments: (supplierId: string) => api.get(`/purchases/suppliers/${supplierId}/payments`),
+    createSupplierPayment: (supplierId: string, data: {
+        safe_id: string; amount: number; payment_date?: string; reference_number?: string; notes?: string;
+        allocations?: { invoice_id: string; amount: number }[];
+    }) => api.post(`/purchases/suppliers/${supplierId}/payments`, data),
 };
 
 export const purchaseReturnsApi = {
@@ -751,7 +766,7 @@ export const accountingApi = {
     updateBankAccount: (id: string, data: any) => api.put(`/accounting/bank-accounts/${id}`, data),
     deleteBankAccount: (id: string) => api.delete(`/accounting/bank-accounts/${id}`),
     getReconciliations: (bankAccountId: string) => api.get(`/accounting/bank-accounts/${bankAccountId}/reconciliations`),
-    startReconciliation: (bankAccountId: string, data: any) => api.post('/accounting/reconciliations', { bank_account_id: bankAccountId, ...data }),
+    startReconciliation: (bankAccountId: string, data: any) => api.post(`/accounting/bank-accounts/${bankAccountId}/reconciliations`, data),
     importBankTransactions: (bankAccountId: string, file: any) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -767,11 +782,12 @@ export const accountingApi = {
     getReceivableAging: (asOf?: string) => api.get('/crm/receivables/aging', { params: asOf ? { as_of: asOf } : undefined }),
     getPayableAging: (asOf?: string) => api.get('/crm/payables/aging', { params: asOf ? { as_of: asOf } : undefined }),
 
-    // Chart of Accounts (tree + CRUD)
-    getAccountsTree: () => api.get('/accounting/chart-of-accounts/tree'),
-    createAccount: (data: any) => api.post('/accounting/chart-of-accounts', data),
-    updateAccount: (id: string, data: any) => api.put(`/accounting/chart-of-accounts/${id}`, data),
-    deleteAccount: (id: string) => api.delete(`/accounting/chart-of-accounts/${id}`),
+    // Chart of Accounts (tree + CRUD). CRUD lives under /accounting/accounts;
+    // /accounting/chart-of-accounts is a read-only report endpoint only.
+    getAccountsTree: () => api.get('/accounting/accounts/tree'),
+    createAccount: (data: any) => api.post('/accounting/accounts', data),
+    updateAccount: (id: string, data: any) => api.put(`/accounting/accounts/${id}`, data),
+    deleteAccount: (id: string) => api.delete(`/accounting/accounts/${id}`),
 
     // Journal Entries
     createJournalEntry: (data: any) => api.post('/accounting/journal-entries', data),
@@ -899,8 +915,6 @@ export const reportsApi = {
 export const settingsApi = {
     getSettings: () => api.get('/settings'),
     updateSettings: (data: any) => api.put('/settings', data),
-    getCompanyInfo: () => api.get('/settings/company'),
-    updateCompanyInfo: (data: any) => api.put('/settings/company', data),
     updateHrManagerEmail: (email: string) => api.post('/settings/hr-manager-email', { email }),
 };
 export const backupsApi = {
@@ -1120,11 +1134,10 @@ export const tasksApi = {
 export const zatcaApi = {
     onboard: (data: any) => api.post('/zatca/onboard', data),
     checkStatus: () => api.get('/zatca/status'),
-    syncInvoices: () => api.post('/zatca/sync'),
-    getSettings: () => api.get('/zatca/settings'),
-    saveSettings: (data: any) => api.post('/zatca/settings', data),
-    getOnboardingStatus: () => api.get('/zatca/onboarding-status'),
-    submitOtp: (data: any) => api.post('/zatca/submit-otp', data),
+    // Onboarding status + OTP submission map to the existing backend routes
+    // (GET /zatca/status, POST /zatca/onboard which runs submitOtp).
+    getOnboardingStatus: () => api.get('/zatca/status'),
+    submitOtp: (otp: string) => api.post('/zatca/onboard', { otp }),
 };
 
 export const dataApi = {

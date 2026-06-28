@@ -132,8 +132,7 @@ class WorkshopController extends BaseTenantController
             ->with(['parts.product', 'services'])
             ->findOrFail($id);
         $validated = $request->validate(['warehouse_id' => 'required|uuid']);
-        $defaultVatRate = (float) (DB::connection('tenant')
-            ->table('tenant_settings')->where('key', 'tax_rate')->value('value') ?? 15);
+        $defaultVatRate = \App\Domain\Shared\Services\TaxRateResolver::resolve();
         // Only parts become invoice line items; service/labor items have no product_id
         // and would fail invoice validation. Services are summarised in the notes field.
         $items = [];

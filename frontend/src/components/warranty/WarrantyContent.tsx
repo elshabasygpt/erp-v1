@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 import WarrantyDetailModal from './WarrantyDetailModal';
 import ClaimModal from './ClaimModal';
 
@@ -59,6 +60,28 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
             setIsDetailModalOpen(true);
         } catch (error) {
 
+        }
+    };
+
+    const handleResolveClaim = async (claim: any) => {
+        if (!selectedWarranty) return;
+        const isReplacement = claim.claim_type === 'replacement';
+        const confirmMsg = isReplacement
+            ? (isRTL ? 'حل مطالبة الاستبدال سيُنشئ فاتورة استبدال تلقائياً ويخصم المخزون. هل تريد المتابعة؟' : 'Resolving a replacement claim auto-creates a replacement invoice and deducts stock. Continue?')
+            : (isRTL ? 'تأكيد حل هذه المطالبة؟' : 'Resolve this claim?');
+        if (!window.confirm(confirmMsg)) return;
+        try {
+            await salesApi.updateWarrantyClaim(selectedWarranty.id, claim.id, {
+                status: 'resolved',
+                resolution: isReplacement ? (isRTL ? 'استبدال القطعة' : 'Part replacement') : (isRTL ? 'تم الحل' : 'Resolved'),
+            });
+            toast.success(isRTL ? 'تم حل المطالبة بنجاح' : 'Claim resolved successfully');
+            loadData();
+            // Refresh the open detail so the claim status / replacement link updates in place.
+            const res = await salesApi.getWarranty(selectedWarranty.id);
+            setSelectedWarranty(res.data?.data);
+        } catch (e: any) {
+            toast.error(e?.response?.data?.message || (isRTL ? 'تعذّر حل المطالبة' : 'Failed to resolve the claim'));
         }
     };
 
@@ -230,6 +253,7 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
                     onClose={() => setIsDetailModalOpen(false)}
                     locale={locale}
                     onOpenClaim={() => handleOpenClaim(selectedWarranty)}
+                    onResolveClaim={handleResolveClaim}
                 />
             )}
 

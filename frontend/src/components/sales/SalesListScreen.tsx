@@ -10,6 +10,7 @@ import {
 import { format } from 'date-fns';
 import { Invoice } from '@/types';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import CustomerInstallmentsModal from './CustomerInstallmentsModal';
 
 /* ────────── helpers ────────── */
 const STATUS_LABELS: Record<string, string> = {
@@ -107,6 +108,7 @@ export default function SalesListScreen() {
 
   // Modal
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [showInstallments, setShowInstallments] = useState(false);
 
   // Debounce ref
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -627,12 +629,27 @@ export default function SalesListScreen() {
                         {formatCurrency(Number(selectedInvoice.total) - Number(selectedInvoice.paid_amount ?? 0))}
                       </span>
                     </div>
+                    <button
+                      onClick={() => setShowInstallments(true)}
+                      className="mt-2 w-full py-2 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition"
+                    >
+                      📅 جدولة الأقساط
+                    </button>
                   </>
                 )}
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {showInstallments && selectedInvoice && (
+        <CustomerInstallmentsModal
+          invoice={selectedInvoice}
+          isRTL={true}
+          onClose={() => setShowInstallments(false)}
+          formatCurrency={formatCurrency}
+        />
       )}
     </div>
   );

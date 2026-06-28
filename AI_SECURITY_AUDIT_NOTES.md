@@ -52,22 +52,38 @@ backlog for closing security/correctness gaps in this codebase.
   realistic, proportionate fix given the architecture. Test:
   `backend/tests/Feature/Sales/DownPaymentAuthorizationTest.php`.
 
+## Closed (fixed 2026-06-28)
+
+- ~~**`UpdateInvoiceUseCase`'s confirm branch is dead code.**~~ — **FIXED &
+  verified.** Confirming via `PUT /sales/invoices/{id}` with `status=confirmed`
+  now delegates to `ConfirmInvoiceUseCase` (no double stock deduction, exactly one
+  balanced journal entry). Proven end-to-end by
+  `backend/tests/Feature/Sales/UpdateInvoiceConfirmDelegationTest.php`
+  (asserts stock drops by the new qty *once*, status flips to confirmed, exactly
+  one journal entry, debit==credit, and that the entry has COGS+Inventory lines —
+  i.e. the full Confirm logic ran, not the old stub) and
+  `InvoiceUpdateParityTest.php`. Both pass in the suite.
+
+- ~~**Flaky supplier-payment test / suite non-determinism.**~~ — **ROOT CAUSE
+  FIXED (commit `a39d91e`, 2026-06-28).** `SupplierPaymentTest` intermittently
+  404'd and the executed-test count drifted (205 / 207 / 208 across runs, with an
+  occasional real failure). The real cause was a product bug in
+  `CreateSupplierPaymentUseCase`: it passed a *pre-generated* UUID to the
+  allocation step, but `SupplierPaymentModel::create()` did not persist that id
+  (id not mass-assignable → `HasUuids` minted a different one), so the allocation's
+  `findOrFail($paymentId)` looked up a row that didn't exist → `ModelNotFoundException`
+  (404). Commit `a39d91e` ("supplier payment + allocation — wire the use-case")
+  fixed the id handling (and the NOT-NULL `payment_method` insert). **Verified
+  2026-06-28:** after that fix the original reproducers (`--filter=Purchases`,
+  `--filter=SupplierPaymentTest`) pass on the *unmodified* harness, and the full
+  suite is a deterministic **210 tests / 595 assertions / 0 failures** across
+  repeated runs. NB: an audit pass initially mis-attributed this to the test
+  harness's shared-PDO transaction nesting and prototyped a harness change to
+  unify the connection objects — that change was reverted once the product fix was
+  confirmed to be the actual cure (the allocation step still nests a tenant
+  transaction and passes, proving the harness was not the culprit).
+
 ## Open — not fixed, flagged for follow-up
-- **`UpdateInvoiceUseCase`'s confirm branch is dead code.** When `update()` is
-  called with `status: 'confirmed'`, the code constructs the `Invoice` entity with
-  `status: $dto->status` already `'confirmed'`, then immediately calls
-  `$updatedInvoice->confirm()` — which throws because the entity's own state machine
-  expects the *current* status to be `'draft'` before transitioning to confirmed.
-  This means the second `if ($dto->status === 'confirmed')` block further down
-  (stock deduction, customer balance update including the credit-limit check added
-  in this session, journal entries) is **unreachable in production** — see
-  `backend/app/Application/Sales/UseCases/UpdateInvoiceUseCase.php` lines ~116-135
-  vs ~190-300. The credit-limit check added there is correctly wired but inert until
-  this pre-existing entity bug is fixed. Confirming an invoice through `PUT
-  /sales/invoices/{id}` with `status=confirmed` should be verified against the
-  actual API behavior before assuming it works — the working path today is `PUT
-  /sales/invoices/{id}/status` (routes to `ConfirmInvoiceUseCase` directly, which
-  *is* correct and covered by tests).
 - ~~Two parallel permission systems with no single source of truth~~ — **the
   Spatie half is now FIXED (2026-06-26).** Root cause was deeper than "AuthController
   doesn't flatten permissions": `PermissionModel` was never wired into

@@ -34,8 +34,19 @@ final class TransferBetweenSafesUseCase
                 throw new DomainException('Source and destination safes must be different.');
             }
 
-            $fromSafe = SafeModel::query()->where('tenant_id', $tenantId)->find($fromId);
-            $toSafe = SafeModel::query()->where('tenant_id', $tenantId)->find($toId);
+            // Lock both safe rows for the duration of the transaction to prevent lost updates /
+            // double-spend under concurrent transfers. Lock in a deterministic id order (single
+            // query, DB acquires row locks in index order) to avoid deadlocks between A→B and B→A.
+            $locked = SafeModel::query()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('id', [$fromId, $toId])
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            $fromSafe = $locked->get($fromId);
+            $toSafe = $locked->get($toId);
 
             if (! $fromSafe || ! $toSafe) {
                 throw new DomainException('Source or destination safe not found.');
@@ -172,7 +183,7 @@ final class TransferBetweenSafesUseCase
                         $feeAccountId = $this->accountMapping->resolve('cash');
                     }
                 }
-                
+
                 $journalEntry->addLine(new JournalEntryLine(
                     id: null,
                     journalEntryId: '',
@@ -194,7 +205,7 @@ final class TransferBetweenSafesUseCase
                 credit: $baseEquivalent + $feeEquivalent,
                 transactionDebit: 0.0,
                 transactionCredit: $amount + $feeAmount,
-                description: "Transfer Out from {$fromSafe->name}" . ($feeAmount > 0 ? ' (incl. fees)' : ''),
+                description: "Transfer Out from {$fromSafe->name}".($feeAmount > 0 ? ' (incl. fees)' : ''),
             ));
 
             $this->journalEntryRepository->create($journalEntry);

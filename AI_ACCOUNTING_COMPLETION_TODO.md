@@ -49,10 +49,11 @@ to require unbalanced entries, the design is wrong, not the test.
    `SafeTransactionModel` row backed by a verified payment event exists, not from
    a client-supplied number on the invoice payload.
 
-4. **Warranty claim resolution doesn't generate a credit note or replacement
-   invoice**, so a warranty replacement currently has no accounting trail at all
-   — inventory may move (if someone manually adjusts stock) but there's no
-   journal entry tying it back to the original sale's revenue/COGS reversal.
+4. ~~**Warranty claim resolution doesn't generate a credit note or replacement
+   invoice.**~~ — **DONE (verified 2026-06-28).** Resolving a replacement claim
+   now auto-creates a zero-price replacement invoice and deducts stock exactly
+   once (rejects with 422 when stock is insufficient). Test:
+   `backend/tests/Feature/Sales/WarrantyReplacementInvoiceTest.php` (passes).
 
 5. **Supplier core/exchange return accounting is unverified.** `SupplierCoreReturnController`
    has ship/credit routes; before trusting it, confirm the underlying use-case
@@ -69,6 +70,21 @@ to require unbalanced entries, the design is wrong, not the test.
    promotions" separately once both exist.
 
 ---
+
+## Test-quality cleanup (2026-06-28)
+
+Two accounting tests gave false confidence and were corrected:
+- `tests/Feature/Accounting/InvoicePostingTest.php` used to hand-build a balanced
+  journal entry and assert it was balanced (a tautology touching no production
+  code). It now drives the real `POST /api/sales/invoices` confirm path and
+  asserts the *resulting* entry is posted and balanced.
+- `tests/Feature/AccountingIntegrityTest.php` (top-level) looped over
+  `journal_entries` which, under `RefreshDatabase`, is empty inside each test →
+  a vacuous pass. It was removed; the genuine coverage lives in
+  `tests/Feature/Accounting/AccountingIntegrityTest.php`
+  (`test_full_financial_lifecycle_maintains_absolute_integrity`), which runs real
+  Confirm use-cases and asserts `SUM(debit)==SUM(credit)` and
+  Assets=L+E+R−Ex after every step plus revenue/expense zeroing on fiscal close.
 
 ## Reusable accounting test pattern
 

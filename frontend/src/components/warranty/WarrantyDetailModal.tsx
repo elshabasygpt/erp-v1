@@ -8,9 +8,10 @@ interface WarrantyDetailModalProps {
     onClose: () => void;
     locale: string;
     onOpenClaim: () => void;
+    onResolveClaim?: (claim: any) => void;
 }
 
-export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale, onOpenClaim }: WarrantyDetailModalProps) {
+export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale, onOpenClaim, onResolveClaim }: WarrantyDetailModalProps) {
     if (!isOpen || !warranty) return null;
     const isRTL = locale === 'ar';
 
@@ -66,6 +67,7 @@ export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale,
                                         <th className="p-2">{isRTL ? 'التاريخ' : 'Date'}</th>
                                         <th className="p-2">{isRTL ? 'النوع' : 'Type'}</th>
                                         <th className="p-2">{isRTL ? 'الحالة' : 'Status'}</th>
+                                        <th className="p-2">{isRTL ? 'إجراء' : 'Action'}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -75,6 +77,21 @@ export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale,
                                             <td className="p-2">{c.claim_date}</td>
                                             <td className="p-2">{c.claim_type}</td>
                                             <td className="p-2">{c.status}</td>
+                                            <td className="p-2">
+                                                {onResolveClaim && ['open', 'in_progress'].includes(c.status) ? (
+                                                    <button
+                                                        onClick={() => onResolveClaim(c)}
+                                                        className="btn-primary py-1 px-3 text-xs"
+                                                        title={c.claim_type === 'replacement'
+                                                            ? (isRTL ? 'سيُنشئ فاتورة استبدال تلقائياً' : 'Auto-creates a replacement invoice')
+                                                            : undefined}
+                                                    >
+                                                        {isRTL ? 'حل' : 'Resolve'}
+                                                    </button>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-secondary)' }}>—</span>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

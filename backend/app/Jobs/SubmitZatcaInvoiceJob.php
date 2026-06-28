@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Domain\Sales\Repositories\InvoiceRepositoryInterface;
 use App\Infrastructure\Eloquent\Models\InvoiceModel;
+use App\Jobs\Concerns\RunsInTenantContext;
 use App\Infrastructure\Zatca\UblXmlGenerator;
 use App\Infrastructure\Zatca\ZatcaOnboardingService;
 use App\Infrastructure\Zatca\ZatcaXmlSigner;
@@ -12,14 +13,13 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SubmitZatcaInvoiceJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RunsInTenantContext, SerializesModels;
 
     public int $tries = 3;
 
@@ -38,11 +38,19 @@ class SubmitZatcaInvoiceJob implements ShouldQueue
             'error'      => $exception->getMessage(),
         ]);
 
-        DB::setDefaultConnection('tenant');
-        InvoiceModel::query()->where('id', $this->invoiceId)->update([
-            'zatca_status'        => 'failed',
-            'zatca_error_message' => 'Queue job failed after '.$this->tries.' attempts: '.$exception->getMessage(),
-        ]);
+        $tenant = $this->bootTenantContext($this->tenantId);
+        if (! $tenant) {
+            return;
+        }
+
+        try {
+            InvoiceModel::query()->where('id', $this->invoiceId)->update([
+                'zatca_status'        => 'failed',
+                'zatca_error_message' => 'Queue job failed after '.$this->tries.' attempts: '.$exception->getMessage(),
+            ]);
+        } finally {
+            $this->shutdownTenantContext();
+        }
     }
 
     /**
@@ -50,9 +58,20 @@ class SubmitZatcaInvoiceJob implements ShouldQueue
      */
     public function handle(): void
     {
-        // Must switch to tenant DB context before running in queue
-        DB::setDefaultConnection('tenant');
+        $tenant = $this->bootTenantContext($this->tenantId);
+        if (! $tenant) {
+            return;
+        }
 
+        try {
+            $this->process();
+        } finally {
+            $this->shutdownTenantContext();
+        }
+    }
+
+    private function process(): void
+    {
         $model = InvoiceModel::query()->with('items.product')->find($this->invoiceId);
         if (! $model) {
             return;
