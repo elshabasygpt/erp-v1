@@ -92,16 +92,26 @@ class ReportingService
     {
         try {
             // Total items
-            $totalItems = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)->count();
+            $totalItems = DB::connection('tenant')->table('products')
+                ->where('tenant_id', $this->tenantId)->whereNull('deleted_at')->count();
 
-            // Total stock quantity & financial valuation (qty * average_cost)
-            $inventoryValue = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)
-                ->selectRaw('SUM(stock_quantity * price) as total_value')
-                ->first()
-                ->total_value ?? 0;
+            // Financial valuation = Σ (on-hand quantity × average cost) across all
+            // warehouses. Stock lives in warehouse_products, not on products — the
+            // products table has no `stock_quantity`/`price` column.
+            $inventoryValue = DB::connection('tenant')->table('warehouse_products as wp')
+                ->join('products as p', 'p.id', '=', 'wp.product_id')
+                ->where('p.tenant_id', $this->tenantId)
+                ->whereNull('p.deleted_at')
+                ->selectRaw('SUM(wp.quantity * wp.average_cost) as total_value')
+                ->value('total_value') ?? 0;
 
-            $lowStockItems = DB::connection('tenant')->table('products')->where('tenant_id', $this->tenantId)
-                ->where('stock_quantity', '<=', 5) // Hardcoded threshold for now
+            // Low stock = on-hand quantity at or below the product's own alert level.
+            $lowStockItems = DB::connection('tenant')->table('products as p')
+                ->join('warehouse_products as wp', 'p.id', '=', 'wp.product_id')
+                ->where('p.tenant_id', $this->tenantId)
+                ->whereNull('p.deleted_at')
+                ->whereColumn('wp.quantity', '<=', 'p.stock_alert_level')
+                ->select('p.id', 'p.name', 'p.sku', 'wp.quantity', 'p.stock_alert_level')
                 ->take(10)
                 ->get();
         } catch (\Exception $e) {

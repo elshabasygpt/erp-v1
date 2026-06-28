@@ -37,6 +37,14 @@
 
 > **اكتُشف للمراحل اللاحقة:** أمر `ProcessOrderReminders` نفسه يستعلم موديلات tenant بدون تبديل/لفّ على المستأجرين (لن يجد الجداول على القاعدة المركزية في الإنتاج) — نفس عائلة #1 لكن على مستوى الأمر، يحتاج لفّاً على المستأجرين كـ `MigrateAllTenantsCommand`. + `dd()` متروك في `AccountingIntegrityTest:224` (دَيْن اختبار) → Phase 6.
 
+### ✅ Phase 2 — مكتملة (النواة الحسّاسة: مبيعات/محاسبة)
+- **P2.1 (#2 + #11) مسار الموافقات:** `Invoice::confirm()` يسمح الآن بـ `draft` **أو** `pending_approval`؛ و`ApproveRequestUseCase` (حُقِن فيه `ConfirmInvoiceUseCase`) يؤكّد الفاتورة المعتمدة داخل `DB::transaction` واحد — فلو فشل التأكيد (نفد المخزون أثناء الانتظار) يتراجع الاعتماد كله. اختبار: حالة موجبة (خصم مرة واحدة + قيد متوازن) + سالبة (rollback عند نقص المخزون).
+- **P2.2 (#5) تطابق store/update:** أُضيف `notes`، `items.*.printed_name` لـ validation التحديث، و`payment_method` لـ `UpdateInvoiceDTO` + حُفِظ في `UpdateInvoiceUseCase`. (تبيّن أن `currency_id/cost_center_id/exchange_rate` **غير ممرَّرة في مساري الإنشاء والتحديث معاً** — فهي فجوة فيتشر منفصلة لا فجوة تطابق؛ وُثّقت ولم تُنصَّف على التحديث فقط.) اختبار: round-trip للثلاثة + توازن القيد بعد تأكيد مسودة معدّلة.
+- **P2.3 (#12) ذرّية تحديث الشراء:** `PurchaseController::update` لُفّ بالكامل في `\DB::transaction` (إعادة كتابة البنود + التأكيد ذرّيان).
+- **P2.4 (#4) تقرير المخزون:** استبدال `products.stock_quantity/price` غير الموجودَين بربط `warehouse_products` (تقييم = Σ كمية×متوسط تكلفة، ومنخفض المخزون مقابل `stock_alert_level`). اختبار: قيمة صحيحة (560) + إشارة منخفض المخزون.
+- **إصلاح تبعي:** اختبار الوحدة `ApproveRequestUseCaseTest` حُدِّث لتوقيع الـ constructor الجديد (تحوّل لـ `Tests\TestCase` + `ConfirmInvoiceUseCase` عبر `app()`).
+- **النتيجة:** المجموعة الكاملة **197 اختبار · 534 تأكيد · 0 فشل · 3 متخطّاة**.
+
 ---
 
 ---

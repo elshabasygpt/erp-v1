@@ -24,6 +24,7 @@ final class UpdateInvoiceDTO
         public readonly ?string $costCenterId = null,
         public readonly ?string $currencyId = null,
         public readonly ?float $exchangeRate = null,
+        public readonly ?string $paymentMethod = null,
     ) {}
 
     public static function fromRequest(string $id, array $data, float $defaultVatRate = 15): self
@@ -51,6 +52,7 @@ final class UpdateInvoiceDTO
             costCenterId: $data['cost_center_id'] ?? null,
             currencyId: $data['currency_id'] ?? null,
             exchangeRate: isset($data['exchange_rate']) ? (float) $data['exchange_rate'] : null,
+            paymentMethod: $data['payment_method'] ?? null,
         );
     }
 }

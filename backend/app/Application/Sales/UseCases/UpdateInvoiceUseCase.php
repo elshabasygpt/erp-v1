@@ -102,6 +102,7 @@ final class UpdateInvoiceUseCase
             referenceNo: $dto->referenceNo,
             paidAmount: $dto->type === 'cash' ? 0 : $dto->paidAmount,
             salespersonId: $dto->salespersonId ?? $invoice->getSalespersonId(),
+            paymentMethod: $dto->paymentMethod,
         );
 
         $updatedInvoice->setItems($items);
@@ -132,6 +133,7 @@ final class UpdateInvoiceUseCase
                 'reference_no'             => $updatedInvoice->getReferenceNo(),
                 'paid_amount'              => $updatedInvoice->getPaidAmount(),
                 'salesperson_id'           => $updatedInvoice->getSalespersonId(),
+                'payment_method'           => $updatedInvoice->getPaymentMethod(),
             ]);
 
             foreach ($updatedInvoice->getItems() as $item) {
