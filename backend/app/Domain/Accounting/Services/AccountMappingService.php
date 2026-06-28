@@ -45,7 +45,9 @@ class AccountMappingService
         'bank_fees' => 'account.bank_fees',
         'retained_earnings' => 'account.retained_earnings',
         'unrealized_fx_gain_loss' => 'account.unrealized_fx_gain_loss',
-        'asset_disposal_gain_loss' => 'account.asset_disposal_gain_loss',
+        'asset_disposal_gain_loss'  => 'account.asset_disposal_gain_loss',
+        'commission_expense'        => 'account.commission_expense',
+        'commission_payable'        => 'account.commission_payable',
     ];
 
     private ?array $resolved = null;
@@ -81,6 +83,18 @@ class AccountMappingService
         }
 
         return $accountId;
+    }
+
+    /**
+     * Like resolve() but returns null instead of throwing when not configured.
+     */
+    public function tryResolve(string $key): ?string
+    {
+        try {
+            return $this->resolve($key);
+        } catch (\DomainException) {
+            return null;
+        }
     }
 
     /**

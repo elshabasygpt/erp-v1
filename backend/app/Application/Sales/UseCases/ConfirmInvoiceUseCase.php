@@ -198,6 +198,7 @@ class ConfirmInvoiceUseCase
             }
 
             // ── Commission accrual ──
+            $commissionAmount = 0.0;
             $invoiceModelForCommission = InvoiceModel::query()->find($invoice->getId());
             if ($invoiceModelForCommission && $invoiceModelForCommission->salesperson_id) {
                 $salesperson = UserModel::query()->find($invoiceModelForCommission->salesperson_id);
@@ -279,7 +280,7 @@ class ConfirmInvoiceUseCase
             $this->fiscalPeriodService->validatePostingDate(new \DateTimeImmutable);
 
             // ── Journal entry with tenant-configured accounts ──
-            $this->createJournalEntry($invoice, $totalCogs, $userId);
+            $this->createJournalEntry($invoice, $totalCogs, $userId, $commissionAmount);
 
             // ── ZATCA Phase 2 ──
             $tenantId = app('current_tenant')->id ?? 'tenant_context';
@@ -295,7 +296,7 @@ class ConfirmInvoiceUseCase
         });
     }
 
-    private function createJournalEntry(Invoice $invoice, float $totalCogs, string $userId): void
+    private function createJournalEntry(Invoice $invoice, float $totalCogs, string $userId, float $commissionAmount = 0.0): void
     {
         $tenantId = app('current_tenant')->id ?? 'tenant_context';
         $entryNumber = $this->journalEntryRepository->getNextEntryNumber();
@@ -412,6 +413,34 @@ class ConfirmInvoiceUseCase
                 transactionCredit: round($totalCogs, 6),
                 description: 'Inventory deduction',
             ));
+        }
+
+        // Debit: Commission Expense / Credit: Commission Payable
+        if ($commissionAmount > 0) {
+            $commissionExpenseId = $this->accountMapping->tryResolve('commission_expense');
+            $commissionPayableId = $this->accountMapping->tryResolve('commission_payable');
+            if ($commissionExpenseId && $commissionPayableId) {
+                $journalEntry->addLine(new JournalEntryLine(
+                    id: null,
+                    journalEntryId: '',
+                    accountId: $commissionExpenseId,
+                    debit: round($commissionAmount, 6),
+                    credit: 0,
+                    transactionDebit: round($commissionAmount, 6),
+                    transactionCredit: 0.0,
+                    description: 'Sales commission expense',
+                ));
+                $journalEntry->addLine(new JournalEntryLine(
+                    id: null,
+                    journalEntryId: '',
+                    accountId: $commissionPayableId,
+                    debit: 0,
+                    credit: round($commissionAmount, 6),
+                    transactionDebit: 0.0,
+                    transactionCredit: round($commissionAmount, 6),
+                    description: 'Commission payable',
+                ));
+            }
         }
 
         $journalEntry->post();

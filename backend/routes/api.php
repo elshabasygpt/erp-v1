@@ -1,6 +1,7 @@
 <?php
 
 use App\Presentation\Controllers\API\Accounting\AccountingSettingsController;
+use App\Presentation\Controllers\API\Accounting\OpeningBalanceController;
 use App\Presentation\Controllers\API\Accounting\BankAccountController;
 use App\Presentation\Controllers\API\Accounting\BudgetController;
 use App\Presentation\Controllers\API\Accounting\ChartOfAccountsController;
@@ -123,6 +124,7 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
     
     // Auth & Users
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::apiResource('users', UserController::class);
 
@@ -222,6 +224,7 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         // Deliveries
         Route::get('/deliveries', [DeliveryController::class, 'index']);
         Route::post('/deliveries', [DeliveryController::class, 'store']);
+        Route::get('/deliveries/map', [DeliveryController::class, 'getMapData']);
         Route::get('/deliveries/{id}', [DeliveryController::class, 'show']);
         Route::post('/deliveries/{id}/assign', [DeliveryController::class, 'assign']);
         Route::put('/deliveries/{id}/status', [DeliveryController::class, 'updateStatus']);
@@ -644,6 +647,12 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         // Account Mappings
         Route::get('/account-mappings', [AccountingSettingsController::class, 'getAccountMappings']);
         Route::put('/account-mappings', [AccountingSettingsController::class, 'updateAccountMappings']);
+
+        // Opening Balances
+        Route::get('/opening-balances', [OpeningBalanceController::class, 'index']);
+        Route::post('/opening-balances/account', [OpeningBalanceController::class, 'setAccountBalance']);
+        Route::post('/opening-balances/customer', [OpeningBalanceController::class, 'setCustomerBalance']);
+        Route::post('/opening-balances/supplier', [OpeningBalanceController::class, 'setSupplierBalance']);
 
         // Fiscal Periods
         Route::get('/fiscal-periods', [AccountingSettingsController::class, 'listFiscalPeriods']);

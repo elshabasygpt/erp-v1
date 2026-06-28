@@ -10,9 +10,12 @@ use App\Presentation\Controllers\API\BaseTenantController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Presentation\Controllers\API\Concerns\HandlesImageUploads;
 
 class CategoryController extends BaseTenantController
 {
+    use HandlesImageUploads;
+
     public function index(Request $request): JsonResponse
     {
         $categories = CategoryModel::query()->where('tenant_id', $this->getTenantId($request))
@@ -35,9 +38,17 @@ class CategoryController extends BaseTenantController
                 'uuid',
                 Rule::exists('tenant.categories', 'id')->where('tenant_id', $this->getTenantId($request)),
             ],
-            'image_url' => 'nullable|string',
+            'image' => 'nullable|file|max:2048',
             'discount' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image_url'] = $this->storeUploadedImage(
+                $request->file('image'),
+                (string) $this->getTenantId($request),
+                'categories'
+            );
+        }
 
         $validated['tenant_id'] = $this->getTenantId($request);
         $validated['created_by'] = $request->user()?->id;
@@ -59,10 +70,18 @@ class CategoryController extends BaseTenantController
                 'uuid',
                 Rule::exists('tenant.categories', 'id')->where('tenant_id', $this->getTenantId($request)),
             ],
-            'image_url' => 'nullable|string',
+            'image' => 'nullable|file|max:2048',
             'discount' => 'nullable|numeric|min:0|max:100',
             'is_active' => 'boolean',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image_url'] = $this->storeUploadedImage(
+                $request->file('image'),
+                (string) $this->getTenantId($request),
+                'categories'
+            );
+        }
 
         $validated['updated_by'] = $request->user()?->id;
 

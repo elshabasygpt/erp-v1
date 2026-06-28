@@ -7,6 +7,7 @@ namespace App\Infrastructure\Services;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final class TenantDatabaseManager
 {
@@ -85,7 +86,7 @@ final class TenantDatabaseManager
         }
 
         if (app()->environment('testing')) {
-            dump('resetConnection called! Purging tenant connection!');
+            Log::debug('TenantDatabaseManager::resetConnection — purging tenant connection');
         }
 
         Config::set('database.connections.tenant.database', null);

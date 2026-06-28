@@ -223,7 +223,7 @@ export const salesApi = {
 
     // Commissions
     getUnpaidCommissions: (params?: Record<string, any>) => api.get('/sales/commissions/unpaid', { params }),
-    payCommission: (data: { salesperson_id: string; invoice_ids: string[]; safe_id?: string }) => api.post('/sales/commissions/pay', data),
+    payCommission: (data: { salesperson_id: string; invoice_ids: string[]; safe_id?: string }) => api.post('/sales/commissions/payout', data),
 };
 
 export const approvalsApi = {
@@ -264,8 +264,8 @@ export const inventoryApi = {
     // Categories (Groups)
     getCategories: (params?: Record<string, any>) => api.get('/inventory/categories', { params }),
     getCategory: (id: string) => api.get(`/inventory/categories/${id}`),
-    createCategory: (data: any) => api.post('/inventory/categories', data),
-    updateCategory: (id: string, data: any) => api.put(`/inventory/categories/${id}`, data),
+    createCategory: (data: any) => api.post('/inventory/categories', data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}),
+    updateCategory: (id: string, data: any) => api.post(`/inventory/categories/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}),
     deleteCategory: (id: string) => api.delete(`/inventory/categories/${id}`),
 
     // Units
@@ -340,7 +340,7 @@ export const inventoryApi = {
     updateStocktakeStatus: (id: string, data: any) => api.put(`/inventory/stocktakes/${id}/status`, data),
     approveStocktake: (id: string) => api.post(`/inventory/stocktakes/${id}/approve`),
     scanStocktakeBarcode: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/scan`, data),
-    addUnlistedItem: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/unlisted`, data),
+    addUnlistedItem: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/add-item`, data),
     exportStocktake: (id: string) => api.get(`/inventory/stocktakes/${id}/export`, { responseType: 'blob' }).then(res => res.data as any),
     importStocktake: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/import`, data),
     requestStocktakeRecount: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/recount`, data),
@@ -402,17 +402,17 @@ export const inventoryApi = {
     createVehicleYear: (modelId: string, data: any) => {
         if (data instanceof FormData) {
             data.append('model_id', modelId);
-            return api.post('/inventory/vehicles/years', data, { headers: { 'Content-Type': undefined } });
+            return api.post('/inventory/vehicles/years', data, { headers: { 'Content-Type': 'multipart/form-data' } });
         }
         return api.post('/inventory/vehicles/years', { ...data, model_id: modelId });
     },
     
     updateVehicleMake: (id: string, data: any) =>
-        api.post(`/inventory/vehicles/makes/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+        api.post(`/inventory/vehicles/makes/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}),
     updateVehicleModel: (id: string, data: any) =>
-        api.post(`/inventory/vehicles/models/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+        api.post(`/inventory/vehicles/models/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}),
     updateVehicleYear: (id: string, data: any) =>
-        api.post(`/inventory/vehicles/years/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': undefined } } : {}),
+        api.post(`/inventory/vehicles/years/${id}`, data, data instanceof FormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}),
 
     deleteVehicleMake: (id: string) => api.delete(`/inventory/vehicles/makes/${id}`),
     deleteVehicleModel: (id: string) => api.delete(`/inventory/vehicles/models/${id}`),
@@ -638,7 +638,7 @@ export const purchasesApi = {
     }) => api.post('/purchases/supplier-prices/bulk', data),
 
     // Purchase Requests → PO conversion
-    convertPrToPo: (id: string) => api.post(`/purchases/requests/${id}/convert`),
+    convertPrToPo: (id: string) => api.post(`/purchases/requests/${id}/convert-to-po`),
 
     // Smart Orders — backend route prefix is SINGULAR: /purchases/smart-order/...
     getSmartOrderLowStock: () => api.get('/purchases/smart-order/low-stock'),
@@ -742,8 +742,8 @@ export const accountingApi = {
     reopenFiscalPeriod: (id: string) => api.post(`/accounting/fiscal-periods/${id}/reopen`),
 
     // Account Mappings
-    getAccountMappings: () => api.get('/accounting/mappings'),
-    updateAccountMappings: (data: any) => api.post('/accounting/mappings', data),
+    getAccountMappings: () => api.get('/accounting/account-mappings'),
+    updateAccountMappings: (data: any) => api.put('/accounting/account-mappings', data),
 
     // Bank Accounts
     getBankAccounts: () => api.get('/accounting/bank-accounts'),
@@ -755,7 +755,7 @@ export const accountingApi = {
     importBankTransactions: (bankAccountId: string, file: any) => {
         const formData = new FormData();
         formData.append('file', file);
-        return api.post(`/accounting/bank-accounts/${bankAccountId}/import`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        return api.post(`/accounting/bank-accounts/${bankAccountId}/import-transactions`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
     },
 
     // Credit Notes
@@ -833,7 +833,7 @@ export const automationApi = {
 };
 
 export const aiApi = {
-    chat: (prompt: string) => api.post('/ai/chat', { prompt }),
+    chat: (prompt: string) => api.post('/analytics/chat', { prompt }),
 };
 
 export const reportsApi = {
@@ -1128,9 +1128,9 @@ export const zatcaApi = {
 };
 
 export const dataApi = {
-    exportData: (type: string) => api.get(`/data/export/${type}`),
-    importData: (type: string, data: any) => api.post(`/data/import/${type}`, data),
-    downloadTemplate: (type: string) => api.get(`/data/template/${type}`),
+    exportData: (type: string) => api.get('/data/export', { params: { entity: type }, responseType: 'blob' }),
+    importData: (type: string, data: any) => api.post('/data/import', data, { params: { entity: type } }),
+    downloadTemplate: (type: string) => api.get('/data/template', { params: { entity: type }, responseType: 'blob' }),
 };
 
 // POS Shifts

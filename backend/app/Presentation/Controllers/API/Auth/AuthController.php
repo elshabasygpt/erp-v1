@@ -137,6 +137,22 @@ class AuthController extends BaseController
         return $this->success(['user' => $userData]);
     }
 
+    public function refresh(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user) {
+            return $this->error('Unauthenticated.', 401);
+        }
+
+        $user->currentAccessToken()->delete();
+        $newToken = $user->createToken('auth-token')->plainTextToken;
+
+        return $this->success([
+            'token'      => $newToken,
+            'token_type' => 'Bearer',
+        ], 'Token refreshed.');
+    }
+
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();

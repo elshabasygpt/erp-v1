@@ -14,6 +14,7 @@ interface Category {
     parent_id: string | null;
     discount: number | null;
     is_active: boolean;
+    image_url?: string;
     children?: Category[];
 }
 
@@ -25,6 +26,9 @@ export default function CategoriesPage() {
     const [form, setForm] = useState({ name: '', name_ar: '', parent_id: '', discount: '', is_active: true });
     const [saving, setSaving] = useState(false);
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string>('');
 
     useEffect(() => { fetchCategories(); }, []);
 
@@ -45,13 +49,31 @@ export default function CategoriesPage() {
     const openCreate = () => {
         setEditing(null);
         setForm({ name: '', name_ar: '', parent_id: '', discount: '', is_active: true });
+        setImageFile(null);
+        setImagePreview('');
         setShowForm(true);
     };
 
     const openEdit = (cat: Category) => {
         setEditing(cat);
         setForm({ name: cat.name, name_ar: cat.name_ar, parent_id: cat.parent_id ?? '', discount: cat.discount?.toString() ?? '', is_active: cat.is_active });
+        setImageFile(null);
+        setImagePreview(cat.image_url ? (cat.image_url.startsWith('http') ? cat.image_url : `/api/${cat.image_url.replace(/^\/+/, '')}`) : '');
         setShowForm(true);
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            if (!file.type.startsWith('image/')) {
+                toast.error('يجب أن يكون الملف صورة');
+                return;
+            }
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => setImagePreview(reader.result as string);
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleSave = async () => {
@@ -61,13 +83,27 @@ export default function CategoriesPage() {
         }
         setSaving(true);
         try {
-            const payload: any = {
+            let payload: any = {
                 name: form.name,
                 name_ar: form.name_ar,
-                parent_id: form.parent_id || null,
-                discount: form.discount ? parseFloat(form.discount) : null,
                 is_active: form.is_active,
             };
+            
+            if (form.parent_id) payload.parent_id = form.parent_id;
+            if (form.discount) payload.discount = parseFloat(form.discount);
+
+            if (imageFile) {
+                const formData = new FormData();
+                Object.keys(payload).forEach(key => formData.append(key, payload[key]));
+                formData.append('image', imageFile);
+                if (editing) {
+                    formData.append('_method', 'PUT'); // For PHP to parse FormData in update
+                }
+                payload = formData;
+            } else if (editing) {
+                payload._method = 'PUT';
+            }
+
             if (editing) {
                 await inventoryApi.updateCategory(editing.id, payload);
                 toast.success('تم تحديث الفئة');
@@ -122,7 +158,10 @@ export default function CategoriesPage() {
                     ) : (
                         <span className="w-4" />
                     )}
-                    <Tag className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    {cat.image_url ? (
+                        <img src={cat.image_url.startsWith('http') ? cat.image_url : `/api/${cat.image_url.replace(/^\/+/, '')}`} alt="" className="w-6 h-6 object-cover rounded" onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                    ) : null}
+                    <Tag className={`w-4 h-4 text-blue-500 flex-shrink-0 ${cat.image_url ? 'hidden' : ''}`} />
                     <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 dark:text-white truncate">{cat.name}</p>
                         <p className="text-sm text-gray-500 truncate">{cat.name_ar}</p>
@@ -212,7 +251,21 @@ export default function CategoriesPage() {
                                 placeholder="0"
                             />
                         </div>
-                        <div className="flex items-center gap-2 pt-6">
+                        <div className="md:col-span-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">صورة الفئة (اختياري)</label>
+                            <div className="flex items-center gap-4">
+                                {imagePreview && (
+                                    <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded border" />
+                                )}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageChange}
+                                    className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 pt-2 md:col-span-2">
                             <input type="checkbox" id="cat_active" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
                             <label htmlFor="cat_active" className="text-sm text-gray-700 dark:text-gray-300">نشط</label>
                         </div>

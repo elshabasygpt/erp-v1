@@ -175,8 +175,20 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
             setEngineImage(null); setEngineImagePreview(''); if (engineImageRef.current) engineImageRef.current.value = '';
             selectModel(activeModel);
         } catch (e: any) {
-
-            toast.error(e.response?.data?.message || 'Failed to save year. ' + JSON.stringify(e.response?.data?.errors || {}));
+            let errorMsg = 'Failed to save year.';
+            if (e.response?.data) {
+                const data = e.response.data;
+                const errors = data.data || data.errors;
+                if (errors && typeof errors === 'object') {
+                    const errorStrings = Object.values(errors).flat().join(', ');
+                    errorMsg = data.message ? `${data.message}: ${errorStrings}` : errorStrings;
+                } else if (data.message) {
+                    errorMsg = data.message;
+                }
+            } else if (e.message) {
+                errorMsg = e.message;
+            }
+            toast.error(errorMsg);
         }
     };
 

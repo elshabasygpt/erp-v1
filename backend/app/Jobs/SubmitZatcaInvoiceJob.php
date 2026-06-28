@@ -14,19 +14,36 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class SubmitZatcaInvoiceJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
+    public int $tries = 3;
+
+    public int $timeout = 60;
+
     public function __construct(
         public string $invoiceId,
-        public string $tenantId // Passing tenant context is critical for jobs
+        public string $tenantId
     ) {}
+
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('SubmitZatcaInvoiceJob permanently failed', [
+            'invoice_id' => $this->invoiceId,
+            'tenant_id'  => $this->tenantId,
+            'error'      => $exception->getMessage(),
+        ]);
+
+        DB::setDefaultConnection('tenant');
+        InvoiceModel::query()->where('id', $this->invoiceId)->update([
+            'zatca_status'        => 'failed',
+            'zatca_error_message' => 'Queue job failed after '.$this->tries.' attempts: '.$exception->getMessage(),
+        ]);
+    }
 
     /**
      * Execute the job.

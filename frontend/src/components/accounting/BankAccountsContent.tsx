@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import type { Currency } from '@/providers/RegionalSettingsProvider';
 
 export default function BankAccountsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -202,7 +203,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{isRTL ? 'العملة' : 'Currency'}</label>
-                                    <input required value={form.currency} onChange={e => setForm({...form, currency: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-center" />
+                                    <input required value={form.currency} onChange={e => setForm({...form, currency: e.target.value as Currency})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-center" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{isRTL ? 'الرصيد الافتتاحي' : 'Opening Balance'}</label>

@@ -16,9 +16,18 @@ export function formatCurrency(value: number, currency: string = 'SAR', locale?:
  */
 export function toRelativeImageUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
+  
+  let cleanUrl = url.replace(/^undefined\/?/, '');
+  if (cleanUrl.startsWith('uploads/') || cleanUrl.startsWith('storage/')) {
+      cleanUrl = '/' + cleanUrl;
+  }
+  
   try {
-    return new URL(url).pathname;
+    return new URL(cleanUrl).pathname;
   } catch {
-    return url;
+    if (!cleanUrl.startsWith('/') && !cleanUrl.startsWith('http')) {
+        cleanUrl = '/' + cleanUrl;
+    }
+    return cleanUrl;
   }
 }
