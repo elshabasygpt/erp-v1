@@ -687,6 +687,12 @@ export const purchasesApi = {
     getPaymentAllocations: (paymentId: string) => api.get(`/purchases/payments/${paymentId}/allocations`),
     savePaymentAllocations: (paymentId: string, allocations: { invoice_id: string; amount: number }[]) =>
         api.post(`/purchases/payments/${paymentId}/allocations`, { allocations }),
+    // Record a supplier payment + allocate it (deducts safe, posts balanced journal)
+    getSupplierPayments: (supplierId: string) => api.get(`/purchases/suppliers/${supplierId}/payments`),
+    createSupplierPayment: (supplierId: string, data: {
+        safe_id: string; amount: number; payment_date?: string; reference_number?: string; notes?: string;
+        allocations?: { invoice_id: string; amount: number }[];
+    }) => api.post(`/purchases/suppliers/${supplierId}/payments`, data),
 };
 
 export const purchaseReturnsApi = {

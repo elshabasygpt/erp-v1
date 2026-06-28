@@ -33,6 +33,7 @@ const mockTransactions = [
 import { crmApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import SupplierPaymentModal from './SupplierPaymentModal';
 
 export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurrency }: ViewAccountProps) {
     const isRTL = locale === 'ar';
@@ -43,7 +44,8 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentType, setPaymentType] = useState('payment');
     const [paymentNotes, setPaymentNotes] = useState('');
-    
+    const [showPayModal, setShowPayModal] = useState(false);
+
     const [statementData, setStatementData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -123,9 +125,14 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>📋 {isRTL ? 'كشف الحساب' : 'Account Statement'}</h4>
-                            <button onClick={() => setShowPaymentForm(!showPaymentForm)} className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)' }}>
-                                💰 {isRTL ? 'إصدار سند صرف/خصم' : 'Issue Voucher'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setShowPayModal(true)} className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.25)' }}>
+                                    💸 {isRTL ? 'سداد وتخصيص' : 'Pay & Allocate'}
+                                </button>
+                                <button onClick={() => setShowPaymentForm(!showPaymentForm)} className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)' }}>
+                                    💰 {isRTL ? 'إصدار سند صرف/خصم' : 'Issue Voucher'}
+                                </button>
+                            </div>
                         </div>
                         {showPaymentForm && (
                             <div className="mb-3 p-4 rounded-xl space-y-3" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
@@ -165,6 +172,16 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
                     </div>
                 </div>
             </div>
+
+            {showPayModal && (
+                <SupplierPaymentModal
+                    supplier={supplier}
+                    isRTL={isRTL}
+                    formatCurrency={formatCurrency}
+                    onClose={() => setShowPayModal(false)}
+                    onSuccess={loadStatement}
+                />
+            )}
         </div>
     );
 }

@@ -68,8 +68,13 @@
 
 **P4.1 الواجهة (تمّ):** `CustomerInstallmentsModal` بُني (إدارة جدول فقط — بلا زر دفع؛ يُعطّل التعديل بعد سداد قسط) ورُبط بشاشة فواتير المبيعات (`SalesListScreen` → القسم الآجل في مودال التفاصيل → زر «جدولة الأقساط»). `tsc` و`build` exit 0.
 
-**باقٍ في Phase 4:**
-- **P4.2 الواجهة:** modal تخصيص مدفوعات الموردين — الباك والـ wrapper جاهزان، لكن شاشة الموردين الحالية (`SupplierModals`) تعرض كشف المورد ببيانات **وهمية (mock)** ولا توجد قائمة مدفوعات حقيقية بـ id لربط التخصيص بها. يحتاج أولاً تأسيس قائمة مدفوعات المورد الحقيقية قبل بناء modal تخصيص فعّال (وإلا سيكون ضد بيانات وهمية لا تعمل).
+**P4.2 (#16) — مكتمل (متابعة):** اتّضح أثناء البناء أن الانفصال أعمق من mock — تدفّق تسجيل الدفعة في الواجهة يُنشئ `vouchers`، بينما الكشف والـ allocation يعملان على `supplier_payments`، و**`CreateSupplierPaymentUseCase` (الذي يُنشئ الدفعة + يخصّصها + يخصم الخزنة + يقيّد قيداً متوازناً) كان مكتملاً لكن غير موصول وفيه 3 باجات كامنة** (لهذا لم يُستعمَل قط):
+  - `supplier_payments.payment_method` (NOT NULL) لم يُضبَط → fatal على أول insert. أُصلح (يُشتق من نوع الخزنة).
+  - يكتب `reference_number` بينما العمود `reference` → كان يُسقَط. أُصلح.
+  - يمرّر uuid مولّداً مسبقاً للتخصيص بينما `create` يعيد توليد الـ id → `ModelNotFoundException`. أُصلح (يستخدم `$payment->id`).
+  - وُصِّل عبر `SupplierPaymentController` (store + index) + مسارا `GET/POST /purchases/suppliers/{id}/payments` + فلتر `supplier_id` في فواتير الشراء. اختبار `Purchases/SupplierPaymentTest` (قيد متوازن + خصم خزنة + صف تخصيص + رفض تجاوز رصيد الخزنة).
+  - الواجهة: `SupplierPaymentModal` (اختيار خزنة + مبلغ + تخصيص على فواتير المورد المستحقة) مربوط بزر «سداد وتخصيص» في `ViewAccountModal`. `tsc`+`build` exit 0.
+- **النتيجة:** الباك **208 اختبار · 579 تأكيد · 0 فشل · 3 متخطّاة**.
 
 ### ✅ Phase 5 — مكتملة (تقوية تشغيل/أمان)
 - **P5.1 `failed()` للوظيفتين (#20):** كان مُنفَّذاً بالفعل ضمن Phase 1 (`SendOrderReminderJob`/`SendLateAttendanceNotificationJob` لهما `failed()`).

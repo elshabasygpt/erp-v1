@@ -62,6 +62,7 @@ use App\Presentation\Controllers\API\Portal\PartnerDashboardController;
 use App\Presentation\Controllers\API\Purchases\PurchaseController;
 use App\Presentation\Controllers\API\Purchases\PurchaseReturnController;
 use App\Presentation\Controllers\API\Purchases\SupplierPaymentAllocationController;
+use App\Presentation\Controllers\API\Purchases\SupplierPaymentController;
 use App\Presentation\Controllers\API\Purchases\ProcurementController;
 use App\Presentation\Controllers\API\Purchases\SupplierPriceListController;
 use App\Presentation\Controllers\API\Purchases\SupplierCoreReturnController;
@@ -551,6 +552,10 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::get('/core-returns/{id}', [SupplierCoreReturnController::class, 'show']);
         Route::post('/core-returns/{id}/ship', [SupplierCoreReturnController::class, 'ship']);
         Route::post('/core-returns/{id}/credit', [SupplierCoreReturnController::class, 'credit']);
+
+        // Supplier Payments (record + allocate in one step)
+        Route::get('/suppliers/{supplierId}/payments', [SupplierPaymentController::class, 'index']);
+        Route::post('/suppliers/{supplierId}/payments', [SupplierPaymentController::class, 'store']);
 
         // Supplier Payment Allocations
         Route::get('/payments/{paymentId}/allocations', [SupplierPaymentAllocationController::class, 'index']);

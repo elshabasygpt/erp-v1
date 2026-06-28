@@ -14,6 +14,7 @@ use App\Domain\Accounting\Services\SupplierPaymentAllocationService;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
 use App\Infrastructure\Eloquent\Models\SafeModel;
 use App\Infrastructure\Eloquent\Models\SafeTransactionModel;
+use App\Infrastructure\Eloquent\Models\SupplierModel;
 use App\Infrastructure\Eloquent\Models\SupplierPaymentModel;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,8 @@ final class CreateSupplierPaymentUseCase
             $paymentDate = $data['payment_date'] ?? date('Y-m-d');
             $allocations = $data['allocations'] ?? [];
 
-            $safe = SafeModel::query()->where('tenant_id', $tenantId)->find($safeId);
+            // Lock the safe row so the funds check and the decrement below are atomic.
+            $safe = SafeModel::query()->where('tenant_id', $tenantId)->lockForUpdate()->find($safeId);
             if (! $safe) {
                 throw new DomainException('Safe not found.');
             }
@@ -69,8 +71,10 @@ final class CreateSupplierPaymentUseCase
                 'currency_id' => $currencyId,
                 'exchange_rate' => $exchangeRate,
                 'amount' => $amount,
+                // Derived from the paying safe — the column is NOT NULL.
+                'payment_method' => $safe->type === 'bank' ? 'bank_transfer' : 'cash',
                 'payment_date' => $paymentDate,
-                'reference_number' => $data['reference_number'] ?? null,
+                'reference' => $data['reference_number'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'cost_center_id' => $data['cost_center_id'] ?? null,
             ]);
@@ -78,7 +82,9 @@ final class CreateSupplierPaymentUseCase
             // Allocate Payment to Invoices and Calculate FX Differences
             $fxGainLoss = 0.0;
             if (! empty($allocations)) {
-                $this->allocationService->allocatePayment($paymentId, $allocations);
+                // Use the persisted model id (HasUuids may regenerate the key on create),
+                // consistent with the safe-transaction and journal references below.
+                $this->allocationService->allocatePayment($payment->id, $allocations);
 
                 foreach ($allocations as $allocation) {
                     $invoice = PurchaseInvoiceModel::query()->find($allocation['invoice_id']);
@@ -138,6 +144,15 @@ final class CreateSupplierPaymentUseCase
             // Wait, standard accounting: Debit AP at Payment Rate minus FX difference, or just debit AP at invoice rate.
             // Let's debit AP at (Payment Base Amount - FX Loss + FX Gain) = Invoice Base Amount
             $apDebitBase = $baseAmount - $fxGainLoss;
+
+            // Reduce the supplier's outstanding balance by the AP amount actually settled (base
+            // currency), mirroring the increment done on credit purchases in ConfirmPurchaseUseCase.
+            // Without this, payables grow on purchase but are never paid down → balance overstated.
+            $supplier = SupplierModel::query()->lockForUpdate()->find($supplierId);
+            if ($supplier) {
+                $supplier->balance -= round($apDebitBase, 2);
+                $supplier->save();
+            }
 
             $journalEntry->addLine(new JournalEntryLine(
                 id: null,

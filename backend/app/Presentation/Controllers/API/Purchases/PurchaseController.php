@@ -36,6 +36,10 @@ class PurchaseController extends BaseTenantController
             $query->where('status', $status);
         }
 
+        if ($supplierId = $request->query('supplier_id')) {
+            $query->where('supplier_id', $supplierId);
+        }
+
         $purchases = $query->paginate((int) $limit);
 
         return $this->paginated($purchases->toArray(), 'Purchases retrieved successfully');
