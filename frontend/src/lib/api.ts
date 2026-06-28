@@ -1124,8 +1124,10 @@ export const zatcaApi = {
     syncInvoices: () => api.post('/zatca/sync'),
     getSettings: () => api.get('/zatca/settings'),
     saveSettings: (data: any) => api.post('/zatca/settings', data),
-    getOnboardingStatus: () => api.get('/zatca/onboarding-status'),
-    submitOtp: (data: any) => api.post('/zatca/submit-otp', data),
+    // Onboarding status + OTP submission map to the existing backend routes
+    // (GET /zatca/status, POST /zatca/onboard which runs submitOtp).
+    getOnboardingStatus: () => api.get('/zatca/status'),
+    submitOtp: (otp: string) => api.post('/zatca/onboard', { otp }),
 };
 
 export const dataApi = {

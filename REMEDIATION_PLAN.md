@@ -45,8 +45,8 @@
 - **إصلاح تبعي:** اختبار الوحدة `ApproveRequestUseCaseTest` حُدِّث لتوقيع الـ constructor الجديد (تحوّل لـ `Tests\TestCase` + `ConfirmInvoiceUseCase` عبر `app()`).
 - **النتيجة:** المجموعة الكاملة **197 اختبار · 534 تأكيد · 0 فشل · 3 متخطّاة**.
 
-### 🔄 Phase 3 — جزئياً مكتملة (عقد الفرونت↔الباك)
-**تمّ (الجزء الأمامي — `tsc` و`npm run build` exit 0):**
+### ✅ Phase 3 — مكتملة (عقد الفرونت↔الباك)
+**الجزء الأمامي — `tsc` و`npm run build` exit 0:**
 - **P3.1 إصلاح URLs المكسورة (ذات الـ callers الحقيقية):**
   - دليل الحسابات CRUD: `api.ts` من `/accounting/chart-of-accounts[...]` → `/accounting/accounts[...]` (شجرة/إضافة/تعديل/حذف).
   - بدء التسوية البنكية: `/accounting/reconciliations` → `/accounting/bank-accounts/{id}/reconciliations`.
@@ -55,9 +55,10 @@
 - **P3.2 زناد حل مطالبة الضمان:** `WarrantyDetailModal` أُضيف له عمود إجراء بزر «حل» للمطالبات `open/in_progress`؛ و`WarrantyContent.handleResolveClaim` ينادي `updateWarrantyClaim(status:'resolved')` (الباك يُنشئ فاتورة الاستبدال تلقائياً) مع إعادة جلب.
 - **P3.3 ربط الصفحات اليتيمة بالـ Sidebar:** أُضيفت 5 روابط لصفحات موجودة وغير مربوطة: عمولات المندوبين، مركز الاستيراد، الدائنون، الموازنات، الأرصدة الافتتاحية.
 
-**باقٍ في Phase 3 (بناء backend جوهري):**
-- **P3.4 CRM Pipeline backend كامل** (جداول `pipeline_stages`/`deals` + `CrmPipelineController` + مسارات + اختبارات) — اخترتَ بناءه.
-- **P3.4 نقاط ZATCA الناقصة** (`zatca/settings|sync|onboarding-status|submit-otp`).
+**P3.4 — بناء backend (تمّ):**
+- **CRM Pipeline backend كامل:** مهاجرة `2026_06_30_100000_create_crm_pipeline_tables` (جدولا `pipeline_stages`/`deals`) + موديلان (`PipelineStageModel`/`DealModel`) + `CrmPipelineController` (stages مع seeding لـ5 مراحل افتراضية + storeDeal + moveDeal) + 3 مسارات تحت `crm/pipeline/*` تطابق عقد الفرونت بالضبط. اختبار `Crm/PipelineTest` (3 اختبارات: seeding/idempotency، إنشاء+نقل صفقة، رفض مرحلة غير موجودة).
+- **ZATCA endpoints:** الـ callers الحقيقية الوحيدة (`getOnboardingStatus`/`submitOtp` في `ZatcaOnboardingContent`) أُعيد توجيهها للمسارات الموجودة فعلاً في الباك (`GET /zatca/status`، `POST /zatca/onboard`) مع تصحيح payload الـ OTP إلى `{otp}`. (`zatca/getSettings|saveSettings|syncInvoices` كود ميت بلا callers → Phase 6.)
+- **النتيجة:** الباك **200 اختبار · 547 تأكيد · 0 فشل · 3 متخطّاة**؛ الفرونت `tsc` و`build` exit 0.
 
 ---
 

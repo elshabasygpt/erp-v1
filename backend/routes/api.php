@@ -25,6 +25,7 @@ use App\Presentation\Controllers\API\CRM\CustomerInteractionController;
 use App\Presentation\Controllers\API\CRM\CustomerVehicleController;
 use App\Presentation\Controllers\API\CRM\ReceivableController;
 use App\Presentation\Controllers\API\CRM\PayableController;
+use App\Presentation\Controllers\API\CRM\CrmPipelineController;
 use App\Presentation\Controllers\API\CRM\SalesFollowUpController;
 use App\Presentation\Controllers\API\CRM\SupplierController;
 use App\Presentation\Controllers\API\CRM\VoucherController;
@@ -477,6 +478,11 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::get('follow-ups', [SalesFollowUpController::class, 'index']);
         Route::post('follow-ups', [SalesFollowUpController::class, 'store']);
         Route::put('follow-ups/{id}/complete', [SalesFollowUpController::class, 'markCompleted']);
+
+        // CRM Sales Pipeline (Kanban board)
+        Route::get('pipeline/stages', [CrmPipelineController::class, 'stages']);
+        Route::post('pipeline/deals', [CrmPipelineController::class, 'storeDeal']);
+        Route::put('pipeline/deals/{id}/move', [CrmPipelineController::class, 'moveDeal']);
 
         // Customer Vehicles
         Route::get('customers/vehicles/search', [CustomerVehicleController::class, 'searchByPlate']);
