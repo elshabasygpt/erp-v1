@@ -71,6 +71,13 @@
 **باقٍ في Phase 4:**
 - **P4.2 الواجهة:** modal تخصيص مدفوعات الموردين — الباك والـ wrapper جاهزان، لكن شاشة الموردين الحالية (`SupplierModals`) تعرض كشف المورد ببيانات **وهمية (mock)** ولا توجد قائمة مدفوعات حقيقية بـ id لربط التخصيص بها. يحتاج أولاً تأسيس قائمة مدفوعات المورد الحقيقية قبل بناء modal تخصيص فعّال (وإلا سيكون ضد بيانات وهمية لا تعمل).
 
+### ✅ Phase 5 — مكتملة (تقوية تشغيل/أمان)
+- **P5.1 `failed()` للوظيفتين (#20):** كان مُنفَّذاً بالفعل ضمن Phase 1 (`SendOrderReminderJob`/`SendLateAttendanceNotificationJob` لهما `failed()`).
+- **P5.2 throttle بوّابة الشركاء (#22):** أُضيف `throttle:10,1` لمسارات `portal/login` و`portal/magic-link[/verify]`.
+- **P5.3 تخزين إيصالات أقساط المشتريات (#10):** `PurchaseController::payInstallment` يستخدم الآن `HandlesImageUploads::storeUploadedImage` (يكتب في `public/uploads/tenant_{id}/installments` ويرجّع `/uploads/...` — داخل Docker volume) بدل `store('...','public')` الذي كان يكتب خارج الـ volume.
+- **P5.4 مهاجرة `updated_by` للمركبات (#19):** مهاجرة `2026_06_30_110000_add_updated_by_to_vehicle_tables` تضيف `updated_by` لـ `vehicle_makes/models/years` (كانت في `$fillable` بلا عمود).
+- **النتيجة:** الباك **203 اختبار · 558 تأكيد · 0 فشل · 3 متخطّاة** (المهاجرة الجديدة تعمل في `migrate:fresh`).
+
 ---
 
 ## قواعد حاكمة طوال التنفيذ (من `CLAUDE.md` — غير قابلة للتفاوض)

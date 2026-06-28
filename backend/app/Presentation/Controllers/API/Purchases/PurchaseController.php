@@ -10,6 +10,7 @@ use App\Application\Purchases\UseCases\CreatePurchaseUseCase;
 use App\Application\Services\Webhooks\WebhookService;
 use App\Infrastructure\Eloquent\Models\PurchaseInvoiceModel;
 use App\Presentation\Controllers\API\BaseTenantController;
+use App\Presentation\Controllers\API\Concerns\HandlesImageUploads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,6 +18,8 @@ use App\Infrastructure\Eloquent\Models\SupplierPriceListModel;
 
 class PurchaseController extends BaseTenantController
 {
+    use HandlesImageUploads;
+
     public function __construct(
         private readonly CreatePurchaseUseCase $createPurchaseUseCase,
         private readonly ConfirmPurchaseUseCase $confirmPurchaseUseCase,
@@ -310,7 +313,9 @@ class PurchaseController extends BaseTenantController
 
         $path = $installment->attachment_path;
         if ($request->hasFile('attachment')) {
-            $path = $request->file('attachment')->store('installments/receipts', 'public');
+            // Store under public/uploads/tenant_{id}/... — the only path mounted on the
+            // Docker uploads volume (the old 'public' disk wrote outside it → lost on redeploy).
+            $path = $this->storeUploadedImage($request->file('attachment'), $this->getTenantId($request), 'installments');
         }
 
         \DB::connection('tenant')->transaction(function () use ($installment, $validated, $amountToPay, $remaining, $path, $request) {

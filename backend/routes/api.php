@@ -849,10 +849,10 @@ Route::middleware(['tenant.auth', 'subscription.active'])->prefix('sales/commiss
 //  Partner Portal — Separate auth, tenant-scoped via query param
 // ─────────────────────────────────────────────────────────────
 Route::middleware(['tenant'])->prefix('portal')->group(function () {
-    // Public portal auth
-    Route::post('/login', [PartnerAuthController::class, 'login']);
-    Route::post('/magic-link', [PartnerAuthController::class, 'sendMagicLink']);
-    Route::post('/magic-link/verify', [PartnerAuthController::class, 'verifyMagicLink']);
+    // Public portal auth (throttled — public, tenant-scoped auth surface)
+    Route::post('/login', [PartnerAuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/magic-link', [PartnerAuthController::class, 'sendMagicLink'])->middleware('throttle:10,1');
+    Route::post('/magic-link/verify', [PartnerAuthController::class, 'verifyMagicLink'])->middleware('throttle:10,1');
 
     // Protected portal routes (partner token required)
     Route::middleware(['partner.auth'])->group(function () {
