@@ -83,7 +83,7 @@
 - **إزالة `dd()`** من `AccountingIntegrityTest:224` (كان يوقف المجموعة كلها عند أي استثناء) → `$this->fail(...)`.
 - **حذف `AgingReportController`** (كود ميت غير مربوط؛ المخدوم عبر `PayableController`/`ReceivableController`). `route:list` يحمّل بلا أخطاء.
 - **ZATCA serial:** استبدال `2-XXXXXX` بقيمة قابلة للتكوين `zatca_solution_version` (افتراضي `ERP-1.0`).
-- **تصحيح تصنيف:** `getCustomerAliases`/`deleteCustomerAlias` **ليست كوداً ميتاً** — لها caller حقيقي (`ProductAliasesTab`) لكن مسارات الباك GET/DELETE لـ customer-aliases غير موجودة → **404 حقيقي متبقٍّ** (يحتاج إضافة مسارين في `ProductAliasController`؛ لم يُحذف).
+- **`customer-aliases` GET/DELETE — أُصلح (متابعة):** تبيّن أن `getCustomerAliases`/`deleteCustomerAlias` لهما caller حقيقي (`ProductAliasesTab`) لكن مسارات الباك مفقودة → 404 حقيقي. أُضيفت `ProductAliasController::indexCustomerAliases`/`destroyCustomerAlias` + مسارا `GET`/`DELETE /inventory/products/{id}/customer-aliases[/{aliasId}]` (الـ GET يرجّع `{id, customer_id, alias_name, customer:{name}}` كما يتوقّع الفرونت). اختبار `Inventory/CustomerAliasTest` (2: list/create/delete + 404).
 - **لم يُنفَّذ (refactor أوسع، خطر كسر callers):** توحيد الـ API aliases المكرّرة (`approvalsApi`/`approvalsApiNew`...) — يُترك لمهمة مخصّصة.
 - **النتيجة:** الباك **203 اختبار · 0 فشل · 3 متخطّاة**؛ الفرونت `tsc` و`build` exit 0.
 

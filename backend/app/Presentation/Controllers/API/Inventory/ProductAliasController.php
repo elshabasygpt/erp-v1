@@ -179,4 +179,48 @@ class ProductAliasController extends BaseTenantController
 
         return $this->success(null, 'Customer alias saved successfully', 201);
     }
+
+    /** GET /inventory/products/{id}/customer-aliases — list customer-specific print names. */
+    public function indexCustomerAliases(Request $request, string $productId): JsonResponse
+    {
+        $tenantId = $this->getTenantId($request);
+
+        $aliases = DB::connection('tenant')
+            ->table('product_customer_aliases as pca')
+            ->leftJoin('customers as c', 'c.id', '=', 'pca.customer_id')
+            ->where('pca.product_id', $productId)
+            ->where('pca.tenant_id', $tenantId)
+            ->whereNull('pca.deleted_at')
+            ->orderBy('pca.created_at')
+            ->get(['pca.id', 'pca.customer_id', 'pca.alias_name', 'pca.created_at', 'c.name as customer_name']);
+
+        $shaped = $aliases->map(fn ($a) => [
+            'id' => $a->id,
+            'customer_id' => $a->customer_id,
+            'alias_name' => $a->alias_name,
+            'customer' => ['name' => $a->customer_name],
+        ]);
+
+        return $this->success($shaped);
+    }
+
+    /** DELETE /inventory/products/{id}/customer-aliases/{aliasId} — remove a customer alias. */
+    public function destroyCustomerAlias(Request $request, string $productId, string $aliasId): JsonResponse
+    {
+        $tenantId = $this->getTenantId($request);
+
+        $deleted = DB::connection('tenant')
+            ->table('product_customer_aliases')
+            ->where('id', $aliasId)
+            ->where('product_id', $productId)
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->update(['deleted_at' => now(), 'updated_at' => now()]);
+
+        if (! $deleted) {
+            return $this->error('Customer alias not found', 404);
+        }
+
+        return $this->success(null, 'Customer alias deleted successfully');
+    }
 }

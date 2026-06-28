@@ -382,7 +382,9 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::put('/products/{id}/aliases/{aliasId}', [ProductAliasController::class, 'update']);
         Route::delete('/products/{id}/aliases/{aliasId}', [ProductAliasController::class, 'destroy']);
         Route::get('/products/{id}/resolve-alias', [ProductAliasController::class, 'resolveAlias']);
+        Route::get('/products/{id}/customer-aliases', [ProductAliasController::class, 'indexCustomerAliases']);
         Route::post('/products/{id}/customer-aliases', [ProductAliasController::class, 'storeCustomerAlias']);
+        Route::delete('/products/{id}/customer-aliases/{aliasId}', [ProductAliasController::class, 'destroyCustomerAlias']);
 
         // Product Cross-References
         Route::get('/products/{productId}/cross-references',            [CrossReferenceController::class, 'index']);
