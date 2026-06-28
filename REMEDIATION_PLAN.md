@@ -60,7 +60,15 @@
 - **ZATCA endpoints:** الـ callers الحقيقية الوحيدة (`getOnboardingStatus`/`submitOtp` في `ZatcaOnboardingContent`) أُعيد توجيهها للمسارات الموجودة فعلاً في الباك (`GET /zatca/status`، `POST /zatca/onboard`) مع تصحيح payload الـ OTP إلى `{otp}`. (`zatca/getSettings|saveSettings|syncInvoices` كود ميت بلا callers → Phase 6.)
 - **النتيجة:** الباك **200 اختبار · 547 تأكيد · 0 فشل · 3 متخطّاة**؛ الفرونت `tsc` و`build` exit 0.
 
----
+### 🔄 Phase 4 — جزئياً مكتملة (ميزات UI ناقصة)
+**تمّ (backend + طبقة الـ API — متحقَّق):**
+- **P4.1 أقساط مبيعات العملاء (#15):** اتّضح أن البنية التحتية موجودة (`InvoiceModel::installments()` + `InvoiceInstallmentModel`). أُضيفت نقطتان لجهة العميل في `InvoiceController` (`getInstallments`/`saveInstallments`) + مساران `GET/POST /sales/invoices/{id}/installments` (محاكاة جهة المشتريات: المجموع يجب أن يساوي المتبقّي، ولا تُعاد توليد خطة دُفِع منها شيء). **جدول الخطة بيانات فقط — بلا قيد محاسبي؛ التحصيل عبر تدفّق receivables/collect الموجود.** اختبار `CustomerInstallmentsTest` (3 اختبارات). + wrapper `salesApi.getInvoiceInstallments/saveInvoiceInstallments`.
+- **P4.2 تخصيص مدفوعات الموردين (#16):** الباك جاهز مسبقاً (`SupplierPaymentAllocationController`)؛ أُضيف wrapper `purchasesApi.getPaymentAllocations/savePaymentAllocations`.
+- **النتيجة:** الباك **203 اختبار · 0 فشل · 3 متخطّاة**؛ الفرونت `tsc` exit 0.
+
+**باقٍ في Phase 4 (واجهات React + ربطها بالشاشات — يُفضّل التحقق بصرياً بالتطبيق):**
+- `CustomerInstallmentsModal` (محاكاة `PurchaseInstallmentsModal`) مربوط بشاشة فواتير المبيعات.
+- `SupplierAllocationModal` مربوط بشاشة مدفوعات الموردين.
 
 ---
 

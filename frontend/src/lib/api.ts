@@ -193,6 +193,11 @@ export const salesApi = {
         replacement_invoice_id?: string;
     }) => api.put(`/sales/warranties/${warrantyId}/claims/${claimId}`, data),
 
+    // Customer installment plan (schedule only; collection goes through receivables)
+    getInvoiceInstallments: (invoiceId: string) => api.get(`/sales/invoices/${invoiceId}/installments`),
+    saveInvoiceInstallments: (invoiceId: string, installments: { due_date: string; amount: number }[]) =>
+        api.post(`/sales/invoices/${invoiceId}/installments`, { installments }),
+
     // Quotations
     getQuotations: (params?: Record<string, any>) => api.get('/sales/quotations', { params }),
     getQuotation: (id: string) => api.get(`/sales/quotations/${id}`),
@@ -678,6 +683,10 @@ export const purchasesApi = {
     getInstallments: (invoiceId: string) => api.get(`/purchases/invoices/${invoiceId}/installments`),
     saveInstallments: (invoiceId: string, data: any) => api.post(`/purchases/invoices/${invoiceId}/installments`, data),
     payInstallment: (installmentId: string, data: any) => api.post(`/purchases/installments/${installmentId}/pay`, data),
+    // Allocate a supplier payment across specific purchase invoices
+    getPaymentAllocations: (paymentId: string) => api.get(`/purchases/payments/${paymentId}/allocations`),
+    savePaymentAllocations: (paymentId: string, allocations: { invoice_id: string; amount: number }[]) =>
+        api.post(`/purchases/payments/${paymentId}/allocations`, { allocations }),
 };
 
 export const purchaseReturnsApi = {

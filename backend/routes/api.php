@@ -141,6 +141,8 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
         Route::put('/invoices/{id}', [InvoiceController::class, 'update'])->middleware('throttle:60,1');
         Route::put('/invoices/{id}/status', [InvoiceController::class, 'updateStatus']);
+        Route::get('/invoices/{id}/installments', [InvoiceController::class, 'getInstallments']);
+        Route::post('/invoices/{id}/installments', [InvoiceController::class, 'saveInstallments']);
         Route::get('/reports/sales', [InvoiceController::class, 'salesReport']);
 
         // POS Shifts

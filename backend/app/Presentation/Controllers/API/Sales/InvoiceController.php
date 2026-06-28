@@ -509,4 +509,73 @@ class InvoiceController extends BaseTenantController
             }
         }
     }
+
+    /**
+     * GET /sales/invoices/{id}/installments — the customer-side installment plan.
+     */
+    public function getInstallments(Request $request, string $id): JsonResponse
+    {
+        $invoice = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $invoice) {
+            return $this->error('Invoice not found', 404);
+        }
+
+        return $this->success(
+            $invoice->installments()->orderBy('due_date')->get(),
+            'Installments retrieved successfully'
+        );
+    }
+
+    /**
+     * POST /sales/invoices/{id}/installments — (re)generate the installment plan.
+     * Pure schedule data (no journal entry); collection still happens through the
+     * receivables/collect flow. The plan total must equal the outstanding amount.
+     */
+    public function saveInstallments(Request $request, string $id): JsonResponse
+    {
+        $invoice = InvoiceModel::query()->where('tenant_id', $this->getTenantId($request))->find($id);
+        if (! $invoice) {
+            return $this->error('Invoice not found', 404);
+        }
+
+        $validated = $request->validate([
+            'installments' => 'required|array|min:1',
+            'installments.*.due_date' => 'required|date',
+            'installments.*.amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $totalInstallments = (float) collect($validated['installments'])->sum('amount');
+        $dueAmount = (float) $invoice->total - (float) $invoice->paid_amount;
+
+        if (abs($totalInstallments - $dueAmount) > 0.1) {
+            return $this->error("Total installments amount ($totalInstallments) does not match the invoice due amount ($dueAmount).", 422);
+        }
+
+        try {
+            DB::connection('tenant')->transaction(function () use ($invoice, $validated) {
+                if ($invoice->installments()->where('paid_amount', '>', 0)->exists()) {
+                    throw new \DomainException('Cannot regenerate installments because some have already been paid.');
+                }
+
+                $invoice->installments()->delete();
+
+                foreach ($validated['installments'] as $inst) {
+                    $invoice->installments()->create([
+                        'due_date' => $inst['due_date'],
+                        'amount' => $inst['amount'],
+                        'paid_amount' => 0,
+                        'status' => 'unpaid',
+                    ]);
+                }
+            });
+        } catch (\DomainException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        return $this->success(
+            $invoice->installments()->orderBy('due_date')->get(),
+            'Installments saved successfully',
+            201
+        );
+    }
 }
