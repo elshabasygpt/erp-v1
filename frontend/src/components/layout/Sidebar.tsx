@@ -98,6 +98,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'rma_requests', path: '/sales/rma-requests', iconKey: 'warranty', labelAr: 'طلبات إذن الإرجاع (RMA)', labelEn: 'RMA Requests' },
             { key: 'warranty', path: '/returns/warranty', iconKey: 'warranty', labelAr: 'إدارة الضمانات', labelEn: 'Warranty Management' },
             { key: 'workshop', path: '/sales/workshop', iconKey: 'wrench', labelAr: 'الورشة وبطاقات العمل', labelEn: 'Workshop & Job Cards' },
+            { key: 'commissions', path: '/sales/commissions', iconKey: 'accounting', labelAr: 'عمولات المندوبين', labelEn: 'Commissions' },
         ],
     },
     {
@@ -123,6 +124,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'manufacturing', path: '/manufacturing', iconKey: 'inventory', labelAr: 'التصنيع والتجميع', labelEn: 'Manufacturing' },
             { key: 'vehicles', path: '/inventory/vehicles', iconKey: 'car', labelAr: 'إدارة توافق السيارات', labelEn: 'Vehicle Compatibility' },
             { key: 'writeoffs', path: '/inventory/write-offs', iconKey: 'returns', labelAr: 'إتلاف وشطب المخزون', labelEn: 'Stock Write-Offs' },
+            { key: 'importCenter', path: '/inventory/import-center', iconKey: 'inventory', labelAr: 'مركز الاستيراد', labelEn: 'Import Center' },
         ],
     },
     {
@@ -139,6 +141,7 @@ const GROUPS: MenuGroup[] = [
             { key: 'suppliers', path: '/suppliers', iconKey: 'suppliers', labelAr: 'الموردين', labelEn: 'Suppliers' },
             { key: 'supplierPrices', path: '/purchases/supplier-prices', iconKey: 'purchases', labelAr: 'قوائم أسعار الموردين', labelEn: 'Supplier Price Lists' },
             { key: 'smartOrders', path: '/purchases/smart-orders', iconKey: 'reports', labelAr: 'الطلبيات الذكية', labelEn: 'Smart Orders', badge: { text: 'AI', color: '#8b5cf6' } },
+            { key: 'payables', path: '/payables', iconKey: 'suppliers', labelAr: 'إدارة الدائنين (الموردين)', labelEn: 'Payables' },
         ],
     },
     {
@@ -153,6 +156,8 @@ const GROUPS: MenuGroup[] = [
             { key: 'banks', path: '/accounting/banks', iconKey: 'accounting', labelAr: 'الحسابات البنكية', labelEn: 'Bank Accounts' },
             { key: 'treasury', path: '/treasury', iconKey: 'accounting', labelAr: 'الخزينة والبنوك', labelEn: 'Treasury & Banks' },
             { key: 'creditNotes', path: '/accounting/credit-notes', iconKey: 'accounting', labelAr: 'الإشعارات الدائنة', labelEn: 'Credit Notes' },
+            { key: 'budgets', path: '/accounting/budgets', iconKey: 'reports', labelAr: 'الموازنات التقديرية', labelEn: 'Budgets' },
+            { key: 'openingBalances', path: '/accounting/opening-balances', iconKey: 'accounting', labelAr: 'الأرصدة الافتتاحية', labelEn: 'Opening Balances' },
             { key: 'fixedAssets', path: '/fixed-assets', iconKey: 'inventory', labelAr: 'الأصول الثابتة', labelEn: 'Fixed Assets' },
             { key: 'accSettings', path: '/accounting/settings', iconKey: 'settings', labelAr: 'إعدادات المحاسبة', labelEn: 'Accounting Settings' },
             {

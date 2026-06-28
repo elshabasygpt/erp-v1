@@ -336,7 +336,7 @@ export const inventoryApi = {
     getStocktakes: (params?: any) => api.get('/inventory/stocktakes', { params }),
     getStocktake: (id: string) => api.get(`/inventory/stocktakes/${id}`),
     createStocktake: (data: any) => api.post('/inventory/stocktakes', data),
-    updateStocktakeCounts: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/counts`, data),
+    updateStocktakeCounts: (id: string, data: any) => api.put(`/inventory/stocktakes/${id}/items`, data),
     updateStocktakeStatus: (id: string, data: any) => api.put(`/inventory/stocktakes/${id}/status`, data),
     approveStocktake: (id: string) => api.post(`/inventory/stocktakes/${id}/approve`),
     scanStocktakeBarcode: (id: string, data: any) => api.post(`/inventory/stocktakes/${id}/scan`, data),
@@ -751,7 +751,7 @@ export const accountingApi = {
     updateBankAccount: (id: string, data: any) => api.put(`/accounting/bank-accounts/${id}`, data),
     deleteBankAccount: (id: string) => api.delete(`/accounting/bank-accounts/${id}`),
     getReconciliations: (bankAccountId: string) => api.get(`/accounting/bank-accounts/${bankAccountId}/reconciliations`),
-    startReconciliation: (bankAccountId: string, data: any) => api.post('/accounting/reconciliations', { bank_account_id: bankAccountId, ...data }),
+    startReconciliation: (bankAccountId: string, data: any) => api.post(`/accounting/bank-accounts/${bankAccountId}/reconciliations`, data),
     importBankTransactions: (bankAccountId: string, file: any) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -767,11 +767,12 @@ export const accountingApi = {
     getReceivableAging: (asOf?: string) => api.get('/crm/receivables/aging', { params: asOf ? { as_of: asOf } : undefined }),
     getPayableAging: (asOf?: string) => api.get('/crm/payables/aging', { params: asOf ? { as_of: asOf } : undefined }),
 
-    // Chart of Accounts (tree + CRUD)
-    getAccountsTree: () => api.get('/accounting/chart-of-accounts/tree'),
-    createAccount: (data: any) => api.post('/accounting/chart-of-accounts', data),
-    updateAccount: (id: string, data: any) => api.put(`/accounting/chart-of-accounts/${id}`, data),
-    deleteAccount: (id: string) => api.delete(`/accounting/chart-of-accounts/${id}`),
+    // Chart of Accounts (tree + CRUD). CRUD lives under /accounting/accounts;
+    // /accounting/chart-of-accounts is a read-only report endpoint only.
+    getAccountsTree: () => api.get('/accounting/accounts/tree'),
+    createAccount: (data: any) => api.post('/accounting/accounts', data),
+    updateAccount: (id: string, data: any) => api.put(`/accounting/accounts/${id}`, data),
+    deleteAccount: (id: string) => api.delete(`/accounting/accounts/${id}`),
 
     // Journal Entries
     createJournalEntry: (data: any) => api.post('/accounting/journal-entries', data),

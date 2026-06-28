@@ -45,6 +45,20 @@
 - **إصلاح تبعي:** اختبار الوحدة `ApproveRequestUseCaseTest` حُدِّث لتوقيع الـ constructor الجديد (تحوّل لـ `Tests\TestCase` + `ConfirmInvoiceUseCase` عبر `app()`).
 - **النتيجة:** المجموعة الكاملة **197 اختبار · 534 تأكيد · 0 فشل · 3 متخطّاة**.
 
+### 🔄 Phase 3 — جزئياً مكتملة (عقد الفرونت↔الباك)
+**تمّ (الجزء الأمامي — `tsc` و`npm run build` exit 0):**
+- **P3.1 إصلاح URLs المكسورة (ذات الـ callers الحقيقية):**
+  - دليل الحسابات CRUD: `api.ts` من `/accounting/chart-of-accounts[...]` → `/accounting/accounts[...]` (شجرة/إضافة/تعديل/حذف).
+  - بدء التسوية البنكية: `/accounting/reconciliations` → `/accounting/bank-accounts/{id}/reconciliations`.
+  - إرسال كميات الجرد: `POST .../stocktakes/{id}/counts` → `PUT .../stocktakes/{id}/items` (تأكّد أن الـ payload `{items:[{product_id,counted_quantity}]}` يطابق `updateCounts`).
+  - **تبيّن أن `settings/company` و`customer-aliases` (GET/DELETE) كود ميت بلا أي caller في الفرونت** → ليست 404 فعلية؛ تُحذف في Phase 6.
+- **P3.2 زناد حل مطالبة الضمان:** `WarrantyDetailModal` أُضيف له عمود إجراء بزر «حل» للمطالبات `open/in_progress`؛ و`WarrantyContent.handleResolveClaim` ينادي `updateWarrantyClaim(status:'resolved')` (الباك يُنشئ فاتورة الاستبدال تلقائياً) مع إعادة جلب.
+- **P3.3 ربط الصفحات اليتيمة بالـ Sidebar:** أُضيفت 5 روابط لصفحات موجودة وغير مربوطة: عمولات المندوبين، مركز الاستيراد، الدائنون، الموازنات، الأرصدة الافتتاحية.
+
+**باقٍ في Phase 3 (بناء backend جوهري):**
+- **P3.4 CRM Pipeline backend كامل** (جداول `pipeline_stages`/`deals` + `CrmPipelineController` + مسارات + اختبارات) — اخترتَ بناءه.
+- **P3.4 نقاط ZATCA الناقصة** (`zatca/settings|sync|onboarding-status|submit-otp`).
+
 ---
 
 ---
