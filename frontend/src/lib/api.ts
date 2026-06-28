@@ -909,8 +909,6 @@ export const reportsApi = {
 export const settingsApi = {
     getSettings: () => api.get('/settings'),
     updateSettings: (data: any) => api.put('/settings', data),
-    getCompanyInfo: () => api.get('/settings/company'),
-    updateCompanyInfo: (data: any) => api.put('/settings/company', data),
     updateHrManagerEmail: (email: string) => api.post('/settings/hr-manager-email', { email }),
 };
 export const backupsApi = {
@@ -1130,9 +1128,6 @@ export const tasksApi = {
 export const zatcaApi = {
     onboard: (data: any) => api.post('/zatca/onboard', data),
     checkStatus: () => api.get('/zatca/status'),
-    syncInvoices: () => api.post('/zatca/sync'),
-    getSettings: () => api.get('/zatca/settings'),
-    saveSettings: (data: any) => api.post('/zatca/settings', data),
     // Onboarding status + OTP submission map to the existing backend routes
     // (GET /zatca/status, POST /zatca/onboard which runs submitOtp).
     getOnboardingStatus: () => api.get('/zatca/status'),

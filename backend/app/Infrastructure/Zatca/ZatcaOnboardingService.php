@@ -149,7 +149,10 @@ class ZatcaOnboardingService
             'organizationName' => $this->getTenantSetting('company_name') ?? 'My Company',
             'commonName' => $this->getTenantSetting('branch_name') ?? 'Main Branch',
             'organizationalUnitName' => $this->getTenantSetting('branch_name') ?? 'Main Branch',
-            'serialNumber' => '1-'.($this->getTenantSetting('company_name') ?? 'ERP').'|2-XXXXXX|3-'.($this->getTenantSetting('vat_number') ?? '300000000000003'),
+            // ZATCA serialNumber format: 1-{solution name}|2-{solution model/version}|3-{unit serial}
+            'serialNumber' => '1-'.($this->getTenantSetting('company_name') ?? 'ERP')
+                .'|2-'.($this->getTenantSetting('zatca_solution_version') ?? 'ERP-1.0')
+                .'|3-'.($this->getTenantSetting('vat_number') ?? '300000000000003'),
         ];
 
         $csr = openssl_csr_new($dn, $res, $config);

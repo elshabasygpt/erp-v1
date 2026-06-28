@@ -78,6 +78,15 @@
 - **P5.4 مهاجرة `updated_by` للمركبات (#19):** مهاجرة `2026_06_30_110000_add_updated_by_to_vehicle_tables` تضيف `updated_by` لـ `vehicle_makes/models/years` (كانت في `$fillable` بلا عمود).
 - **النتيجة:** الباك **203 اختبار · 558 تأكيد · 0 فشل · 3 متخطّاة** (المهاجرة الجديدة تعمل في `migrate:fresh`).
 
+### ✅ Phase 6 — مكتملة (تنظيف)
+- **حذف دوال api.ts ميتة (بلا callers):** `getCompanyInfo`/`updateCompanyInfo` + zatca `syncInvoices`/`getSettings`/`saveSettings`.
+- **إزالة `dd()`** من `AccountingIntegrityTest:224` (كان يوقف المجموعة كلها عند أي استثناء) → `$this->fail(...)`.
+- **حذف `AgingReportController`** (كود ميت غير مربوط؛ المخدوم عبر `PayableController`/`ReceivableController`). `route:list` يحمّل بلا أخطاء.
+- **ZATCA serial:** استبدال `2-XXXXXX` بقيمة قابلة للتكوين `zatca_solution_version` (افتراضي `ERP-1.0`).
+- **تصحيح تصنيف:** `getCustomerAliases`/`deleteCustomerAlias` **ليست كوداً ميتاً** — لها caller حقيقي (`ProductAliasesTab`) لكن مسارات الباك GET/DELETE لـ customer-aliases غير موجودة → **404 حقيقي متبقٍّ** (يحتاج إضافة مسارين في `ProductAliasController`؛ لم يُحذف).
+- **لم يُنفَّذ (refactor أوسع، خطر كسر callers):** توحيد الـ API aliases المكرّرة (`approvalsApi`/`approvalsApiNew`...) — يُترك لمهمة مخصّصة.
+- **النتيجة:** الباك **203 اختبار · 0 فشل · 3 متخطّاة**؛ الفرونت `tsc` و`build` exit 0.
+
 ---
 
 ## قواعد حاكمة طوال التنفيذ (من `CLAUDE.md` — غير قابلة للتفاوض)

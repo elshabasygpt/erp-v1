@@ -221,7 +221,8 @@ class AccountingIntegrityTest extends TestCase
             app(ConfirmPurchaseReturnUseCase::class)->execute($returnId, $this->warehouseId, $this->userId);
             $this->assertFinancialIntegrity();
         } catch (\Exception $e) {
-            dd($e->getMessage(), $e->getTraceAsString());
+            // Surface as a real test failure instead of dd()-halting the whole suite.
+            $this->fail('Financial lifecycle threw: '.$e->getMessage());
         }
 
         // STEP 4: FISCAL YEAR CLOSE
