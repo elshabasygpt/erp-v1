@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Crm;
+namespace Tests\Feature\CRM;
 
 use App\Infrastructure\Eloquent\Models\PipelineStageModel;
 use Illuminate\Support\Facades\DB;
