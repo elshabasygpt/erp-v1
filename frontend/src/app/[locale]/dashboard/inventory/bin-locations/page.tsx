@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { inventoryApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ const emptyForm = { warehouse_id: '', zone: '', rack: '', shelf: '', bin: '', na
 const emptyBulk = { warehouse_id: '', zones: '', racks: '', shelves: '', bins: '', capacity: '' };
 
 export default function BinLocationsPage() {
+    const { isRTL } = useLanguage();
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [selectedWarehouse, setSelectedWarehouse] = useState('');
     const confirm = useConfirm();
@@ -60,7 +62,7 @@ export default function BinLocationsPage() {
             setBinLocations(Array.isArray(data) ? data : []);
             if (view === 'tree') fetchTree();
         } catch {
-            toast.error('فشل تحميل مواقع البنود');
+            toast.error(isRTL ? 'فشل تحميل مواقع البنود' : 'Failed to load bin locations');
             setBinLocations([]);
         } finally {
             setLoading(false);
@@ -94,8 +96,8 @@ export default function BinLocationsPage() {
     };
 
     const handleSave = async () => {
-        if (!form.warehouse_id) { toast.error('اختر المستودع'); return; }
-        if (!form.zone && !form.rack && !form.shelf && !form.bin) { toast.error('أدخل موقعاً واحداً على الأقل'); return; }
+        if (!form.warehouse_id) { toast.error(isRTL ? 'اختر المستودع' : 'Select a warehouse'); return; }
+        if (!form.zone && !form.rack && !form.shelf && !form.bin) { toast.error(isRTL ? 'أدخل موقعاً واحداً على الأقل' : 'Enter at least one location level'); return; }
         setSaving(true);
         try {
             const payload: any = {
@@ -108,33 +110,33 @@ export default function BinLocationsPage() {
             };
             if (editing) {
                 await inventoryApi.updateBinLocation(editing.id, payload);
-                toast.success('تم تحديث الموقع');
+                toast.success(isRTL ? 'تم تحديث الموقع' : 'Bin location updated');
             } else {
                 await inventoryApi.createBinLocation(payload);
-                toast.success('تم إنشاء الموقع');
+                toast.success(isRTL ? 'تم إنشاء الموقع' : 'Bin location created');
             }
             setShowForm(false);
             fetchBinLocations();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'فشلت العملية');
+            toast.error(err.response?.data?.message || (isRTL ? 'فشلت العملية' : 'Operation failed'));
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!await confirm('هل تريد حذف هذا الموقع؟ يجب أن يكون فارغاً.')) return;
+        if (!await confirm(isRTL ? 'هل تريد حذف هذا الموقع؟ يجب أن يكون فارغاً.' : 'Delete this bin location? It must be empty.')) return;
         try {
             await inventoryApi.deleteBinLocation(id);
-            toast.success('تم الحذف');
+            toast.success(isRTL ? 'تم الحذف' : 'Deleted');
             fetchBinLocations();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'فشل الحذف');
+            toast.error(err.response?.data?.message || (isRTL ? 'فشل الحذف' : 'Delete failed'));
         }
     };
 
     const handleBulkGenerate = async () => {
-        if (!bulkForm.warehouse_id || !bulkForm.zones.trim()) { toast.error('المستودع والمنطقة مطلوبان'); return; }
+        if (!bulkForm.warehouse_id || !bulkForm.zones.trim()) { toast.error(isRTL ? 'المستودع والمنطقة مطلوبان' : 'Warehouse and zone are required'); return; }
         setSaving(true);
         try {
             const toArr = (s: string) => s.trim() ? s.split(',').map(x => x.trim()).filter(Boolean) : undefined;
@@ -146,11 +148,11 @@ export default function BinLocationsPage() {
                 bins: toArr(bulkForm.bins),
                 capacity: bulkForm.capacity ? parseFloat(bulkForm.capacity) : undefined,
             });
-            toast.success('تم إنشاء المواقع بالجملة');
+            toast.success(isRTL ? 'تم إنشاء المواقع بالجملة' : 'Bin locations generated in bulk');
             setShowBulk(false);
             fetchBinLocations();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'فشل الإنشاء الجماعي');
+            toast.error(err.response?.data?.message || (isRTL ? 'فشل الإنشاء الجماعي' : 'Bulk generation failed'));
         } finally {
             setSaving(false);
         }
@@ -159,21 +161,21 @@ export default function BinLocationsPage() {
     const renderTree = () => (
         <div className="p-4 space-y-2">
             {Object.keys(tree).length === 0 ? (
-                <p className="text-center text-gray-500 py-8">لا توجد مواقع</p>
+                <p className="text-center text-gray-500 py-8">{isRTL ? 'لا توجد مواقع' : 'No bin locations'}</p>
             ) : Object.entries(tree).map(([zone, racks]: any) => (
                 <details key={zone} open className="border dark:border-gray-700 rounded-lg">
                     <summary className="px-4 py-2 font-semibold bg-blue-50 dark:bg-blue-900/20 cursor-pointer flex items-center gap-2">
                         <ChevronRight className="w-4 h-4" />
-                        منطقة: {zone === '__none__' ? '—' : zone}
+                        {isRTL ? 'منطقة' : 'Zone'}: {zone === '__none__' ? '—' : zone}
                     </summary>
                     <div className="p-2 space-y-1">
                         {Object.entries(racks).map(([rack, shelves]: any) => (
                             <details key={rack} className="ml-4 border dark:border-gray-600 rounded">
-                                <summary className="px-3 py-1.5 text-sm font-medium cursor-pointer">رف: {rack === '__none__' ? '—' : rack}</summary>
+                                <summary className="px-3 py-1.5 text-sm font-medium cursor-pointer">{isRTL ? 'رف' : 'Rack'}: {rack === '__none__' ? '—' : rack}</summary>
                                 <div className="p-2 space-y-1">
                                     {Object.entries(shelves).map(([shelf, bins]: any) => (
                                         <div key={shelf} className="ml-4">
-                                            <p className="text-xs text-gray-500 mb-1">رف فرعي: {shelf === '__none__' ? '—' : shelf}</p>
+                                            <p className="text-xs text-gray-500 mb-1">{isRTL ? 'رف فرعي' : 'Shelf'}: {shelf === '__none__' ? '—' : shelf}</p>
                                             <div className="flex flex-wrap gap-1">
                                                 {(bins as any[]).map((b: any) => (
                                                     <span key={b.id} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded font-mono" title={b.full_path}>
@@ -197,25 +199,25 @@ export default function BinLocationsPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">مواقع التخزين / Bin Locations</h1>
-                    <p className="text-gray-500 mt-1">إدارة هيكل تخزين المستودع (منطقة / رف / خانة)</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isRTL ? 'مواقع التخزين' : 'Bin Locations'}</h1>
+                    <p className="text-gray-500 mt-1">{isRTL ? 'إدارة هيكل تخزين المستودع (منطقة / رف / خانة)' : 'Manage warehouse storage structure (zone / rack / bin)'}</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setShowBulk(true)} className="flex items-center gap-2">
-                        <Zap className="w-4 h-4" /> إنشاء جماعي
+                        <Zap className="w-4 h-4" /> {isRTL ? 'إنشاء جماعي' : 'Bulk Generate'}
                     </Button>
                     <Button onClick={openCreate} disabled={!selectedWarehouse} className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" /> موقع جديد
+                        <Plus className="w-4 h-4" /> {isRTL ? 'موقع جديد' : 'New Location'}
                     </Button>
                 </div>
             </div>
 
             {/* Warehouse Selector */}
             <Card className="p-4">
-                <label className="text-sm font-medium mb-2 block">اختر المستودع *</label>
+                <label className="text-sm font-medium mb-2 block">{isRTL ? 'اختر المستودع *' : 'Select Warehouse *'}</label>
                 <select className="border rounded px-3 py-2 w-full max-w-sm bg-white dark:bg-gray-800"
                     value={selectedWarehouse} onChange={e => setSelectedWarehouse(e.target.value)}>
-                    <option value="">-- اختر مستودعاً --</option>
+                    <option value="">{isRTL ? '-- اختر مستودعاً --' : '-- Select a warehouse --'}</option>
                     {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </select>
             </Card>
@@ -224,48 +226,48 @@ export default function BinLocationsPage() {
             {showBulk && (
                 <Card className="p-5 border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-lg">إنشاء مواقع جماعي</h3>
-                        <button onClick={() => setShowBulk(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                        <h3 className="font-semibold text-lg">{isRTL ? 'إنشاء مواقع جماعي' : 'Bulk Generate Locations'}</h3>
+                        <button onClick={() => setShowBulk(false)} aria-label={isRTL ? 'إغلاق' : 'Close'}><X className="w-5 h-5 text-gray-400" /></button>
                     </div>
-                    <p className="text-sm text-gray-500 mb-3">أدخل القيم مفصولة بفواصل. مثال: A,B,C أو R1,R2,R3</p>
+                    <p className="text-sm text-gray-500 mb-3">{isRTL ? 'أدخل القيم مفصولة بفواصل. مثال: A,B,C أو R1,R2,R3' : 'Enter comma-separated values. Example: A,B,C or R1,R2,R3'}</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div>
-                            <label className="text-sm font-medium mb-1 block">المستودع *</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'المستودع *' : 'Warehouse *'}</label>
                             <select className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={bulkForm.warehouse_id} onChange={e => setBulkForm(f => ({ ...f, warehouse_id: e.target.value }))}>
-                                <option value="">-- اختر --</option>
+                                <option value="">{isRTL ? '-- اختر --' : '-- Select --'}</option>
                                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="text-sm font-medium mb-1 block">المناطق (Zones) *</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'المناطق (Zones) *' : 'Zones *'}</label>
                             <input className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={bulkForm.zones} onChange={e => setBulkForm(f => ({ ...f, zones: e.target.value }))} placeholder="A,B,C" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium mb-1 block">الأرفف (Racks)</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'الأرفف (Racks)' : 'Racks'}</label>
                             <input className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={bulkForm.racks} onChange={e => setBulkForm(f => ({ ...f, racks: e.target.value }))} placeholder="R1,R2,R3" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium mb-1 block">الرفوف الفرعية (Shelves)</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'الرفوف الفرعية (Shelves)' : 'Shelves'}</label>
                             <input className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={bulkForm.shelves} onChange={e => setBulkForm(f => ({ ...f, shelves: e.target.value }))} placeholder="S1,S2" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium mb-1 block">الخانات (Bins)</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'الخانات (Bins)' : 'Bins'}</label>
                             <input className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={bulkForm.bins} onChange={e => setBulkForm(f => ({ ...f, bins: e.target.value }))} placeholder="B1,B2,B3" />
                         </div>
                         <div>
-                            <label className="text-sm font-medium mb-1 block">السعة الافتراضية</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'السعة الافتراضية' : 'Default Capacity'}</label>
                             <input type="number" className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={bulkForm.capacity} onChange={e => setBulkForm(f => ({ ...f, capacity: e.target.value }))} placeholder="0" />
                         </div>
                     </div>
                     <div className="flex gap-3 mt-4">
-                        <Button onClick={handleBulkGenerate} disabled={saving}><Zap className="w-4 h-4 mr-2" />{saving ? 'جاري الإنشاء...' : 'إنشاء'}</Button>
-                        <Button variant="outline" onClick={() => setShowBulk(false)}>إلغاء</Button>
+                        <Button onClick={handleBulkGenerate} disabled={saving}><Zap className="w-4 h-4 mr-2" />{saving ? (isRTL ? 'جاري الإنشاء...' : 'Generating...') : (isRTL ? 'إنشاء' : 'Generate')}</Button>
+                        <Button variant="outline" onClick={() => setShowBulk(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
                     </div>
                 </Card>
             )}
@@ -274,44 +276,44 @@ export default function BinLocationsPage() {
             {showForm && (
                 <Card className="p-5 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-lg">{editing ? 'تعديل الموقع' : 'إضافة موقع جديد'}</h3>
-                        <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                        <h3 className="font-semibold text-lg">{editing ? (isRTL ? 'تعديل الموقع' : 'Edit Location') : (isRTL ? 'إضافة موقع جديد' : 'Add New Location')}</h3>
+                        <button onClick={() => setShowForm(false)} aria-label={isRTL ? 'إغلاق' : 'Close'}><X className="w-5 h-5 text-gray-400" /></button>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div>
-                            <label className="text-sm font-medium mb-1 block">المستودع *</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'المستودع *' : 'Warehouse *'}</label>
                             <select className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))}>
-                                <option value="">-- اختر --</option>
+                                <option value="">{isRTL ? '-- اختر --' : '-- Select --'}</option>
                                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                             </select>
                         </div>
                         {['zone', 'rack', 'shelf', 'bin'].map(field => (
                             <div key={field}>
-                                <label className="text-sm font-medium mb-1 block capitalize">{field === 'zone' ? 'المنطقة' : field === 'rack' ? 'الرف' : field === 'shelf' ? 'الرف الفرعي' : 'الخانة'}</label>
+                                <label className="text-sm font-medium mb-1 block capitalize">{field === 'zone' ? (isRTL ? 'المنطقة' : 'Zone') : field === 'rack' ? (isRTL ? 'الرف' : 'Rack') : field === 'shelf' ? (isRTL ? 'الرف الفرعي' : 'Shelf') : (isRTL ? 'الخانة' : 'Bin')}</label>
                                 <input className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                     value={(form as any)[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                                     placeholder={field.toUpperCase()} />
                             </div>
                         ))}
                         <div>
-                            <label className="text-sm font-medium mb-1 block">اسم مخصص</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'اسم مخصص' : 'Custom Name'}</label>
                             <input className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
-                                value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="اختياري" />
+                                value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={isRTL ? 'اختياري' : 'Optional'} />
                         </div>
                         <div>
-                            <label className="text-sm font-medium mb-1 block">السعة</label>
+                            <label className="text-sm font-medium mb-1 block">{isRTL ? 'السعة' : 'Capacity'}</label>
                             <input type="number" className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800"
                                 value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="0" />
                         </div>
                         <div className="flex items-center gap-2 pt-6">
                             <input type="checkbox" id="bin_active" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
-                            <label htmlFor="bin_active" className="text-sm">نشط</label>
+                            <label htmlFor="bin_active" className="text-sm">{isRTL ? 'نشط' : 'Active'}</label>
                         </div>
                     </div>
                     <div className="flex gap-3 mt-4">
-                        <Button onClick={handleSave} disabled={saving}><Check className="w-4 h-4 mr-2" />{saving ? 'جاري الحفظ...' : 'حفظ'}</Button>
-                        <Button variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
+                        <Button onClick={handleSave} disabled={saving}><Check className="w-4 h-4 mr-2" />{saving ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}</Button>
+                        <Button variant="outline" onClick={() => setShowForm(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
                     </div>
                 </Card>
             )}
@@ -320,7 +322,7 @@ export default function BinLocationsPage() {
             {selectedWarehouse && (
                 <Card className="overflow-hidden">
                     <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-                        <p className="font-medium text-gray-700 dark:text-gray-300">{binLocations.length} موقع تخزيني</p>
+                        <p className="font-medium text-gray-700 dark:text-gray-300">{binLocations.length} {isRTL ? 'موقع تخزيني' : 'bin locations'}</p>
                         <div className="flex gap-1">
                             <button onClick={() => { setView('list'); fetchBinLocations(); }}
                                 className={`p-1.5 rounded ${view === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -334,19 +336,19 @@ export default function BinLocationsPage() {
                     </div>
 
                     {loading ? (
-                        <div className="p-8 text-center text-gray-500">جاري التحميل...</div>
+                        <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
                     ) : view === 'tree' ? renderTree() : (
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-800/50">
                                 <tr>
-                                    <th className="px-4 py-3 font-medium text-gray-500">المسار الكامل</th>
-                                    <th className="px-4 py-3 font-medium text-gray-500">المنطقة</th>
-                                    <th className="px-4 py-3 font-medium text-gray-500">الرف</th>
-                                    <th className="px-4 py-3 font-medium text-gray-500">الرف الفرعي</th>
-                                    <th className="px-4 py-3 font-medium text-gray-500">الخانة</th>
-                                    <th className="px-4 py-3 font-medium text-gray-500">السعة</th>
-                                    <th className="px-4 py-3 font-medium text-gray-500">الحالة</th>
-                                    <th className="px-4 py-3 font-medium text-gray-500 text-right">إجراءات</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'المسار الكامل' : 'Full Path'}</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'المنطقة' : 'Zone'}</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'الرف' : 'Rack'}</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'الرف الفرعي' : 'Shelf'}</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'الخانة' : 'Bin'}</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'السعة' : 'Capacity'}</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'الحالة' : 'Status'}</th>
+                                    <th className="px-4 py-3 font-medium text-gray-500 text-right">{isRTL ? 'إجراءات' : 'Actions'}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -363,7 +365,7 @@ export default function BinLocationsPage() {
                                         <td className="px-4 py-3 text-sm">{bin.capacity ?? '—'}</td>
                                         <td className="px-4 py-3">
                                             <span className={`text-xs px-2 py-0.5 rounded-full ${bin.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                {bin.is_active ? 'نشط' : 'غير نشط'}
+                                                {bin.is_active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'غير نشط' : 'Inactive')}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-right">
@@ -375,7 +377,7 @@ export default function BinLocationsPage() {
                                     </tr>
                                 ))}
                                 {binLocations.length === 0 && (
-                                    <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">لا توجد مواقع. اختر مستودعاً وأضف مواقع تخزين.</td></tr>
+                                    <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">{isRTL ? 'لا توجد مواقع. اختر مستودعاً وأضف مواقع تخزين.' : 'No bin locations. Select a warehouse and add storage locations.'}</td></tr>
                                 )}
                             </tbody>
                         </table>

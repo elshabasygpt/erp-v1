@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { dataApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { Database, Download, Upload, FileDown, Box, Users } from 'lucide-react';
 
 export default function DataManagementPage() {
+    const { isRTL } = useLanguage();
     const [loadingEntity, setLoadingEntity] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentEntityForUpload, setCurrentEntityForUpload] = useState<string | null>(null);
@@ -100,10 +102,10 @@ export default function DataManagementPage() {
                 <div>
                     <h1 className="text-2xl font-bold flex items-center gap-3">
                         <Database className="w-7 h-7 text-indigo-600" />
-                        إدارة البيانات / Data Management
+                        {isRTL ? 'إدارة البيانات' : 'Data Management'}
                     </h1>
                     <p className="text-gray-500 mt-2">
-                        قم باستيراد بياناتك القديمة بسهولة عبر ملفات CSV أو تصدير بياناتك الحالية للنسخ الاحتياطي.
+                        {isRTL ? 'قم باستيراد بياناتك القديمة بسهولة عبر ملفات CSV أو تصدير بياناتك الحالية للنسخ الاحتياطي.' : 'Import your legacy data easily via CSV files, or export your current data for backup.'}
                     </p>
                 </div>
             </div>
@@ -124,10 +126,10 @@ export default function DataManagementPage() {
                                 {entity.icon}
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold">{entity.titleAr}</h2>
-                                <h3 className="text-sm font-medium text-gray-500">{entity.titleEn}</h3>
+                                <h2 className="text-xl font-bold">{isRTL ? entity.titleAr : entity.titleEn}</h2>
+                                <h3 className="text-sm font-medium text-gray-500">{isRTL ? entity.titleEn : entity.titleAr}</h3>
                                 <p className="text-sm mt-2 text-gray-600 dark:text-gray-400">
-                                    {entity.descriptionAr}
+                                    {isRTL ? entity.descriptionAr : entity.descriptionEn}
                                 </p>
                             </div>
                         </div>
@@ -140,7 +142,7 @@ export default function DataManagementPage() {
                                 disabled={loadingEntity !== null}
                             >
                                 <FileDown className="w-4 h-4 text-blue-600" />
-                                <span>تحميل القالب</span>
+                                <span>{isRTL ? 'تحميل القالب' : 'Download Template'}</span>
                             </Button>
                             
                             <Button 
@@ -150,7 +152,7 @@ export default function DataManagementPage() {
                                 disabled={loadingEntity !== null}
                             >
                                 <Download className="w-4 h-4 text-emerald-600" />
-                                <span>تصدير CSV</span>
+                                <span>{isRTL ? 'تصدير CSV' : 'Export CSV'}</span>
                             </Button>
 
                             <Button 
@@ -159,7 +161,7 @@ export default function DataManagementPage() {
                                 disabled={loadingEntity !== null}
                             >
                                 <Upload className="w-4 h-4" />
-                                <span>استيراد CSV</span>
+                                <span>{isRTL ? 'استيراد CSV' : 'Import CSV'}</span>
                             </Button>
                         </div>
                     </Card>
@@ -167,11 +169,21 @@ export default function DataManagementPage() {
             </div>
 
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-xl">
-                <h4 className="font-bold text-amber-800 dark:text-amber-500 mb-2">💡 تعليمات هامة:</h4>
+                <h4 className="font-bold text-amber-800 dark:text-amber-500 mb-2">💡 {isRTL ? 'تعليمات هامة:' : 'Important Instructions:'}</h4>
                 <ul className="list-disc list-inside text-sm text-amber-700 dark:text-amber-400 space-y-1">
-                    <li>يرجى استخدام <strong>القالب (Template)</strong> المخصص لكل قسم لتجنب أخطاء الاستيراد.</li>
-                    <li>لا تقم بتغيير أسماء الأعمدة في الصف الأول من ملف الـ CSV.</li>
-                    <li>النظام يدعم استيراد آلاف السجلات في المرة الواحدة، قد تستغرق العملية بضع ثوانٍ.</li>
+                    {isRTL ? (
+                        <>
+                            <li>يرجى استخدام <strong>القالب (Template)</strong> المخصص لكل قسم لتجنب أخطاء الاستيراد.</li>
+                            <li>لا تقم بتغيير أسماء الأعمدة في الصف الأول من ملف الـ CSV.</li>
+                            <li>النظام يدعم استيراد آلاف السجلات في المرة الواحدة، قد تستغرق العملية بضع ثوانٍ.</li>
+                        </>
+                    ) : (
+                        <>
+                            <li>Please use the dedicated <strong>Template</strong> for each section to avoid import errors.</li>
+                            <li>Do not change the column names in the first row of the CSV file.</li>
+                            <li>The system supports importing thousands of records at once; the operation may take a few seconds.</li>
+                        </>
+                    )}
                 </ul>
             </div>
         </div>
