@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { expensesApiNew as expensesApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import Skeleton from '@/components/ui/Skeleton';
 
 type Expense = {
   id: string;
@@ -21,6 +22,7 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -32,6 +34,8 @@ export default function ExpensesPage() {
   });
 
   const load = async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const [expRes, catRes] = await Promise.all([
         expensesApi.getAll(),
@@ -40,7 +44,7 @@ export default function ExpensesPage() {
       setExpenses(expRes.data?.data || expRes.data || []);
       setCategories(catRes.data?.data || catRes.data || []);
     } catch {
-      setError(isRTL ? 'فشل تحميل البيانات' : 'Failed to load');
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -160,8 +164,27 @@ export default function ExpensesPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">
-          {isRTL ? 'جاري التحميل...' : 'Loading...'}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <tbody className="divide-y divide-gray-100">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={`sk-${i}`}>
+                  {Array.from({ length: 4 }).map((__, j) => (
+                    <td key={j} className="px-4 py-3"><Skeleton className="w-3/4 h-4" /></td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : loadError ? (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden text-center py-12">
+          <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+          </p>
+          <button onClick={() => load()} className="btn-secondary py-1.5 px-4 text-xs">
+            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+          </button>
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

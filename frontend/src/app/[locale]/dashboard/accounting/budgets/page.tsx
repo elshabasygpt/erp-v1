@@ -7,6 +7,7 @@ import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Plus, Trash2, Edit2, BarChart2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import dayjs from 'dayjs';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 interface Budget {
     id: string;
@@ -45,6 +46,7 @@ export default function BudgetsPage() {
 
     const [budgets, setBudgets]         = useState<Budget[]>([]);
     const [loading, setLoading]         = useState(true);
+    const [loadError, setLoadError]     = useState(false);
     const [showForm, setShowForm]       = useState(false);
     const [editId, setEditId]           = useState<string | null>(null);
     const [varianceBudget, setVarianceBudget] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export default function BudgetsPage() {
     const [form, setForm] = useState(emptyForm);
 
     const load = useCallback(async () => {
+        setLoadError(false);
         try {
             const [budgetsRes, accountsRes] = await Promise.all([
                 accountingApi.getBudgets(),
@@ -70,7 +73,7 @@ export default function BudgetsPage() {
             ]);
             setBudgets(budgetsRes.data?.data || budgetsRes.data || []);
             setAccounts(accountsRes.data?.data || accountsRes.data || []);
-        } catch { toast.error(isRTL ? 'فشل التحميل' : 'Load failed'); }
+        } catch { setLoadError(true); toast.error(isRTL ? 'فشل التحميل' : 'Load failed'); }
         finally  { setLoading(false); }
     }, [isRTL]);
 
@@ -167,8 +170,6 @@ export default function BudgetsPage() {
         return s.charAt(0).toUpperCase() + s.slice(1);
     };
 
-    if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
-
     return (
         <div className="space-y-6 p-6 animate-fade-in">
             {/* Header */}
@@ -189,7 +190,24 @@ export default function BudgetsPage() {
 
             {/* Budget list */}
             <div className="space-y-4">
-                {budgets.length === 0 && (
+                {loading && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                    </div>
+                )}
+
+                {!loading && loadError && (
+                    <div className="glass-card p-12 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                        </p>
+                        <button onClick={() => load()} className="btn-secondary py-1.5 px-4 text-xs">
+                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                        </button>
+                    </div>
+                )}
+
+                {!loading && !loadError && budgets.length === 0 && (
                     <div className="glass-card p-12 text-center">
                         <span className="text-5xl block mb-3">📊</span>
                         <p style={{ color: 'var(--text-muted)' }}>
@@ -201,7 +219,7 @@ export default function BudgetsPage() {
                     </div>
                 )}
 
-                {budgets.map(b => (
+                {!loading && !loadError && budgets.map(b => (
                     <div key={b.id} className="glass-card p-0 overflow-hidden">
                         <div className="p-4 flex items-center gap-4 flex-wrap">
                             <div className="flex-1 min-w-0">

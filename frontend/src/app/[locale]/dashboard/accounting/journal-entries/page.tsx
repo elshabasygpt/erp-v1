@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import Pagination from '@/components/ui/Pagination';
+import Skeleton from '@/components/ui/Skeleton';
 
 const PAGE_SIZE = 15;
 
@@ -16,6 +17,7 @@ export default function JournalEntriesPage() {
     const { isRTL } = useLanguage();
     const [entries, setEntries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [page, setPage] = useState(1);
 
     useEffect(() => {
@@ -24,11 +26,13 @@ export default function JournalEntriesPage() {
 
     const loadEntries = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await accountingApi.getJournalEntries();
             setEntries(res.data?.data?.data || res.data?.data || []);
             setPage(1);
         } catch (err) {
+            setLoadError(true);
             toast.error('Failed to load journal entries');
         } finally {
             setLoading(false);
@@ -59,7 +63,28 @@ export default function JournalEntriesPage() {
                 {/* Filters could go here */}
 
                 {loading ? (
-                    <div className="p-12 text-center text-surface-500">Loading...</div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                            <tbody>
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b border-surface-200 dark:border-surface-800">
+                                        {Array.from({ length: 6 }).map((__, j) => (
+                                            <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : loadError ? (
+                    <div className="p-12 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                        </p>
+                        <button onClick={() => loadEntries()} className="btn-secondary py-1.5 px-4 text-xs">
+                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                        </button>
+                    </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
@@ -124,7 +149,7 @@ export default function JournalEntriesPage() {
                     </div>
                 )}
 
-                {!loading && entries.length > PAGE_SIZE && (
+                {!loading && !loadError && entries.length > PAGE_SIZE && (
                     <div className="px-6 py-4 border-t border-surface-200 dark:border-surface-800">
                         <Pagination
                             page={page}

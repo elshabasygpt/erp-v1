@@ -6,12 +6,14 @@ import { crmApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function CRMPipelinePage() {
     const { isRTL } = useLanguage();
     const { format: formatCurrency } = useCurrencyFormatter();
     const [stages, setStages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [totalValue, setTotalValue] = useState(0);
 
     // New Deal Modal State
@@ -24,11 +26,13 @@ export default function CRMPipelinePage() {
     }, []);
 
     const loadPipeline = async () => {
+        setLoading(true);
+        setLoadError(false);
         try {
             const res = await crmApi.getStagesWithDeals();
             const data = res.data?.data || res.data || [];
             setStages(data);
-            
+
             // Calculate Total Pipeline Value
             let total = 0;
             data.forEach((stage: any) => {
@@ -38,6 +42,7 @@ export default function CRMPipelinePage() {
             });
             setTotalValue(total);
         } catch (err) {
+            setLoadError(true);
             toast.error(isRTL ? 'فشل تحميل البيانات' : 'Failed to load pipeline');
         } finally {
             setLoading(false);
@@ -98,7 +103,22 @@ export default function CRMPipelinePage() {
     };
 
     if (loading) {
-        return <div className="p-8 text-center">{isRTL ? 'جاري التحميل...' : 'Loading Pipeline...'}</div>;
+        return (
+            <div className={`p-6 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+            </div>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <div className={`p-12 text-center ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger,#dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                <button onClick={() => loadPipeline()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+            </div>
+        );
     }
 
     return (

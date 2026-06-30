@@ -5,6 +5,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Plus } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface AccountBalance {
     account_id: string;
@@ -31,6 +32,7 @@ export default function OpeningBalancesPage() {
     const [balances, setBalances] = useState<AccountBalance[]>([]);
     const [accounts, setAccounts] = useState<any[]>([]);
     const [loading, setLoading]   = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [saving, setSaving]     = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [formType, setFormType] = useState<'account' | 'customer' | 'supplier'>('account');
@@ -46,6 +48,7 @@ export default function OpeningBalancesPage() {
     });
 
     const load = useCallback(async () => {
+        setLoadError(false);
         try {
             const [balRes, accRes] = await Promise.all([
                 accountingApi.getOpeningBalances(),
@@ -53,7 +56,7 @@ export default function OpeningBalancesPage() {
             ]);
             setBalances(balRes.data?.data || balRes.data || []);
             setAccounts(accRes.data?.data || accRes.data || []);
-        } catch { toast.error(isRTL ? 'فشل التحميل' : 'Load failed'); }
+        } catch { setLoadError(true); toast.error(isRTL ? 'فشل التحميل' : 'Load failed'); }
         finally  { setLoading(false); }
     }, [isRTL]);
 
@@ -103,7 +106,7 @@ export default function OpeningBalancesPage() {
     const totalCredit = balances.reduce((s, b) => s + b.credit, 0);
     const balanced    = Math.abs(totalDebit - totalCredit) < 0.01;
 
-    if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
+    const visibleBalances = balances.filter(b => b.debit > 0 || b.credit > 0);
 
     return (
         <div className="space-y-6 p-6 animate-fade-in">
@@ -172,7 +175,26 @@ export default function OpeningBalancesPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {balances.filter(b => b.debit > 0 || b.credit > 0).map(b => (
+                            {loading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`}>
+                                        {Array.from({ length: 6 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : loadError ? (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => load()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ) : visibleBalances.map(b => (
                                 <tr key={b.account_id}>
                                     <td className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{b.code}</td>
                                     <td style={{ color: 'var(--text-primary)' }}>{isRTL ? b.name_ar || b.name : b.name}</td>
@@ -196,6 +218,7 @@ export default function OpeningBalancesPage() {
                                 </tr>
                             ))}
                         </tbody>
+                        {!loading && !loadError && (
                         <tfoot>
                             <tr style={{ background: 'var(--bg-input)', fontWeight: 'bold' }}>
                                 <td colSpan={3} className="py-3 px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -208,8 +231,9 @@ export default function OpeningBalancesPage() {
                                 </td>
                             </tr>
                         </tfoot>
+                        )}
                     </table>
-                    {balances.filter(b => b.debit > 0 || b.credit > 0).length === 0 && (
+                    {!loading && !loadError && visibleBalances.length === 0 && (
                         <div className="text-center py-12">
                             <span className="text-4xl block mb-3">🔓</span>
                             <p style={{ color: 'var(--text-muted)' }}>

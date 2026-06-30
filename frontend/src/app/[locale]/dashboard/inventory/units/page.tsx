@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Plus, Edit2, Trash2, X, Check, Ruler } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Unit {
     id: string;
@@ -21,6 +22,7 @@ export default function UnitsPage() {
     const { isRTL } = useLanguage();
     const [units, setUnits] = useState<Unit[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Unit | null>(null);
@@ -33,12 +35,14 @@ export default function UnitsPage() {
     const fetchUnits = async () => {
         try {
             setLoading(true);
+            setLoadError(false);
             const res = await inventoryApi.getUnits();
             const data = res.data?.data ?? res.data ?? [];
             setUnits(Array.isArray(data) ? data : []);
         } catch {
             toast.error(isRTL ? 'فشل تحميل وحدات القياس' : 'Failed to load units of measure');
             setUnits([]);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -153,9 +157,7 @@ export default function UnitsPage() {
                         onChange={e => setSearch(e.target.value)}
                     />
                 </div>
-                {loading ? (
-                    <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
-                ) : (
+                {(
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 dark:bg-gray-800/50">
                             <tr>
@@ -168,7 +170,20 @@ export default function UnitsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {filtered.map((unit, idx) => (
+                            {loading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`}>
+                                        {Array.from({ length: 6 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : loadError ? (
+                                <tr><td colSpan={6} className="p-8 text-center">
+                                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                    <button onClick={() => fetchUnits()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                </td></tr>
+                            ) : filtered.map((unit, idx) => (
                                 <tr key={unit.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                     <td className="px-4 py-3 text-gray-500 text-sm">{idx + 1}</td>
                                     <td className="px-4 py-3 font-medium flex items-center gap-2">
@@ -192,7 +207,7 @@ export default function UnitsPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {filtered.length === 0 && (
+                            {!loading && !loadError && filtered.length === 0 && (
                                 <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">{isRTL ? 'لا توجد وحدات قياس. أضف وحدة جديدة للبدء.' : 'No units of measure found. Add a new unit to start.'}</td></tr>
                             )}
                         </tbody>

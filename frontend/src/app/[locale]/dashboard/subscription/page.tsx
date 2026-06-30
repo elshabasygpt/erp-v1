@@ -5,20 +5,24 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { subscriptionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function SubscriptionPage() {
     const { isRTL } = useLanguage();
     const confirm = useConfirm();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [upgrading, setUpgrading] = useState(false);
 
     const loadData = async () => {
+        setLoading(true);
+        setLoadError(false);
         try {
             const res = await subscriptionApi.getCurrent();
             setData(res.data?.data || res.data);
         } catch (error) {
-
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -42,7 +46,22 @@ export default function SubscriptionPage() {
         }
     };
 
-    if (loading) return <div className="p-10 text-center text-slate-500">Loading...</div>;
+    if (loading) return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+    );
+
+    if (loadError) return (
+        <div className="max-w-5xl mx-auto text-center p-10 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+            </p>
+            <button onClick={() => loadData()} className="btn-secondary py-1.5 px-4 text-xs">
+                🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+            </button>
+        </div>
+    );
 
     const currentPlan = data?.available_plans?.find((p: any) => p.id === data?.subscription?.plan_id);
     const daysLeft = data?.subscription?.ends_at 

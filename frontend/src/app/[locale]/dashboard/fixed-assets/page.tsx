@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { fixedAssetsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 const CATEGORY_ICONS: Record<string, string> = { vehicles: '🚗', equipment: '💻', furniture: '🪑', buildings: '🏢', land: '🏞️', other: '📦' };
 
@@ -15,17 +16,19 @@ export default function FixedAssetsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form, setForm] = useState<any>(EMPTY_FORM);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
     const [schedule, setSchedule] = useState<any[]>([]);
     const [scheduleLoading, setScheduleLoading] = useState(false);
 
     const loadAssets = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await fixedAssetsApi.getAssets();
             setAssets(res.data?.data || res.data || []);
         } catch (error) {
-
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -162,7 +165,18 @@ export default function FixedAssetsPage() {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={8} className="p-8 text-center text-slate-500">Loading...</td></tr>
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} className="border-b border-slate-100 dark:border-slate-700">
+                                    {Array.from({ length: 8 }).map((__, j) => (
+                                        <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : loadError ? (
+                            <tr><td colSpan={8} className="p-8 text-center">
+                                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                <button onClick={() => loadAssets()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                            </td></tr>
                         ) : assets.length === 0 ? (
                             <tr><td colSpan={8} className="p-8 text-center text-slate-500">{isRTL ? 'لا توجد أصول مسجلة' : 'No assets found'}</td></tr>
                         ) : assets.map(asset => {

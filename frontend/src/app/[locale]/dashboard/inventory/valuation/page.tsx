@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { RefreshCw, TrendingUp, Package, DollarSign, BarChart3, Download } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface ValuationItem {
     product_id: string;
@@ -35,16 +36,19 @@ export default function InventoryValuationPage() {
     const { currency } = useCurrencyFormatter();
     const [report, setReport] = useState<ValuationReport | null>(null);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     const [search, setSearch] = useState('');
 
     const fetchReport = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await inventoryApi.getInventoryValuation();
             const data = res.data?.data ?? res.data ?? {};
             setReport(data);
         } catch (err: any) {
             toast.error(err.response?.data?.message || (isRTL ? 'فشل تحميل تقرير التقييم' : 'Failed to load valuation report'));
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -145,12 +149,7 @@ export default function InventoryValuationPage() {
                         onChange={e => setSearch(e.target.value)}
                     />
                 </div>
-                {loading ? (
-                    <div className="p-12 text-center text-gray-500">
-                        <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-400" />
-                        {isRTL ? 'جاري تحميل التقرير...' : 'Loading report...'}
-                    </div>
-                ) : (
+                {(
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-800/50">
@@ -166,7 +165,20 @@ export default function InventoryValuationPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {filtered.map((item, idx) => (
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`}>
+                                            {Array.from({ length: 8 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : loadError ? (
+                                    <tr><td colSpan={8} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                        <button onClick={() => fetchReport()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                    </td></tr>
+                                ) : filtered.map((item, idx) => (
                                     <tr key={item.product_id + (item.warehouse ?? '')} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                         <td className="px-4 py-3 text-gray-500 text-sm">{idx + 1}</td>
                                         <td className="px-4 py-3 font-medium">{item.product_name}</td>
@@ -184,11 +196,11 @@ export default function InventoryValuationPage() {
                                         </td>
                                     </tr>
                                 ))}
-                                {filtered.length === 0 && (
+                                {!loading && !loadError && filtered.length === 0 && (
                                     <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">{isRTL ? 'لا توجد بيانات' : 'No data'}</td></tr>
                                 )}
                             </tbody>
-                            {filtered.length > 0 && (
+                            {!loading && !loadError && filtered.length > 0 && (
                                 <tfoot className="bg-gray-50 dark:bg-gray-800/50 border-t dark:border-gray-700">
                                     <tr>
                                         <td colSpan={items[0]?.warehouse ? 6 : 5} className="px-4 py-3 font-bold text-gray-700 dark:text-gray-300 text-right">{isRTL ? 'الإجمالي' : 'Total'}</td>

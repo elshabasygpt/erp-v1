@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { partnershipsApi } from '@/lib/api';
 import { analyticsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Partner {
     id: string;
@@ -21,6 +22,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
     const isRTL = params.locale === 'ar';
     const [partners, setPartners] = useState<Partner[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [showDistributeModal, setShowDistributeModal] = useState(false);
     
     // Add Partner Form
@@ -50,6 +52,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
     const fetchPartners = async () => {
         try {
             setIsLoading(true);
+            setLoadError(false);
             const [partnersRes, aiRes] = await Promise.all([
                 partnershipsApi.getPartners(),
                 analyticsApi.getPartnerForecast().catch(() => ({ data: { data: null } }))
@@ -58,7 +61,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
             setPartners(partnersRes.data.data || []);
             setAiForecast(aiRes.data?.data);
         } catch (error) {
-
+            setLoadError(true);
         } finally {
             setIsLoading(false);
         }
@@ -217,7 +220,20 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
                 </div>
                 
                 {isLoading ? (
-                    <div className="p-12 pl-12 text-center text-muted">جاري التحميل...</div>
+                    <div className="p-6 space-y-3">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={`sk-${i}`} className="flex items-center gap-4">
+                                {Array.from({ length: 7 }).map((__, j) => (
+                                    <Skeleton key={j} className="flex-1 h-5" />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                ) : loadError ? (
+                    <div className="p-12 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger,#dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                        <button onClick={() => fetchPartners()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                    </div>
                 ) : partners.length === 0 ? (
                     <div className="p-12 text-center">
                         <span className="text-5xl block mb-4">🪑</span>

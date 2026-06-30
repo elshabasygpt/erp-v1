@@ -5,6 +5,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { salesApi } from '@/lib/api';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 const STATUS_CONFIG: Record<string, { label_ar: string; label_en: string; color: string; icon: string }> = {
     pending:   { label_ar: 'في الانتظار', label_en: 'Pending',   color: 'bg-yellow-100 text-yellow-700', icon: '⏳' },
@@ -24,6 +25,7 @@ export default function ShippingPage() {
     const [shipments, setShipments] = useState<any[]>([]);
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form, setForm] = useState<any>(EMPTY_FORM);
     const [filterStatus, setFilterStatus] = useState('all');
@@ -32,10 +34,11 @@ export default function ShippingPage() {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await api.get('/sales/shipping', { params: { status: filterStatus, limit: 50 } });
             setShipments(res.data?.data || []);
-        } catch { setShipments([]); } finally { setLoading(false); }
+        } catch { setLoadError(true); setShipments([]); } finally { setLoading(false); }
     }, [filterStatus]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
@@ -108,12 +111,6 @@ export default function ShippingPage() {
 
             {/* Table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                {loading ? (
-                    <div className="flex items-center justify-center py-20 text-slate-400">
-                        <svg className="animate-spin w-6 h-6 me-2 text-sky-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                        {isRTL ? 'جاري التحميل...' : 'Loading...'}
-                    </div>
-                ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
@@ -132,7 +129,24 @@ export default function ShippingPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {shipments.map(s => {
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`}>
+                                            {Array.from({ length: 7 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : loadError ? (
+                                    <tr><td colSpan={7} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => fetchData()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
+                                    </td></tr>
+                                ) : shipments.map(s => {
                                     const cfg = STATUS_CONFIG[s.status] || STATUS_CONFIG.pending;
                                     return (
                                         <tr key={s.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
@@ -173,7 +187,7 @@ export default function ShippingPage() {
                                         </tr>
                                     );
                                 })}
-                                {shipments.length === 0 && (
+                                {!loading && !loadError && shipments.length === 0 && (
                                     <tr><td colSpan={7} className="text-center py-16 text-slate-400">
                                         <div className="text-5xl mb-3">📦</div>
                                         <p>{isRTL ? 'لا توجد شحنات' : 'No shipments found'}</p>
@@ -182,7 +196,6 @@ export default function ShippingPage() {
                             </tbody>
                         </table>
                     </div>
-                )}
             </div>
 
             {/* Create Modal */}

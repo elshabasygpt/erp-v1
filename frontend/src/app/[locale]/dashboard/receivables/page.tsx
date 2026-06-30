@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import api from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function ReceivablesPage() {
     const { isRTL } = useLanguage();
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [data, setData] = useState<any[]>([]);
 
     useEffect(() => {
@@ -16,11 +18,13 @@ export default function ReceivablesPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
+            setLoadError(false);
             const res = await api.get('/crm/receivables/aging');
             if (res.data?.success) {
                 setData(res.data.data);
             }
         } catch (error) {
+            setLoadError(true);
             console.error('Failed to load receivables', error);
         } finally {
             setLoading(false);
@@ -58,12 +62,22 @@ export default function ReceivablesPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                             {loading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`}>
+                                        {Array.from({ length: 6 }).map((__, j) => (
+                                            <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : loadError ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
-                                        <div className="animate-pulse flex flex-col items-center justify-center space-y-2">
-                                            <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                                            <p>{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
-                                        </div>
+                                    <td colSpan={6} className="px-6 py-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => fetchData()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
                                     </td>
                                 </tr>
                             ) : data.length === 0 ? (
@@ -97,7 +111,7 @@ export default function ReceivablesPage() {
                                 ))
                             )}
                         </tbody>
-                        {!loading && data.length > 0 && (
+                        {!loading && !loadError && data.length > 0 && (
                             <tfoot className="bg-slate-50 dark:bg-slate-900/80 border-t-2 border-slate-200 dark:border-slate-700 font-bold">
                                 <tr>
                                     <td className="px-6 py-5 text-lg">{isRTL ? 'الإجمالي الكلي' : 'Grand Total'}</td>

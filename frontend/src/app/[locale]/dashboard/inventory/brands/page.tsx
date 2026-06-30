@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Plus, Edit2, Trash2, X, Check, Search, Award, Upload, ImageOff, Globe } from 'lucide-react';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 const COUNTRIES = [
     { code: 'SA', name: 'المملكة العربية السعودية', nameEn: 'Saudi Arabia' },
@@ -44,6 +45,7 @@ export default function BrandsPage() {
     const { isRTL } = useLanguage();
     const [brands, setBrands] = useState<Brand[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Brand | null>(null);
@@ -59,12 +61,14 @@ export default function BrandsPage() {
     const fetchBrands = async () => {
         try {
             setLoading(true);
+            setLoadError(false);
             const res = await inventoryApi.getBrands();
             const data = res.data?.data ?? res.data ?? [];
             setBrands(Array.isArray(data) ? data : []);
         } catch {
             toast.error(isRTL ? 'فشل تحميل الماركات' : 'Failed to load brands');
             setBrands([]);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -268,7 +272,14 @@ export default function BrandsPage() {
                 </div>
 
                 {loading ? (
-                    <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
+                        {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                    </div>
+                ) : loadError ? (
+                    <div className="p-8 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                        <button onClick={() => fetchBrands()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
                         {filtered.map(brand => (

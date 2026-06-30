@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { deliveriesApiNew as deliveriesApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 import dynamic from 'next/dynamic';
 const DeliveryMapDashboard = dynamic(
   () => import('@/components/sales/DeliveryMapDashboard').then(mod => mod.DeliveryMapDashboard),
@@ -31,19 +32,24 @@ export default function DeliveriesPage() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
+  const load = async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await deliveriesApi.getAll();
+      setDeliveries(res.data?.data || res.data || []);
+    } catch {
+      setLoadError(true);
+      setError(isRTL ? 'فشل تحميل البيانات' : 'Failed to load');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await deliveriesApi.getAll();
-        setDeliveries(res.data?.data || res.data || []);
-      } catch {
-        setError(isRTL ? 'فشل تحميل البيانات' : 'Failed to load');
-      } finally {
-        setLoading(false);
-      }
-    };
     load();
   }, []);
 
@@ -84,11 +90,7 @@ export default function DeliveriesPage() {
         <div className="bg-red-50 text-red-700 p-3 rounded mb-4">{error}</div>
       )}
 
-      {loading ? (
-        <div className="text-center py-12 text-gray-400">
-          {isRTL ? 'جاري التحميل...' : 'Loading...'}
-        </div>
-      ) : viewMode === 'map' ? (
+      {viewMode === 'map' ? (
         <DeliveryMapDashboard dict={{}} locale={isRTL ? 'ar' : 'en'} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -113,7 +115,26 @@ export default function DeliveriesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {deliveries.length === 0 ? (
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={`sk-${i}`}>
+                    {Array.from({ length: 5 }).map((__, j) => (
+                      <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                    ))}
+                  </tr>
+                ))
+              ) : loadError ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center">
+                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                      {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                    </p>
+                    <button onClick={() => load()} className="btn-secondary py-1.5 px-4 text-xs">
+                      🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                    </button>
+                  </td>
+                </tr>
+              ) : deliveries.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-8 text-gray-400">
                     {isRTL ? 'لا توجد توصيلات' : 'No deliveries'}

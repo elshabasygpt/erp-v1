@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { approvalsApiNew as approvalsApi } from '@/lib/api';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 type ApprovalRequest = {
   id: string;
@@ -22,13 +23,16 @@ export default function ApprovalsPage() {
   const [notes, setNotes] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState(false);
 
   const loadInbox = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await approvalsApi.getInbox();
       setInbox(res.data?.data || res.data || []);
     } catch {
+      setLoadError(true);
       setError(isRTL ? 'فشل تحميل البيانات' : 'Failed to load data');
     } finally {
       setLoading(false);
@@ -73,8 +77,17 @@ export default function ApprovalsPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">
-          {isRTL ? 'جاري التحميل...' : 'Loading...'}
+        <div className="space-y-4">
+          {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+      ) : loadError ? (
+        <div className="text-center p-8 bg-white rounded-xl border border-gray-200">
+          <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+          </p>
+          <button onClick={() => loadInbox()} className="btn-secondary py-1.5 px-4 text-xs">
+            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+          </button>
         </div>
       ) : inbox.length === 0 ? (
         <div className="text-center py-12 text-gray-400">

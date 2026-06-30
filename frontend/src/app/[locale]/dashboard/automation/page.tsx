@@ -6,22 +6,27 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { automationApi } from '@/lib/api';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function AutomationListPage() {
     const { isRTL } = useLanguage();
     const confirm = useConfirm();
     const [workflows, setWorkflows] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
 
     useEffect(() => {
         loadWorkflows();
     }, []);
 
     const loadWorkflows = async () => {
+        setLoading(true);
+        setLoadError(false);
         try {
             const res = await automationApi.getWorkflows();
             setWorkflows(res.data?.data || res.data || []);
         } catch (err) {
+            setLoadError(true);
             toast.error('Failed to load workflows');
         } finally {
             setLoading(false);
@@ -38,10 +43,6 @@ export default function AutomationListPage() {
             toast.error('Failed to delete workflow');
         }
     };
-
-    if (loading) {
-        return <div className="p-8 text-center">Loading...</div>;
-    }
 
     return (
         <div className={`p-6 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -60,6 +61,19 @@ export default function AutomationListPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loading ? (
+                    Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                ) : loadError ? (
+                    <div className="col-span-full py-12 text-center border-2 border-dashed border-surface-200 dark:border-surface-800 rounded-2xl">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                        </p>
+                        <button onClick={() => loadWorkflows()} className="btn-secondary py-1.5 px-4 text-xs">
+                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                        </button>
+                    </div>
+                ) : (
+                  <>
                 {workflows.map(wf => (
                     <div key={wf.id} className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-700 p-6 rounded-2xl shadow-sm hover:shadow-md transition">
                         <div className="flex justify-between items-start mb-4">
@@ -84,6 +98,8 @@ export default function AutomationListPage() {
                     <div className="col-span-full py-12 text-center text-surface-500 border-2 border-dashed border-surface-200 dark:border-surface-800 rounded-2xl">
                         {isRTL ? 'لا توجد قواعد بعد. انقر على "قاعدة جديدة" للبدء.' : 'No automated rules yet. Click "New Rule" to start.'}
                     </div>
+                )}
+                  </>
                 )}
             </div>
         </div>

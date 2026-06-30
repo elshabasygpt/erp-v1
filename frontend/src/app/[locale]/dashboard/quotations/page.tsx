@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { salesApi, customersApi, productsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
 const STATUS_STYLES: Record<string, string> = {
@@ -32,6 +33,7 @@ export default function QuotationsPage() {
     const [customers, setCustomers] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [selectedQ, setSelectedQ] = useState<any>(null);
@@ -40,10 +42,11 @@ export default function QuotationsPage() {
 
     const fetch = useCallback(async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await salesApi.getQuotations({ status: filterStatus, limit: 50 });
             setQuotations(res.data?.data || []);
-        } catch { setQuotations([]); } finally { setLoading(false); }
+        } catch { setLoadError(true); setQuotations([]); } finally { setLoading(false); }
     }, [filterStatus]);
 
     useEffect(() => { fetch(); }, [fetch]);
@@ -149,9 +152,6 @@ export default function QuotationsPage() {
 
             {/* Table */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                {loading ? (
-                    <div className="text-center py-16 text-slate-400">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
-                ) : (
                     <table className="w-full text-sm">
                         <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
                             <tr>
@@ -163,7 +163,24 @@ export default function QuotationsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {quotations.map(q => (
+                            {loading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`}>
+                                        {Array.from({ length: 6 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : loadError ? (
+                                <tr><td colSpan={6} className="p-8 text-center">
+                                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                        {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                    </p>
+                                    <button onClick={() => fetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                                        🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                    </button>
+                                </td></tr>
+                            ) : quotations.map(q => (
                                 <tr key={q.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
                                     <td className={`px-4 py-3 font-mono font-bold text-indigo-600 ${isRTL ? 'text-right' : ''}`}>{q.quotation_number}</td>
                                     <td className={`px-4 py-3 ${isRTL ? 'text-right' : ''}`}>{q.customer?.name || '-'}</td>
@@ -200,7 +217,7 @@ export default function QuotationsPage() {
                                     </td>
                                 </tr>
                             ))}
-                            {quotations.length === 0 && (
+                            {!loading && !loadError && quotations.length === 0 && (
                                 <tr><td colSpan={6} className="text-center py-12 text-slate-400">
                                     <svg className="w-12 h-12 mx-auto mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     {isRTL ? 'لا توجد عروض أسعار' : 'No quotations found'}
@@ -208,7 +225,6 @@ export default function QuotationsPage() {
                             )}
                         </tbody>
                     </table>
-                )}
             </div>
 
             {/* Create / Edit Modal */}

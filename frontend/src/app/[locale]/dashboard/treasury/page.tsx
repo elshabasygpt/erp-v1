@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { treasuryApi, customersApi, suppliersApi, accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 type Tab = 'safes' | 'vouchers' | 'transactions';
 
@@ -19,6 +20,7 @@ export default function TreasuryPage() {
     const [accounts, setAccounts] = useState<any[]>([]);
     const [bankAccounts, setBankAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     
     // Voucher form state
     const [voucherForm, setVoucherForm] = useState({ type: 'receipt', party_type: 'customer', party_id: '', safe_id: '', amount: '', notes: '', date: new Date().toISOString().split('T')[0] });
@@ -40,10 +42,11 @@ export default function TreasuryPage() {
 
     const fetchSafes = useCallback(async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await treasuryApi.getSafes();
             setSafes(res.data?.data || res.data || []);
-        } catch { setSafes([]); } finally { setLoading(false); }
+        } catch { setSafes([]); setLoadError(true); } finally { setLoading(false); }
     }, []);
 
     useEffect(() => { fetchSafes(); }, [fetchSafes]);
@@ -205,7 +208,14 @@ export default function TreasuryPage() {
                     <h2 className="text-3xl font-bold mt-1">{totalBalance.toFixed(2)}</h2>
                     <p className="text-xs mt-2 opacity-60">{safes.length} {isRTL ? 'خزينة/حساب' : 'safe(s)/account(s)'}</p>
                 </div>
-                {safes.map((safe: any) => (
+                {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
+                ) : loadError ? (
+                    <div className="sm:col-span-2 lg:col-span-3 text-center p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                        <button onClick={() => fetchSafes()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                    </div>
+                ) : safes.map((safe: any) => (
                     <div key={safe.id} className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
                         <div className="flex items-center gap-2 text-slate-500 text-sm mb-2">
                             <span>{safe.type === 'bank' ? '🏦' : '💵'}</span>

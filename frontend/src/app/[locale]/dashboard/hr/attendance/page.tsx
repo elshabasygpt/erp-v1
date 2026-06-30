@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 import { Search, Clock, LogIn, LogOut, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 export default function AttendancePage() {
@@ -11,6 +12,7 @@ export default function AttendancePage() {
     const [attendances, setAttendances] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
     
     // Check-in modal state
@@ -26,6 +28,7 @@ export default function AttendancePage() {
 
     const loadData = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const [attRes, empRes] = await Promise.all([
                 hrApi.getAttendance({ date: dateFilter }),
@@ -34,6 +37,7 @@ export default function AttendancePage() {
             setAttendances(attRes.data?.data || attRes.data || []);
             setEmployees(empRes.data?.data || empRes.data || []);
         } catch (err) {
+            setLoadError(true);
             toast.error(isRTL ? 'فشل تحميل البيانات' : 'Failed to load data');
         } finally {
             setLoading(false);
@@ -134,9 +138,6 @@ export default function AttendancePage() {
             </div>
 
             <div className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 overflow-hidden">
-                {loading ? (
-                    <div className="p-12 text-center text-surface-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
-                ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead className="bg-surface-50 dark:bg-surface-800/50 text-surface-500 border-b border-surface-200 dark:border-surface-800 uppercase text-xs font-semibold">
@@ -150,7 +151,22 @@ export default function AttendancePage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {attendances.length === 0 ? (
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`} className="border-b border-surface-200 dark:border-surface-800">
+                                            {Array.from({ length: 6 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : loadError ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-8 text-center">
+                                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger,#dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                            <button onClick={() => loadData()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                        </td>
+                                    </tr>
+                                ) : attendances.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-surface-500">
                                             {isRTL ? 'لا يوجد سجلات حضور لهذا اليوم' : 'No attendance records for this date'}
@@ -194,7 +210,6 @@ export default function AttendancePage() {
                             </tbody>
                         </table>
                     </div>
-                )}
             </div>
 
             {/* Action Modal */}

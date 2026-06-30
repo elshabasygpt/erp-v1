@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { RefreshCw, AlertTriangle, CheckCircle, Package, Download } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface ReconciliationItem {
     product_id: string;
@@ -35,17 +36,20 @@ export default function InventoryReconciliationPage() {
     const { isRTL } = useLanguage();
     const [report, setReport] = useState<ReconciliationReport | null>(null);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     const [filter, setFilter] = useState<'all' | 'discrepancy' | 'matched'>('all');
     const [search, setSearch] = useState('');
 
     const fetchReport = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await inventoryApi.getInventoryReconciliation();
             const data = res.data?.data ?? res.data ?? {};
             setReport(data);
         } catch (err: any) {
             toast.error(err.response?.data?.message || (isRTL ? 'فشل تحميل تقرير المطابقة' : 'Failed to load reconciliation report'));
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -161,12 +165,7 @@ export default function InventoryReconciliationPage() {
                     </div>
                 </div>
 
-                {loading ? (
-                    <div className="p-12 text-center text-gray-500">
-                        <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-400" />
-                        {isRTL ? 'جاري تحميل التقرير...' : 'Loading report...'}
-                    </div>
-                ) : (
+                {(
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-800/50">
@@ -182,7 +181,20 @@ export default function InventoryReconciliationPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {filtered.map((item, idx) => (
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`}>
+                                            {Array.from({ length: 8 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : loadError ? (
+                                    <tr><td colSpan={8} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                        <button onClick={() => fetchReport()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                    </td></tr>
+                                ) : filtered.map((item, idx) => (
                                     <tr key={item.product_id + (item.warehouse ?? '')}
                                         className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${item.variance !== 0 ? 'bg-yellow-50/30 dark:bg-yellow-900/5' : ''}`}>
                                         <td className="px-4 py-3 text-gray-500 text-sm">{idx + 1}</td>
@@ -199,7 +211,7 @@ export default function InventoryReconciliationPage() {
                                         <td className="px-4 py-3">{statusBadge(item)}</td>
                                     </tr>
                                 ))}
-                                {filtered.length === 0 && (
+                                {!loading && !loadError && filtered.length === 0 && (
                                     <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">{isRTL ? 'لا توجد بيانات' : 'No data'}</td></tr>
                                 )}
                             </tbody>

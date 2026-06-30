@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { webhooksApiNew as webhooksApi } from '@/lib/api';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 type Webhook = {
   id: string;
@@ -29,6 +30,7 @@ export default function WebhooksPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState(false);
   const [form, setForm] = useState({
     url: '',
     events: [] as string[],
@@ -37,10 +39,13 @@ export default function WebhooksPage() {
   });
 
   const load = async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const res = await webhooksApi.getAll();
       setWebhooks(res.data?.data || res.data || []);
     } catch {
+      setLoadError(true);
       setError(isRTL ? 'فشل تحميل البيانات' : 'Failed to load');
     } finally {
       setLoading(false);
@@ -159,8 +164,17 @@ export default function WebhooksPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">
-          {isRTL ? 'جاري التحميل...' : 'Loading...'}
+        <div className="space-y-4">
+          {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+      ) : loadError ? (
+        <div className="text-center p-8 bg-white rounded-xl border border-gray-200">
+          <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+          </p>
+          <button onClick={() => load()} className="btn-secondary py-1.5 px-4 text-xs">
+            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+          </button>
         </div>
       ) : (
         <div className="space-y-4">

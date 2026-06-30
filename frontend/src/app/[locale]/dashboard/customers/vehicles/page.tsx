@@ -2,20 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { crmApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function CustomerVehiclesPage({ params: { locale } }: { params: { locale: string } }) {
     const isRTL = locale === 'ar';
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const loadVehicles = async (query = '') => {
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await crmApi.searchVehicleByPlate(query);
             setVehicles(res.data?.data || []);
         } catch (error) {
-
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -59,8 +62,19 @@ export default function CustomerVehiclesPage({ params: { locale } }: { params: {
                     </thead>
                     <tbody>
                         {loading ? (
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                    {Array.from({ length: 4 }).map((__, j) => (
+                                        <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : loadError ? (
                             <tr>
-                                <td colSpan={4} className="text-center py-8">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td>
+                                <td colSpan={4} className="p-8 text-center">
+                                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger,#dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                    <button onClick={() => loadVehicles(searchQuery)} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                </td>
                             </tr>
                         ) : vehicles.length === 0 ? (
                             <tr>

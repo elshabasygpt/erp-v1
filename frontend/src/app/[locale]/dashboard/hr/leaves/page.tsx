@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 import { Plus, Check, X, Clock, Calendar } from 'lucide-react';
 
 export default function LeavesPage() {
@@ -11,6 +12,7 @@ export default function LeavesPage() {
     const [leaves, setLeaves] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +28,7 @@ export default function LeavesPage() {
 
     const loadData = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const [leavesRes, empRes] = await Promise.all([
                 hrApi.getLeaves(),
@@ -34,6 +37,7 @@ export default function LeavesPage() {
             setLeaves(leavesRes.data?.data || leavesRes.data || []);
             setEmployees(empRes.data?.data || empRes.data || []);
         } catch (err) {
+            setLoadError(true);
             toast.error(isRTL ? 'فشل تحميل البيانات' : 'Failed to load data');
         } finally {
             setLoading(false);
@@ -113,9 +117,6 @@ export default function LeavesPage() {
             </div>
 
             <div className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 overflow-hidden">
-                {loading ? (
-                    <div className="p-12 text-center text-surface-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
-                ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead className="bg-surface-50 dark:bg-surface-800/50 text-surface-500 border-b border-surface-200 dark:border-surface-800 uppercase text-xs font-semibold">
@@ -129,7 +130,22 @@ export default function LeavesPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {leaves.length === 0 ? (
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`} className="border-b border-surface-200 dark:border-surface-800">
+                                            {Array.from({ length: 6 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : loadError ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-8 text-center">
+                                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger,#dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                            <button onClick={() => loadData()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                        </td>
+                                    </tr>
+                                ) : leaves.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-surface-500">
                                             {isRTL ? 'لا توجد طلبات إجازة' : 'No leave requests found'}
@@ -190,7 +206,6 @@ export default function LeavesPage() {
                             </tbody>
                         </table>
                     </div>
-                )}
             </div>
 
             {/* Modal */}

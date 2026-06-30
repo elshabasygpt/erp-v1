@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Plus, Edit2, Trash2, X, Check, MapPin, ChevronRight, Grid, List, Zap } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Warehouse { id: string; name: string; }
 interface BinLocation {
@@ -33,6 +34,7 @@ export default function BinLocationsPage() {
     const confirm = useConfirm();
     const [binLocations, setBinLocations] = useState<BinLocation[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     const [view, setView] = useState<'list' | 'tree'>('list');
     const [showForm, setShowForm] = useState(false);
     const [showBulk, setShowBulk] = useState(false);
@@ -56,6 +58,7 @@ export default function BinLocationsPage() {
     const fetchBinLocations = async () => {
         if (!selectedWarehouse) return;
         setLoading(true);
+        setLoadError(false);
         try {
             const res = await inventoryApi.getBinLocations(selectedWarehouse);
             const data = res.data?.data?.bin_locations ?? res.data?.bin_locations ?? res.data?.data ?? [];
@@ -64,6 +67,7 @@ export default function BinLocationsPage() {
         } catch {
             toast.error(isRTL ? 'فشل تحميل مواقع البنود' : 'Failed to load bin locations');
             setBinLocations([]);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -336,7 +340,22 @@ export default function BinLocationsPage() {
                     </div>
 
                     {loading ? (
-                        <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                        <table className="w-full text-left">
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`}>
+                                        {Array.from({ length: 8 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : loadError ? (
+                        <div className="p-8 text-center">
+                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                            <button onClick={() => fetchBinLocations()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                        </div>
                     ) : view === 'tree' ? renderTree() : (
                         <table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-800/50">

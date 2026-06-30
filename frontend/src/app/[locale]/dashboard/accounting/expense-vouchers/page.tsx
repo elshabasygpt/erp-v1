@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Plus, Check, X, FileText, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 const expenseVoucherApi = {
     create: (data: any) => api.post('/expenses/vouchers', data),
@@ -36,6 +37,7 @@ export default function ExpenseVouchersPage() {
     const [categories, setCategories] = useState<ExpenseCategory[]>([]);
     const [vouchers, setVouchers] = useState<Voucher[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState(emptyForm);
@@ -47,6 +49,7 @@ export default function ExpenseVouchersPage() {
 
     const loadData = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const [safesRes, catsRes] = await Promise.all([
                 treasuryApi.getSafes(),
@@ -57,6 +60,7 @@ export default function ExpenseVouchersPage() {
             // Vouchers may not have a list endpoint yet; show empty
             setVouchers([]);
         } catch {
+            setLoadError(true);
             toast.error(isRTL ? 'فشل تحميل البيانات' : 'Failed to load data');
         } finally {
             setLoading(false);
@@ -200,7 +204,26 @@ export default function ExpenseVouchersPage() {
                     <h3 className="font-semibold text-gray-700 dark:text-gray-300">{isRTL ? 'سندات الصرف' : 'Expense Vouchers'} ({vouchers.length})</h3>
                 </div>
                 {loading ? (
-                    <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                    <table className="w-full text-left">
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`}>
+                                    {Array.from({ length: 8 }).map((__, j) => (
+                                        <td key={j} className="px-4 py-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                ) : loadError ? (
+                    <div className="p-12 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                        </p>
+                        <button onClick={() => loadData()} className="btn-secondary py-1.5 px-4 text-xs">
+                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                        </button>
+                    </div>
                 ) : vouchers.length === 0 ? (
                     <div className="p-12 text-center text-gray-500">
                         <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />

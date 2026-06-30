@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Plus, Edit2, Trash2, ChevronRight, Tag, X, Check } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Category {
     id: string;
@@ -24,6 +25,7 @@ export default function CategoriesPage() {
     const { isRTL } = useLanguage();
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Category | null>(null);
@@ -39,12 +41,14 @@ export default function CategoriesPage() {
     const fetchCategories = async () => {
         try {
             setLoading(true);
+            setLoadError(false);
             const res = await inventoryApi.getCategories();
             const data = res.data?.data ?? res.data ?? [];
             setCategories(Array.isArray(data) ? data : []);
         } catch {
             toast.error(isRTL ? 'فشل تحميل الفئات' : 'Failed to load categories');
             setCategories([]);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -291,7 +295,24 @@ export default function CategoriesPage() {
                     <button onClick={() => setExpandedIds(new Set(categories.map(c => c.id)))} className="text-sm text-blue-500 hover:underline">{isRTL ? 'توسيع الكل' : 'Expand All'}</button>
                 </div>
                 {loading ? (
-                    <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                    <div>
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={`sk-${i}`} className="flex items-center gap-3 px-4 py-3 border-b dark:border-gray-700">
+                                <Skeleton variant="circular" className="w-4 h-4" />
+                                <Skeleton variant="circular" className="w-6 h-6" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="w-1/3 h-4" />
+                                    <Skeleton className="w-1/4 h-3" />
+                                </div>
+                                <Skeleton className="w-16 h-5" />
+                            </div>
+                        ))}
+                    </div>
+                ) : loadError ? (
+                    <div className="p-8 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                        <button onClick={() => fetchCategories()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                    </div>
                 ) : categories.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">{isRTL ? 'لا توجد فئات. أضف فئة جديدة للبدء.' : 'No categories found. Add a new category to start.'}</div>
                 ) : (

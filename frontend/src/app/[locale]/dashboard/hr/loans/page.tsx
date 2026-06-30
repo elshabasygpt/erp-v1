@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 import { Plus, Check, X, Clock, Wallet, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function LoansPage() {
@@ -11,6 +12,7 @@ export default function LoansPage() {
     const [loans, setLoans] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +29,7 @@ export default function LoansPage() {
 
     const loadData = async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const [loansRes, empRes] = await Promise.all([
                 hrApi.getLoans(),
@@ -35,6 +38,7 @@ export default function LoansPage() {
             setLoans(loansRes.data?.data || loansRes.data || []);
             setEmployees(empRes.data?.data || empRes.data || []);
         } catch (err) {
+            setLoadError(true);
             toast.error(isRTL ? 'فشل تحميل البيانات' : 'Failed to load data');
         } finally {
             setLoading(false);
@@ -105,9 +109,6 @@ export default function LoansPage() {
             </div>
 
             <div className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 overflow-hidden">
-                {loading ? (
-                    <div className="p-12 text-center text-surface-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
-                ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm whitespace-nowrap">
                             <thead className="bg-surface-50 dark:bg-surface-800/50 text-surface-500 border-b border-surface-200 dark:border-surface-800 uppercase text-xs font-semibold">
@@ -122,7 +123,22 @@ export default function LoansPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {loans.length === 0 ? (
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`} className="border-b border-surface-200 dark:border-surface-800">
+                                            {Array.from({ length: 7 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : loadError ? (
+                                    <tr>
+                                        <td colSpan={7} className="p-8 text-center">
+                                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger,#dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                            <button onClick={() => loadData()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                        </td>
+                                    </tr>
+                                ) : loans.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="px-6 py-12 text-center text-surface-500">
                                             {isRTL ? 'لا توجد سلف مسجلة' : 'No loans found'}
@@ -182,7 +198,6 @@ export default function LoansPage() {
                             </tbody>
                         </table>
                     </div>
-                )}
             </div>
 
             {/* Modal */}
