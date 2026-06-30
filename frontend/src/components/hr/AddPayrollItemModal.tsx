@@ -28,9 +28,17 @@ export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess
     const [amount, setAmount] = useState('');
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!reason.trim()) newErrors.reason = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!amount.trim()) newErrors.amount = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         setLoading(true);
         try {
             await hrApi.addPayrollItem({
@@ -67,7 +75,7 @@ export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-4 space-y-4">
+                <form onSubmit={handleSubmit} noValidate className="p-4 space-y-4">
                     <div>
                         <label className="block text-sm font-medium mb-2">{isRTL ? 'نوع البند' : 'Type'}</label>
                         <div className="grid grid-cols-3 gap-2">
@@ -93,10 +101,13 @@ export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess
                             type="text"
                             required
                             value={reason}
-                            onChange={(e) => setReason(e.target.value)}
+                            onChange={(e) => { setReason(e.target.value); if (errors.reason) setErrors(prev => { const next = { ...prev }; delete next.reason; return next; }); }}
                             placeholder={isRTL ? 'مثال: جزاء تأخر في تسليم التقرير' : 'e.g. Late report delivery'}
-                            className="input-field"
+                            aria-invalid={!!errors.reason}
+                            aria-describedby={errors.reason ? 'reason-error' : undefined}
+                            className={`input-field ${errors.reason ? 'border-red-500' : ''}`}
                         />
+                        {errors.reason && <p id="reason-error" role="alert" className="text-xs text-red-500 mt-1">{errors.reason}</p>}
                     </div>
 
                     <div>
@@ -108,13 +119,16 @@ export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess
                                 min="0.01"
                                 step="0.01"
                                 value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                className="input-field pr-12"
+                                onChange={(e) => { setAmount(e.target.value); if (errors.amount) setErrors(prev => { const next = { ...prev }; delete next.amount; return next; }); }}
+                                aria-invalid={!!errors.amount}
+                                aria-describedby={errors.amount ? 'amount-error' : undefined}
+                                className={`input-field pr-12 ${errors.amount ? 'border-red-500' : ''}`}
                             />
                             <span className="absolute right-3 top-2.5 text-gray-400 font-bold">
                                 {currencySymbol}
                             </span>
                         </div>
+                        {errors.amount && <p id="amount-error" role="alert" className="text-xs text-red-500 mt-1">{errors.amount}</p>}
                     </div>
 
                     <div>

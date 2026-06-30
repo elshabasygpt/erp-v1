@@ -148,10 +148,10 @@ export default function WebhooksPage() {
                             </div>
                             
                             <div className="flex gap-2">
-                                <button onClick={() => handleEdit(w)} className="p-2 text-slate-400 hover:text-blue-600 bg-slate-50 dark:bg-slate-900 rounded-lg hover:bg-blue-50">
+                                <button onClick={() => handleEdit(w)} className="p-2 text-slate-400 hover:text-blue-600 bg-slate-50 dark:bg-slate-900 rounded-lg hover:bg-blue-50" aria-label={isRTL ? 'تعديل' : 'Edit'}>
                                     ✏️
                                 </button>
-                                <button onClick={() => handleDelete(w.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 dark:bg-slate-900 rounded-lg hover:bg-red-50">
+                                <button onClick={() => handleDelete(w.id)} className="p-2 text-slate-400 hover:text-red-600 bg-slate-50 dark:bg-slate-900 rounded-lg hover:bg-red-50" aria-label={isRTL ? 'حذف' : 'Delete'}>
                                     🗑️
                                 </button>
                             </div>

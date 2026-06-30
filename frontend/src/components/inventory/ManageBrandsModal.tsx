@@ -229,8 +229,8 @@ export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: Manage
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => startEdit(brand)} className="btn-icon w-8 h-8 flex items-center justify-center bg-gray-50 text-blue-500">✏️</button>
-                                                <button onClick={() => deleteBrand(brand.id)} className="btn-icon w-8 h-8 flex items-center justify-center bg-red-50 text-red-500">🗑️</button>
+                                                <button onClick={() => startEdit(brand)} className="btn-icon w-8 h-8 flex items-center justify-center bg-gray-50 text-blue-500" aria-label={isRTL ? 'تعديل' : 'Edit'}>✏️</button>
+                                                <button onClick={() => deleteBrand(brand.id)} className="btn-icon w-8 h-8 flex items-center justify-center bg-red-50 text-red-500" aria-label={isRTL ? 'حذف' : 'Delete'}>🗑️</button>
                                             </div>
                                         </>
                                     )}

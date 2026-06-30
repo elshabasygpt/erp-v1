@@ -224,8 +224,8 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
                                                 </div>
                                             </div>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => startEditMain(g)} className="btn-icon w-8 h-8 text-xs" style={{ color: 'var(--text-muted)' }}>✏️</button>
-                                                <button onClick={() => deleteMainGroup(g.id)} className="btn-icon w-8 h-8 text-xs text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">🗑️</button>
+                                                <button onClick={() => startEditMain(g)} className="btn-icon w-8 h-8 text-xs" style={{ color: 'var(--text-muted)' }} aria-label={isRTL ? 'تعديل' : 'Edit'}>✏️</button>
+                                                <button onClick={() => deleteMainGroup(g.id)} className="btn-icon w-8 h-8 text-xs text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" aria-label={isRTL ? 'حذف' : 'Delete'}>🗑️</button>
                                             </div>
                                         </>
                                     )}
@@ -277,8 +277,8 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => startEditSub(selectedMain, s)} className="btn-icon w-8 h-8 text-xs" style={{ color: 'var(--text-muted)' }}>✏️</button>
-                                                        <button onClick={() => deleteSubGroup(selectedMain, s.id)} className="btn-icon w-8 h-8 text-xs text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">🗑️</button>
+                                                        <button onClick={() => startEditSub(selectedMain, s)} className="btn-icon w-8 h-8 text-xs" style={{ color: 'var(--text-muted)' }} aria-label={isRTL ? 'تعديل' : 'Edit'}>✏️</button>
+                                                        <button onClick={() => deleteSubGroup(selectedMain, s.id)} className="btn-icon w-8 h-8 text-xs text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" aria-label={isRTL ? 'حذف' : 'Delete'}>🗑️</button>
                                                     </div>
                                                 </>
                                             )}
@@ -380,8 +380,8 @@ export const ManageUnitsModal = memo(function ManageUnitsModal({ dict, locale, u
                                             <span className="badge badge-info text-[10px]">{u.symbol}</span>
                                         </div>
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => startEdit(u)} className="btn-icon text-xs" style={{ color: 'var(--text-muted)' }}>✏️</button>
-                                            <button onClick={() => deleteUnit(u.id)} className="btn-icon text-xs text-red-400">🗑️</button>
+                                            <button onClick={() => startEdit(u)} className="btn-icon text-xs" style={{ color: 'var(--text-muted)' }} aria-label={isRTL ? 'تعديل' : 'Edit'}>✏️</button>
+                                            <button onClick={() => deleteUnit(u.id)} className="btn-icon text-xs text-red-400" aria-label={isRTL ? 'حذف' : 'Delete'}>🗑️</button>
                                         </div>
                                     </>
                                 )}
@@ -668,7 +668,7 @@ export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({
                                         {products.map(p => <option key={p.id} value={p.id}>{isRTL ? p.name_ar : p.name}</option>)}
                                     </select>
                                     <input type="number" step="0.001" placeholder={isRTL ? 'الكمية الفعلية' : 'Actual'} className="input-field py-1 text-sm w-24" value={item.actual} onChange={e => updateItem(index, 'actual', e.target.value)} required />
-                                    <button type="button" onClick={() => removeItem(index)} className="btn-icon text-red-500 text-xs shadow-none">🗑️</button>
+                                    <button type="button" onClick={() => removeItem(index)} className="btn-icon text-red-500 text-xs shadow-none" aria-label={isRTL ? 'حذف' : 'Delete'}>🗑️</button>
                                 </div>
                             ))}
                         </div>

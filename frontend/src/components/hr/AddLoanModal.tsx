@@ -29,9 +29,16 @@ export default function AddLoanModal({ employees, isRTL, onClose, onSuccess }: A
     const submitDisabled = isError || !form.employee_id || form.total_amount <= 0;
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!form.employee_id.trim()) newErrors.employee_id = isRTL ? 'يجب اختيار موظف' : 'Employee is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         if (submitDisabled) return;
 
         setIsSubmitting(true);
@@ -81,8 +88,10 @@ export default function AddLoanModal({ employees, isRTL, onClose, onSuccess }: A
                                 </label>
                                 <select
                                     value={form.employee_id}
-                                    onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    onChange={(e) => { setForm({ ...form, employee_id: e.target.value }); if (errors.employee_id) setErrors(prev => { const next = { ...prev }; delete next.employee_id; return next; }); }}
+                                    aria-invalid={!!errors.employee_id}
+                                    aria-describedby={errors.employee_id ? 'employee_id-error' : undefined}
+                                    className={`w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${errors.employee_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}
                                     required
                                 >
                                     <option value="">{isRTL ? 'اختر موظف' : 'Select Employee'}</option>
@@ -92,6 +101,7 @@ export default function AddLoanModal({ employees, isRTL, onClose, onSuccess }: A
                                         </option>
                                     ))}
                                 </select>
+                                {errors.employee_id && <p id="employee_id-error" role="alert" className="text-xs text-red-500 mt-1">{errors.employee_id}</p>}
                                 {selectedEmployee && (
                                     <p className="text-xs text-gray-500 mt-1">
                                         {isRTL ? 'الراتب الأساسي:' : 'Base Salary:'} {baseSalary.toFixed(2)}

@@ -13,6 +13,7 @@ export default function EmployeeFormModal({
 }: any) {
     const { isRTL } = useLanguage();
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState({
         name: '',
@@ -54,10 +55,19 @@ export default function EmployeeFormModal({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+        if (errors[name]) setErrors(prev => { const next = { ...prev }; delete next[name]; return next; });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!formData.name.trim()) newErrors.name = isRTL ? 'اسم الموظف مطلوب' : 'Employee name is required';
+        if (!formData.position.trim()) newErrors.position = isRTL ? 'المسمى الوظيفي مطلوب' : 'Position is required';
+        if (!String(formData.base_salary).trim()) newErrors.base_salary = isRTL ? 'الراتب الأساسي مطلوب' : 'Base salary is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         setLoading(true);
 
         try {
@@ -91,31 +101,37 @@ export default function EmployeeFormModal({
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1">
-                    <form id="employeeForm" onSubmit={handleSubmit} className="space-y-4 text-sm">
-                        
+                    <form id="employeeForm" onSubmit={handleSubmit} noValidate className="space-y-4 text-sm">
+
                         <div>
                             <label className="block font-medium mb-1">{isRTL ? 'اسم الموظف' : 'Employee Name'} *</label>
-                            <input 
+                            <input
                                 required
-                                type="text" 
-                                name="name" 
-                                value={formData.name} 
+                                type="text"
+                                name="name"
+                                value={formData.name}
                                 onChange={handleChange}
-                                className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                aria-invalid={!!errors.name}
+                                aria-describedby={errors.name ? 'name-error' : undefined}
+                                className={`w-full p-2.5 bg-surface-50 dark:bg-surface-800 border rounded-lg outline-none focus:border-violet-500 ${errors.name ? 'border-red-500' : 'border-surface-200 dark:border-surface-700'}`}
                             />
+                            {errors.name && <p id="name-error" role="alert" className="text-xs text-red-500 mt-1">{errors.name}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block font-medium mb-1">{isRTL ? 'المسمى الوظيفي' : 'Position'} *</label>
-                                <input 
+                                <input
                                     required
-                                    type="text" 
-                                    name="position" 
-                                    value={formData.position} 
+                                    type="text"
+                                    name="position"
+                                    value={formData.position}
                                     onChange={handleChange}
-                                    className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                    aria-invalid={!!errors.position}
+                                    aria-describedby={errors.position ? 'position-error' : undefined}
+                                    className={`w-full p-2.5 bg-surface-50 dark:bg-surface-800 border rounded-lg outline-none focus:border-violet-500 ${errors.position ? 'border-red-500' : 'border-surface-200 dark:border-surface-700'}`}
                                 />
+                                {errors.position && <p id="position-error" role="alert" className="text-xs text-red-500 mt-1">{errors.position}</p>}
                             </div>
                             <div>
                                 <label className="block font-medium mb-1">{isRTL ? 'رقم الهاتف' : 'Phone Number'}</label>
@@ -132,19 +148,22 @@ export default function EmployeeFormModal({
                         <div>
                             <label className="block font-medium mb-1">{isRTL ? 'الراتب الأساسي' : 'Base Salary'} *</label>
                             <div className="relative">
-                                <input 
+                                <input
                                     required
-                                    type="number" 
+                                    type="number"
                                     step="0.01"
-                                    name="base_salary" 
-                                    value={formData.base_salary} 
+                                    name="base_salary"
+                                    value={formData.base_salary}
                                     onChange={handleChange}
-                                    className={`w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500 ${isRTL ? 'pl-12' : 'pr-12'}`}
+                                    aria-invalid={!!errors.base_salary}
+                                    aria-describedby={errors.base_salary ? 'base_salary-error' : undefined}
+                                    className={`w-full p-2.5 bg-surface-50 dark:bg-surface-800 border rounded-lg outline-none focus:border-violet-500 ${errors.base_salary ? 'border-red-500' : 'border-surface-200 dark:border-surface-700'} ${isRTL ? 'pl-12' : 'pr-12'}`}
                                 />
                                 <span className={`absolute top-1/2 -translate-y-1/2 text-surface-500 font-medium ${isRTL ? 'left-4' : 'right-4'}`}>
                                     SAR
                                 </span>
                             </div>
+                            {errors.base_salary && <p id="base_salary-error" role="alert" className="text-xs text-red-500 mt-1">{errors.base_salary}</p>}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

@@ -106,8 +106,8 @@ export default function KanbanView({ tasks, isRTL, onRefresh, setDetailTask, set
                                             {(priorityConfig as any)[task.priority]?.icon} {(priorityConfig as any)[task.priority]?.label || task.priority}
                                         </span>
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => setEditingTask(task)} className="text-gray-400 hover:text-blue-500 text-xs">✏️</button>
-                                            <button onClick={() => setDetailTask(task)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xs">👁️</button>
+                                            <button onClick={() => setEditingTask(task)} className="text-gray-400 hover:text-blue-500 text-xs" aria-label={isRTL ? 'تعديل' : 'Edit'}>✏️</button>
+                                            <button onClick={() => setDetailTask(task)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xs" aria-label={isRTL ? 'عرض' : 'View'}>👁️</button>
                                         </div>
                                     </div>
 
