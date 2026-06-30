@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { X, Plus, Trash2, Upload } from 'lucide-react';
@@ -30,6 +31,7 @@ interface Props {
 export function CrossReferenceManagerModal({ productId, productName, isRTL, onClose }: Props) {
     const [refs, setRefs] = useState<CrossRef[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
     const [form, setForm] = useState({ reference_number: '', reference_brand: '', reference_type: 'oem' as CrossRef['reference_type'] });
     const [saving, setSaving] = useState(false);
     const [bulkOpen, setBulkOpen] = useState(false);
@@ -75,7 +77,7 @@ export function CrossReferenceManagerModal({ productId, productName, isRTL, onCl
     };
 
     const handleDelete = async (refId: string, refNumber: string) => {
-        if (!confirm(`حذف الرقم "${refNumber}"؟`)) return;
+        if (!await confirm(`حذف الرقم "${refNumber}"؟`)) return;
         try {
             await inventoryApi.deleteCrossReference(productId, refId);
             toast.success('تم الحذف');

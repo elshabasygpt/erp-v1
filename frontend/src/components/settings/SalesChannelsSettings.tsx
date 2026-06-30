@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import api from '@/lib/api';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast';
 export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
     const [channels, setChannels] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
     const [modal, setModal] = useState<{ isOpen: boolean, type: 'add' | 'edit', data: any }>({ isOpen: false, type: 'add', data: null });
     const [isMounted, setIsMounted] = useState(false);
 
@@ -63,7 +65,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
         try {
             await api.delete(`/sales/channels/${id}`);
             fetchChannels();
@@ -138,7 +140,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
                     <span key={idx} className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-xs flex items-center gap-2">
                         {t}
                         <button onClick={async () => {
-                            if(!confirm(isRTL ? 'حذف هذا النوع؟' : 'Delete this type?')) return;
+                            if(!await confirm(isRTL ? 'حذف هذا النوع؟' : 'Delete this type?')) return;
                             const newTypes = channelTypes.filter(type => type !== t);
                             await api.put('/settings', { sales_channel_types: newTypes });
                             setChannelTypes(newTypes);

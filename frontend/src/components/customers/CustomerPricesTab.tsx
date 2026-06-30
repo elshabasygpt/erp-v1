@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { crmApi, productsApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
@@ -41,6 +42,7 @@ export default function CustomerPricesTab({ customerId, locale }: Props) {
     const isRTL = locale === 'ar';
     const [prices, setPrices] = useState<CustomerPrice[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
     const [showModal, setShowModal] = useState(false);
     const [editingPrice, setEditingPrice] = useState<CustomerPrice | null>(null);
     const [form, setForm] = useState<PriceForm>(emptyForm);
@@ -144,7 +146,7 @@ export default function CustomerPricesTab({ customerId, locale }: Props) {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(isRTL ? 'هل تريد حذف هذا السعر الخاص؟' : 'Delete this custom price?')) return;
+        if (!await confirm(isRTL ? 'هل تريد حذف هذا السعر الخاص؟' : 'Delete this custom price?')) return;
         setDeletingId(id);
         try {
             await crmApi.deleteCustomerPrice(customerId, id);

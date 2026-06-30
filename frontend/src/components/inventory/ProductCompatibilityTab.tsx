@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Car, Search, X, Loader2, ChevronDown } from 'lucide-react';
 
@@ -14,6 +15,7 @@ export function ProductCompatibilityTab({ productId, isRTL, pendingVehicles, onP
 
   const [compatibleVehicles, setCompatibleVehicles] = useState<any[]>(pendingVehicles || []);
   const [loading, setLoading] = useState(!isPending);
+  const confirm = useConfirm();
 
   // Quick search state
   const [q, setQ] = useState('');
@@ -195,7 +197,7 @@ export function ProductCompatibilityTab({ productId, isRTL, pendingVehicles, onP
   };
 
   const handleDetach = async (vehicleYearId: string) => {
-    if (!confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
+    if (!await confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
     if (isPending) {
       const updated = compatibleVehicles.filter(v => v.vehicle_year_id !== vehicleYearId);
       setCompatibleVehicles(updated);

@@ -16,6 +16,7 @@ import AiChatWidget from '@/components/ui/AiChatWidget';
 import NotificationCenter from '@/components/ui/NotificationCenter';
 import KeyboardShortcutsModal from '@/components/ui/KeyboardShortcutsModal';
 import OfflineIndicator from '@/components/ui/OfflineIndicator';
+import { ConfirmProvider } from '@/components/ui/ConfirmProvider';
 
 
 // ── Breadcrumb helper ─────────────────────────────────────────────
@@ -130,6 +131,7 @@ function DashboardLayoutInner({
     return (
         <AuthGuard locale={locale}>
             <LanguageProvider initialDict={dict}>
+                <ConfirmProvider>
                 <div className="min-h-screen transition-colors duration-300" style={{ background: 'var(--bg-body)' }}>
                     {/* Skip to main content — first focusable element for keyboard/screen-reader users */}
                     <a
@@ -298,6 +300,7 @@ function DashboardLayoutInner({
                     {/* Bottom Navigation — يظهر على الموبايل فقط */}
                     <BottomNav locale={locale} />
                 </div>
+                </ConfirmProvider>
             </LanguageProvider>
         </AuthGuard>
     );

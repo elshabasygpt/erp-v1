@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { authApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
@@ -10,6 +11,7 @@ import { Plus, Edit, Trash2, Shield, Users, Save, X } from 'lucide-react';
 
 export default function RolesPage() {
     const { d } = useLanguage();
+    const confirm = useConfirm();
     const [roles, setRoles] = useState<any[]>([]);
     const [permissionsData, setPermissionsData] = useState<Record<string, any[]>>({});
     const [loading, setLoading] = useState(true);
@@ -110,7 +112,7 @@ export default function RolesPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete the role ${name}?`)) return;
+        if (!await confirm(`Are you sure you want to delete the role ${name}?`)) return;
         try {
             await authApi.deleteRole(id);
             toast.success('Role deleted successfully');

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { crmApi } from '@/lib/api';
 import AddVehicleModal from './AddVehicleModal';
 import AddServiceModal from './AddServiceModal';
@@ -14,6 +15,7 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
     const isRTL = locale === 'ar';
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
 
     const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
@@ -48,7 +50,7 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
     };
 
     const handleDeleteVehicle = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذه السيارة؟' : 'Are you sure you want to delete this vehicle?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف هذه السيارة؟' : 'Are you sure you want to delete this vehicle?')) return;
         try {
             await crmApi.deleteCustomerVehicle(customerId, id);
             loadVehicles();

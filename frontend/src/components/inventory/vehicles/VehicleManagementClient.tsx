@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Car, ChevronRight, Plus, Trash2, Loader2, Edit2, X, ImagePlus } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
     const [activeModel, setActiveModel] = useState<any>(null);
 
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
 
     // Form states
     const [newMake, setNewMake] = useState({ name: '', name_ar: '' });
@@ -194,7 +196,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
 
     const handleDeleteMake = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm(isRTL ? 'تأكيد الحذف؟' : 'Confirm delete?')) return;
+        if (!await confirm(isRTL ? 'تأكيد الحذف؟' : 'Confirm delete?')) return;
         try {
             await inventoryApi.deleteVehicleMake(id);
             if (activeMake?.id === id) setActiveMake(null);
@@ -204,7 +206,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
 
     const handleDeleteModel = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm(isRTL ? 'تأكيد الحذف؟' : 'Confirm delete?')) return;
+        if (!await confirm(isRTL ? 'تأكيد الحذف؟' : 'Confirm delete?')) return;
         try {
             await inventoryApi.deleteVehicleModel(id);
             if (activeModel?.id === id) setActiveModel(null);
@@ -214,7 +216,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
 
     const handleDeleteYear = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm(isRTL ? 'تأكيد الحذف؟' : 'Confirm delete?')) return;
+        if (!await confirm(isRTL ? 'تأكيد الحذف؟' : 'Confirm delete?')) return;
         try {
             await inventoryApi.deleteVehicleYear(id);
             if (activeModel) selectModel(activeModel);

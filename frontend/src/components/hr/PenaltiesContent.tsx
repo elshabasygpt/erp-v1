@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import toast from 'react-hot-toast';
 
 export default function PenaltiesContent() {
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
     const [tab, setTab] = useState<'rules' | 'report'>('rules');
 
     // Rules state
@@ -67,7 +69,7 @@ export default function PenaltiesContent() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('هل أنت متأكد من الحذف؟')) return;
+        if (!await confirm('هل أنت متأكد من الحذف؟')) return;
         try {
             await hrApi.deletePenaltyRule(id);
             toast.success('تم الحذف');

@@ -1,5 +1,6 @@
 'use client';
 import { useState, memo, useEffect, useRef } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { X, Image as ImageIcon } from 'lucide-react';
 import { inventoryApi } from '@/lib/api';
@@ -22,6 +23,7 @@ interface ManageBrandsModalProps {
 
 export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: ManageBrandsModalProps) {
     const params = useParams();
+    const confirm = useConfirm();
     const locale = params?.locale === 'ar' ? 'ar' : 'en';
     const isRTL = locale === 'ar';
     const queryClient = useQueryClient();
@@ -130,7 +132,7 @@ export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: Manage
     };
 
     const deleteBrand = async (id: string) => {
-        if (!window.confirm(isRTL ? 'هل أنت متأكد من حذف هذه الماركة؟' : 'Are you sure you want to delete this brand?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف هذه الماركة؟' : 'Are you sure you want to delete this brand?')) return;
         try {
             await inventoryApi.deleteBrand(id);
             toast.success(isRTL ? 'تم الحذف بنجاح' : 'Deleted successfully');

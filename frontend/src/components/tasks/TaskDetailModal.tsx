@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { tasksApi } from '@/lib/api';
 
 const priorityConfig = {
@@ -11,6 +12,7 @@ const priorityConfig = {
 
 export default function TaskDetailModal({ task, isRTL, onClose, onRefresh, onEdit }: any) {
     const [comment, setComment] = useState('');
+    const confirm = useConfirm();
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState(task.status);
     const [comments, setComments] = useState<any[]>(task.comments || []);
@@ -27,7 +29,7 @@ export default function TaskDetailModal({ task, isRTL, onClose, onRefresh, onEdi
     };
 
     const handleDelete = async () => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من حذف المهمة؟' : 'Are you sure you want to delete this task?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف المهمة؟' : 'Are you sure you want to delete this task?')) return;
         try {
             await tasksApi.deleteTask(task.id);
             onRefresh();

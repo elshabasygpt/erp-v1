@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const emptyBulk = { warehouse_id: '', zones: '', racks: '', shelves: '', bins: '
 export default function BinLocationsPage() {
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
     const [selectedWarehouse, setSelectedWarehouse] = useState('');
+    const confirm = useConfirm();
     const [binLocations, setBinLocations] = useState<BinLocation[]>([]);
     const [loading, setLoading] = useState(false);
     const [view, setView] = useState<'list' | 'tree'>('list');
@@ -121,7 +123,7 @@ export default function BinLocationsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('هل تريد حذف هذا الموقع؟ يجب أن يكون فارغاً.')) return;
+        if (!await confirm('هل تريد حذف هذا الموقع؟ يجب أن يكون فارغاً.')) return;
         try {
             await inventoryApi.deleteBinLocation(id);
             toast.success('تم الحذف');

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Tag, Star, X, Loader2, Plus, Users } from 'lucide-react';
 
@@ -11,6 +12,7 @@ export function ProductAliasesTab({ productId, isRTL }: ProductAliasesTabProps) 
   const [aliases, setAliases] = useState<any[]>([]);
   const [customerAliases, setCustomerAliases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const confirm = useConfirm();
   const [newAlias, setNewAlias] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -55,7 +57,7 @@ export function ProductAliasesTab({ productId, isRTL }: ProductAliasesTabProps) 
   };
 
   const handleDelete = async (aliasId: string) => {
-    if (!confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
+    if (!await confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
     try {
       await inventoryApi.deleteAlias(productId, aliasId);
       await load();
@@ -64,7 +66,7 @@ export function ProductAliasesTab({ productId, isRTL }: ProductAliasesTabProps) 
   };
 
   const handleDeleteCustomerAlias = async (aliasId: string) => {
-    if (!confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
+    if (!await confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
     try {
       await inventoryApi.deleteCustomerAlias(productId, aliasId);
       await load();

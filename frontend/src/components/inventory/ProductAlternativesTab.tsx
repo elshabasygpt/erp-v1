@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Link2, Search, X, Loader2, Package } from 'lucide-react';
 
@@ -10,6 +11,7 @@ interface ProductAlternativesTabProps {
 export function ProductAlternativesTab({ productId, isRTL }: ProductAlternativesTabProps) {
   const [alternatives, setAlternatives] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const confirm = useConfirm();
   
   // Quick Add states
   const [q, setQ] = useState('');
@@ -63,7 +65,7 @@ export function ProductAlternativesTab({ productId, isRTL }: ProductAlternatives
   };
 
   const handleDetach = async (alternativeId: string) => {
-    if (!confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
+    if (!await confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure?')) return;
     try {
       await inventoryApi.detachAlternative(productId, alternativeId);
       await loadAlternatives();

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ interface Category {
 export default function CategoriesPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Category | null>(null);
     const [form, setForm] = useState({ name: '', name_ar: '', parent_id: '', discount: '', is_active: true });
@@ -121,7 +123,7 @@ export default function CategoriesPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`هل تريد حذف الفئة "${name}"؟`)) return;
+        if (!await confirm(`هل تريد حذف الفئة "${name}"؟`)) return;
         try {
             await inventoryApi.deleteCategory(id);
             toast.success('تم حذف الفئة');

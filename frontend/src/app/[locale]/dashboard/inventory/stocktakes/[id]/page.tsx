@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { inventoryApi } from '@/lib/api';
@@ -13,6 +14,7 @@ import { getCachedStocktake, saveCachedStocktake, enqueueOfflineAction, getSyncQ
 
 export default function StocktakeExecutionPage() {
     const { d } = useLanguage();
+    const confirm = useConfirm();
     const { id } = useParams();
     const router = useRouter();
     
@@ -259,7 +261,7 @@ export default function StocktakeExecutionPage() {
     };
 
     const approveStocktake = async () => {
-        if (!confirm('Are you sure? This will adjust inventory and generate financial journal entries for variances.')) return;
+        if (!await confirm('Are you sure? This will adjust inventory and generate financial journal entries for variances.')) return;
         
         try {
             await inventoryApi.approveStocktake(id as string);

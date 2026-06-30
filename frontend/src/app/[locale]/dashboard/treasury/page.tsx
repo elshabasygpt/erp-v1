@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { treasuryApi, customersApi, suppliersApi, accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -9,6 +10,7 @@ type Tab = 'safes' | 'vouchers' | 'transactions';
 
 export default function TreasuryPage() {
     const { isRTL, locale } = useLanguage();
+    const confirm = useConfirm();
     const [tab, setTab] = useState<Tab>('safes');
     const [safes, setSafes] = useState<any[]>([]);
     const [transactions, setTransactions] = useState<any[]>([]);
@@ -89,7 +91,7 @@ export default function TreasuryPage() {
     };
 
     const handleDeleteSafe = async (safe: any) => {
-        if (!confirm(isRTL ? `هل أنت متأكد من حذف ${safe.name_ar || safe.name}؟` : `Are you sure you want to delete ${safe.name}?`)) return;
+        if (!await confirm(isRTL ? `هل أنت متأكد من حذف ${safe.name_ar || safe.name}؟` : `Are you sure you want to delete ${safe.name}?`)) return;
         try {
             await treasuryApi.deleteSafe(safe.id);
             toast.success(isRTL ? 'تم الحذف بنجاح' : 'Safe deleted successfully');

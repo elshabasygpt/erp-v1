@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { webhooksApiNew as webhooksApi } from '@/lib/api';
 
@@ -22,6 +23,7 @@ const AVAILABLE_EVENTS = [
 
 export default function WebhooksPage() {
   const { isRTL } = useLanguage();
+  const confirm = useConfirm();
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -72,7 +74,7 @@ export default function WebhooksPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(isRTL ? 'هل أنت متأكد؟' : 'Are you sure?')) return;
+    if (!await confirm(isRTL ? 'هل أنت متأكد؟' : 'Are you sure?')) return;
     try {
       await webhooksApi.delete(id);
       setWebhooks(prev => prev.filter(w => w.id !== id));

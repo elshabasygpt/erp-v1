@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -24,6 +25,7 @@ interface Account {
 
 export default function ChartOfAccountsPage() {
     const { isRTL } = useLanguage();
+    const confirm = useConfirm();
     const [accountsTree, setAccountsTree] = useState<Account[]>([]);
     const [loading, setLoading] = useState(true);
     
@@ -68,7 +70,7 @@ export default function ChartOfAccountsPage() {
             toast.error(isRTL ? 'لا يمكن حذف حساب رئيسي يحتوي على حسابات فرعية' : 'Cannot delete a parent account with sub-accounts');
             return;
         }
-        if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذا الحساب؟' : 'Are you sure you want to delete this account?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف هذا الحساب؟' : 'Are you sure you want to delete this account?')) return;
         
         try {
             await accountingApi.deleteAccount(account.id);

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -10,6 +11,7 @@ import ClaimModal from './ClaimModal';
 export default function WarrantyContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
 
     // Filters
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'expired' | 'claimed' | 'void'>('all');
@@ -69,7 +71,7 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
         const confirmMsg = isReplacement
             ? (isRTL ? 'حل مطالبة الاستبدال سيُنشئ فاتورة استبدال تلقائياً ويخصم المخزون. هل تريد المتابعة؟' : 'Resolving a replacement claim auto-creates a replacement invoice and deducts stock. Continue?')
             : (isRTL ? 'تأكيد حل هذه المطالبة؟' : 'Resolve this claim?');
-        if (!window.confirm(confirmMsg)) return;
+        if (!await confirm(confirmMsg)) return;
         try {
             await salesApi.updateWarrantyClaim(selectedWarranty.id, claim.id, {
                 status: 'resolved',

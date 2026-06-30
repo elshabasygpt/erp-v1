@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { automationApi } from '@/lib/api';
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast';
 
 export default function AutomationListPage() {
     const { isRTL } = useLanguage();
+    const confirm = useConfirm();
     const [workflows, setWorkflows] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -27,7 +29,7 @@ export default function AutomationListPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure?')) return;
+        if (!await confirm('Are you sure?')) return;
         try {
             await automationApi.deleteWorkflow(id);
             setWorkflows(prev => prev.filter(w => w.id !== id));

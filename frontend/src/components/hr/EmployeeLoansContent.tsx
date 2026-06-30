@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { hrApi } from '@/lib/api';
@@ -14,6 +15,7 @@ interface EmployeeLoansContentProps {
 export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansContentProps) {
     const isRTL = locale === 'ar';
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
@@ -60,13 +62,13 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
     };
 
     const handleUpdateStatus = async (id: string, status: 'active' | 'paused' | 'cancelled') => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من تغيير حالة السلفة؟' : 'Are you sure you want to change loan status?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من تغيير حالة السلفة؟' : 'Are you sure you want to change loan status?')) return;
         await hrApi.updateLoanStatus(id, { status });
         refreshLoans();
     };
 
     const handleSkipInstallment = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من تأجيل هذا القسط للشهر التالي؟' : 'Are you sure you want to skip this installment?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من تأجيل هذا القسط للشهر التالي؟' : 'Are you sure you want to skip this installment?')) return;
         await hrApi.skipInstallment(id);
         if (selectedLoanId) {
             queryClient.invalidateQueries({ queryKey: ['loans', 'detail', selectedLoanId] });

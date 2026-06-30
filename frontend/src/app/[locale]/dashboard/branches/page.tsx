@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function BranchesPage() {
     const [branches, setBranches] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const confirm = useConfirm();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ name: '', name_ar: '', location: '', is_active: true });
@@ -50,7 +52,7 @@ export default function BranchesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this branch?')) return;
+        if (!await confirm('Are you sure you want to delete this branch?')) return;
         try {
             await inventoryApi.deleteBranch(id);
             loadBranches();

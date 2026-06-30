@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -10,6 +11,7 @@ import type { Currency } from '@/providers/RegionalSettingsProvider';
 export default function BankAccountsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
     const { currency: defaultCurrency } = useCurrencyFormatter();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingBank, setEditingBank] = useState<any>(null);
@@ -59,7 +61,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
     };
 
     const handleDeleteBank = async (bank: any) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذا الحساب؟' : 'Are you sure you want to delete this account?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف هذا الحساب؟' : 'Are you sure you want to delete this account?')) return;
         try {
             await accountingApi.deleteBankAccount(bank.id);
             toast.success(isRTL ? 'تم الحذف بنجاح' : 'Deleted successfully');

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -10,6 +11,7 @@ interface Props {
 export default function ImportUndoTab({ locale }: Props) {
     const isRTL = locale === 'ar';
     const queryClient = useQueryClient();
+    const confirm = useConfirm();
     const [isUndoing, setIsUndoing] = useState<string | null>(null);
 
     const { data, isLoading } = useQuery({
@@ -24,7 +26,7 @@ export default function ImportUndoTab({ locale }: Props) {
     });
 
     const handleUndo = async (importId: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من التراجع عن هذا الاستيراد؟ سيتم حذف جميع المنتجات الجديدة التي تمت إضافتها.' : 'Are you sure you want to undo this import? All newly added products will be deleted.')) {
+        if (!await confirm(isRTL ? 'هل أنت متأكد من التراجع عن هذا الاستيراد؟ سيتم حذف جميع المنتجات الجديدة التي تمت إضافتها.' : 'Are you sure you want to undo this import? All newly added products will be deleted.')) {
             return;
         }
 

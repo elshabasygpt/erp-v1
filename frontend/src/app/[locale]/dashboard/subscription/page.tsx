@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { subscriptionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function SubscriptionPage() {
     const { isRTL } = useLanguage();
+    const confirm = useConfirm();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [upgrading, setUpgrading] = useState(false);
@@ -27,7 +29,7 @@ export default function SubscriptionPage() {
     }, []);
 
     const handleUpgrade = async (planId: string) => {
-        if (!confirm(isRTL ? 'تأكيد الترقية إلى هذه الباقة؟' : 'Confirm upgrade to this plan?')) return;
+        if (!await confirm(isRTL ? 'تأكيد الترقية إلى هذه الباقة؟' : 'Confirm upgrade to this plan?')) return;
         setUpgrading(true);
         try {
             await subscriptionApi.checkout({ plan_id: planId, payment_method: 'credit_card' });

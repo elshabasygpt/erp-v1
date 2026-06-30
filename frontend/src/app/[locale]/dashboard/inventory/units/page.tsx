@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ interface Unit {
 export default function UnitsPage() {
     const [units, setUnits] = useState<Unit[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Unit | null>(null);
     const [form, setForm] = useState({ name: '', name_ar: '', symbol: '', is_active: true });
@@ -77,7 +79,7 @@ export default function UnitsPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`هل تريد حذف "${name}"؟`)) return;
+        if (!await confirm(`هل تريد حذف "${name}"؟`)) return;
         try {
             await inventoryApi.deleteUnit(id);
             toast.success('تم الحذف');

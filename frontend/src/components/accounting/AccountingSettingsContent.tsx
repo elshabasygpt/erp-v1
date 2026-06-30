@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -14,6 +15,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
     });
     const [chartOfAccounts, setChartOfAccounts] = useState<any[]>([]);
     const [savingMappings, setSavingMappings] = useState(false);
+    const confirm = useConfirm();
 
     // Fiscal Periods state
     const [periods, setPeriods] = useState<any[]>([]);
@@ -97,7 +99,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
     };
 
     const handleTogglePeriodStatus = async (period: any) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من تغيير حالة هذه الفترة؟' : 'Are you sure you want to change this period status?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من تغيير حالة هذه الفترة؟' : 'Are you sure you want to change this period status?')) return;
         try {
             if (period.status === 'open') {
                 await accountingApi.closeFiscalPeriod(period.id);

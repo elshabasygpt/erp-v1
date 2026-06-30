@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -8,6 +9,7 @@ import { Settings, Check, Download, AlertTriangle, FileText, CheckCircle2 } from
 
 export default function PayrollPage() {
     const { isRTL } = useLanguage();
+    const confirm = useConfirm();
     const [payrolls, setPayrolls] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     
@@ -35,7 +37,7 @@ export default function PayrollPage() {
     };
 
     const handleGenerate = async () => {
-        if (!confirm(isRTL ? `هل أنت متأكد من إنشاء رواتب شهر ${month}/${year}؟ قد يستغرق هذا بضع ثوانٍ.` : `Are you sure you want to generate payroll for ${month}/${year}?`)) {
+        if (!await confirm(isRTL ? `هل أنت متأكد من إنشاء رواتب شهر ${month}/${year}؟ قد يستغرق هذا بضع ثوانٍ.` : `Are you sure you want to generate payroll for ${month}/${year}?`)) {
             return;
         }
 
@@ -52,7 +54,7 @@ export default function PayrollPage() {
     };
 
     const handleMarkPaid = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من اعتماد ودفع هذا الراتب؟ سيتم تسجيله كمصروف.' : 'Are you sure you want to mark this as paid? It will be recorded as an expense.')) {
+        if (!await confirm(isRTL ? 'هل أنت متأكد من اعتماد ودفع هذا الراتب؟ سيتم تسجيله كمصروف.' : 'Are you sure you want to mark this as paid? It will be recorded as an expense.')) {
             return;
         }
         

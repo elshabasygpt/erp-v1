@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import api, { treasuryApi, expensesApiNew } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ export default function ExpenseVouchersPage() {
     const [categories, setCategories] = useState<ExpenseCategory[]>([]);
     const [vouchers, setVouchers] = useState<Voucher[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState(emptyForm);
     const [saving, setSaving] = useState(false);
@@ -87,7 +89,7 @@ export default function ExpenseVouchersPage() {
     };
 
     const handleApprove = async (id: string) => {
-        if (!confirm('هل تريد اعتماد وترحيل هذا السند؟ لا يمكن التراجع عن هذا.')) return;
+        if (!await confirm('هل تريد اعتماد وترحيل هذا السند؟ لا يمكن التراجع عن هذا.')) return;
         try {
             const res = await expenseVoucherApi.approve(id);
             const updated = res.data?.data ?? res.data;

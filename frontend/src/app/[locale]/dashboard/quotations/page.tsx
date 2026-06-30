@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { salesApi, customersApi, productsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -25,6 +26,7 @@ const EMPTY_FORM = {
 
 export default function QuotationsPage() {
     const { d, isRTL, locale } = useLanguage();
+    const confirm = useConfirm();
     const { taxRate } = useRegionalSettings();
     const [quotations, setQuotations] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
@@ -80,7 +82,7 @@ export default function QuotationsPage() {
     };
 
     const handleConvertToInvoice = async (q: any) => {
-        if (!confirm(`Convert quotation ${q.quotation_number} to invoice?`)) return;
+        if (!await confirm(`Convert quotation ${q.quotation_number} to invoice?`)) return;
         try {
             await salesApi.createInvoice({
                 customer_id: q.customer_id,

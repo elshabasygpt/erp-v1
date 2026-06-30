@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { webhooksApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function WebhooksPage() {
     const { isRTL } = useLanguage();
+    const confirm = useConfirm();
     const [webhooks, setWebhooks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [formVisible, setFormVisible] = useState(false);
@@ -63,7 +65,7 @@ export default function WebhooksPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete this webhook?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete this webhook?')) return;
         try {
             await webhooksApi.deleteWebhook(id);
             loadData();

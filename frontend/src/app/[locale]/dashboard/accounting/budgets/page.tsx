@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -40,6 +41,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function BudgetsPage() {
     const { isRTL } = useLanguage();
+    const confirm = useConfirm();
 
     const [budgets, setBudgets]         = useState<Budget[]>([]);
     const [loading, setLoading]         = useState(true);
@@ -131,7 +133,7 @@ export default function BudgetsPage() {
     };
 
     const deleteBudget = async (id: string) => {
-        if (!confirm(isRTL ? 'حذف الميزانية؟' : 'Delete budget?')) return;
+        if (!await confirm(isRTL ? 'حذف الميزانية؟' : 'Delete budget?')) return;
         try {
             await accountingApi.deleteBudget(id);
             setBudgets(b => b.filter(x => x.id !== id));

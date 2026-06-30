@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { tasksApi } from '@/lib/api';
 
 const priorityConfig = {
@@ -17,6 +18,7 @@ const statusConfig = {
 };
 
 export default function TaskListView({ tasks, isRTL, onRefresh, setDetailTask, setEditingTask }: any) {
+    const confirm = useConfirm();
 
     const handleToggleStatus = async (task: any) => {
         const newStatus = task.status === 'done' ? 'todo' : 'done';
@@ -29,7 +31,7 @@ export default function TaskListView({ tasks, isRTL, onRefresh, setDetailTask, s
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من حذف المهمة؟' : 'Are you sure you want to delete this task?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف المهمة؟' : 'Are you sure you want to delete this task?')) return;
         try {
             await tasksApi.deleteTask(id);
             onRefresh();

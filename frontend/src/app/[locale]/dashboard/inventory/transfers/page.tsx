@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
@@ -9,6 +10,7 @@ export default function StockTransfersPage() {
     const [warehouses, setWarehouses] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const confirm = useConfirm();
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Modal states
@@ -61,7 +63,7 @@ export default function StockTransfersPage() {
     };
 
     const handleApprove = async (id: string) => {
-        if (!confirm('سيتم خصم المخزون من المستودع المصدر. هل أنت متأكد؟')) return;
+        if (!await confirm('سيتم خصم المخزون من المستودع المصدر. هل أنت متأكد؟')) return;
         try {
             await inventoryApi.approveStockTransfer(id);
             setViewData(null);
@@ -72,7 +74,7 @@ export default function StockTransfersPage() {
     };
 
     const handleReceive = async (id: string) => {
-        if (!confirm('سيتم إضافة المخزون إلى المستودع الوجهة. هل أنت متأكد؟')) return;
+        if (!await confirm('سيتم إضافة المخزون إلى المستودع الوجهة. هل أنت متأكد؟')) return;
         try {
             await inventoryApi.receiveStockTransfer(id);
             setViewData(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -9,6 +10,7 @@ import EmployeeFormModal from '@/components/hr/EmployeeFormModal';
 
 export default function EmployeesPage() {
     const { isRTL } = useLanguage();
+    const confirm = useConfirm();
     const [employees, setEmployees] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -34,7 +36,7 @@ export default function EmployeesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(isRTL ? 'هل أنت متأكد من حذف هذا الموظف؟' : 'Are you sure you want to delete this employee?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف هذا الموظف؟' : 'Are you sure you want to delete this employee?')) return;
         
         try {
             await hrApi.deleteEmployee(id);

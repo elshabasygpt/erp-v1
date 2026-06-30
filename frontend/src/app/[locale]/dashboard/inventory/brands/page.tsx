@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { inventoryApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ interface Brand {
 export default function BrandsPage() {
     const [brands, setBrands] = useState<Brand[]>([]);
     const [loading, setLoading] = useState(true);
+    const confirm = useConfirm();
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Brand | null>(null);
     const [form, setForm] = useState({ name: '', name_ar: '', country_of_origin: '' });
@@ -126,7 +128,7 @@ export default function BrandsPage() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`هل تريد حذف الماركة "${name}"؟`)) return;
+        if (!await confirm(`هل تريد حذف الماركة "${name}"؟`)) return;
         try {
             await inventoryApi.deleteBrand(id);
             toast.success('تم الحذف');
