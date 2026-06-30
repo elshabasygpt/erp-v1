@@ -20,7 +20,7 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
 
-    const { data: loans = [], isLoading: loading } = useQuery<any[]>({
+    const { data: loans = [], isLoading: loading, isError, refetch } = useQuery<any[]>({
         queryKey: ['loans', 'list', filterStatus],
         queryFn: async () => {
             const res = await hrApi.getLoans({ status: filterStatus !== 'all' ? (filterStatus as any) : undefined });
@@ -159,6 +159,13 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
                                 <tr>
                                     <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                                         {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                                    </td>
+                                </tr>
+                            ) : isError ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-8 text-center">
+                                        <p className="mb-3 text-sm text-red-600">{isRTL ? 'تعذّر تحميل السلف.' : 'Failed to load loans.'}</p>
+                                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
                                     </td>
                                 </tr>
                             ) : loans.length === 0 ? (

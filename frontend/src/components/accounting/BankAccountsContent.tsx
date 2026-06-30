@@ -22,7 +22,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
     const [reconForm, setReconForm] = useState({ statement_date: '', statement_balance: 0 });
     const [importFile, setImportFile] = useState<File | null>(null);
 
-    const { data: banks = [], isLoading: loading } = useQuery<any[]>({
+    const { data: banks = [], isLoading: loading, isError, refetch } = useQuery<any[]>({
         queryKey: ['bank-accounts'],
         queryFn: async () => {
             const res = await accountingApi.getBankAccounts();
@@ -136,6 +136,11 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                     <div className="col-span-full text-center p-8 text-slate-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                ) : isError ? (
+                    <div className="col-span-full text-center p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <p className="mb-3 text-sm text-red-600">{isRTL ? 'تعذّر تحميل الحسابات البنكية.' : 'Failed to load bank accounts.'}</p>
+                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                    </div>
                 ) : banks.length === 0 ? (
                     <div className="col-span-full text-center p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-500">
                         {isRTL ? 'لا توجد حسابات بنكية مضافة.' : 'No bank accounts found.'}

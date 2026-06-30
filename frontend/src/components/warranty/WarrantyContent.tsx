@@ -32,7 +32,7 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
         },
     });
 
-    const { data: warranties = [], isLoading: loading } = useQuery<any[]>({
+    const { data: warranties = [], isLoading: loading, isError, refetch } = useQuery<any[]>({
         queryKey: ['warranties', 'list', { statusFilter, expiringFilter, searchQuery }],
         queryFn: async () => {
             const params: any = {};
@@ -189,6 +189,17 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
                                 <tr>
                                     <td colSpan={8} className="p-8 text-center" style={{ color: 'var(--text-secondary)' }}>
                                         {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                                    </td>
+                                </tr>
+                            ) : isError ? (
+                                <tr>
+                                    <td colSpan={8} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل الضمانات.' : 'Failed to load warranties.'}
+                                        </p>
+                                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
                                     </td>
                                 </tr>
                             ) : warranties.length === 0 ? (
