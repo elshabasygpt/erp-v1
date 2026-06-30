@@ -6,7 +6,7 @@ export default function CTASection({ isRTL, locale, dict }: { isRTL: boolean, lo
             <div className="max-w-4xl mx-auto px-6">
                 <div className="relative rounded-3xl p-10 md:p-16 text-center overflow-hidden"
                     style={{
-                        background: 'linear-gradient(135deg, #4f46e5, #6366f1, #8b5cf6)',
+                        background: 'linear-gradient(135deg, #047857, #10b981, #14b8a6)',
                     }}>
                     <div className="absolute inset-0 overflow-hidden">
                         <div className="absolute -top-20 -right-20 w-60 h-60 bg-white/10 rounded-full blur-3xl" />
@@ -23,7 +23,7 @@ export default function CTASection({ isRTL, locale, dict }: { isRTL: boolean, lo
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link href={`/${locale}/register`}
-                                className="px-10 py-4 rounded-xl bg-white text-indigo-700 font-bold text-base transition-all hover:shadow-lg hover:shadow-white/20 hover:-translate-y-1">
+                                className="px-10 py-4 rounded-xl bg-white text-emerald-700 font-bold text-base transition-all hover:shadow-lg hover:shadow-white/20 hover:-translate-y-1">
                                 {isRTL ? 'ابدأ مجاناً' : 'Start Free Trial'}
                             </Link>
                             <Link href={`/${locale}/login`}

@@ -273,7 +273,7 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
                                 <button
                                     onClick={handlePrintStatement}
                                     className="text-xs px-3 py-1.5 rounded-lg font-medium transition-all"
-                                    style={{ background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}
+                                    style={{ background: 'rgba(16,185,129,0.12)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.25)' }}
                                 >
                                     🖨️ {isRTL ? 'طباعة / PDF' : 'Print / PDF'}
                                 </button>

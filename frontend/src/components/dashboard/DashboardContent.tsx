@@ -14,8 +14,7 @@ import ReceivableRemindersWidget from './ReceivableRemindersWidget';
 import ClockWidget from './ClockWidget';
 import DashboardSkeleton from './DashboardSkeleton';
 import PeriodSelector, { type DashboardPeriod } from './PeriodSelector';
-
-const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
+import { CHART_COLORS as COLORS } from '@/lib/chart-colors';
 
 const defaultAccountsPie = [
     { name: 'Assets',      nameAr: 'الأصول',          value: 0 },
@@ -604,7 +603,6 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                 <Link
                                     href={`/${locale}/dashboard/purchases/smart-orders`}
                                     className="btn-primary py-1 px-3 text-xs flex items-center gap-1"
-                                    style={{ background: 'linear-gradient(135deg,#8b5cf6,#6366f1)' }}
                                 >
                                     ⚡ {isRTL ? 'مسودة شراء ذكية' : 'Smart PO Draft'}
                                 </Link>
@@ -687,7 +685,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                             <div key={i} className="flex items-center justify-between p-2.5 rounded-lg" style={{ background: 'var(--bg-surface-secondary)', border: '1px solid var(--border-light)' }}>
                                 <div className="flex items-center gap-3 min-w-0">
                                     <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold border flex-shrink-0"
-                                        style={{ background: 'rgba(99,102,241,0.1)', borderColor: 'rgba(99,102,241,0.2)', color: 'var(--color-primary)' }}>
+                                        style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.2)', color: 'var(--color-primary)' }}>
                                         {i + 1}
                                     </div>
                                     <div className="min-w-0">
@@ -714,7 +712,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                         {topProducts.length > 0 ? topProducts.map((p: any, i: number) => {
                             const maxSales = topProducts[0]?.total_sold || 1;
                             const pct      = Math.round((Number(p.total_sold || 0) / maxSales) * 100);
-                            const clr      = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'][i % 5];
+                            const clr      = COLORS[i % COLORS.length];
                             return (
                                 <div key={i} className="flex items-center gap-3">
                                     <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0" style={{ background: clr }}>
@@ -952,7 +950,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                 </section>
 
                 {/* Tasks Management */}
-                <section className="glass-card p-6" style={{ borderColor: 'rgba(99,102,241,0.2)' }}>
+                <section className="glass-card p-6" style={{ borderColor: 'rgba(16,185,129,0.2)' }}>
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2.5">
                             <span className="text-xl" aria-hidden="true">✅</span>

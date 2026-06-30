@@ -70,8 +70,8 @@ export default function VatReportContent({ dict, locale }: VatReportContentProps
             label: isRTL ? 'مبيعات خاضعة للضريبة القياسية' : 'Standard-Rated Sales',
             value: vatData.sales,
             sub: isRTL ? 'خاضعة لضريبة 15%' : 'Subject to 15% VAT',
-            color: '#6366f1',
-            bg: 'rgba(99,102,241,0.1)',
+            color: '#0ea5e9',
+            bg: 'rgba(14,165,233,0.1)',
         },
         {
             number: 2,
@@ -297,7 +297,7 @@ export default function VatReportContent({ dict, locale }: VatReportContentProps
             </div>
 
             {/* Filing Notice */}
-            <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+            <div className="p-4 rounded-xl flex items-start gap-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                 <span className="text-xl mt-0.5">ℹ️</span>
                 <div>
                     <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>

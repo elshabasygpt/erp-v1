@@ -52,3 +52,10 @@ backend/database/*.sqlite
 backend/database/*.sqlite-*
 backend/storage/app/snapshots/
 backend/storage/app/temp/
+
+# ========================
+# Claude Code (local)
+# ========================
+.claude/
+frontend/.claude/
+start-dev.bat

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { CHART_COLORS } from '@/lib/chart-colors';
 
 interface Props {
     locale: string;
@@ -27,7 +28,7 @@ export default function CustomerInsightsTab({ locale, insightsData, formatCurren
     const { metrics, preferred_products, purchase_history, customer } = insightsData;
 
     // Colors for pie chart
-    const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const COLORS = CHART_COLORS;
 
     const pieData = useMemo(() => {
         if (!preferred_products || preferred_products.length === 0) return [];

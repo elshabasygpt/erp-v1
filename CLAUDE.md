@@ -29,8 +29,13 @@ composer install
 
 # Development
 php artisan key:generate
-php artisan migrate                        # central DB tables only
-php artisan migrate --path=database/migrations/tenant  # tenant tables
+# NOTE: Laravel's migrator is non-recursive (Migrator::getMigrationFiles uses
+# glob('*_*.php')), so a bare `migrate` runs ONLY database/migrations/*.php
+# (just the tenant_backups tables) — it does NOT descend into central/ or
+# tenant/. Each must be run with an explicit --path:
+php artisan migrate                                       # root only (tenant_backups)
+php artisan migrate --path=database/migrations/central    # central: tenants, tenant_users, jobs, failed_jobs, job_batches
+php artisan migrate --path=database/migrations/tenant     # tenant tables (per-tenant DB)
 
 # Run all tests
 php -c /tmp/php_test.ini vendor/bin/phpunit

@@ -2,6 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { exportTableToPDF } from '@/lib/pdf-export';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 20;
 
 type Role = 'admin' | 'accountant' | 'cashier' | 'warehouse';
 type Status = 'active' | 'inactive';
@@ -21,7 +24,7 @@ interface User {
 
 const ROLES: Record<Role, { ar: string; en: string; color: string; bg: string; icon: string; permissions: string[] }> = {
     admin: { ar: 'مدير', en: 'Admin', color: '#ef4444', bg: 'rgba(239,68,68,0.12)', icon: '👑', permissions: ['كل الصلاحيات'] },
-    accountant: { ar: 'محاسب', en: 'Accountant', color: '#6366f1', bg: 'rgba(99,102,241,0.12)', icon: '📊', permissions: ['فواتير', 'تقارير', 'مدفوعات', 'ضريبة'] },
+    accountant: { ar: 'محاسب', en: 'Accountant', color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', icon: '📊', permissions: ['فواتير', 'تقارير', 'مدفوعات', 'ضريبة'] },
     cashier: { ar: 'كاشير', en: 'Cashier', color: '#10b981', bg: 'rgba(16,185,129,0.12)', icon: '💳', permissions: ['نقطة البيع', 'فواتير البيع', 'إيصالات'] },
     warehouse: { ar: 'مخزن', en: 'Warehouse', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', icon: '📦', permissions: ['المخزون', 'حركات المواد', 'الموردين'] },
 };
@@ -62,8 +65,14 @@ export default function UsersContent({ dict, locale }: Props) {
         return matchSearch && matchRole && matchStatus;
     }), [users, search, roleFilter, statusFilter, isRTL]);
 
+    // ── Client-side pagination (safePage clamps when filters shrink the list) ──
+    const [page, setPage] = useState(1);
+    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(page, pageCount);
+    const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
     const stats = [
-        { label: isRTL ? 'إجمالي المستخدمين' : 'Total Users', value: users.length, icon: '👥', color: '#6366f1' },
+        { label: isRTL ? 'إجمالي المستخدمين' : 'Total Users', value: users.length, icon: '👥', color: '#10b981' },
         { label: isRTL ? 'نشطون' : 'Active', value: users.filter(u => u.status === 'active').length, icon: '✅', color: '#10b981' },
         { label: isRTL ? 'كاشير' : 'Cashiers', value: users.filter(u => u.role === 'cashier').length, icon: '💳', color: '#f59e0b' },
         { label: isRTL ? 'محاسبين' : 'Accountants', value: users.filter(u => u.role === 'accountant').length, icon: '📊', color: '#a78bfa' },
@@ -224,7 +233,7 @@ export default function UsersContent({ dict, locale }: Props) {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.map(u => {
+                            {paged.map(u => {
                                 const role = ROLES[u.role];
                                 return (
                                     <tr key={u.id}>
@@ -293,6 +302,18 @@ export default function UsersContent({ dict, locale }: Props) {
                         <div className="text-center py-10">
                             <span className="text-3xl mb-2 block">🔍</span>
                             <p style={{ color: 'var(--text-muted)' }}>{isRTL ? 'لا توجد نتائج' : 'No results found'}</p>
+                        </div>
+                    )}
+                    {filtered.length > PAGE_SIZE && (
+                        <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border-default)' }}>
+                            <Pagination
+                                page={safePage}
+                                pageCount={pageCount}
+                                onPageChange={setPage}
+                                totalItems={filtered.length}
+                                pageSize={PAGE_SIZE}
+                                isRTL={isRTL}
+                            />
                         </div>
                     )}
                 </div>

@@ -30,6 +30,7 @@ class SettingsController extends BaseTenantController
             'base_currency' => $settings['base_currency'] ?? 'SAR',
             'tax_rate' => $settings['tax_rate'] ?? '15',
             'tax_registration_number' => $settings['tax_registration_number'] ?? null,
+            'barcode_settings' => $settings['barcode_settings'] ?? null,
         ]);
     }
 
@@ -55,6 +56,7 @@ class SettingsController extends BaseTenantController
             'company_name', 'phone', 'email', 'website',
             'logo_url', 'address', 'vat_number', 'cr_number', 'sales_channel_types',
             'country', 'base_currency', 'tax_rate', 'tax_registration_number',
+            'barcode_settings',
         ];
 
         $data = $request->only($allowedKeys);

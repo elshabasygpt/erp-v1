@@ -26,7 +26,7 @@ const reasonsData = [
     { name: 'Damaged', nameAr: 'تالف', value: 28, color: '#f97316' },
     { name: 'Wrong Item', nameAr: 'خاطئ', value: 18, color: '#eab308' },
     { name: 'Expired', nameAr: 'منتهي', value: 12, color: '#8b5cf6' },
-    { name: 'Customer Request', nameAr: 'طلب عميل', value: 7, color: '#6366f1' },
+    { name: 'Customer Request', nameAr: 'طلب عميل', value: 7, color: '#10b981' },
 ];
 
 const monthlyReturns = [
@@ -198,7 +198,7 @@ export default function ReturnsContent({ dict, locale }: Props) {
                             <XAxis dataKey="month" stroke="rgba(255,255,255,0.2)" fontSize={12} />
                             <YAxis stroke="rgba(255,255,255,0.2)" fontSize={12} />
                             <Tooltip contentStyle={tooltipStyle} />
-                            <Bar dataKey="returns" fill="#6366f1" radius={[4, 4, 0, 0]} name={isRTL ? 'مرتجعات' : 'Returns'} />
+                            <Bar dataKey="returns" fill="#10b981" radius={[4, 4, 0, 0]} name={isRTL ? 'مرتجعات' : 'Returns'} />
                             <Bar dataKey="damages" fill="#ef4444" radius={[4, 4, 0, 0]} name={isRTL ? 'تلفيات' : 'Damages'} />
                         </BarChart>
                     </ResponsiveContainer>

@@ -114,7 +114,7 @@ export default function TaskListView({ tasks, isRTL, onRefresh, setDetailTask, s
                                 <td>
                                     {task.category && (
                                         <span className="text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap"
-                                            style={{ background: `${task.color || '#6366f1'}20`, color: task.color || '#6366f1' }}>
+                                            style={{ background: `${task.color || '#10b981'}20`, color: task.color || '#10b981' }}>
                                             {task.category}
                                         </span>
                                     )}

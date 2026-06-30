@@ -280,7 +280,7 @@ export default function SettingsPage() {
                                 className={`p-4 rounded-xl border-2 text-start transition-all duration-200 hover:scale-[1.02]`}
                                 style={{
                                     borderColor: sidebarMode === opt.key ? 'var(--color-primary)' : 'var(--border-default)',
-                                    background: sidebarMode === opt.key ? 'rgba(99,102,241,0.07)' : 'var(--bg-surface-secondary)',
+                                    background: sidebarMode === opt.key ? 'rgba(16,185,129,0.07)' : 'var(--bg-surface-secondary)',
                                 }}
                             >
                                 <div className="mb-3">{opt.icon}</div>
@@ -290,7 +290,7 @@ export default function SettingsPage() {
                                     </p>
                                     {sidebarMode === opt.key && (
                                         <span className="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                                            style={{ background: 'rgba(99,102,241,0.15)', color: 'var(--color-primary)' }}>
+                                            style={{ background: 'rgba(16,185,129,0.15)', color: 'var(--color-primary)' }}>
                                             {isRTL ? 'محدد' : 'Active'}
                                         </span>
                                     )}

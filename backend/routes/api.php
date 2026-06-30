@@ -369,7 +369,14 @@ Route::middleware(['tenant.auth', 'subscription.active', 'throttle:120,1'])->gro
         Route::post('/products/labels', [ProductLabelController::class, 'bulk']);
         Route::get('/products/check-unique', [ProductController::class, 'checkUnique']);
         Route::post('/products/import', [ProductImportExportController::class, 'import']);
+        Route::get('/products/import-template', [ProductImportExportController::class, 'downloadTemplate']);
         Route::get('/products/imports/history', [ProductImportExportController::class, 'history']);
+        Route::get('/products/imports/{id}/status', [ProductImportExportController::class, 'importStatus']);
+        Route::post('/products/imports/{id}/commit', [ProductImportExportController::class, 'commitImport']);
+        Route::post('/products/imports/{id}/cancel', [ProductImportExportController::class, 'cancelImport']);
+        Route::post('/products/imports/{id}/resume', [ProductImportExportController::class, 'resumeImport']);
+        Route::post('/products/imports/{id}/undo', [ProductImportExportController::class, 'undoImport']);
+        Route::get('/products/imports/{id}/errors/export', [ProductImportExportController::class, 'exportErrors']);
         Route::get('/products/{id}', [ProductController::class, 'show']);
         Route::put('/products/{id}', [ProductController::class, 'update']);
         Route::put('/products/{id}/bin-location', [ProductController::class, 'updateBinLocation']);

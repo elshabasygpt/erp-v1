@@ -57,9 +57,9 @@ export default function ZatcaSettingsSection({ dict, locale }: ZatcaSettingsSect
             {/* Header */}
             <div
                 className="px-6 py-4 flex items-center gap-3"
-                style={{ borderBottom: '1px solid var(--border-default)', background: 'rgba(99,102,241,0.06)' }}
+                style={{ borderBottom: '1px solid var(--border-default)', background: 'rgba(16,185,129,0.06)' }}
             >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: 'rgba(99,102,241,0.15)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: 'rgba(16,185,129,0.15)' }}>
                     🧾
                 </div>
                 <div>
@@ -182,7 +182,7 @@ export default function ZatcaSettingsSection({ dict, locale }: ZatcaSettingsSect
                 </div>
 
                 {/* Compliance Status */}
-                <div className="p-4 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                <div className="p-4 rounded-xl" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         <div>
                             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'حالة التوافق مع ZATCA' : 'ZATCA Compliance Status'}</p>

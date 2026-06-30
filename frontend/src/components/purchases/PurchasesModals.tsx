@@ -2,6 +2,16 @@ import React, { memo, useState } from 'react';
 import PriceCompareModal from './PriceCompareModal';
 import PurchaseInstallmentsModal from './PurchaseInstallmentsModal';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
+import { LabelPrintModal, type LabelItem } from '@/components/inventory/labels/LabelPrintModal';
+import type { LabelProduct } from '@/components/inventory/labels/ProductLabel';
+
+const toLabelProduct = (p: any): LabelProduct => ({
+    name: p?.name ?? '',
+    nameAr: p?.name_ar,
+    sku: p?.sku ?? null,
+    barcode: p?.barcode ?? null,
+    price: p?.sell_price != null ? (parseFloat(p.sell_price) || undefined) : undefined,
+});
 
 interface PurchasesModalsProps {
     isRTL: boolean;
@@ -42,6 +52,18 @@ const PurchasesModals = memo(function PurchasesModals({
     const { taxRate } = useRegionalSettings();
     const [comparingProductId, setComparingProductId] = useState<string | null>(null);
     const [showInstallments, setShowInstallments] = useState(false);
+    const [labelItems, setLabelItems] = useState<LabelItem[] | null>(null);
+
+    const productById = (id: string) => products.find((p: any) => p.id === id);
+    // Build label items from purchase line items. Handles both the create-modal
+    // shape ({ product_id, qty }) and the saved-invoice shape ({ product, quantity }).
+    const labelItemsFromOrder = (order: any): LabelItem[] => (order?.items || [])
+        .map((it: any) => {
+            const raw = productById(it.product_id) || it.product;
+            if (!raw) return null;
+            return { product: toLabelProduct(raw), qty: Math.max(1, parseInt(it.qty ?? it.quantity) || 1) };
+        })
+        .filter(Boolean) as LabelItem[];
 
     return (
         <>
@@ -101,9 +123,20 @@ const PurchasesModals = memo(function PurchasesModals({
                                 <h3 className="text-lg font-bold text-surface-900 dark:text-white flex items-center gap-2">
                                     <span>📦</span> {isRTL ? 'الأصناف' : 'Items'}
                                 </h3>
-                                <button onClick={() => setNewOrder({...newOrder, items: [...newOrder.items, {product_id:'', qty:1, unit_price:0, tax_rate:taxRate}]})} className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-bold flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors">
-                                    ➕ {isRTL ? 'إضافة صنف' : 'Add Item'}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLabelItems(labelItemsFromOrder(newOrder))}
+                                        disabled={!newOrder.items?.some((it: any) => it.product_id)}
+                                        title={isRTL ? 'طباعة باركود كل الأصناف بالكميات' : 'Print barcodes for all items'}
+                                        className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 text-sm font-bold flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        🏷️ {isRTL ? 'طباعة باركود الكل' : 'Print all barcodes'}
+                                    </button>
+                                    <button onClick={() => setNewOrder({...newOrder, items: [...newOrder.items, {product_id:'', qty:1, unit_price:0, tax_rate:taxRate}]})} className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-bold flex items-center gap-1 bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 rounded-lg transition-colors">
+                                        ➕ {isRTL ? 'إضافة صنف' : 'Add Item'}
+                                    </button>
+                                </div>
                             </div>
                             
                             <div className="overflow-x-auto mb-6 bg-surface-50 dark:bg-surface-800/20 rounded-xl border border-surface-200 dark:border-surface-800">
@@ -131,14 +164,24 @@ const PurchasesModals = memo(function PurchasesModals({
                                                         {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                                     </select>
                                                     {it.product_id && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => { e.preventDefault(); setComparingProductId(it.product_id); }}
-                                                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
-                                                            title={isRTL ? 'مقارنة أسعار الموردين' : 'Compare supplier prices'}
-                                                        >
-                                                            📊 {isRTL ? 'مقارنة الأسعار' : 'Compare prices'}
-                                                        </button>
+                                                        <div className="flex items-center gap-3 mt-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.preventDefault(); setComparingProductId(it.product_id); }}
+                                                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                                                title={isRTL ? 'مقارنة أسعار الموردين' : 'Compare supplier prices'}
+                                                            >
+                                                                📊 {isRTL ? 'مقارنة الأسعار' : 'Compare prices'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.preventDefault(); setLabelItems([{ product: toLabelProduct(productById(it.product_id)), qty: Math.max(1, parseInt(it.qty) || 1) }]); }}
+                                                                className="text-xs text-emerald-600 hover:underline flex items-center gap-1"
+                                                                title={isRTL ? 'طباعة باركود هذا الصنف' : 'Print this item barcode'}
+                                                            >
+                                                                🏷️ {isRTL ? 'طباعة باركود' : 'Print barcode'}
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="py-2 px-3">
@@ -209,9 +252,20 @@ const PurchasesModals = memo(function PurchasesModals({
                                 <h2 className="text-xl font-bold">{isRTL ? 'الفاتورة' : 'Invoice'} #{selectedOrder.number}</h2>
                                 <p className="text-surface-400 text-sm mt-1">{selectedOrder.supplier?.name} | {selectedOrder.issue_date}</p>
                             </div>
-                            <span className="px-3 py-1 rounded text-sm" style={{ background: statusConfig[selectedOrder.status]?.bg, color: statusConfig[selectedOrder.status]?.color }}>
-                                {getStatusLabel(selectedOrder.status)}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setLabelItems(labelItemsFromOrder(selectedOrder))}
+                                    disabled={!selectedOrder.items?.length}
+                                    title={isRTL ? 'طباعة باركود كل الأصناف بالكميات' : 'Print barcodes for all items'}
+                                    className="text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 text-sm font-bold flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                                >
+                                    🏷️ {isRTL ? 'طباعة باركود الأصناف' : 'Print barcodes'}
+                                </button>
+                                <span className="px-3 py-1 rounded text-sm" style={{ background: statusConfig[selectedOrder.status]?.bg, color: statusConfig[selectedOrder.status]?.color }}>
+                                    {getStatusLabel(selectedOrder.status)}
+                                </span>
+                            </div>
                         </div>
                         
                         <div className="mb-6 border border-white/5 rounded-xl overflow-hidden">
@@ -455,6 +509,15 @@ const PurchasesModals = memo(function PurchasesModals({
                         }));
                         setComparingProductId(null);
                     }}
+                />
+            )}
+
+            {labelItems && (
+                <LabelPrintModal
+                    items={labelItems}
+                    isRTL={isRTL}
+                    title={isRTL ? 'طباعة باركود الأصناف' : 'Print item barcodes'}
+                    onClose={() => setLabelItems(null)}
                 />
             )}
         </>

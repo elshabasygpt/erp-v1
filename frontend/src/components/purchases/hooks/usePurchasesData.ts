@@ -44,13 +44,17 @@ export function usePurchasesData() {
 
     const loading = loadingSup || loadingWar || loadingProd || loadingInv || loadingRet;
 
+    // Guard with Array.isArray so a failed/odd API response can never crash
+    // a `.map` in the UI (e.g. warehouses.map) and white-screen the page.
+    const arr = (x: any) => (Array.isArray(x) ? x : []);
+
     return {
         loading,
-        suppliers: suppliersData || [],
-        warehouses: warehousesData || [],
-        products: productsData || [],
-        invoices: invoicesData || [],
-        returns: returnsData || [],
+        suppliers: arr(suppliersData),
+        warehouses: arr(warehousesData),
+        products: arr(productsData),
+        invoices: arr(invoicesData),
+        returns: arr(returnsData),
         fetchInvoices,
         fetchReturns,
         fetchInitialData: () => {} // Shim for backwards compatibility if needed

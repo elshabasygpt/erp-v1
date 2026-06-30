@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { analyticsApi } from '@/lib/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { CHART_COLORS } from '@/lib/chart-colors';
 
 export default function SalesAnalyticsTab({ locale, formatCurrency }: { locale: string, formatCurrency: (v: number) => string }) {
     const isRTL = locale === 'ar';
@@ -42,7 +43,7 @@ export default function SalesAnalyticsTab({ locale, formatCurrency }: { locale: 
         return <div className="p-10 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
     }
 
-    const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    const COLORS = CHART_COLORS;
     
     // Format data for Recharts
     const chartData = salesPerf ? Object.entries(salesPerf.revenue_over_time).map(([key, value]) => ({

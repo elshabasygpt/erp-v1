@@ -8,11 +8,15 @@ import { Plus, Eye, Search } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 15;
 
 export default function JournalEntriesPage() {
     const { isRTL } = useLanguage();
     const [entries, setEntries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
 
     useEffect(() => {
         loadEntries();
@@ -23,12 +27,16 @@ export default function JournalEntriesPage() {
         try {
             const res = await accountingApi.getJournalEntries();
             setEntries(res.data?.data?.data || res.data?.data || []);
+            setPage(1);
         } catch (err) {
             toast.error('Failed to load journal entries');
         } finally {
             setLoading(false);
         }
     };
+
+    const pageCount = Math.ceil(entries.length / PAGE_SIZE);
+    const pagedEntries = entries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     return (
         <div className={`p-6 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -40,7 +48,7 @@ export default function JournalEntriesPage() {
                     </p>
                 </div>
                 <Link href={`/${isRTL ? 'ar' : 'en'}/dashboard/accounting/journal-entries/create`}>
-                    <button className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-2">
+                    <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-2">
                         <Plus size={18} />
                         {isRTL ? 'إنشاء قيد جديد' : 'Create Entry'}
                     </button>
@@ -73,12 +81,12 @@ export default function JournalEntriesPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    entries.map(entry => {
+                                    pagedEntries.map(entry => {
                                         const total = entry.lines?.reduce((sum: number, line: any) => sum + parseFloat(line.debit || 0), 0) || 0;
-                                        
+
                                         return (
                                             <tr key={entry.id} className="border-b border-surface-200 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors">
-                                                <td className="px-6 py-4 font-mono font-semibold text-violet-600 dark:text-violet-400">
+                                                <td className="px-6 py-4 font-mono font-semibold text-primary-600 dark:text-primary-400">
                                                     {entry.entry_number}
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -103,7 +111,7 @@ export default function JournalEntriesPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {/* We can add a View Modal later, for now just an icon */}
-                                                    <button className="p-2 text-surface-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition">
+                                                    <button className="p-2 text-surface-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition" aria-label={isRTL ? 'عرض القيد' : 'View entry'}>
                                                         <Eye size={18} />
                                                     </button>
                                                 </td>
@@ -113,6 +121,19 @@ export default function JournalEntriesPage() {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                )}
+
+                {!loading && entries.length > PAGE_SIZE && (
+                    <div className="px-6 py-4 border-t border-surface-200 dark:border-surface-800">
+                        <Pagination
+                            page={page}
+                            pageCount={pageCount}
+                            onPageChange={setPage}
+                            totalItems={entries.length}
+                            pageSize={PAGE_SIZE}
+                            isRTL={isRTL}
+                        />
                     </div>
                 )}
             </div>

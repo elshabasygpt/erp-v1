@@ -131,6 +131,15 @@ function DashboardLayoutInner({
         <AuthGuard locale={locale}>
             <LanguageProvider initialDict={dict}>
                 <div className="min-h-screen transition-colors duration-300" style={{ background: 'var(--bg-body)' }}>
+                    {/* Skip to main content — first focusable element for keyboard/screen-reader users */}
+                    <a
+                        href="#main-content"
+                        className="sr-only focus:not-sr-only focus:fixed focus:z-[300] focus:top-3 focus:start-3 focus:px-4 focus:py-2 focus:rounded-lg focus:font-semibold focus:shadow-lg"
+                        style={{ background: 'var(--color-primary)', color: '#fff' }}
+                    >
+                        {isRTL ? 'تخطّ إلى المحتوى الرئيسي' : 'Skip to main content'}
+                    </a>
+
                     {/* Mobile Header — يظهر على الموبايل فقط */}
                     <MobileHeader isRTL={isRTL} title={dict.common?.appName || 'ERP'} onSearchClick={() => setIsSearchOpen(true)} />
 
@@ -245,7 +254,7 @@ function DashboardLayoutInner({
                                     className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.02]"
                                     style={{ background: 'var(--bg-surface-hover)', border: '1px solid var(--border-default)' }}
                                 >
-                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-sm" style={{ background: 'var(--gradient-primary)' }}>
                                         {user?.name?.charAt(0)?.toUpperCase() || 'A'}
                                     </div>
                                     <div className="hidden sm:block">
@@ -264,7 +273,7 @@ function DashboardLayoutInner({
                         </header>
 
                         {/* Page Content */}
-                        <div id="main-content" className="p-4 sm:p-6 lg:p-8">{children}</div>
+                        <div id="main-content" tabIndex={-1} className="p-4 sm:p-6 lg:p-8 focus:outline-none">{children}</div>
 
                         <SmartSearchModal
                             isOpen={isSearchOpen}

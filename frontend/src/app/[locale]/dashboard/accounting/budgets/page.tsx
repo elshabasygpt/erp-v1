@@ -252,7 +252,7 @@ export default function BudgetsPage() {
                                         {/* Summary cards */}
                                         <div className="grid grid-cols-3 gap-3 mb-4">
                                             {[
-                                                { label: isRTL ? 'المخطط' : 'Budgeted', val: varianceData.summary?.total_budgeted, color: '#6366f1' },
+                                                { label: isRTL ? 'المخطط' : 'Budgeted', val: varianceData.summary?.total_budgeted, color: '#0ea5e9' },
                                                 { label: isRTL ? 'الفعلي' : 'Actual',   val: varianceData.summary?.total_actual,   color: '#10b981' },
                                                 { label: isRTL ? 'الانحراف' : 'Variance', val: varianceData.summary?.total_variance, color: varianceData.summary?.total_variance >= 0 ? '#10b981' : '#ef4444' },
                                             ].map((s, i) => (

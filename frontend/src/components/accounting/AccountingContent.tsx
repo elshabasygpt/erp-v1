@@ -225,7 +225,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
             {activeTab === 'reports' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                        { title: isRTL ? 'ميزان المراجعة' : 'Trial Balance', icon: '⚖️', color: '#6366f1', link: '/accounting/reports/trial-balance' },
+                        { title: isRTL ? 'ميزان المراجعة' : 'Trial Balance', icon: '⚖️', color: '#0ea5e9', link: '/accounting/reports/trial-balance' },
                         { title: isRTL ? 'كشف الميزانية' : 'Balance Sheet', icon: '🏛️', color: '#10b981', link: '/accounting/reports/balance-sheet' },
                         { title: isRTL ? 'الأرباح والخسائر' : 'P&L Statement', icon: '📈', color: '#f59e0b', link: '/accounting/reports/income-statement' },
                         { title: isRTL ? 'الأستاذ العام' : 'General Ledger', icon: '📖', color: '#8b5cf6', link: '/accounting/general-ledger' },

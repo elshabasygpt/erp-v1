@@ -139,7 +139,7 @@ export default function SmartSearchModal({ isOpen, onClose, locale, dict }: Smar
                                         onClick={() => handleNavigate(page.path)}
                                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-gray-100 dark:hover:bg-gray-800/50"
                                     >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-500/10 text-indigo-500">
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10 text-primary">
                                             <page.icon className="w-4 h-4" />
                                         </div>
                                         <span className="flex-1 text-start text-sm font-medium" style={{ color: 'var(--text-primary)' }}>

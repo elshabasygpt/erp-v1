@@ -310,7 +310,7 @@ export default function CustomersContent({ dict, locale }: Props) {
                             <XAxis type="number" reversed={isRTL} orientation="bottom" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} />
                             <YAxis dataKey="name" type="category" orientation={isRTL ? "right" : "left"} width={isRTL ? 140 : 90} tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
                             <Tooltip contentStyle={{ background: 'var(--bg-modal)', border: '1px solid var(--border-default)', borderRadius: '12px', color: 'var(--text-primary)' }} formatter={(value: number) => [formatCurrency(value), isRTL ? 'المشتريات' : 'Purchases']} />
-                            <Bar dataKey="value" fill="#6366f1" radius={isRTL ? [6, 0, 0, 6] : [0, 6, 6, 0]} />
+                            <Bar dataKey="value" fill="#10b981" radius={isRTL ? [6, 0, 0, 6] : [0, 6, 6, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>

@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
-import { 
+import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
+import { CHART_COLORS, CHART_PRIMARY } from '@/lib/chart-colors';
 
 interface SalesChartsProps {
     isRTL: boolean;
@@ -13,7 +14,7 @@ interface SalesChartsProps {
     formatCurrency: (v: number) => string;
 }
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const COLORS = CHART_COLORS;
 
 const SalesCharts = memo(function SalesCharts({
     isRTL, showChart, activeTab, stats, employeeDistribution, formatCurrency
@@ -33,8 +34,8 @@ const SalesCharts = memo(function SalesCharts({
                         <AreaChart data={stats.trend}>
                             <defs>
                                 <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor={CHART_PRIMARY} stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor={CHART_PRIMARY} stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -42,9 +43,9 @@ const SalesCharts = memo(function SalesCharts({
                             <YAxis hide />
                             <Tooltip 
                                 contentStyle={{ background: 'var(--bg-modal)', border: '1px solid var(--border-default)', borderRadius: '12px' }}
-                                itemStyle={{ color: '#6366f1' }}
+                                itemStyle={{ color: CHART_PRIMARY }}
                             />
-                            <Area type="monotone" dataKey="sales" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
+                            <Area type="monotone" dataKey="sales" stroke={CHART_PRIMARY} strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>

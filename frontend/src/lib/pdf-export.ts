@@ -24,13 +24,13 @@ export function printElement(content: string, title: string, isRTL = true): void
     td { padding: 10px 12px; border: 1px solid #e2e8f0; font-size: 12px; color: #334155; }
     tr:nth-child(even) td { background: #f8fafc; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
-    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #6366f1; }
-    .logo { font-size: 22px; font-weight: 900; color: #6366f1; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #10b981; }
+    .logo { font-size: 22px; font-weight: 900; color: #10b981; }
     .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
     .summary-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; text-align: center; }
-    .summary-card .value { font-size: 20px; font-weight: 800; color: #6366f1; }
+    .summary-card .value { font-size: 20px; font-weight: 800; color: #10b981; }
     .summary-card .label { font-size: 11px; color: #64748b; margin-top: 4px; }
-    .detailed-row { background: #fff !important; border-bottom: 2px solid #6366f1 !important; }
+    .detailed-row { background: #fff !important; border-bottom: 2px solid #10b981 !important; }
     .item-table { font-size: 10px !important; margin-top: 4px !important; margin-bottom: 16px !important; background: #fcfcfd; }
     .item-table th { background: #fff; color: #64748b; padding: 6px 12px; border: 0; border-bottom: 1px solid #e2e8f0; }
     .item-table td { padding: 6px 12px; border: 0; border-bottom: 1px solid #f1f5f9; color: #64748b; }
@@ -87,12 +87,12 @@ export function exportDetailedReportToPDF(
 
     const signatureHTML = isRTL 
         ? `<div style="margin-top: 60px; display: flex; justify-content: space-between;">
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">توقيع المحاسب</div>
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">توقيع المدير العام</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">توقيع المحاسب</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">توقيع المدير العام</div>
            </div>`
         : `<div style="margin-top: 60px; display: flex; justify-content: space-between;">
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">Accountant Signature</div>
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">Manager Signature</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">Accountant Signature</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">Manager Signature</div>
            </div>`;
 
     const fullHTML = `
@@ -131,12 +131,12 @@ export function exportTableToPDF(
 
     const signatureHTML = isRTL 
         ? `<div style="margin-top: 60px; display: flex; justify-content: space-between;">
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">توقيع المحاسب</div>
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">توقيع المدير العام</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">توقيع المحاسب</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">توقيع المدير العام</div>
            </div>`
         : `<div style="margin-top: 60px; display: flex; justify-content: space-between;">
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">Accountant Signature</div>
-             <div style="text-align: center; width: 200px; border-top: 1px solid #6366f1; padding-top: 8px;">Manager Signature</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">Accountant Signature</div>
+             <div style="text-align: center; width: 200px; border-top: 1px solid #10b981; padding-top: 8px;">Manager Signature</div>
            </div>`;
 
     const content = `

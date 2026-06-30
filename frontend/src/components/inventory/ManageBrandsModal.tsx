@@ -160,7 +160,7 @@ export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: Manage
                     <div className="bg-gray-50/50 dark:bg-gray-800/20 p-4 rounded-xl border mb-6" style={{ borderColor: 'var(--border-default)' }}>
                         <div className="flex gap-2 items-center">
                             <label className={`relative w-10 h-10 rounded-lg border flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 transition-colors ${newImagePreview ? 'border-primary-500' : 'border-gray-300 dark:border-gray-600 hover:border-primary-400'}`} style={{ background: 'var(--bg-input)' }}>
-                                {newImagePreview ? <img src={newImagePreview} alt="img" className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-gray-400" />}
+                                {newImagePreview ? <img src={newImagePreview} alt="Brand logo preview" className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-gray-400" />}
                                 <input ref={newFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageChange(e.target.files[0], false)} />
                                 {newImagePreview && (
                                     <button type="button" onClick={(e) => { e.preventDefault(); setNewImage(null); setNewImagePreview(''); newFileInputRef.current!.value = ''; }} className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]">✕</button>
@@ -187,7 +187,7 @@ export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: Manage
                                     {editingBrand === brand.id ? (
                                         <div className="flex gap-2 items-center flex-1">
                                             <label className="relative w-10 h-10 rounded-lg border flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0" style={{ background: 'var(--bg-input)' }}>
-                                                {editImagePreview ? <img src={editImagePreview} alt="img" className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-gray-400" />}
+                                                {editImagePreview ? <img src={editImagePreview} alt="Brand logo preview" className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-gray-400" />}
                                                 <input ref={editFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageChange(e.target.files[0], true)} />
                                             </label>
                                             <div className="flex-1 flex gap-2">

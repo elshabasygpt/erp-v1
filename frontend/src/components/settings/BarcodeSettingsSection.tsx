@@ -13,8 +13,10 @@ export default function BarcodeSettingsSection({ dict, locale }: { dict: any; lo
         barcode_default_type: '1D',
         barcode_default_size: '50x25',
         barcode_show_company: true,
+        barcode_show_name: true,
         barcode_show_price: true,
         barcode_show_sku: true,
+        barcode_show_value: true,
     });
 
     useEffect(() => {
@@ -30,8 +32,10 @@ export default function BarcodeSettingsSection({ dict, locale }: { dict: any; lo
                     barcode_default_type: parsedSettings.barcode_default_type || '1D',
                     barcode_default_size: parsedSettings.barcode_default_size || '50x25',
                     barcode_show_company: parsedSettings.barcode_show_company ?? true,
+                    barcode_show_name: parsedSettings.barcode_show_name ?? true,
                     barcode_show_price: parsedSettings.barcode_show_price ?? true,
                     barcode_show_sku: parsedSettings.barcode_show_sku ?? true,
+                    barcode_show_value: parsedSettings.barcode_show_value ?? true,
                 });
             })
             .catch(() => {});
@@ -100,6 +104,17 @@ export default function BarcodeSettingsSection({ dict, locale }: { dict: any; lo
                     <input
                         type="checkbox"
                         className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 border-gray-300"
+                        checked={form.barcode_show_name}
+                        onChange={(e) => setForm({ ...form, barcode_show_name: e.target.checked })}
+                    />
+                    <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {isRTL ? 'إظهار اسم المنتج على الملصق' : 'Show product name on label'}
+                    </span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 border-gray-300"
                         checked={form.barcode_show_company}
                         onChange={(e) => setForm({ ...form, barcode_show_company: e.target.checked })}
                     />
@@ -126,7 +141,18 @@ export default function BarcodeSettingsSection({ dict, locale }: { dict: any; lo
                         onChange={(e) => setForm({ ...form, barcode_show_sku: e.target.checked })}
                     />
                     <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-                        {isRTL ? 'إظهار الرمز التسلسلي (الرقم) أسفل الباركود' : 'Show SKU below barcode'}
+                        {isRTL ? 'إظهار رمز SKU كسطر منفصل' : 'Show SKU as a separate line'}
+                    </span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500 border-gray-300"
+                        checked={form.barcode_show_value}
+                        onChange={(e) => setForm({ ...form, barcode_show_value: e.target.checked })}
+                    />
+                    <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {isRTL ? 'إظهار الرقم أسفل الباركود مباشرة' : 'Show number directly under barcode'}
                     </span>
                 </label>
             </div>

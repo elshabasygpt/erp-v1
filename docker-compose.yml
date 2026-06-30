@@ -35,6 +35,34 @@ services:
       - db
       - redis
 
+  # Processes queued jobs (product import, etc.). The import job is dispatched
+  # with ->onConnection('database')->onQueue('imports'); without this worker
+  # uploads queue (HTTP 202) but are never processed. Default queue stays
+  # 'sync', so only explicitly-queued jobs need this service.
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp_worker
+    restart: unless-stopped
+    working_dir: /var/www/backend
+    # Ensure the central queue tables (jobs/failed_jobs/job_batches) exist before
+    # consuming — they live in database/migrations/central/, which a bare
+    # `php artisan migrate` does NOT run (Laravel's migrator is non-recursive).
+    # --force is idempotent: already-applied migrations are skipped.
+    command: sh -c "php artisan migrate --path=database/migrations/central --force && php artisan queue:work database --queue=imports,default --sleep=3 --tries=3 --max-time=3600"
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
+    volumes:
+      - ./backend:/var/www/backend
+      - erp_uploads:/var/www/backend/public/uploads
+    networks:
+      - erp_network
+    depends_on:
+      - db
+      - redis
+
   frontend:
     build:
       context: ./frontend

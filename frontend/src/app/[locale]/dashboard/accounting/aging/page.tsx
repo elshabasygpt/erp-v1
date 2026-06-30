@@ -11,7 +11,7 @@ type AgingType = 'receivable' | 'payable';
 
 const BUCKET_LABELS: Record<string, { ar: string; en: string; color: string }> = {
     current: { ar: 'جاري',       en: 'Current',   color: '#10b981' },
-    '1_30':  { ar: '1-30 يوم',   en: '1–30 days', color: '#6366f1' },
+    '1_30':  { ar: '1-30 يوم',   en: '1–30 days', color: '#0ea5e9' },
     '31_60': { ar: '31-60 يوم',  en: '31–60 days',color: '#f59e0b' },
     '61_90': { ar: '61-90 يوم',  en: '61–90 days',color: '#f97316' },
     over_90: { ar: 'أكثر من 90', en: 'Over 90',   color: '#ef4444' },
@@ -74,7 +74,7 @@ export default function AgingReportPage() {
                         <button key={t} onClick={() => { setType(t); setData(null); }}
                             className="px-4 py-2 text-sm font-semibold transition"
                             style={type === t
-                                ? { background: '#6366f1', color: '#fff' }
+                                ? { background: '#10b981', color: '#fff' }
                                 : { background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
                             {t === 'receivable' ? (isRTL ? '👤 المدينون' : '👤 Receivable') : (isRTL ? '🏪 الدائنون' : '🏪 Payable')}
                         </button>

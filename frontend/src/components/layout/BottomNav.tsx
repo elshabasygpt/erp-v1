@@ -14,7 +14,7 @@ const QUICK_ACTIONS = [
         labelAr: 'فاتورة جديدة',
         labelEn: 'New Invoice',
         path: '/sales/create',
-        color: '#6366f1',
+        color: '#10b981',
         icon: 'M9 7H6a2 2 0 00-2 2v9a2 2 0 002 2h9a2 2 0 002-2v-3M9 7V5a2 2 0 012-2h6l2 2v8a2 2 0 01-2 2h-2M9 7h2a2 2 0 012 2v2',
     },
     {
@@ -225,10 +225,10 @@ const BottomNav = memo(function BottomNav({ locale }: BottomNavProps) {
                             style={{
                                 background: showActions
                                     ? 'linear-gradient(135deg,#ef4444,#dc2626)'
-                                    : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                                    : 'var(--gradient-primary)',
                                 boxShadow: showActions
                                     ? '0 4px 20px rgba(239,68,68,0.45)'
-                                    : '0 4px 20px rgba(99,102,241,0.45)',
+                                    : '0 4px 20px var(--primary-glow-strong)',
                                 transform: 'translateY(-10px)',
                             }}
                             aria-label={isRTL ? 'إجراءات سريعة' : 'Quick actions'}

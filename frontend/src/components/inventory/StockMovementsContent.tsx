@@ -4,6 +4,9 @@ import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Pagination from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 20;
 
 interface StockMovementsContentProps {
     dict: any;
@@ -16,7 +19,7 @@ const TYPE_CONFIG = {
     incoming:   { ar: 'وارد',     en: 'Incoming',    icon: '⬆️', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
     outgoing:   { ar: 'صادر',     en: 'Outgoing',    icon: '⬇️', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
     adjustment: { ar: 'تسوية',    en: 'Adjustment',  icon: '⚖️', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-    return:     { ar: 'مرتجع',    en: 'Return',      icon: '↩️', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
+    return:     { ar: 'مرتجع',    en: 'Return',      icon: '↩️', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
     transfer:   { ar: 'تحويل',    en: 'Transfer',    icon: '🔄', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
 };
 
@@ -78,6 +81,12 @@ export default function StockMovementsContent({ dict, locale }: StockMovementsCo
             return name.includes(q) || code.includes(q) || ref.includes(q);
         });
     }, [movements, search]);
+
+    // ── Client-side pagination (effect-free: safePage clamps when filter shrinks) ──
+    const [page, setPage] = useState(1);
+    const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const safePage = Math.min(page, pageCount);
+    const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
     // ── Add Movement ──────────────────────────────────────────────
     const handleAddMovement = async () => {
@@ -232,7 +241,7 @@ export default function StockMovementsContent({ dict, locale }: StockMovementsCo
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map(m => {
+                                {paged.map(m => {
                                     const cfg = TYPE_CONFIG[m.type as MovementType] || TYPE_CONFIG.adjustment;
                                     const isNeg = m.type === 'outgoing';
                                     return (
@@ -281,6 +290,18 @@ export default function StockMovementsContent({ dict, locale }: StockMovementsCo
                                 <p style={{ color: 'var(--text-muted)' }}>
                                     {isRTL ? 'لا توجد حركات مخزون' : 'No stock movements found'}
                                 </p>
+                            </div>
+                        )}
+                        {filtered.length > PAGE_SIZE && (
+                            <div className="px-4 py-3" style={{ borderTop: '1px solid var(--border-default)' }}>
+                                <Pagination
+                                    page={safePage}
+                                    pageCount={pageCount}
+                                    onPageChange={setPage}
+                                    totalItems={filtered.length}
+                                    pageSize={PAGE_SIZE}
+                                    isRTL={isRTL}
+                                />
                             </div>
                         )}
                     </div>

@@ -44,6 +44,33 @@ export default async function RootLayout({
                         })();
                     `
                 }} />
+                {/* Self-heal stale service worker: a previous PWA build precached old
+                    JS chunks and served them CacheFirst, freezing the UI. This unregisters
+                    any worker, purges caches, and reloads once so fresh code is loaded. */}
+                <script dangerouslySetInnerHTML={{
+                    __html: `
+                        (function() {
+                            if (!('serviceWorker' in navigator)) return;
+                            try {
+                                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                                    if (!regs.length) return;
+                                    if (sessionStorage.getItem('sw-purged') === '1') return;
+                                    sessionStorage.setItem('sw-purged', '1');
+                                    Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+                                        var done = function() { location.reload(); };
+                                        if (window.caches && caches.keys) {
+                                            caches.keys().then(function(keys) {
+                                                return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                                            }).then(done, done);
+                                        } else {
+                                            done();
+                                        }
+                                    });
+                                });
+                            } catch (e) {}
+                        })();
+                    `
+                }} />
             </head>
             <body
                 className={`${direction === 'rtl' ? 'font-arabic' : 'font-sans'} min-h-screen`}
@@ -55,7 +82,24 @@ export default async function RootLayout({
                             <HelpSystem locale={locale} />
                         </ErrorBoundary>
                     </QueryProvider>
-                    <Toaster position="bottom-right" reverseOrder={false} />
+                    <Toaster
+                        position={direction === 'rtl' ? 'bottom-left' : 'bottom-right'}
+                        reverseOrder={false}
+                        toastOptions={{
+                            duration: 4000,
+                            style: {
+                                background: 'var(--bg-modal)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-default)',
+                                borderRadius: '0.75rem',
+                                fontSize: '0.875rem',
+                                boxShadow: 'var(--shadow-modal)',
+                                direction,
+                            },
+                            success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+                            error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+                        }}
+                    />
                 </ThemeProvider>
             </body>
         </html>

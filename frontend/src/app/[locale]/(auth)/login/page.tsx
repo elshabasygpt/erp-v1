@@ -60,11 +60,11 @@ export default function LoginPage({ params }: LoginPageProps) {
     };
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 selection:bg-indigo-500/30">
+        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 selection:bg-emerald-500/30">
             {/* ── Dynamic Abstract Background ── */}
             <div className="absolute inset-0 z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-600/20 blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/20 blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-600/20 blur-[120px] animate-pulse" style={{ animationDuration: '8s' }} />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-teal-600/20 blur-[120px] animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
                 <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] rounded-full bg-emerald-600/10 blur-[100px] animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }} />
                 
                 {/* Subtle Grid overlay */}
@@ -78,8 +78,8 @@ export default function LoginPage({ params }: LoginPageProps) {
                 <div className="relative z-20 flex flex-col items-center">
                     {/* Logo Aura */}
                     <div className="mb-8 relative group">
-                        <div className="absolute inset-0 bg-indigo-500 rounded-2xl blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500" />
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center relative shadow-xl transform group-hover:scale-105 transition-transform duration-300">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-2xl blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500" />
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center relative shadow-xl transform group-hover:scale-105 transition-transform duration-300">
                             <span className="text-white font-black text-2xl tracking-tighter">$</span>
                         </div>
                     </div>
@@ -87,7 +87,7 @@ export default function LoginPage({ params }: LoginPageProps) {
                     <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2 text-center">
                         {dict.title}
                     </h1>
-                    <p className="text-indigo-200/60 text-sm text-center mb-8 px-4 font-medium">
+                    <p className="text-emerald-200/60 text-sm text-center mb-8 px-4 font-medium">
                         {dict.subtitle}
                     </p>
 
@@ -102,11 +102,11 @@ export default function LoginPage({ params }: LoginPageProps) {
                     <form onSubmit={handleSubmit} className="w-full space-y-5">
                         {/* Email Input */}
                         <div className="space-y-1.5 group">
-                            <label className="block text-xs font-semibold text-indigo-200/70 uppercase tracking-wider ms-1">
+                            <label className="block text-xs font-semibold text-emerald-200/70 uppercase tracking-wider ms-1">
                                 {dict.email}
                             </label>
                             <div className="relative">
-                                <div className="absolute inset-y-0 start-0 pl-4 flex items-center pointer-events-none text-indigo-300/50 group-focus-within:text-indigo-400 transition-colors">
+                                <div className="absolute inset-y-0 start-0 pl-4 flex items-center pointer-events-none text-emerald-300/50 group-focus-within:text-emerald-400 transition-colors">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                                     </svg>
@@ -116,7 +116,7 @@ export default function LoginPage({ params }: LoginPageProps) {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="admin@company.com"
-                                    className="w-full h-12 bg-indigo-950/40 border border-indigo-500/20 rounded-xl ps-11 pe-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all placeholder:text-indigo-200/20"
+                                    className="w-full h-12 bg-emerald-950/40 border border-emerald-500/20 rounded-xl ps-11 pe-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all placeholder:text-emerald-200/20"
                                     required
                                 />
                             </div>
@@ -125,15 +125,15 @@ export default function LoginPage({ params }: LoginPageProps) {
                         {/* Password Input */}
                         <div className="space-y-1.5 group">
                             <div className="flex justify-between items-center ms-1">
-                                <label className="block text-xs font-semibold text-indigo-200/70 uppercase tracking-wider">
+                                <label className="block text-xs font-semibold text-emerald-200/70 uppercase tracking-wider">
                                     {dict.password}
                                 </label>
-                                <button type="button" className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+                                <button type="button" className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
                                     {dict.forgotPassword}
                                 </button>
                             </div>
                             <div className="relative">
-                                <div className="absolute inset-y-0 start-0 pl-4 flex items-center pointer-events-none text-indigo-300/50 group-focus-within:text-indigo-400 transition-colors">
+                                <div className="absolute inset-y-0 start-0 pl-4 flex items-center pointer-events-none text-emerald-300/50 group-focus-within:text-emerald-400 transition-colors">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                                     </svg>
@@ -143,13 +143,13 @@ export default function LoginPage({ params }: LoginPageProps) {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full h-12 bg-indigo-950/40 border border-indigo-500/20 rounded-xl ps-11 pe-12 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all placeholder:text-indigo-200/20 tracking-wider font-mono"
+                                    className="w-full h-12 bg-emerald-950/40 border border-emerald-500/20 rounded-xl ps-11 pe-12 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all placeholder:text-emerald-200/20 tracking-wider font-mono"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 end-0 pr-4 flex items-center text-indigo-300/50 hover:text-white transition-colors"
+                                    className="absolute inset-y-0 end-0 pr-4 flex items-center text-emerald-300/50 hover:text-white transition-colors"
                                 >
                                     {showPassword ? (
                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
@@ -164,7 +164,7 @@ export default function LoginPage({ params }: LoginPageProps) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="relative w-full h-12 bg-gradient-to-r from-indigo-500 hover:from-indigo-400 to-violet-600 hover:to-violet-500 text-white font-bold rounded-xl overflow-hidden transition-all shadow-[0_4px_20px_0_rgba(99,102,241,0.4)] hover:shadow-[0_4px_25px_0_rgba(99,102,241,0.6)] disabled:opacity-70 disabled:cursor-not-allowed group mt-4!"
+                            className="relative w-full h-12 bg-gradient-to-r from-primary-500 hover:from-primary-400 to-emerald-600 hover:to-emerald-500 text-white font-bold rounded-xl overflow-hidden transition-all shadow-[0_4px_20px_0_rgba(16,185,129,0.4)] hover:shadow-[0_4px_25px_0_rgba(16,185,129,0.6)] disabled:opacity-70 disabled:cursor-not-allowed group mt-4!"
                         >
                             <div className="absolute inset-0 w-full h-full bg-white/20 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500 ease-out" />
                             <span className="relative flex items-center justify-center gap-2">
@@ -186,18 +186,18 @@ export default function LoginPage({ params }: LoginPageProps) {
                     </form>
                     
                     {/* Demo Account Tip */}
-                    <div className="mt-8 text-center text-xs text-indigo-200/50 flex flex-col items-center gap-1">
+                    <div className="mt-8 text-center text-xs text-emerald-200/50 flex flex-col items-center gap-1">
                         <span className="flex items-center justify-center gap-1 bg-white/5 border border-white/5 rounded-full px-3 py-1 mb-2">
                            ✨ {isRTL ? 'حساب للتجربة السريعة' : 'Quick Demo Account'}
                         </span>
-                        <code className="font-mono bg-black/20 px-2 py-0.5 rounded text-indigo-300">admin@company.com</code>
+                        <code className="font-mono bg-black/20 px-2 py-0.5 rounded text-emerald-300">admin@company.com</code>
                     </div>
 
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-6" />
 
-                    <p className="text-sm text-indigo-200/60 font-medium">
+                    <p className="text-sm text-emerald-200/60 font-medium">
                         {dict.noAccount}{' '}
-                        <Link href={`/${locale}/register`} className="text-white hover:text-indigo-300 font-bold transition-colors">
+                        <Link href={`/${locale}/register`} className="text-white hover:text-emerald-300 font-bold transition-colors">
                             {dict.register}
                         </Link>
                     </p>

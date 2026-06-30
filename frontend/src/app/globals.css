@@ -31,6 +31,22 @@
         --color-primary-light: #34d399;
         --color-primary-dark: #059669;
 
+        /* Primary-derived interaction tokens (single source of truth) */
+        --focus-ring: rgba(16, 185, 129, 0.18);
+        --primary-glow: rgba(16, 185, 129, 0.30);
+        --primary-glow-strong: rgba(16, 185, 129, 0.45);
+        --primary-tint: rgba(16, 185, 129, 0.12);
+        --primary-tint-faint: rgba(16, 185, 129, 0.04);
+        --selection-bg: rgba(16, 185, 129, 0.22);
+
+        /* Harmonized chart palette (anchored on primary) */
+        --chart-1: #10b981;
+        --chart-2: #0ea5e9;
+        --chart-3: #f59e0b;
+        --chart-4: #f43f5e;
+        --chart-5: #8b5cf6;
+        --chart-6: #14b8a6;
+
         --gradient-primary: linear-gradient(135deg, #10b981, #059669, #047857);
         --gradient-success: linear-gradient(135deg, #22c55e, #16a34a);
         --gradient-danger: linear-gradient(135deg, #ef4444, #dc2626);
@@ -92,6 +108,22 @@
         --color-primary: #34d399;
         --color-primary-light: #6ee7b7;
         --color-primary-dark: #10b981;
+
+        /* Primary-derived interaction tokens (single source of truth) */
+        --focus-ring: rgba(52, 211, 153, 0.22);
+        --primary-glow: rgba(16, 185, 129, 0.28);
+        --primary-glow-strong: rgba(16, 185, 129, 0.40);
+        --primary-tint: rgba(52, 211, 153, 0.14);
+        --primary-tint-faint: rgba(52, 211, 153, 0.05);
+        --selection-bg: rgba(52, 211, 153, 0.28);
+
+        /* Harmonized chart palette (brighter for dark surfaces) */
+        --chart-1: #34d399;
+        --chart-2: #38bdf8;
+        --chart-3: #fbbf24;
+        --chart-4: #fb7185;
+        --chart-5: #a78bfa;
+        --chart-6: #2dd4bf;
 
         --gradient-primary: linear-gradient(135deg, #10b981, #059669, #047857);
         --gradient-success: linear-gradient(135deg, #22c55e, #16a34a);
@@ -160,8 +192,8 @@
 
     /* Selection */
     ::selection {
-        background: rgba(99, 102, 241, 0.3);
-        color: #fff;
+        background: var(--selection-bg);
+        color: var(--text-heading);
     }
 }
 
@@ -189,7 +221,7 @@
     .btn-primary {
         @apply px-6 py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-300 relative overflow-hidden;
         background: var(--gradient-primary);
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        box-shadow: 0 4px 15px var(--primary-glow);
     }
 
     .btn-primary::before {
@@ -203,7 +235,7 @@
 
     .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.45);
+        box-shadow: 0 8px 30px var(--primary-glow-strong);
     }
 
     .btn-primary:hover::before { opacity: 1; }
@@ -241,7 +273,7 @@
     .input-field::placeholder { color: var(--text-muted); }
     .input-field:focus {
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     /* ── Select Field ── */
@@ -257,7 +289,7 @@
         background-size: 1.25em 1.25em;
     }
     [dir='rtl'] .select-field { background-position: left 0.75rem center; }
-    .select-field:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+    .select-field:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--focus-ring); }
 
     /* ── Stat Card ── */
     .stat-card {
@@ -265,7 +297,7 @@
     }
     .stat-card:hover {
         transform: translateY(-3px);
-        border-color: rgba(99, 102, 241, 0.25);
+        border-color: var(--primary-glow);
     }
 
     /* ── Data Table ── */
@@ -313,13 +345,13 @@
     
     .sidebar-link.active {
         color: var(--color-primary);
-        background: linear-gradient(90deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.02) 100%);
-        border: 1px solid rgba(99, 102, 241, 0.1);
+        background: linear-gradient(90deg, var(--primary-tint) 0%, var(--primary-tint-faint) 100%);
+        border: 1px solid var(--primary-tint);
         font-weight: 700;
         box-shadow: inset 3px 0 0 0 var(--color-primary);
     }
     [dir='rtl'] .sidebar-link.active {
-        background: linear-gradient(-90deg, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0.02) 100%);
+        background: linear-gradient(-90deg, var(--primary-tint) 0%, var(--primary-tint-faint) 100%);
         box-shadow: inset -3px 0 0 0 var(--color-primary);
     }
 
@@ -347,7 +379,7 @@
     }
     .sidebar-sub-link.active::before {
         background: var(--color-primary);
-        box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+        box-shadow: 0 0 8px var(--primary-glow-strong);
     }
 
     /* ── Sidebar Sub-Menu Tree Line ── */
@@ -407,7 +439,7 @@
     .sidebar-search::placeholder { color: var(--text-muted); }
     .sidebar-search:focus {
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        box-shadow: 0 0 0 3px var(--focus-ring);
     }
 
     /* ── Sidebar Pin Button ── */
@@ -416,7 +448,7 @@
         color: var(--text-muted);
         flex-shrink: 0;
     }
-    .sidebar-pin-btn:hover { color: var(--color-primary); background: rgba(99,102,241,0.12); }
+    .sidebar-pin-btn:hover { color: var(--color-primary); background: var(--primary-tint); }
     .sidebar-pin-btn.pinned { @apply opacity-100; color: var(--color-primary); }
 
     /* ── Sidebar Recent Item ── */
@@ -580,7 +612,7 @@
     :root:not(.dark) .hover\:bg-white\/5:hover { background-color: rgba(241, 245, 249, 0.6) !important; }
 
     /* Primary text in light mode: deeper shade */
-    :root:not(.dark) .text-primary-400 { color: #4f46e5 !important; }
+    :root:not(.dark) .text-primary-400 { color: var(--color-primary-dark) !important; }
 }
 
 /* ══════════════════════════════════════════════════════

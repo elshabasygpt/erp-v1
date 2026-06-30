@@ -2,10 +2,12 @@
 import { useState, memo, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api';
-import Barcode from 'react-barcode';
-import { QRCodeSVG } from 'qrcode.react';
-import { renderToString } from 'react-dom/server';
 import toast from 'react-hot-toast';
+import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
+import {
+    ProductLabel, LabelPrintSheet, usePrintLabels,
+    type LabelOptions, type LabelProduct, DEFAULT_LABEL_OPTIONS, LABEL_SIZE_OPTIONS,
+} from './labels/ProductLabel';
 
 // ── Types ──
 export interface MainGroup { id: string; name: string; nameAr: string; subGroups: SubGroup[]; imageUrl?: string; discount?: number; }
@@ -66,7 +68,7 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
 
     const ImageUploadButton = ({ url, onChange, disabled }: { url: string; onChange: (url: string) => void; disabled?: boolean }) => (
         <label className={`relative w-8 h-8 rounded-lg border flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0 transition-colors ${url ? 'border-primary-500' : 'border-gray-300 dark:border-gray-600 hover:border-primary-400'}`} style={{ background: 'var(--bg-input)' }}>
-            {url ? <img src={url} alt="img" className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-400">🖼️</span>}
+            {url ? <img src={url} alt="Image preview" className="w-full h-full object-cover" /> : <span className="text-[10px] text-gray-400">🖼️</span>}
             <input type="file" accept="image/*" className="hidden" disabled={disabled} onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -482,159 +484,109 @@ interface BarcodeProps { dict: any; locale: string; product: any; onClose: () =>
 
 export const PrintBarcodeModal = memo(function PrintBarcodeModal({ dict, locale, product, onClose }: BarcodeProps) {
     const isRTL = locale === 'ar';
-    const inv = dict.inventory;
+    const { currencySymbol } = useRegionalSettings();
     const [count, setCount] = useState(1);
-    const [type, setType] = useState<'1D' | 'QR'>('1D');
-    const [size, setSize] = useState<'50x25' | '40x20' | '38x25' | 'A4'>('50x25');
-    
-    // Configurable options
-    const [showCompany, setShowCompany] = useState(true);
-    const [showPrice, setShowPrice] = useState(true);
-    const [showSku, setShowSku] = useState(true);
     const [companyName, setCompanyName] = useState('');
+    const [options, setOptions] = useState<LabelOptions>(DEFAULT_LABEL_OPTIONS);
+    const { print, queue } = usePrintLabels();
 
+    // Seed from saved global barcode settings.
     useEffect(() => {
         const { settingsApi } = require('@/lib/api');
         settingsApi.getSettings().then((res: any) => {
             const data = res.data?.data || res.data || {};
             setCompanyName(data.company_name || '');
-            if (data.barcode_settings) {
-                try {
-                    const settings = JSON.parse(data.barcode_settings);
-                    if (settings.barcode_default_type) setType(settings.barcode_default_type);
-                    if (settings.barcode_default_size) setSize(settings.barcode_default_size);
-                    if (settings.barcode_show_company !== undefined) setShowCompany(settings.barcode_show_company);
-                    if (settings.barcode_show_price !== undefined) setShowPrice(settings.barcode_show_price);
-                    if (settings.barcode_show_sku !== undefined) setShowSku(settings.barcode_show_sku);
-                } catch(e) {}
-            }
+            try {
+                const s = data.barcode_settings ? JSON.parse(data.barcode_settings) : {};
+                setOptions(o => ({
+                    ...o,
+                    type: s.barcode_default_type || o.type,
+                    size: s.barcode_default_size || o.size,
+                    showCompany: s.barcode_show_company ?? o.showCompany,
+                    showPrice: s.barcode_show_price ?? o.showPrice,
+                    showSku: s.barcode_show_sku ?? o.showSku,
+                    showName: s.barcode_show_name ?? o.showName,
+                    showValue: s.barcode_show_value ?? o.showValue,
+                }));
+            } catch (e) { /* ignore */ }
         }).catch(() => {});
     }, []);
 
-    const handlePrint = () => {
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        if (!printWindow) return;
-
-        let pageCSS = '';
-        
-        const isA4 = size === 'A4';
-        if (isA4) {
-            pageCSS = '@page { size: A4; margin: 10mm; }';
-        } else {
-            const [w, h] = size.split('x');
-            pageCSS = `@page { size: ${w}mm ${h}mm; margin: 0; } body { margin: 0; padding: 0; }`;
-        }
-
-        const labels = Array.from({ length: count }).map((_, i) => {
-            const labelStyle: React.CSSProperties = isA4 ? {
-                width: '180px', border: '1px dashed #ccc', padding: '10px', textAlign: 'center', boxSizing: 'border-box', pageBreakInside: 'avoid'
-            } : {
-                width: `${size.split('x')[0]}mm`, height: `${size.split('x')[1]}mm`, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', boxSizing: 'border-box', pageBreakAfter: 'always', padding: '2mm', overflow: 'hidden'
-            };
-
-            return (
-                <div key={i} style={labelStyle}>
-                    {showCompany && companyName && (
-                        <div style={{ fontSize: isA4 ? '10px' : '8px', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', color: '#555' }}>
-                            {companyName}
-                        </div>
-                    )}
-                    <div style={{ fontWeight: 'bold', fontSize: isA4 ? '12px' : '10px', marginBottom: '4px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                        {isRTL ? product.nameAr : product.name}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '2px' }}>
-                        {type === '1D' ? (
-                            <Barcode value={product.barcode} width={isA4 ? 1.5 : 1.2} height={isA4 ? 40 : 25} displayValue={false} margin={0} />
-                        ) : (
-                            <QRCodeSVG value={product.barcode} size={isA4 ? 64 : 45} />
-                        )}
-                    </div>
-                    {showSku && <div style={{ fontFamily: 'monospace', fontSize: '10px' }}>{product.barcode}</div>}
-                    {showPrice && <div style={{ fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>{product.sellPrice} SAR</div>}
-                </div>
-            );
-        });
-
-        const containerStyle: React.CSSProperties = isA4 ? { display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'flex-start' } : { display: 'flex', flexDirection: 'column' };
-        
-        const content = renderToString(<div style={containerStyle}>{labels}</div>);
-
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Print Barcode</title>
-                    <style>
-                        ${pageCSS}
-                        @media print {
-                            body { -webkit-print-color-adjust: exact; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${content}
-                    <script>setTimeout(() => { window.print(); window.close(); }, 500);<\/script>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
+    // Inventory list maps SKU -> `code`; price is `sellPrice`.
+    const labelProduct: LabelProduct = {
+        name: product.name,
+        nameAr: product.nameAr,
+        sku: product.code,
+        barcode: product.barcode,
+        price: typeof product.sellPrice === 'number' ? product.sellPrice : (parseFloat(product.sellPrice) || undefined),
     };
 
+    const handlePrint = () => {
+        const res = print([{ product: labelProduct, qty: count }]);
+        if (!res.ok) toast.error(isRTL ? 'لا يوجد باركود/SKU لهذا المنتج' : 'No barcode/SKU for this product');
+    };
+
+    const Toggle = ({ k, label }: { k: keyof LabelOptions; label: string }) => (
+        <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
+            <input type="checkbox" checked={options[k] as boolean} onChange={e => setOptions(o => ({ ...o, [k]: e.target.checked }))} />
+            {label}
+        </label>
+    );
+
     return (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-content !max-w-md">
-                <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
-                    <div className="flex items-center gap-2"><span className="text-xl">🏷️</span><h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'طباعة الباركود' : 'Print Barcode'}</h2></div>
-                    <button onClick={onClose} className="btn-icon"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
-                </div>
-                
-                <div className="p-5 space-y-4">
-                    <div className="glass-card p-6 text-center flex flex-col items-center">
-                        {showCompany && companyName && (
-                            <p className="text-xs text-surface-500 mb-1">{companyName}</p>
-                        )}
-                        <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>{isRTL ? product.nameAr : product.name}</p>
-                        <div className="flex justify-center mb-2 overflow-hidden bg-white p-2 rounded-lg">
-                            {type === '1D' ? (
-                                <Barcode value={product.barcode} width={1.5} height={40} displayValue={false} margin={0} />
-                            ) : (
-                                <QRCodeSVG value={product.barcode} size={80} />
-                            )}
-                        </div>
-                        {showSku && <p className="font-mono text-sm tracking-[3px]" style={{ color: 'var(--text-secondary)' }}>{product.barcode}</p>}
-                        {showPrice && <p className="text-sm font-bold mt-2 text-primary-400">{product.sellPrice} SAR</p>}
+        <>
+            <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+                <div className="modal-content !max-w-md">
+                    <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
+                        <div className="flex items-center gap-2"><span className="text-xl">🏷️</span><h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'طباعة الباركود' : 'Print Barcode'}</h2></div>
+                        <button onClick={onClose} className="btn-icon"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'نوع الباركود' : 'Barcode Type'}</label>
-                            <select className="select-field py-2 text-sm w-full" value={type} onChange={e => setType(e.target.value as '1D' | 'QR')}>
-                                <option value="1D">1D (Code 128)</option>
-                                <option value="QR">2D (QR Code)</option>
-                            </select>
+                    <div className="p-5 space-y-4">
+                        {/* Live preview — reflects every toggle instantly */}
+                        <div className="glass-card p-6 flex justify-center">
+                            <ProductLabel product={labelProduct} options={options} companyName={companyName} currency={currencySymbol} isRTL={isRTL} preview />
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'مقاس الملصق' : 'Label Size'}</label>
-                            <select className="select-field py-2 text-sm w-full" value={size} onChange={e => setSize(e.target.value as any)}>
-                                <option value="50x25">50mm x 25mm</option>
-                                <option value="40x20">40mm x 20mm</option>
-                                <option value="38x25">38mm x 25mm</option>
-                                <option value="A4">A4 (ورق عادي)</option>
-                            </select>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'نوع الباركود' : 'Barcode Type'}</label>
+                                <select className="select-field py-2 text-sm w-full" value={options.type} onChange={e => setOptions(o => ({ ...o, type: e.target.value as LabelOptions['type'] }))}>
+                                    <option value="1D">1D (Code 128)</option>
+                                    <option value="QR">2D (QR Code)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'مقاس الملصق' : 'Label Size'}</label>
+                                <select className="select-field py-2 text-sm w-full" value={options.size} onChange={e => setOptions(o => ({ ...o, size: e.target.value as LabelOptions['size'] }))}>
+                                    {LABEL_SIZE_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
+                            <Toggle k="showName" label={isRTL ? 'الاسم' : 'Name'} />
+                            <Toggle k="showBarcode" label={isRTL ? 'الباركود' : 'Barcode'} />
+                            <Toggle k="showValue" label={isRTL ? 'الرقم' : 'Number'} />
+                            <Toggle k="showSku" label="SKU" />
+                            <Toggle k="showPrice" label={isRTL ? 'السعر' : 'Price'} />
+                            <Toggle k="showCompany" label={isRTL ? 'الشركة' : 'Company'} />
+                        </div>
+
+                        <div className="flex items-center gap-3 border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
+                            <label className="text-sm font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'عدد الملصقات (النسخ)' : 'Number of Copies'}</label>
+                            <input type="number" min="1" max="500" className="input-field py-2 text-sm w-24 text-center" value={count} onChange={e => setCount(Math.max(1, +e.target.value || 1))} />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 border-t pt-4" style={{ borderColor: 'var(--border-default)' }}>
-                        <label className="text-sm font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'عدد الملصقات (النسخ)' : 'Number of Copies'}</label>
-                        <input type="number" min="1" max="500" className="input-field py-2 text-sm w-24 text-center" value={count} onChange={e => setCount(Math.max(1, +e.target.value || 1))} />
+                    <div className="flex items-center justify-end gap-3 p-5 border-t" style={{ borderColor: 'var(--border-default)' }}>
+                        <button onClick={onClose} className="btn-secondary">{dict.common.cancel}</button>
+                        <button onClick={handlePrint} className="btn-primary flex items-center gap-2">🖨️ {isRTL ? 'طباعة' : 'Print'}</button>
                     </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 p-5 border-t" style={{ borderColor: 'var(--border-default)' }}>
-                    <button onClick={onClose} className="btn-secondary">{dict.common.cancel}</button>
-                    <button onClick={handlePrint} className="btn-primary flex items-center gap-2">🖨️ {isRTL ? 'طباعة' : 'Print'}</button>
                 </div>
             </div>
-        </div>
+            <LabelPrintSheet queue={queue} options={options} companyName={companyName} currency={currencySymbol} isRTL={isRTL} />
+        </>
     );
 });
 

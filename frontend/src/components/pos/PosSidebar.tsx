@@ -25,15 +25,16 @@ const SIDEBAR_LINKS = [
     { icon: Settings, path: '/settings', label: 'Settings', labelAr: 'الإعدادات' }
 ];
 
-export const PosSidebar = memo(function PosSidebar({ locale, isRTL }: { locale: string, isRTL: boolean }) {
+export const PosSidebar = memo(function PosSidebar({ locale, isRTL, className, onNavigate }: { locale: string, isRTL: boolean, className?: string, onNavigate?: () => void }) {
     return (
-        <div className="w-16 shrink-0 bg-slate-900 dark:bg-black border-e border-slate-800 flex flex-col items-center py-4 gap-2 relative z-[60] overflow-y-auto custom-scrollbar">
+        <div className={clsx("w-16 shrink-0 bg-slate-900 dark:bg-black border-e border-slate-800 flex flex-col items-center py-4 gap-2 relative z-[60] overflow-y-auto custom-scrollbar", className)}>
             {SIDEBAR_LINKS.map(link => {
                 const isPos = link.path === '/pos';
                 return (
                     <Link 
-                        key={link.path} 
-                        href={`/${locale}/dashboard${link.path}`} 
+                        key={link.path}
+                        href={`/${locale}/dashboard${link.path}`}
+                        onClick={onNavigate}
                         title={isRTL ? link.labelAr : link.label}
                         className={clsx(
                             "p-3 rounded-xl transition-colors shrink-0",

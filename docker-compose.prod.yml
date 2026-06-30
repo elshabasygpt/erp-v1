@@ -51,6 +51,34 @@ services:
     networks:
       - erp_network
 
+  # Queue worker — processes product imports and any ->onConnection('database')
+  # jobs. Without it, imports return HTTP 202 but never run. Scaled separately
+  # from 'app' since import throughput is independent of HTTP request load.
+  # PREREQ: the central queue tables (jobs/failed_jobs/job_batches) must already
+  # exist. Run `php artisan migrate --path=database/migrations/central --force`
+  # as a one-shot release/deploy step — NOT here, since replicas would race.
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    working_dir: /var/www/backend
+    command: php artisan queue:work database --queue=imports,default --sleep=3 --tries=3 --max-time=3600
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    environment:
+      - APP_ENV=production
+      - DB_HOST=${RDS_DB_HOST}
+      - REDIS_HOST=${ELASTICACHE_REDIS_HOST}
+      - FILESYSTEM_DISK_PUBLIC=s3
+    volumes:
+      - ./backend:/var/www/backend
+      - erp_uploads:/var/www/backend/public/uploads
+    networks:
+      - erp_network
+
   frontend:
     build:
       context: ./frontend

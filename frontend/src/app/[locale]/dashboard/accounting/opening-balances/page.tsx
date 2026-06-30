@@ -18,7 +18,7 @@ interface AccountBalance {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-    asset:     '#6366f1',
+    asset:     '#10b981',
     liability: '#ef4444',
     equity:    '#8b5cf6',
     revenue:   '#10b981',
@@ -184,7 +184,7 @@ export default function OpeningBalancesPage() {
                                                 : b.type}
                                         </span>
                                     </td>
-                                    <td className="text-end text-xs" style={{ color: b.debit > 0 ? '#6366f1' : 'var(--text-muted)' }}>
+                                    <td className="text-end text-xs" style={{ color: b.debit > 0 ? '#10b981' : 'var(--text-muted)' }}>
                                         {b.debit > 0 ? fmt(b.debit) : '—'}
                                     </td>
                                     <td className="text-end text-xs" style={{ color: b.credit > 0 ? '#ef4444' : 'var(--text-muted)' }}>
@@ -201,7 +201,7 @@ export default function OpeningBalancesPage() {
                                 <td colSpan={3} className="py-3 px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                                     {isRTL ? 'المجموع' : 'Total'}
                                 </td>
-                                <td className="text-end text-sm" style={{ color: '#6366f1' }}>{fmt(totalDebit)}</td>
+                                <td className="text-end text-sm" style={{ color: '#10b981' }}>{fmt(totalDebit)}</td>
                                 <td className="text-end text-sm" style={{ color: '#ef4444' }}>{fmt(totalCredit)}</td>
                                 <td className="text-end text-sm" style={{ color: balanced ? '#10b981' : '#f59e0b' }}>
                                     {fmt(Math.abs(totalDebit - totalCredit))}
@@ -241,7 +241,7 @@ export default function OpeningBalancesPage() {
                                     <button key={opt.val} onClick={() => setFormType(opt.val)}
                                         className="flex-1 py-2 text-sm font-semibold transition"
                                         style={formType === opt.val
-                                            ? { background: '#6366f1', color: '#fff' }
+                                            ? { background: '#10b981', color: '#fff' }
                                             : { background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
                                         {opt.label}
                                     </button>

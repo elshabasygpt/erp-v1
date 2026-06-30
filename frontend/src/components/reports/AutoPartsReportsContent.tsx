@@ -7,6 +7,7 @@ import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, Legend
 } from 'recharts';
+import { CHART_COLORS } from '@/lib/chart-colors';
 
 export default function AutoPartsReportsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -149,7 +150,7 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
         return isRTL ? `${days} يوم` : `${days}d`;
     };
 
-    const PIE_COLORS = ['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+    const PIE_COLORS = CHART_COLORS;
 
     const urgencyBadge: Record<string, { label: string, className: string }> = {
         critical: { label: isRTL ? '🔴 حرج'  : '🔴 Critical', className: 'bg-red-100 text-red-700' },
@@ -611,11 +612,11 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
                                             [`${fmt(v)} ${isRTL ? 'يوم' : 'd'}`, isRTL ? 'أيام المخزون' : 'DSI']
                                         } />
                                         <Legend />
-                                        <Bar dataKey="turnover" name={isRTL ? 'معدل الدوران' : 'Turnover'} fill="#6366f1" radius={[4,4,0,0]}>
+                                        <Bar dataKey="turnover" name={isRTL ? 'معدل الدوران' : 'Turnover'} fill="#10b981" radius={[4,4,0,0]}>
                                             {turnoverData.items.slice(0, 15).map((it: any, i: number) => (
                                                 <Cell key={i} fill={
                                                     it.performance === 'excellent' ? '#22c55e' :
-                                                    it.performance === 'good'      ? '#6366f1' :
+                                                    it.performance === 'good'      ? '#0ea5e9' :
                                                     it.performance === 'average'   ? '#f59e0b' :
                                                     it.performance === 'slow'      ? '#f97316' : '#ef4444'
                                                 } />
@@ -934,7 +935,7 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
                                         <YAxis stroke="#8884d8" />
                                         <Tooltip cursor={{ fill: 'transparent' }} formatter={(v: any) => fmtCur(v)} />
                                         <Legend />
-                                        <Bar dataKey="revenue" name={isRTL ? 'الإيراد' : 'Revenue'} fill="#6366f1" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="revenue" name={isRTL ? 'الإيراد' : 'Revenue'} fill="#0ea5e9" radius={[4, 4, 0, 0]} />
                                         <Bar dataKey="gross_profit" name={isRTL ? 'الربح' : 'Profit'} fill="#10b981" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>

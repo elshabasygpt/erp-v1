@@ -118,7 +118,7 @@ export default function KanbanView({ tasks, isRTL, onRefresh, setDetailTask, set
 
                                         {task.category && (
                                             <span className="inline-block text-[10px] px-2 py-0.5 rounded-md mb-2"
-                                                style={{ background: `${task.color || '#6366f1'}20`, color: task.color || '#6366f1' }}>
+                                                style={{ background: `${task.color || '#10b981'}20`, color: task.color || '#10b981' }}>
                                                 {task.category}
                                             </span>
                                         )}

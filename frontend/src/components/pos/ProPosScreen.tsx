@@ -10,7 +10,7 @@ import {
     Settings, MoreHorizontal, CheckCircle2, ArrowRight,
     Trash2, FileText, Ban, Warehouse, Gift, RefreshCw,
     Building2, ArrowRightLeft, Activity, Undo2, ShoppingBag,
-    Calculator, UserCheck, Briefcase, Store, Car, Lock
+    Calculator, UserCheck, Briefcase, Store, Car, Lock, Menu
 } from 'lucide-react';
 import { inventoryApi, salesApi, crmApi, posApi } from '@/lib/api';
 import clsx from 'clsx';
@@ -121,6 +121,9 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
     const [newCustomer,       setNewCustomer]       = useState({ name: '', phone: '' });
     const [isSavingCustomer,  setIsSavingCustomer]  = useState(false);
     const [showHoldPanel,     setShowHoldPanel]     = useState(false);
+    // Mobile responsive: which pane is visible (< lg) + nav drawer
+    const [mobilePane,        setMobilePane]        = useState<'products' | 'cart'>('products');
+    const [mobileNavOpen,     setMobileNavOpen]     = useState(false);
     const [showPaymentModal,  setShowPaymentModal]  = useState(false);
     const [paymentMethod,     setPaymentMethod]     = useState<'cash' | 'card' | 'other'>('cash');
     const [receivedAmount,    setReceivedAmount]    = useState('');
@@ -795,14 +798,39 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 </div>
             )}
 
-            {/* THIN APP SIDEBAR */}
-            <PosSidebar locale={locale} isRTL={isRTL} />
+            {/* THIN APP SIDEBAR — desktop rail (hidden on mobile) */}
+            <div className="hidden lg:flex shrink-0">
+                <PosSidebar locale={locale} isRTL={isRTL} />
+            </div>
+
+            {/* Mobile nav drawer (< lg) — tapping a link or the backdrop closes it */}
+            {mobileNavOpen && (
+                <>
+                    <div className="lg:hidden fixed inset-0 z-[65] bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setMobileNavOpen(false)} />
+                    <div className="lg:hidden fixed inset-y-0 start-0 z-[70] flex bg-slate-900 dark:bg-black animate-in fade-in duration-200" onClick={() => setMobileNavOpen(false)}>
+                        <PosSidebar locale={locale} isRTL={isRTL} />
+                    </div>
+                </>
+            )}
 
             {/* ──────────────────────────────────────────────────────────────
                 1. ORDER PANEL (CART) - Forced Physical Left in RTL
             ────────────────────────────────────────────────────────────── */}
-            <div className="w-[340px] xl:w-[400px] shrink-0 flex flex-col border-e border-slate-200 dark:border-white/10 bg-white dark:bg-[#111118] relative z-10 shadow-2xl">
-                
+            <div className={clsx(
+                'shrink-0 flex-col border-e border-slate-200 dark:border-white/10 bg-white dark:bg-[#111118] relative z-10 shadow-2xl',
+                'w-full lg:w-[340px] xl:w-[400px]',
+                mobilePane === 'cart' ? 'flex' : 'hidden lg:flex'
+            )}>
+
+                {/* Mobile: back to products (< lg) */}
+                <button
+                    onClick={() => setMobilePane('products')}
+                    className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-slate-200 dark:border-white/10 text-[12px] font-black uppercase tracking-widest text-slate-600 dark:text-white/70 bg-slate-50 dark:bg-black/20 shrink-0"
+                >
+                    {isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    {isRTL ? 'العودة للمنتجات' : 'Back to products'}
+                </button>
+
                 {/* TABS */}
                 <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-black/20 p-2 shrink-0 max-h-48 overflow-y-auto no-scrollbar">
                     {tabs.map(tab => (
@@ -1012,11 +1040,15 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
             {/* ──────────────────────────────────────────────────────────────
                 2. MAIN CONTAINER (Grid & Cats)
             ────────────────────────────────────────────────────────────── */}
-            <div className="flex-1 flex flex-col min-w-0 relative">
-                
+            <div className={clsx(
+                'flex-1 flex-col min-w-0 relative w-full',
+                mobilePane === 'products' ? 'flex' : 'hidden lg:flex'
+            )}>
+
                 {/* GLOBAL HEADER */}
-                <header className="h-20 border-b border-slate-200 dark:border-white/5 px-8 flex items-center justify-between bg-white dark:bg-[#111118] shrink-0 z-20">
-                    <div className="flex items-center gap-4">
+                <header className="min-h-[80px] border-b border-slate-200 dark:border-white/5 px-4 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 bg-white dark:bg-[#111118] shrink-0 z-20 overflow-hidden">
+                    <div className="flex items-center gap-3 lg:gap-4 min-w-0">
+                        <button onClick={() => setMobileNavOpen(true)} className="lg:hidden w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-white shrink-0 active:scale-95 transition-all" aria-label={isRTL ? 'القائمة' : 'Menu'}><Menu className="w-5 h-5"/></button>
                         <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/20"><Zap className="w-6 h-6 text-white fill-white"/></div>
                         <div>
                             <h1 className="text-lg font-black text-slate-800 dark:text-white tracking-tight uppercase">Elite POS Pro</h1>
@@ -1045,7 +1077,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                     {/* Price Levels (Dynamically Styled) */}
                     <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl border border-slate-200 dark:border-white/5">
                         {PRICE_LEVELS.map(p => (
-                            <button key={p.id} onClick={()=>changePriceLevel(p.id)} className={clsx('h-10 px-6 rounded-xl text-[11px] font-black uppercase transition-all duration-300', activeTab?.priceLevel === p.id ? p.activeClass : 'text-slate-500 hover:text-slate-900 dark:text-white/50 dark:hover:text-white hover:bg-white dark:hover:bg-white/5')}>
+                            <button key={p.id} onClick={()=>changePriceLevel(p.id)} className={clsx('h-9 lg:h-10 px-3 lg:px-6 rounded-xl text-[11px] font-black uppercase transition-all duration-300 whitespace-nowrap', activeTab?.priceLevel === p.id ? p.activeClass : 'text-slate-500 hover:text-slate-900 dark:text-white/50 dark:hover:text-white hover:bg-white dark:hover:bg-white/5')}>
                                 {p.ar}
                             </button>
                         ))}
@@ -1096,7 +1128,7 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                 </div>
 
                 {/* FOOTER ACTIONS */}
-                <div className="h-16 border-t border-slate-200 dark:border-white/10 px-8 flex items-center justify-between bg-white dark:bg-[#111118] shrink-0">
+                <div className="min-h-16 border-t border-slate-200 dark:border-white/10 px-4 lg:px-8 py-2 lg:py-0 flex flex-wrap items-center justify-between gap-2 bg-white dark:bg-[#111118] shrink-0">
                     <div className="flex items-center gap-3">
                         <button disabled={currentPage<=1} onClick={()=>setCurrentPage(c=>c-1)} className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-white/10 transition-colors disabled:opacity-30 disabled:hover:bg-slate-100 dark:disabled:hover:bg-white/5 active:scale-95"><ChevronRight className="w-5 h-5"/></button>
                         <div className="h-10 px-6 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center text-xs font-black text-slate-600 dark:text-white"><span className="text-blue-600 dark:text-blue-400">{currentPage}</span> <span className="mx-2 opacity-30">/</span> {totalPages}</div>
@@ -1109,13 +1141,28 @@ export default function ProPosScreen({ dict, locale }: { dict: any; locale: stri
                         <div className="flex items-center gap-2.5"><span className="px-2.5 py-1 rounded bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-transparent text-[10px] font-black text-slate-600 dark:text-white shadow-sm">F5</span> <span className="text-[10px] font-black uppercase tracking-widest">{isRTL ? 'البحث' : 'Search'}</span></div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="hidden lg:flex flex-wrap gap-2 lg:gap-3">
                         <button onClick={()=>setShowReturnModal(true)} className="h-10 px-5 rounded-xl text-[11px] font-black uppercase flex items-center gap-2 tracking-widest active:scale-95 transition-all bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-500/20"><Search className="w-4 h-4"/> {isRTL ? 'إسترجاع بفاتورة' : 'Invoice Return'}</button>
                         <button onClick={()=>updateTab('isRefundMode', !activeTab?.isRefundMode)} className={clsx("h-10 px-5 rounded-xl text-[11px] font-black uppercase flex items-center gap-2 tracking-widest active:scale-95 transition-all", activeTab?.isRefundMode ? "bg-red-600 text-white shadow-lg shadow-red-600/30" : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10")}><RefreshCw className="w-4 h-4"/> {isRTL ? 'إسترجاع سريع' : 'Quick Refund'}</button>
                         <button className="h-10 px-5 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-500/30 text-[11px] font-black uppercase flex items-center gap-2 tracking-widest active:scale-95 transition-all"><PauseCircle className="w-4 h-4"/> {isRTL ? 'تعليق الفاتورة' : 'Suspend'}</button>
                         <button onClick={()=>updateTab('cart',[])} className="h-10 px-5 rounded-xl bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-500/30 text-[11px] font-black uppercase flex items-center gap-2 tracking-widest active:scale-95 transition-all"><Trash2 className="w-4 h-4"/> {isRTL ? 'تفريغ السلة' : 'Clear Cart'}</button>
                     </div>
                 </div>
+
+                {/* Mobile: floating "view cart" button (< lg) */}
+                <button
+                    onClick={() => setMobilePane('cart')}
+                    className="lg:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 h-14 ps-5 pe-6 rounded-2xl bg-blue-600 text-white shadow-2xl shadow-blue-600/40 flex items-center gap-3 active:scale-95 transition-all"
+                    aria-label={isRTL ? 'عرض السلة' : 'View cart'}
+                >
+                    <div className="relative">
+                        <ShoppingCart className="w-6 h-6" />
+                        {cart.length > 0 && (
+                            <span className="absolute -top-2 -end-2 min-w-[20px] h-5 px-1 rounded-full bg-white text-blue-700 text-[10px] font-black flex items-center justify-center">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+                        )}
+                    </div>
+                    <span className="text-sm font-black tabular-nums">{total.toFixed(2)} {currencySymbol}</span>
+                </button>
             </div>
 
             {/* PAYMENT MODAL */}

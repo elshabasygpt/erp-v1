@@ -166,7 +166,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
                     <div key={i} className="p-6 rounded-2xl glass-card flex items-center justify-between border border-default">
                         <div>
                             <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>{stat.label}</p>
-                            <p className="text-3xl font-black" style={{ color: `var(--color-${stat.color}-500, #4f46e5)` }}>
+                            <p className="text-3xl font-black" style={{ color: `var(--color-${stat.color}-500, #10b981)` }}>
                                 {stat.value.toLocaleString()} <span className="text-sm font-normal">ر.س</span>
                             </p>
                         </div>

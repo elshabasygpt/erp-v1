@@ -98,9 +98,9 @@ export default function RegionalSettingsSection({ isRTL }: RegionalSettingsSecti
             {/* Header */}
             <div
                 className="px-6 py-4 flex items-center gap-3"
-                style={{ borderBottom: '1px solid var(--border-default)', background: 'rgba(99,102,241,0.06)' }}
+                style={{ borderBottom: '1px solid var(--border-default)', background: 'rgba(16,185,129,0.06)' }}
             >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: 'rgba(99,102,241,0.15)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: 'rgba(16,185,129,0.15)' }}>
                     🌍
                 </div>
                 <div>
@@ -278,7 +278,7 @@ export default function RegionalSettingsSection({ isRTL }: RegionalSettingsSecti
                 {country === 'SA' && (
                     <div
                         className="flex items-start gap-2 p-3 rounded-lg text-xs"
-                        style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.2)' }}
+                        style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.2)' }}
                     >
                         <span className="text-base mt-0.5">ℹ️</span>
                         <p style={{ color: 'var(--text-secondary)' }}>

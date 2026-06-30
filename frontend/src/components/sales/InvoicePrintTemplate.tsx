@@ -278,10 +278,10 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                             // ── A4 LAYOUT ──
                             <div>
                                 {/* ── Top: Logo + Invoice Title ── */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #4f46e5' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #10b981' }}>
                             <div>
                                 {settings.invoice_show_logo && (
-                                    <div style={{ width: 56, height: 56, borderRadius: 12, background: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                                    <div style={{ width: 56, height: 56, borderRadius: 12, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
                                         <span style={{ color: '#fff', fontWeight: 700, fontSize: 24 }}>$</span>
                                     </div>
                                 )}
@@ -292,14 +292,14 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                 <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0' }}>{isRTL ? 'هاتف: ' : 'Tel: '}{invoice.seller.phone}</p>
                             </div>
                             <div style={{ textAlign: isRTL ? 'left' : 'right' }}>
-                                <div style={{ display: 'inline-block', background: '#4f46e5', color: '#fff', padding: '6px 16px', borderRadius: 8, fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
+                                <div style={{ display: 'inline-block', background: '#10b981', color: '#fff', padding: '6px 16px', borderRadius: 8, fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
                                     {typeLabel}
                                 </div>
                                 <table style={{ fontSize: 13 }}>
                                     <tbody>
                                         <tr>
                                             <td style={{ color: '#64748b', paddingInlineEnd: 12 }}>{isRTL ? 'رقم الفاتورة:' : 'Invoice #:'}</td>
-                                            <td style={{ fontWeight: 700, color: '#4f46e5' }}>{invoice.id}</td>
+                                            <td style={{ fontWeight: 700, color: '#10b981' }}>{invoice.id}</td>
                                         </tr>
                                         <tr>
                                             <td style={{ color: '#64748b' }}>{isRTL ? 'التاريخ:' : 'Date:'}</td>
@@ -352,7 +352,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                         {/* ── Items Table ── */}
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 13 }}>
                             <thead>
-                                <tr style={{ background: '#4f46e5', color: '#fff' }}>
+                                <tr style={{ background: '#10b981', color: '#fff' }}>
                                     <th style={{ padding: '8px 10px', textAlign: isRTL ? 'right' : 'left' }}>#</th>
                                     <th style={{ padding: '8px 10px', textAlign: isRTL ? 'right' : 'left' }}>{isRTL ? 'الصنف' : 'Item'}</th>
                                     <th style={{ padding: '8px 10px', textAlign: 'center' }}>{isRTL ? 'الكمية' : 'Qty'}</th>
@@ -418,9 +418,9 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                             <td style={{ color: '#7c3aed', padding: '4px 0' }}>{isRTL ? `ضريبة القيمة المضافة (${taxRate}%)` : `VAT (${taxRate}%)`}</td>
                                             <td style={{ textAlign: 'end', color: '#7c3aed', fontWeight: 600 }}>{formatAmount(totalVat)}</td>
                                         </tr>
-                                        <tr style={{ borderTop: '2px solid #4f46e5' }}>
+                                        <tr style={{ borderTop: '2px solid #10b981' }}>
                                             <td style={{ fontWeight: 700, fontSize: 15, padding: '8px 0 0' }}>{isRTL ? 'الإجمالي شامل الضريبة' : 'Total (incl. VAT)'}</td>
-                                            <td style={{ textAlign: 'end', fontWeight: 800, fontSize: 18, color: '#4f46e5', padding: '8px 0 0' }}>{formatAmount(grandTotal)}</td>
+                                            <td style={{ textAlign: 'end', fontWeight: 800, fontSize: 18, color: '#10b981', padding: '8px 0 0' }}>{formatAmount(grandTotal)}</td>
                                         </tr>
                                     </tbody>
                                 </table>

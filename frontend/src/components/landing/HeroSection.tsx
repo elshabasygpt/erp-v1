@@ -4,8 +4,8 @@ export default function HeroSection({ isRTL, locale, dict, stats }: { isRTL: boo
     return (
         <section className="relative min-h-screen flex items-center pt-16">
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-indigo-500/8 rounded-full blur-3xl animate-float" />
-                <div className="absolute bottom-20 -left-20 w-[400px] h-[400px] bg-purple-500/6 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+                <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-emerald-500/8 rounded-full blur-3xl animate-float" />
+                <div className="absolute bottom-20 -left-20 w-[400px] h-[400px] bg-teal-500/6 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
                 <div className="absolute top-1/3 left-1/2 w-[300px] h-[300px] bg-cyan-500/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '1.5s' }} />
                 <div className="absolute inset-0 opacity-[0.015]"
                     style={{
@@ -18,7 +18,7 @@ export default function HeroSection({ isRTL, locale, dict, stats }: { isRTL: boo
             <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
                 <div className="max-w-3xl mx-auto text-center">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium mb-8 animate-fade-in"
-                        style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)', color: 'var(--color-primary)' }}>
+                        style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: 'var(--color-primary)' }}>
                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         {isRTL ? 'متوافق مع هيئة ZATCA' : 'ZATCA Compliant'}
                     </div>
@@ -29,7 +29,7 @@ export default function HeroSection({ isRTL, locale, dict, stats }: { isRTL: boo
                         </span>
                         <br />
                         <span className="bg-clip-text text-transparent animate-gradient"
-                            style={{ backgroundImage: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa, #6366f1)', backgroundSize: '200% 200%' }}>
+                            style={{ backgroundImage: 'linear-gradient(135deg, #10b981, #14b8a6, #34d399, #10b981)', backgroundSize: '200% 200%' }}>
                             {isRTL ? 'بذكاء وكفاءة' : 'smarter & faster'}
                         </span>
                     </h1>

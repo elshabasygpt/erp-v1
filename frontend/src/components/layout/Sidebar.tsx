@@ -85,7 +85,7 @@ const GROUPS: MenuGroup[] = [
         iconKey: 'sales',
         labelAr: 'المبيعات',
         labelEn: 'Sales',
-        color: '#6366f1',
+        color: '#10b981',
         children: [
             { key: 'sales_dashboard', path: '/sales', iconKey: 'dashboard', labelAr: 'لوحة المبيعات', labelEn: 'Sales Dashboard' },
             { key: 'sales_list', path: '/sales/list', iconKey: 'sales', labelAr: 'قائمة الفواتير', labelEn: 'Invoices List' },
@@ -237,7 +237,7 @@ const EXTRA_GROUPS: MenuGroup[] = [
 ];
 
 const SINGLE_ITEMS: SingleItem[] = [
-    { key: 'tasks', path: '/tasks', iconKey: 'tasks', labelAr: 'المهام والمتابعة', labelEn: 'Tasks', badge: { text: 'New', color: '#6366f1' } },
+    { key: 'tasks', path: '/tasks', iconKey: 'tasks', labelAr: 'المهام والمتابعة', labelEn: 'Tasks', badge: { text: 'New', color: '#10b981' } },
     { key: 'approvals', path: '/approvals', iconKey: 'shield', labelAr: 'الموافقات', labelEn: 'Approvals' },
     { key: 'expenses', path: '/expenses', iconKey: 'expenses', labelAr: 'المصروفات', labelEn: 'Expenses' },
     { key: 'activity', path: '/activity', iconKey: 'reports', labelAr: 'سجل النشاطات', labelEn: 'Activity Log' },
@@ -472,7 +472,7 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
             <div className="h-16 flex items-center gap-3 px-4 flex-shrink-0 relative"
                 style={{ borderBottom: '1px solid var(--border-default)' }}>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)' }}>
+                    style={{ background: 'var(--primary-tint)', border: '1px solid var(--primary-glow)' }}>
                     <span className="font-black text-sm" style={{ color: 'var(--color-primary)' }}>$</span>
                 </div>
                 {effectivelyExpanded && (
@@ -510,11 +510,11 @@ export default function Sidebar({ locale, dict }: SidebarProps) {
                         `}
                         style={{
                             background: pathname?.includes('/pos')
-                                ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
-                                : 'rgba(99,102,241,0.1)',
+                                ? 'var(--gradient-primary)'
+                                : 'var(--primary-tint)',
                             color: pathname?.includes('/pos') ? 'white' : 'var(--color-primary)',
-                            border: '1px solid rgba(99,102,241,0.2)',
-                            boxShadow: pathname?.includes('/pos') ? '0 4px 12px rgba(99,102,241,0.4)' : 'none',
+                            border: '1px solid var(--primary-glow)',
+                            boxShadow: pathname?.includes('/pos') ? '0 4px 12px var(--primary-glow-strong)' : 'none',
                         }}
                     >
                         <Icon path={ICONS.pos} className="w-5 h-5 flex-shrink-0" />

@@ -1,18 +1,29 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Pagination from '@/components/ui/Pagination';
 import { purchasesApi, suppliersApi, inventoryApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 
+const PAGE_SIZE = 12;
+
 export default function PurchaseOrdersPage() {
     const { taxRate } = useRegionalSettings();
+    const params = useParams();
+    const isRTL = params?.locale === 'ar';
     const [orders, setOrders] = useState<any[]>([]);
     const [suppliers, setSuppliers] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [page, setPage] = useState(1);
+
+    const pageCount = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+    const safePage = Math.min(page, pageCount);
+    const pagedOrders = orders.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
     // Form
     const [supplierId, setSupplierId] = useState('');
@@ -105,15 +116,15 @@ export default function PurchaseOrdersPage() {
                         <Button variant="outline" onClick={() => setItems([...items, { product_id: '', quantity: 1, unit_price: 0, tax_rate: taxRate }])}>إضافة صنف آخر</Button>
 
                         <div className="flex justify-end pt-4">
-                            <Button className="bg-indigo-600" onClick={handleCreate}>حفظ أمر الشراء</Button>
+                            <Button className="bg-primary-600" onClick={handleCreate}>حفظ أمر الشراء</Button>
                         </div>
                     </div>
                 </Card>
             )}
 
             <div className="grid gap-4">
-                {orders.map(order => (
-                    <Card key={order.id} className="p-4 flex justify-between items-center border-l-4 border-indigo-600">
+                {pagedOrders.map(order => (
+                    <Card key={order.id} className="p-4 flex justify-between items-center border-l-4 border-primary-600">
                         <div>
                             <h3 className="font-bold text-lg">{order.po_number}</h3>
                             <p className="text-sm">المورد: {order.supplier?.name_ar || 'غير محدد'}</p>
@@ -129,6 +140,18 @@ export default function PurchaseOrdersPage() {
                 ))}
                 {orders.length === 0 && !loading && <p>لا توجد أوامر شراء</p>}
             </div>
+
+            {orders.length > PAGE_SIZE && (
+                <Pagination
+                    page={safePage}
+                    pageCount={pageCount}
+                    onPageChange={setPage}
+                    totalItems={orders.length}
+                    pageSize={PAGE_SIZE}
+                    isRTL={isRTL}
+                    className="mt-4"
+                />
+            )}
         </div>
     );
 }
