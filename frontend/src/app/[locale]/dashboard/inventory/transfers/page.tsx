@@ -169,7 +169,7 @@ export default function StockTransfersPage() {
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden p-6">
                          <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-gray-900">تفاصيل التحويل: {viewData.reference_number}</h2>
-                            <button onClick={() => setViewData(null)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                            <button onClick={() => setViewData(null)} className="text-gray-400 hover:text-gray-600 text-2xl" aria-label="إغلاق">&times;</button>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 mb-4 text-sm bg-gray-50 p-4 rounded-xl">
@@ -208,7 +208,7 @@ export default function StockTransfersPage() {
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden p-6 max-h-[90vh] overflow-y-auto">
                          <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-gray-900">إصدار أمر تحويل (مسودة)</h2>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl" aria-label="إغلاق">&times;</button>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
@@ -245,7 +245,7 @@ export default function StockTransfersPage() {
                                             <input type="number" step="0.01" min="0.01" required value={item.quantity} onChange={e => updateProductRow(index, 'quantity', e.target.value)} placeholder="الكمية" className="w-full border-gray-300 rounded-lg p-2 border text-sm" />
                                         </div>
                                         {formData.items.length > 1 && (
-                                            <button type="button" onClick={() => removeProductRow(index)} className="text-red-500 hover:text-red-700 p-2 bg-red-50 rounded-lg">&times;</button>
+                                            <button type="button" onClick={() => removeProductRow(index)} className="text-red-500 hover:text-red-700 p-2 bg-red-50 rounded-lg" aria-label="حذف">&times;</button>
                                         )}
                                     </div>
                                 ))}

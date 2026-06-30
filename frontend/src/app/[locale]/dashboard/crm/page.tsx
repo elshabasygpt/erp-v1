@@ -186,7 +186,7 @@ export default function CRMPipelinePage() {
                     <div className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
                         <div className="p-6 border-b border-surface-100 dark:border-surface-800 flex justify-between items-center">
                             <h2 className="text-xl font-bold">{isRTL ? 'إضافة صفقة جديدة' : 'Add New Deal'}</h2>
-                            <button onClick={() => setShowModal(false)} className="text-surface-400 hover:text-surface-900">✕</button>
+                            <button onClick={() => setShowModal(false)} className="text-surface-400 hover:text-surface-900" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>

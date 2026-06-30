@@ -43,7 +43,7 @@ export default function PriceCompareModal({
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         📊 {isRTL ? 'مقارنة أسعار الموردين' : 'Supplier Price Comparison'} — {productName}
                     </h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none">&times;</button>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                 </div>
 
                 <div className="p-4 flex-1 overflow-y-auto">

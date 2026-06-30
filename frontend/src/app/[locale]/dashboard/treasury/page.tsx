@@ -429,7 +429,7 @@ export default function TreasuryPage() {
                                 <h2 className="text-lg font-bold">{isRTL ? 'كشف حساب' : 'Statement'} - {isRTL ? selectedSafe.name_ar || selectedSafe.name : selectedSafe.name}</h2>
                                 <p className="text-sm text-slate-500 mt-1">{isRTL ? 'الرصيد الحالي:' : 'Current Balance:'} <span className="font-bold text-emerald-600">{parseFloat(selectedSafe.balance).toFixed(2)}</span></p>
                             </div>
-                            <button onClick={() => setSelectedSafe(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl leading-none">&times;</button>
+                            <button onClick={() => setSelectedSafe(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl leading-none" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <div className="p-0 overflow-y-auto flex-1">
                             {loadingTransactions ? (
@@ -483,7 +483,7 @@ export default function TreasuryPage() {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700">
                         <div className="p-5 flex justify-between items-center border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                             <h2 className="text-lg font-bold">{isRTL ? 'تعديل خزينة/حساب' : 'Edit Safe/Account'}</h2>
-                            <button onClick={() => setEditingSafe(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl leading-none">&times;</button>
+                            <button onClick={() => setEditingSafe(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl leading-none" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <form onSubmit={handleUpdateSafe} className="p-5 space-y-4">
                             <div>

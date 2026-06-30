@@ -322,7 +322,7 @@ export default function WarehousesPage() {
                             <button
                                 onClick={closeModal}
                                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none transition-colors"
-                            >
+                             aria-label={isRTL ? 'إغلاق' : 'Close'}>
                                 ×
                             </button>
                         </div>

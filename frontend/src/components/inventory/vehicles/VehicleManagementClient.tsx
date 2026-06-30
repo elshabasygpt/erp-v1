@@ -284,7 +284,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
                                 <div className="flex items-center gap-3 w-full h-16 px-3 rounded-lg border-2 border-blue-400 bg-blue-50 dark:bg-blue-500/10">
                                     <img src={makeLogoPreview} className="h-10 w-10 object-contain rounded-lg border border-blue-200 bg-white" alt="" />
                                     <span className="flex-1 text-sm text-slate-600 dark:text-white/70 truncate">{makeLogo?.name}</span>
-                                    <button type="button" onClick={() => clearImage(setMakeLogo, setMakeLogoPreview, makeLogoRef)} className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0">✕</button>
+                                    <button type="button" onClick={() => clearImage(setMakeLogo, setMakeLogoPreview, makeLogoRef)} className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                                 </div>
                             ) : (
                                 <label className="flex flex-col items-center justify-center gap-1 w-full h-16 rounded-lg border-2 border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a2e] cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 dark:hover:border-blue-500/50 transition-colors">
@@ -348,7 +348,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
                                 <div className="flex items-center gap-3 w-full h-16 px-3 rounded-lg border-2 border-amber-400 bg-amber-50 dark:bg-amber-500/10">
                                     <img src={modelImagePreview} className="h-10 w-10 object-contain rounded-lg border border-amber-200 bg-white" alt="" />
                                     <span className="flex-1 text-sm text-slate-600 dark:text-white/70 truncate">{modelImage?.name}</span>
-                                    <button type="button" onClick={() => clearImage(setModelImage, setModelImagePreview, modelImageRef)} className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0">✕</button>
+                                    <button type="button" onClick={() => clearImage(setModelImage, setModelImagePreview, modelImageRef)} className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                                 </div>
                             ) : (
                                 <label className="flex flex-col items-center justify-center gap-1 w-full h-16 rounded-lg border-2 border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a2e] cursor-pointer hover:border-amber-400 hover:bg-amber-50/50 dark:hover:border-amber-500/50 transition-colors">
@@ -431,7 +431,7 @@ export function VehicleManagementClient({ locale, dict }: { locale: string; dict
                                 <div className="flex items-center gap-3 w-full h-16 px-3 rounded-lg border-2 border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10">
                                     <img src={engineImagePreview} className="h-10 w-10 object-contain rounded-lg border border-emerald-200 bg-white" alt="" />
                                     <span className="flex-1 text-sm text-slate-600 dark:text-white/70 truncate">{engineImage?.name}</span>
-                                    <button type="button" onClick={() => clearImage(setEngineImage, setEngineImagePreview, engineImageRef)} className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0">✕</button>
+                                    <button type="button" onClick={() => clearImage(setEngineImage, setEngineImagePreview, engineImageRef)} className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                                 </div>
                             ) : (
                                 <label className="flex flex-col items-center justify-center gap-1 w-full h-16 rounded-lg border-2 border-dashed border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a2e] cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:border-emerald-500/50 transition-colors">

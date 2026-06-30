@@ -81,7 +81,7 @@ export const ManageGroupsModal = memo(function ManageGroupsModal({ dict, locale,
                     type="button" 
                     onClick={(e) => { e.preventDefault(); onChange(''); }}
                     className="absolute -top-1 -right-1 bg-red-500 text-white w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px]"
-                >✕</button>
+                 aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
             )}
         </label>
     );

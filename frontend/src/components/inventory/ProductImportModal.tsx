@@ -379,7 +379,7 @@ export default function ProductImportModal({ dict, locale, onClose, onSuccess, e
                         </p>
                     </div>
                     {step !== 3 && (
-                        <button onClick={onClose} className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-full transition-colors">
+                        <button onClick={onClose} className="p-2 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-full transition-colors" aria-label={isRTL ? 'إغلاق' : 'Close'}>
                             ✕
                         </button>
                     )}

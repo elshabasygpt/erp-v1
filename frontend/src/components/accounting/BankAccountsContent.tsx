@@ -192,7 +192,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                     <form onSubmit={handleCreateOrUpdateBank} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="font-bold text-lg">{editingBank ? (isRTL ? 'تعديل الحساب' : 'Edit Account') : (isRTL ? 'إضافة حساب بنكي' : 'Add Bank Account')}</h2>
-                            <button type="button" onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button type="button" onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
@@ -235,7 +235,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                                 <h2 className="font-bold text-lg">{isRTL ? 'مطابقة الحساب:' : 'Reconciliation:'} {selectedBank.name}</h2>
                                 <p className="text-sm text-slate-500 mt-1">{selectedBank.account_number}</p>
                             </div>
-                            <button onClick={() => setIsReconModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button onClick={() => setIsReconModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">

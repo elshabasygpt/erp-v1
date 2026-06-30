@@ -144,7 +144,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
                             const newTypes = channelTypes.filter(type => type !== t);
                             await api.put('/settings', { sales_channel_types: newTypes });
                             setChannelTypes(newTypes);
-                        }} className="hover:text-red-500">&times;</button>
+                        }} className="hover:text-red-500" aria-label={isRTL ? 'حذف' : 'Remove'}>&times;</button>
                     </span>
                 ))}
             </div>
@@ -214,7 +214,7 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
                             <h2 className="text-xl font-bold">
                                 {modal.type === 'add' ? (isRTL ? 'إضافة قناة جديدة' : 'Add New Channel') : (isRTL ? 'تعديل قناة البيع' : 'Edit Channel')}
                             </h2>
-                            <button onClick={() => setModal({ isOpen: false, type: 'add', data: null })} className="text-gray-400 hover:text-red-500 text-2xl leading-none">&times;</button>
+                            <button onClick={() => setModal({ isOpen: false, type: 'add', data: null })} className="text-gray-400 hover:text-red-500 text-2xl leading-none" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         
                         <div className="p-5 sm:p-6 overflow-y-auto flex-1">

@@ -191,7 +191,7 @@ export default function ShippingPage() {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="font-bold text-lg flex items-center gap-2">🚚 {isRTL ? 'شحنة جديدة' : 'New Shipment'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <form onSubmit={handleSave} className="p-6 space-y-4">
                             <div>
@@ -251,7 +251,7 @@ export default function ShippingPage() {
                                     {STATUS_CONFIG[selectedShipment.status]?.icon} {isRTL ? STATUS_CONFIG[selectedShipment.status]?.label_ar : STATUS_CONFIG[selectedShipment.status]?.label_en}
                                 </span>
                             </div>
-                            <button onClick={() => setIsDetailOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button onClick={() => setIsDetailOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <div className="p-6 space-y-3 text-sm">
                             {[

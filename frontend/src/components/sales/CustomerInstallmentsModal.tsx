@@ -141,7 +141,7 @@ export default function CustomerInstallmentsModal({ invoice, isRTL, onClose, for
                                             </div>
                                         ) : (
                                             <div className="flex items-center pt-5">
-                                                <button onClick={() => setInstallments(installments.filter((_, i) => i !== idx))} className="text-surface-500 hover:text-red-500 p-1.5 hover:bg-red-500/10 rounded-lg">✕</button>
+                                                <button onClick={() => setInstallments(installments.filter((_, i) => i !== idx))} className="text-surface-500 hover:text-red-500 p-1.5 hover:bg-red-500/10 rounded-lg" aria-label={isRTL ? 'حذف' : 'Remove'}>✕</button>
                                             </div>
                                         )}
                                     </div>

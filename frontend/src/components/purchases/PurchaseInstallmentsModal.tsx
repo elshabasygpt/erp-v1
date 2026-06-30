@@ -152,7 +152,7 @@ export default function PurchaseInstallmentsModal({ invoice, isRTL, onClose, for
                                                 >
                                                     <CreditCard className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => setInstallments(installments.filter((_, i) => i !== idx))} className="text-surface-500 hover:text-red-500 p-1.5 hover:bg-red-500/10 rounded-lg">✕</button>
+                                                <button onClick={() => setInstallments(installments.filter((_, i) => i !== idx))} className="text-surface-500 hover:text-red-500 p-1.5 hover:bg-red-500/10 rounded-lg" aria-label={isRTL ? 'حذف' : 'Remove'}>✕</button>
                                             </div>
                                         )}
                                     </div>

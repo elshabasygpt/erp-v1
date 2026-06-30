@@ -88,7 +88,7 @@ export default function ProductExportModal({ dict, locale, onClose, groups, ware
                         </div>
                     </div>
                     {!isInline && (
-                        <button onClick={onClose} className="p-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors">
+                        <button onClick={onClose} className="p-2 text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors" aria-label={isRTL ? 'إغلاق' : 'Close'}>
                             ✕
                         </button>
                     )}

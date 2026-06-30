@@ -62,7 +62,7 @@ export default function AiChatWidget() {
                                 <p className="text-[10px] text-white/80">Online & ready to assist</p>
                             </div>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1.5 rounded-full transition">
+                        <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-1.5 rounded-full transition" aria-label={isRTL ? 'إغلاق' : 'Close'}>
                             ✕
                         </button>
                     </div>

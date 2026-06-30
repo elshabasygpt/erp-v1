@@ -224,7 +224,7 @@ export default function OnboardingWizard() {
                                                 className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none transition text-sm"
                                             />
                                             {data.warehouses.length > 1 && (
-                                                <button onClick={() => setData({...data, warehouses: data.warehouses.filter((_, j) => j !== i)})} className="px-3 text-red-400 hover:text-red-300">✕</button>
+                                                <button onClick={() => setData({...data, warehouses: data.warehouses.filter((_, j) => j !== i)})} className="px-3 text-red-400 hover:text-red-300" aria-label={isRTL ? 'حذف' : 'Remove'}>✕</button>
                                             )}
                                         </div>
                                     ))}

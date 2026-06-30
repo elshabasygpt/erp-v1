@@ -143,7 +143,7 @@ export function ProductComponentsTab({ productId, isRTL }: ProductComponentsTabP
                                 <button 
                                     className="text-red-500 hover:text-red-700 p-2"
                                     onClick={() => removeComponent(idx)}
-                                >
+                                 aria-label={isRTL ? 'حذف' : 'Remove'}>
                                     ✕
                                 </button>
                             </div>

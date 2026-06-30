@@ -85,7 +85,7 @@ const PurchasesModals = memo(function PurchasesModals({
                                 <span className="text-2xl">{newOrder.id ? '📝' : '📄'}</span>
                                 {newOrder.id ? (isRTL ? 'تعديل الفاتورة' : 'Edit Invoice') : (isRTL ? 'فاتورة شراء جديدة' : 'New Purchase Invoice')}
                             </h2>
-                            <button onClick={() => setShowOrderModal(false)} className="btn-icon text-surface-400 hover:text-red-500 bg-white dark:bg-surface-800">✕</button>
+                            <button onClick={() => setShowOrderModal(false)} className="btn-icon text-surface-400 hover:text-red-500 bg-white dark:bg-surface-800" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                         </div>
                         
                         {/* Modal Body */}
@@ -206,7 +206,7 @@ const PurchasesModals = memo(function PurchasesModals({
                                                     {newOrder.items.length > 1 && (
                                                         <button onClick={() => {
                                                             const arr = newOrder.items.filter((_:any, i:number) => i !== idx); setNewOrder({...newOrder, items: arr});
-                                                        }} className="w-8 h-8 flex items-center justify-center rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">✕</button>
+                                                        }} className="w-8 h-8 flex items-center justify-center rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={isRTL ? 'حذف' : 'Remove'}>✕</button>
                                                     )}
                                                 </td>
                                             </tr>
@@ -321,7 +321,7 @@ const PurchasesModals = memo(function PurchasesModals({
                                 <span className="text-2xl">↩️</span>
                                 {isRTL ? 'تسجيل مرتجع مشتريات' : 'New Purchase Return'}
                             </h2>
-                            <button onClick={() => setShowReturnModal(false)} className="btn-icon text-surface-400 hover:text-red-500 bg-white dark:bg-surface-800">✕</button>
+                            <button onClick={() => setShowReturnModal(false)} className="btn-icon text-surface-400 hover:text-red-500 bg-white dark:bg-surface-800" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                         </div>
                         
                         {/* Modal Body */}
@@ -403,7 +403,7 @@ const PurchasesModals = memo(function PurchasesModals({
                                                     {newReturn.items.length > 1 && (
                                                         <button onClick={() => {
                                                             const arr = newReturn.items.filter((_:any, i:number) => i !== idx); setNewReturn({...newReturn, items: arr});
-                                                        }} className="w-8 h-8 flex items-center justify-center rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">✕</button>
+                                                        }} className="w-8 h-8 flex items-center justify-center rounded-lg text-surface-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={isRTL ? 'حذف' : 'Remove'}>✕</button>
                                                     )}
                                                 </td>
                                             </tr>

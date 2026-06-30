@@ -165,7 +165,7 @@ export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: Manage
                                 {newImagePreview ? <img src={newImagePreview} alt="Brand logo preview" className="w-full h-full object-contain" /> : <ImageIcon className="w-4 h-4 text-gray-400" />}
                                 <input ref={newFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleImageChange(e.target.files[0], false)} />
                                 {newImagePreview && (
-                                    <button type="button" onClick={(e) => { e.preventDefault(); setNewImage(null); setNewImagePreview(''); newFileInputRef.current!.value = ''; }} className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]">✕</button>
+                                    <button type="button" onClick={(e) => { e.preventDefault(); setNewImage(null); setNewImagePreview(''); newFileInputRef.current!.value = ''; }} className="absolute -top-1 -right-1 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                                 )}
                             </label>
                             
@@ -196,7 +196,7 @@ export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: Manage
                                                 <input className="input-field py-2 text-sm flex-1" placeholder={isRTL ? 'الاسم (عربي)' : 'Name (Arabic)'} value={editNameAr} onChange={e => setEditNameAr(e.target.value)} />
                                                 <input className="input-field py-2 text-sm flex-1" placeholder={isRTL ? 'الاسم (إنجليزي)' : 'Name (English)'} value={editName} onChange={e => setEditName(e.target.value)} />
                                                 <button onClick={saveEdit} disabled={isSaving || (!editName && !editNameAr)} className="text-emerald-500 hover:text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 p-2 rounded-lg font-bold">✅</button>
-                                                <button onClick={() => setEditingBrand(null)} className="text-gray-500 bg-gray-100 dark:bg-slate-700 p-2 rounded-lg font-bold">✕</button>
+                                                <button onClick={() => setEditingBrand(null)} className="text-gray-500 bg-gray-100 dark:bg-slate-700 p-2 rounded-lg font-bold" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                                             </div>
                                         </div>
                                     ) : (

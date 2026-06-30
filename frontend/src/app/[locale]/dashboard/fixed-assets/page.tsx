@@ -247,7 +247,7 @@ export default function FixedAssetsPage() {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="font-bold text-lg">{isRTL ? 'تسجيل أصل ثابت جديد' : 'Register New Fixed Asset'}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <form onSubmit={handleSave} className="p-6 space-y-4">
                             <div className="grid grid-cols-2 gap-4">

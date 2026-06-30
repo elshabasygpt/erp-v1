@@ -228,7 +228,7 @@ export default function OpeningBalancesPage() {
                             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                                 🔓 {isRTL ? 'ترحيل رصيد افتتاحي' : 'Post Opening Balance'}
                             </h2>
-                            <button onClick={() => setShowForm(false)} className="btn-icon">✕</button>
+                            <button onClick={() => setShowForm(false)} className="btn-icon" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                         </div>
                         <div className="p-6 space-y-4">
                             {/* Type selector */}

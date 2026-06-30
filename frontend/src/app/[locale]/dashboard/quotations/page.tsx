@@ -217,7 +217,7 @@ export default function QuotationsPage() {
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl my-8">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h3 className="text-lg font-bold">{form.id ? (isRTL ? 'تعديل عرض السعر' : 'Edit Quotation') : (isRTL ? 'عرض سعر جديد' : 'New Quotation')}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <form onSubmit={handleSave} className="p-6 space-y-5">
                             <div className="grid grid-cols-2 gap-4">
@@ -276,7 +276,7 @@ export default function QuotationsPage() {
                                                 </select>
                                             </div>
                                             <div className="col-span-1 flex justify-center">
-                                                {form.items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600">&times;</button>}
+                                                {form.items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600" aria-label={isRTL ? 'حذف' : 'Remove'}>&times;</button>}
                                             </div>
                                         </div>
                                     ))}
@@ -315,7 +315,7 @@ export default function QuotationsPage() {
                                 <h3 className="text-lg font-bold">{selectedQ.quotation_number}</h3>
                                 <p className="text-xs text-slate-500 mt-0.5">{selectedQ.customer?.name}</p>
                             </div>
-                            <button onClick={() => setIsDetailOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button onClick={() => setIsDetailOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <div className="p-6 space-y-3">
                             {selectedQ.items?.map((item: any, i: number) => (

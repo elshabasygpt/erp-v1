@@ -261,7 +261,7 @@ export default function SalesOrderModal({ dict, locale, onClose, quotation }: Sa
                                                 <input type="number" className="bg-transparent border-b border-white/10 w-16 text-center" value={item.quantity} onChange={e => setItems(items.map(it => it.id === item.id ? { ...it, quantity: +e.target.value } : it))} />
                                             </td>
                                             <td className="text-end font-bold text-primary-400">{item.price * item.quantity}</td>
-                                            <td><button onClick={() => setItems(items.filter(it => it.id !== item.id))} className="text-red-500">×</button></td>
+                                            <td><button onClick={() => setItems(items.filter(it => it.id !== item.id))} className="text-red-500" aria-label={isRTL ? 'حذف' : 'Remove'}>×</button></td>
                                         </tr>
                                     ))}
                                 </tbody>

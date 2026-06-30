@@ -141,7 +141,7 @@ export default function ManufacturingPage() {
                                                             onChange={e => updateBomRow(i, 'quantity', parseFloat(e.target.value))}
                                                             className="w-24 p-2 text-sm border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                                                             placeholder={isRTL ? 'الكمية' : 'Qty'}/>
-                                                        <button onClick={() => removeBomRow(i)} className="text-red-400 hover:text-red-600 text-xl px-1">&times;</button>
+                                                        <button onClick={() => removeBomRow(i)} className="text-red-400 hover:text-red-600 text-xl px-1" aria-label={isRTL ? 'حذف' : 'Remove'}>&times;</button>
                                                     </div>
                                                 ))}
                                             </div>

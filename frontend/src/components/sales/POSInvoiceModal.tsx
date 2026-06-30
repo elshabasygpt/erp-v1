@@ -415,7 +415,7 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
                                                 </td>
                                                 <td className="text-end font-bold" style={{ color: 'var(--text-primary)' }}>{formatCurrency((item.price - item.discountAmount) * item.quantity)}</td>
                                                 <td className="text-center">
-                                                    <button onClick={() => removeItem(item.id)} className="text-red-500/50 hover:text-red-500 font-bold">×</button>
+                                                    <button onClick={() => removeItem(item.id)} className="text-red-500/50 hover:text-red-500 font-bold" aria-label={isRTL ? 'حذف' : 'Remove'}>×</button>
                                                 </td>
                                             </tr>
                                         ))}

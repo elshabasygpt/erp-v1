@@ -138,7 +138,7 @@ const InventoryFormModal = memo(function InventoryFormModal({
                                         onClick={() => setForm((f:any) => ({ ...f, imageUrl: '' }))}
                                         className="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] hover:bg-red-600 transition-colors"
                                         type="button"
-                                    >
+                                     aria-label={isRTL ? 'إغلاق' : 'Close'}>
                                         ✕
                                     </button>
                                 )}

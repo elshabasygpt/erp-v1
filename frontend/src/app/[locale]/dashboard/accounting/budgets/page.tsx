@@ -318,7 +318,7 @@ export default function BudgetsPage() {
                             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
                                 {editId ? (isRTL ? '✏️ تعديل ميزانية' : '✏️ Edit Budget') : (isRTL ? '➕ ميزانية جديدة' : '➕ New Budget')}
                             </h2>
-                            <button onClick={() => setShowForm(false)} className="btn-icon">✕</button>
+                            <button onClick={() => setShowForm(false)} className="btn-icon" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                         </div>
                         <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
                             {/* Basic info */}

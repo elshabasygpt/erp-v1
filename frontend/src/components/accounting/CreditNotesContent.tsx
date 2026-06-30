@@ -163,7 +163,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                     <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="font-bold text-lg">{isRTL ? 'إصدار إشعار دائن جديد' : 'Issue New Credit Note'}</h2>
-                            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button type="button" onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
@@ -200,7 +200,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                     <form onSubmit={handleApply} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="font-bold text-lg">{isRTL ? 'تطبيق الرصيد المتاح' : 'Apply Available Credit'}</h2>
-                            <button type="button" onClick={() => setIsApplyModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                            <button type="button" onClick={() => setIsApplyModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800 mb-4">
