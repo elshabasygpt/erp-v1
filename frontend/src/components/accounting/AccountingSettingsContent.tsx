@@ -21,6 +21,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
     const [periods, setPeriods] = useState<any[]>([]);
     const [loadingPeriods, setLoadingPeriods] = useState(false);
     const [newPeriod, setNewPeriod] = useState({ name: '', start_date: '', end_date: '' });
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         if (activeTab === 'mappings') {
@@ -89,6 +90,14 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
 
     const handleCreatePeriod = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!String(newPeriod.name).trim()) newErrors.name = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(newPeriod.start_date).trim()) newErrors.start_date = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(newPeriod.end_date).trim()) newErrors.end_date = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         try {
             await accountingApi.createFiscalPeriod(newPeriod);
             setNewPeriod({ name: '', start_date: '', end_date: '' });
@@ -312,25 +321,28 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
             {activeTab === 'fiscal_periods' && (
                 <div className="space-y-6">
                     {/* Create Form */}
-                    <form onSubmit={handleCreatePeriod} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <form onSubmit={handleCreatePeriod} noValidate className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                         <h3 className="font-bold text-lg mb-4">{isRTL ? 'إضافة فترة مالية جديدة' : 'Add New Fiscal Period'}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'اسم الفترة (مثال: 2024)' : 'Period Name (e.g. 2024)'}</label>
-                                <input required type="text" value={newPeriod.name} onChange={e => setNewPeriod({...newPeriod, name: e.target.value})} className="w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700" />
+                                <input required type="text" value={newPeriod.name} onChange={e => { setNewPeriod({...newPeriod, name: e.target.value}); if (errors.name) setErrors(prev => { const next = { ...prev }; delete next.name; return next; }); }} aria-invalid={!!errors.name} aria-describedby={errors.name ? 'period-name-error' : undefined} className={`w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-900 ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                {errors.name && <p id="period-name-error" role="alert" className="text-xs text-red-500 mt-1">{errors.name}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'تاريخ البداية' : 'Start Date'}</label>
-                                <input required type="date" value={newPeriod.start_date} onChange={e => setNewPeriod({...newPeriod, start_date: e.target.value})} className="w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700" />
+                                <input required type="date" value={newPeriod.start_date} onChange={e => { setNewPeriod({...newPeriod, start_date: e.target.value}); if (errors.start_date) setErrors(prev => { const next = { ...prev }; delete next.start_date; return next; }); }} aria-invalid={!!errors.start_date} aria-describedby={errors.start_date ? 'period-start_date-error' : undefined} className={`w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-900 ${errors.start_date ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                {errors.start_date && <p id="period-start_date-error" role="alert" className="text-xs text-red-500 mt-1">{errors.start_date}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'تاريخ النهاية' : 'End Date'}</label>
                                 <div className="flex gap-2">
-                                    <input required type="date" value={newPeriod.end_date} onChange={e => setNewPeriod({...newPeriod, end_date: e.target.value})} className="w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700" />
-                                    <button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium whitespace-nowrap">
+                                    <input required type="date" value={newPeriod.end_date} onChange={e => { setNewPeriod({...newPeriod, end_date: e.target.value}); if (errors.end_date) setErrors(prev => { const next = { ...prev }; delete next.end_date; return next; }); }} aria-invalid={!!errors.end_date} aria-describedby={errors.end_date ? 'period-end_date-error' : undefined} className={`w-full p-2 border rounded-lg bg-slate-50 dark:bg-slate-900 ${errors.end_date ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                    <button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium whitespace-nowrap h-fit">
                                         {isRTL ? 'إضافة' : 'Add'}
                                     </button>
                                 </div>
+                                {errors.end_date && <p id="period-end_date-error" role="alert" className="text-xs text-red-500 mt-1">{errors.end_date}</p>}
                             </div>
                         </div>
                     </form>

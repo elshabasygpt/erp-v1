@@ -18,10 +18,12 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingBank, setEditingBank] = useState<any>(null);
     const [form, setForm] = useState({ name: '', account_number: '', bank_name: '', currency: defaultCurrency, opening_balance: 0 });
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [selectedBank, setSelectedBank] = useState<any>(null);
     const [isReconModalOpen, setIsReconModalOpen] = useState(false);
     const [reconForm, setReconForm] = useState({ statement_date: '', statement_balance: 0 });
+    const [reconErrors, setReconErrors] = useState<Record<string, string>>({});
     const [importFile, setImportFile] = useState<File | null>(null);
 
     const formModalRef = useModalA11y<HTMLFormElement>(isFormOpen, () => setIsFormOpen(false));
@@ -48,6 +50,16 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
 
     const handleCreateOrUpdateBank = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!String(form.name).trim()) newErrors.name = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(form.bank_name).trim()) newErrors.bank_name = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(form.account_number).trim()) newErrors.account_number = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(form.currency).trim()) newErrors.currency = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(form.opening_balance).trim()) newErrors.opening_balance = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         try {
             if (editingBank) {
                 await accountingApi.updateBankAccount(editingBank.id, form);
@@ -78,6 +90,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
 
     const handleEditBankClick = (bank: any) => {
         setEditingBank(bank);
+        setErrors({});
         setForm({
             name: bank.name || '',
             account_number: bank.account_number || '',
@@ -95,6 +108,13 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
 
     const handleStartReconciliation = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!String(reconForm.statement_date).trim()) newErrors.statement_date = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(reconForm.statement_balance).trim()) newErrors.statement_balance = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Object.keys(newErrors).length > 0) { setReconErrors(newErrors); return; }
+        setReconErrors({});
+
         if (!selectedBank) return;
         try {
             await accountingApi.startReconciliation(selectedBank.id, reconForm);
@@ -130,7 +150,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                     </p>
                 </div>
                 <button 
-                    onClick={() => { setEditingBank(null); setForm({ name: '', account_number: '', bank_name: '', currency: defaultCurrency, opening_balance: 0 }); setIsFormOpen(true); }}
+                    onClick={() => { setEditingBank(null); setErrors({}); setForm({ name: '', account_number: '', bank_name: '', currency: defaultCurrency, opening_balance: 0 }); setIsFormOpen(true); }}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition"
                 >
                     + {isRTL ? 'حساب بنكي جديد' : 'New Bank Account'}
@@ -194,7 +214,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             {/* Create/Edit Form Modal */}
             {isFormOpen && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <form ref={formModalRef} role="dialog" aria-modal="true" onSubmit={handleCreateOrUpdateBank} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+                    <form ref={formModalRef} role="dialog" aria-modal="true" onSubmit={handleCreateOrUpdateBank} noValidate className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="font-bold text-lg">{editingBank ? (isRTL ? 'تعديل الحساب' : 'Edit Account') : (isRTL ? 'إضافة حساب بنكي' : 'Add Bank Account')}</h2>
                             <button type="button" onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
@@ -202,24 +222,29 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'اسم الحساب (مثال: البنك الأهلي - جاري)' : 'Account Name'}</label>
-                                <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
+                                <input required value={form.name} onChange={e => { setForm({...form, name: e.target.value}); if (errors.name) setErrors(prev => { const next = { ...prev }; delete next.name; return next; }); }} aria-invalid={!!errors.name} aria-describedby={errors.name ? 'bank-name-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${errors.name ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                {errors.name && <p id="bank-name-error" role="alert" className="text-xs text-red-500 mt-1">{errors.name}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'اسم البنك' : 'Bank Name'}</label>
-                                <input required value={form.bank_name} onChange={e => setForm({...form, bank_name: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
+                                <input required value={form.bank_name} onChange={e => { setForm({...form, bank_name: e.target.value}); if (errors.bank_name) setErrors(prev => { const next = { ...prev }; delete next.bank_name; return next; }); }} aria-invalid={!!errors.bank_name} aria-describedby={errors.bank_name ? 'bank-bank_name-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${errors.bank_name ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                {errors.bank_name && <p id="bank-bank_name-error" role="alert" className="text-xs text-red-500 mt-1">{errors.bank_name}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'رقم الحساب / الآيبان' : 'Account Number / IBAN'}</label>
-                                <input required value={form.account_number} onChange={e => setForm({...form, account_number: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-left" dir="ltr" />
+                                <input required value={form.account_number} onChange={e => { setForm({...form, account_number: e.target.value}); if (errors.account_number) setErrors(prev => { const next = { ...prev }; delete next.account_number; return next; }); }} aria-invalid={!!errors.account_number} aria-describedby={errors.account_number ? 'bank-account_number-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg font-mono text-left ${errors.account_number ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} dir="ltr" />
+                                {errors.account_number && <p id="bank-account_number-error" role="alert" className="text-xs text-red-500 mt-1">{errors.account_number}</p>}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{isRTL ? 'العملة' : 'Currency'}</label>
-                                    <input required value={form.currency} onChange={e => setForm({...form, currency: e.target.value as Currency})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-center" />
+                                    <input required value={form.currency} onChange={e => { setForm({...form, currency: e.target.value as Currency}); if (errors.currency) setErrors(prev => { const next = { ...prev }; delete next.currency; return next; }); }} aria-invalid={!!errors.currency} aria-describedby={errors.currency ? 'bank-currency-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg font-mono text-center ${errors.currency ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                    {errors.currency && <p id="bank-currency-error" role="alert" className="text-xs text-red-500 mt-1">{errors.currency}</p>}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">{isRTL ? 'الرصيد الافتتاحي' : 'Opening Balance'}</label>
-                                    <input required type="number" step="0.01" value={form.opening_balance} onChange={e => setForm({...form, opening_balance: parseFloat(e.target.value)})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
+                                    <input required type="number" step="0.01" value={form.opening_balance} onChange={e => { setForm({...form, opening_balance: parseFloat(e.target.value)}); if (errors.opening_balance) setErrors(prev => { const next = { ...prev }; delete next.opening_balance; return next; }); }} aria-invalid={!!errors.opening_balance} aria-describedby={errors.opening_balance ? 'bank-opening_balance-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${errors.opening_balance ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                    {errors.opening_balance && <p id="bank-opening_balance-error" role="alert" className="text-xs text-red-500 mt-1">{errors.opening_balance}</p>}
                                 </div>
                             </div>
                         </div>
@@ -268,14 +293,16 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                             {/* Start New Reconciliation */}
                             <div>
                                 <h3 className="font-bold mb-3">{isRTL ? 'بدء مطابقة جديدة' : 'Start New Reconciliation'}</h3>
-                                <form onSubmit={handleStartReconciliation} className="flex flex-col sm:flex-row gap-4 items-end">
+                                <form onSubmit={handleStartReconciliation} noValidate className="flex flex-col sm:flex-row gap-4 items-end">
                                     <div className="flex-1">
                                         <label className="block text-xs font-medium mb-1 text-slate-500">{isRTL ? 'تاريخ الكشف' : 'Statement Date'}</label>
-                                        <input required type="date" value={reconForm.statement_date} onChange={e => setReconForm({...reconForm, statement_date: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" />
+                                        <input required type="date" value={reconForm.statement_date} onChange={e => { setReconForm({...reconForm, statement_date: e.target.value}); if (reconErrors.statement_date) setReconErrors(prev => { const next = { ...prev }; delete next.statement_date; return next; }); }} aria-invalid={!!reconErrors.statement_date} aria-describedby={reconErrors.statement_date ? 'recon-statement_date-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg text-sm ${reconErrors.statement_date ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                        {reconErrors.statement_date && <p id="recon-statement_date-error" role="alert" className="text-xs text-red-500 mt-1">{reconErrors.statement_date}</p>}
                                     </div>
                                     <div className="flex-1">
                                         <label className="block text-xs font-medium mb-1 text-slate-500">{isRTL ? 'رصيد الإغلاق في الكشف' : 'Statement Ending Balance'}</label>
-                                        <input required type="number" step="0.01" value={reconForm.statement_balance} onChange={e => setReconForm({...reconForm, statement_balance: parseFloat(e.target.value)})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm" />
+                                        <input required type="number" step="0.01" value={reconForm.statement_balance} onChange={e => { setReconForm({...reconForm, statement_balance: parseFloat(e.target.value)}); if (reconErrors.statement_balance) setReconErrors(prev => { const next = { ...prev }; delete next.statement_balance; return next; }); }} aria-invalid={!!reconErrors.statement_balance} aria-describedby={reconErrors.statement_balance ? 'recon-statement_balance-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg text-sm ${reconErrors.statement_balance ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                        {reconErrors.statement_balance && <p id="recon-statement_balance-error" role="alert" className="text-xs text-red-500 mt-1">{reconErrors.statement_balance}</p>}
                                     </div>
                                     <button type="submit" className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm whitespace-nowrap transition">
                                         {isRTL ? 'بدء المطابقة' : 'Start'}

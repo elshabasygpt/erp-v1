@@ -601,17 +601,30 @@ export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({
     const [notes, setNotes] = useState('');
     const [items, setItems] = useState<{ productId: string; actual: string }[]>([]);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const addItem = () => setItems([...items, { productId: '', actual: '' }]);
     const updateItem = (index: number, field: string, value: string) => {
         const newItems = [...items];
         newItems[index] = { ...newItems[index], [field]: value };
         setItems(newItems);
+        const key = `item_${index}_${field === 'productId' ? 'productId' : 'actual'}`;
+        if (errors[key]) setErrors(prev => { const next = { ...prev }; delete next[key]; return next; });
     };
     const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!String(warehouseId).trim()) newErrors.warehouseId = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        items.forEach((i, idx) => {
+            if (!String(i.productId).trim()) newErrors[`item_${idx}_productId`] = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+            if (!String(i.actual).trim()) newErrors[`item_${idx}_actual`] = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        });
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         if (!warehouseId || items.length === 0 || items.some(i => !i.productId || i.actual === '')) return toast.error(isRTL ? 'يرجى إكمال البيانات' : 'Please complete form');
         setLoading(true);
         try {
@@ -637,14 +650,15 @@ export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({
                     <div className="flex items-center gap-2"><span className="text-xl">⚖️</span><h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'تسوية جرد / هالك' : 'Inventory Adjustments'}</h2></div>
                     <button type="button" onClick={onClose} className="btn-icon"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} noValidate className="p-5 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'المستودع' : 'Warehouse'}</label>
-                            <select className="select-field py-2 text-sm w-full" value={warehouseId} onChange={e => setWarehouseId(e.target.value)} required>
+                            <select className={`select-field py-2 text-sm w-full ${errors.warehouseId ? 'border-red-500' : ''}`} value={warehouseId} onChange={e => { setWarehouseId(e.target.value); if (errors.warehouseId) setErrors(prev => { const next = { ...prev }; delete next.warehouseId; return next; }); }} required aria-invalid={!!errors.warehouseId} aria-describedby={errors.warehouseId ? 'adj-warehouseId-error' : undefined}>
                                 <option value="">{isRTL ? 'اختر المستودع' : 'Select Warehouse'}</option>
                                 {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                             </select>
+                            {errors.warehouseId && <p id="adj-warehouseId-error" role="alert" className="text-xs text-red-500 mt-1">{errors.warehouseId}</p>}
                         </div>
                         <div>
                             <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'النوع' : 'Type'}</label>
@@ -662,13 +676,17 @@ export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({
                         </div>
                         <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                             {items.map((item, index) => (
-                                <div key={index} className="flex gap-2 items-center p-2 rounded-lg" style={{ background: 'var(--bg-surface-secondary)' }}>
-                                    <select className="select-field py-1 text-sm flex-1" value={item.productId} onChange={e => updateItem(index, 'productId', e.target.value)} required>
-                                        <option value="">{isRTL ? 'اختر الصنف' : 'Product'}</option>
-                                        {products.map(p => <option key={p.id} value={p.id}>{isRTL ? p.name_ar : p.name}</option>)}
-                                    </select>
-                                    <input type="number" step="0.001" placeholder={isRTL ? 'الكمية الفعلية' : 'Actual'} className="input-field py-1 text-sm w-24" value={item.actual} onChange={e => updateItem(index, 'actual', e.target.value)} required />
-                                    <button type="button" onClick={() => removeItem(index)} className="btn-icon text-red-500 text-xs shadow-none" aria-label={isRTL ? 'حذف' : 'Delete'}>🗑️</button>
+                                <div key={index} className="p-2 rounded-lg" style={{ background: 'var(--bg-surface-secondary)' }}>
+                                    <div className="flex gap-2 items-center">
+                                        <select className={`select-field py-1 text-sm flex-1 ${errors[`item_${index}_productId`] ? 'border-red-500' : ''}`} value={item.productId} onChange={e => updateItem(index, 'productId', e.target.value)} required aria-invalid={!!errors[`item_${index}_productId`]} aria-describedby={errors[`item_${index}_productId`] ? `adj-item_${index}_productId-error` : undefined}>
+                                            <option value="">{isRTL ? 'اختر الصنف' : 'Product'}</option>
+                                            {products.map(p => <option key={p.id} value={p.id}>{isRTL ? p.name_ar : p.name}</option>)}
+                                        </select>
+                                        <input type="number" step="0.001" placeholder={isRTL ? 'الكمية الفعلية' : 'Actual'} className={`input-field py-1 text-sm w-24 ${errors[`item_${index}_actual`] ? 'border-red-500' : ''}`} value={item.actual} onChange={e => updateItem(index, 'actual', e.target.value)} required aria-invalid={!!errors[`item_${index}_actual`]} aria-describedby={errors[`item_${index}_actual`] ? `adj-item_${index}_actual-error` : undefined} />
+                                        <button type="button" onClick={() => removeItem(index)} className="btn-icon text-red-500 text-xs shadow-none" aria-label={isRTL ? 'حذف' : 'Delete'}>🗑️</button>
+                                    </div>
+                                    {errors[`item_${index}_productId`] && <p id={`adj-item_${index}_productId-error`} role="alert" className="text-xs text-red-500 mt-1">{errors[`item_${index}_productId`]}</p>}
+                                    {errors[`item_${index}_actual`] && <p id={`adj-item_${index}_actual-error`} role="alert" className="text-xs text-red-500 mt-1">{errors[`item_${index}_actual`]}</p>}
                                 </div>
                             ))}
                         </div>
@@ -694,9 +712,18 @@ export const AssembleProductModal = memo(function AssembleProductModal({ dict, l
     const [type, setType] = useState('assemble');
     const [quantity, setQuantity] = useState('1');
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!String(warehouseId).trim()) newErrors.warehouseId = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(productId).trim()) newErrors.productId = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(quantity).trim()) newErrors.quantity = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         if (!warehouseId || !productId || Number(quantity) <= 0) return toast.error(isRTL ? 'بيانات غير صحيحة' : 'Invalid data');
         setLoading(true);
         try {
@@ -716,7 +743,7 @@ export const AssembleProductModal = memo(function AssembleProductModal({ dict, l
                     <div className="flex items-center gap-2"><span className="text-xl">⚙️</span><h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'تجميع / تفكيك' : 'Assemble / Disassemble'}</h2></div>
                     <button type="button" onClick={onClose} className="btn-icon"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                 </div>
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} noValidate className="p-5 space-y-4">
                     <div>
                         <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'العملية' : 'Operation'}</label>
                         <select className="select-field py-2 text-sm w-full" value={type} onChange={e => setType(e.target.value)}>
@@ -726,21 +753,24 @@ export const AssembleProductModal = memo(function AssembleProductModal({ dict, l
                     </div>
                     <div>
                         <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'المستودع' : 'Warehouse'}</label>
-                        <select className="select-field py-2 text-sm w-full" value={warehouseId} onChange={e => setWarehouseId(e.target.value)} required>
+                        <select className={`select-field py-2 text-sm w-full ${errors.warehouseId ? 'border-red-500' : ''}`} value={warehouseId} onChange={e => { setWarehouseId(e.target.value); if (errors.warehouseId) setErrors(prev => { const next = { ...prev }; delete next.warehouseId; return next; }); }} required aria-invalid={!!errors.warehouseId} aria-describedby={errors.warehouseId ? 'asm-warehouseId-error' : undefined}>
                             <option value="">{isRTL ? 'اختر المستودع' : 'Warehouse'}</option>
                             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
+                        {errors.warehouseId && <p id="asm-warehouseId-error" role="alert" className="text-xs text-red-500 mt-1">{errors.warehouseId}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'الصنف المجمّع' : 'Composite Product'}</label>
-                        <select className="select-field py-2 text-sm w-full" value={productId} onChange={e => setProductId(e.target.value)} required>
+                        <select className={`select-field py-2 text-sm w-full ${errors.productId ? 'border-red-500' : ''}`} value={productId} onChange={e => { setProductId(e.target.value); if (errors.productId) setErrors(prev => { const next = { ...prev }; delete next.productId; return next; }); }} required aria-invalid={!!errors.productId} aria-describedby={errors.productId ? 'asm-productId-error' : undefined}>
                             <option value="">{isRTL ? 'اختر الصنف' : 'Product'}</option>
                             {products.map(p => <option key={p.id} value={p.id}>{isRTL ? p.name_ar : p.name}</option>)}
                         </select>
+                        {errors.productId && <p id="asm-productId-error" role="alert" className="text-xs text-red-500 mt-1">{errors.productId}</p>}
                     </div>
                     <div>
                         <label className="block text-xs font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'الكمية' : 'Quantity'}</label>
-                        <input type="number" min="0.001" step="0.001" className="input-field py-2 text-sm w-full text-center font-bold" value={quantity} onChange={e => setQuantity(e.target.value)} required />
+                        <input type="number" min="0.001" step="0.001" className={`input-field py-2 text-sm w-full text-center font-bold ${errors.quantity ? 'border-red-500' : ''}`} value={quantity} onChange={e => { setQuantity(e.target.value); if (errors.quantity) setErrors(prev => { const next = { ...prev }; delete next.quantity; return next; }); }} required aria-invalid={!!errors.quantity} aria-describedby={errors.quantity ? 'asm-quantity-error' : undefined} />
+                        {errors.quantity && <p id="asm-quantity-error" role="alert" className="text-xs text-red-500 mt-1">{errors.quantity}</p>}
                     </div>
                     <div className="flex justify-end gap-3 mt-6">
                         <button type="button" onClick={onClose} className="btn-secondary">{isRTL ? 'إلغاء' : 'Cancel'}</button>

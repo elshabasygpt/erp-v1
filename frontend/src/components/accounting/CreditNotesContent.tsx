@@ -13,11 +13,13 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
     // Create form state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [form, setForm] = useState({ customer_id: '', amount: 0, reason: '', date: new Date().toISOString().split('T')[0] });
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Apply form state
     const [selectedNote, setSelectedNote] = useState<any>(null);
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
     const [applyForm, setApplyForm] = useState({ invoice_id: '', amount: 0 });
+    const [applyErrors, setApplyErrors] = useState<Record<string, string>>({});
 
     const { data: creditNotes = [], isLoading: loading, isError, refetch } = useQuery<any[]>({
         queryKey: ['credit-notes'],
@@ -48,6 +50,14 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!String(form.customer_id).trim()) newErrors.customer_id = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(form.amount).trim()) newErrors.amount = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(form.date).trim()) newErrors.date = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         try {
             const payload = {
                 type: 'customer',
@@ -70,11 +80,19 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
     const openApplyModal = (note: any) => {
         setSelectedNote(note);
         setApplyForm({ invoice_id: '', amount: note.remaining_amount || note.amount });
+        setApplyErrors({});
         setIsApplyModalOpen(true);
     };
 
     const handleApply = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!String(applyForm.invoice_id).trim()) newErrors.invoice_id = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (!String(applyForm.amount).trim()) newErrors.amount = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Object.keys(newErrors).length > 0) { setApplyErrors(newErrors); return; }
+        setApplyErrors({});
+
         if (!selectedNote) return;
         try {
             await accountingApi.applyCreditNote(selectedNote.id, applyForm);
@@ -96,8 +114,8 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                         {isRTL ? 'إصدار أرصدة للعملاء وتطبيقها على فواتيرهم المفتوحة.' : 'Issue credit to customers and apply it to their open invoices.'}
                     </p>
                 </div>
-                <button 
-                    onClick={() => setIsCreateModalOpen(true)}
+                <button
+                    onClick={() => { setErrors({}); setIsCreateModalOpen(true); }}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition whitespace-nowrap"
                 >
                     + {isRTL ? 'إصدار إشعار دائن' : 'Issue Credit Note'}
@@ -178,7 +196,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
             {/* Create Modal */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+                    <form onSubmit={handleCreate} noValidate className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="font-bold text-lg">{isRTL ? 'إصدار إشعار دائن جديد' : 'Issue New Credit Note'}</h2>
                             <button type="button" onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
@@ -186,18 +204,21 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'العميل' : 'Customer'}</label>
-                                <select required value={form.customer_id} onChange={e => setForm({...form, customer_id: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                                <select required value={form.customer_id} onChange={e => { setForm({...form, customer_id: e.target.value}); if (errors.customer_id) setErrors(prev => { const next = { ...prev }; delete next.customer_id; return next; }); }} aria-invalid={!!errors.customer_id} aria-describedby={errors.customer_id ? 'create-customer_id-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${errors.customer_id ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}>
                                     <option value="">{isRTL ? '-- اختر العميل --' : '-- Select Customer --'}</option>
                                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
+                                {errors.customer_id && <p id="create-customer_id-error" role="alert" className="text-xs text-red-500 mt-1">{errors.customer_id}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'المبلغ' : 'Amount'}</label>
-                                <input required type="number" step="0.01" value={form.amount} onChange={e => setForm({...form, amount: parseFloat(e.target.value)})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
+                                <input required type="number" step="0.01" value={form.amount} onChange={e => { setForm({...form, amount: parseFloat(e.target.value)}); if (errors.amount) setErrors(prev => { const next = { ...prev }; delete next.amount; return next; }); }} aria-invalid={!!errors.amount} aria-describedby={errors.amount ? 'create-amount-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${errors.amount ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                {errors.amount && <p id="create-amount-error" role="alert" className="text-xs text-red-500 mt-1">{errors.amount}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'التاريخ' : 'Date'}</label>
-                                <input required type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
+                                <input required type="date" value={form.date} onChange={e => { setForm({...form, date: e.target.value}); if (errors.date) setErrors(prev => { const next = { ...prev }; delete next.date; return next; }); }} aria-invalid={!!errors.date} aria-describedby={errors.date ? 'create-date-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${errors.date ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                {errors.date && <p id="create-date-error" role="alert" className="text-xs text-red-500 mt-1">{errors.date}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'السبب (اختياري)' : 'Reason (Optional)'}</label>
@@ -215,7 +236,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
             {/* Apply Modal */}
             {isApplyModalOpen && selectedNote && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <form onSubmit={handleApply} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
+                    <form onSubmit={handleApply} noValidate className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="font-bold text-lg">{isRTL ? 'تطبيق الرصيد المتاح' : 'Apply Available Credit'}</h2>
                             <button type="button" onClick={() => setIsApplyModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
@@ -228,7 +249,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'اختر الفاتورة المستحقة' : 'Select Unpaid Invoice'}</label>
-                                <select required value={applyForm.invoice_id} onChange={e => setApplyForm({...applyForm, invoice_id: e.target.value})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                                <select required value={applyForm.invoice_id} onChange={e => { setApplyForm({...applyForm, invoice_id: e.target.value}); if (applyErrors.invoice_id) setApplyErrors(prev => { const next = { ...prev }; delete next.invoice_id; return next; }); }} aria-invalid={!!applyErrors.invoice_id} aria-describedby={applyErrors.invoice_id ? 'apply-invoice_id-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${applyErrors.invoice_id ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}>
                                     <option value="">{isRTL ? '-- اختر الفاتورة --' : '-- Select Invoice --'}</option>
                                     {invoices.map(inv => (
                                         <option key={inv.id} value={inv.id}>
@@ -236,10 +257,12 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                                         </option>
                                     ))}
                                 </select>
+                                {applyErrors.invoice_id && <p id="apply-invoice_id-error" role="alert" className="text-xs text-red-500 mt-1">{applyErrors.invoice_id}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">{isRTL ? 'المبلغ المراد تطبيقه' : 'Amount to Apply'}</label>
-                                <input required type="number" step="0.01" max={selectedNote.remaining_amount} value={applyForm.amount} onChange={e => setApplyForm({...applyForm, amount: parseFloat(e.target.value)})} className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg" />
+                                <input required type="number" step="0.01" max={selectedNote.remaining_amount} value={applyForm.amount} onChange={e => { setApplyForm({...applyForm, amount: parseFloat(e.target.value)}); if (applyErrors.amount) setApplyErrors(prev => { const next = { ...prev }; delete next.amount; return next; }); }} aria-invalid={!!applyErrors.amount} aria-describedby={applyErrors.amount ? 'apply-amount-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg ${applyErrors.amount ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
+                                {applyErrors.amount && <p id="apply-amount-error" role="alert" className="text-xs text-red-500 mt-1">{applyErrors.amount}</p>}
                             </div>
                         </div>
                         <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
