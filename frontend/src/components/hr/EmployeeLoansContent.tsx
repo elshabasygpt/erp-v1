@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { hrApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 import AddLoanModal from './AddLoanModal';
 
 interface EmployeeLoansContentProps {
@@ -156,11 +157,13 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr>
-                                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                                        {isRTL ? 'جاري التحميل...' : 'Loading...'}
-                                    </td>
-                                </tr>
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b border-gray-100 dark:border-gray-800">
+                                        {Array.from({ length: 7 }).map((__, j) => (
+                                            <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
                             ) : isError ? (
                                 <tr>
                                     <td colSpan={7} className="px-6 py-8 text-center">

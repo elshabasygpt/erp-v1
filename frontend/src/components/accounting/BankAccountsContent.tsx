@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import type { Currency } from '@/providers/RegionalSettingsProvider';
 
@@ -135,7 +136,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             {/* Banks List */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
-                    <div className="col-span-full text-center p-8 text-slate-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                    Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
                 ) : isError ? (
                     <div className="col-span-full text-center p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
                         <p className="mb-3 text-sm text-red-600">{isRTL ? 'تعذّر تحميل الحسابات البنكية.' : 'Failed to load bank accounts.'}</p>

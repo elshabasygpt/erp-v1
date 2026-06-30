@@ -15,6 +15,7 @@ export default function AccountFormModal({
 }: any) {
     const { isRTL } = useLanguage();
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const [formData, setFormData] = useState({
         code: '',
@@ -46,10 +47,19 @@ export default function AccountFormModal({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+        if (errors[name]) setErrors(prev => { const next = { ...prev }; delete next[name]; return next; });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const newErrors: Record<string, string> = {};
+        if (!formData.code.trim()) newErrors.code = isRTL ? 'كود الحساب مطلوب' : 'Account code is required';
+        if (!formData.name.trim()) newErrors.name = isRTL ? 'الاسم بالإنجليزية مطلوب' : 'English name is required';
+        if (!formData.name_ar.trim()) newErrors.name_ar = isRTL ? 'الاسم بالعربية مطلوب' : 'Arabic name is required';
+        if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+        setErrors({});
+
         setLoading(true);
 
         try {
@@ -105,19 +115,22 @@ export default function AccountFormModal({
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1">
-                    <form id="accountForm" onSubmit={handleSubmit} className="space-y-4 text-sm">
+                    <form id="accountForm" onSubmit={handleSubmit} noValidate className="space-y-4 text-sm">
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block font-medium mb-1">{isRTL ? 'كود الحساب' : 'Account Code'} *</label>
-                                <input 
+                                <input
                                     required
-                                    type="text" 
-                                    name="code" 
-                                    value={formData.code} 
+                                    type="text"
+                                    name="code"
+                                    value={formData.code}
                                     onChange={handleChange}
-                                    className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                    aria-invalid={!!errors.code}
+                                    aria-describedby={errors.code ? 'code-error' : undefined}
+                                    className={`w-full p-2.5 bg-surface-50 dark:bg-surface-800 border rounded-lg outline-none focus:border-violet-500 ${errors.code ? 'border-red-500' : 'border-surface-200 dark:border-surface-700'}`}
                                 />
+                                {errors.code && <p id="code-error" role="alert" className="text-xs text-red-500 mt-1">{errors.code}</p>}
                             </div>
                             <div>
                                 <label className="block font-medium mb-1">{isRTL ? 'نوع الحساب' : 'Account Type'} *</label>
@@ -140,26 +153,32 @@ export default function AccountFormModal({
 
                         <div>
                             <label className="block font-medium mb-1">{isRTL ? 'اسم الحساب (إنجليزي)' : 'Account Name (En)'} *</label>
-                            <input 
+                            <input
                                 required
-                                type="text" 
-                                name="name" 
-                                value={formData.name} 
+                                type="text"
+                                name="name"
+                                value={formData.name}
                                 onChange={handleChange}
-                                className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                aria-invalid={!!errors.name}
+                                aria-describedby={errors.name ? 'name-error' : undefined}
+                                className={`w-full p-2.5 bg-surface-50 dark:bg-surface-800 border rounded-lg outline-none focus:border-violet-500 ${errors.name ? 'border-red-500' : 'border-surface-200 dark:border-surface-700'}`}
                             />
+                            {errors.name && <p id="name-error" role="alert" className="text-xs text-red-500 mt-1">{errors.name}</p>}
                         </div>
 
                         <div>
                             <label className="block font-medium mb-1">{isRTL ? 'اسم الحساب (عربي)' : 'Account Name (Ar)'} *</label>
-                            <input 
+                            <input
                                 required
-                                type="text" 
-                                name="name_ar" 
-                                value={formData.name_ar} 
+                                type="text"
+                                name="name_ar"
+                                value={formData.name_ar}
                                 onChange={handleChange}
-                                className="w-full p-2.5 bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg outline-none focus:border-violet-500"
+                                aria-invalid={!!errors.name_ar}
+                                aria-describedby={errors.name_ar ? 'name_ar-error' : undefined}
+                                className={`w-full p-2.5 bg-surface-50 dark:bg-surface-800 border rounded-lg outline-none focus:border-violet-500 ${errors.name_ar ? 'border-red-500' : 'border-surface-200 dark:border-surface-700'}`}
                             />
+                            {errors.name_ar && <p id="name_ar-error" role="alert" className="text-xs text-red-500 mt-1">{errors.name_ar}</p>}
                         </div>
 
                         <div>

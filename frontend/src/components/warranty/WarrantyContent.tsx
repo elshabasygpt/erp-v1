@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 import WarrantyDetailModal from './WarrantyDetailModal';
 import ClaimModal from './ClaimModal';
 
@@ -186,11 +187,13 @@ export default function WarrantyContent({ dict, locale }: { dict: any; locale: s
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr>
-                                    <td colSpan={8} className="p-8 text-center" style={{ color: 'var(--text-secondary)' }}>
-                                        {isRTL ? 'جاري التحميل...' : 'Loading...'}
-                                    </td>
-                                </tr>
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                        {Array.from({ length: 8 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
                             ) : isError ? (
                                 <tr>
                                     <td colSpan={8} className="p-8 text-center">
