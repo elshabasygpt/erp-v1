@@ -87,7 +87,7 @@ export default function SupplierPaymentModal({ supplier, isRTL, onClose, onSucce
                         <span>💸</span>
                         {isRTL ? `سداد للمورد: ${supplier.name}` : `Pay Supplier: ${supplier.name}`}
                     </h2>
-                    <button onClick={onClose} className="btn-icon text-surface-400 hover:text-red-500">✕</button>
+                    <button onClick={onClose} className="btn-icon text-surface-400 hover:text-red-500" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto space-y-4">

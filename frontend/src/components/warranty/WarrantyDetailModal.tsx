@@ -22,7 +22,7 @@ export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale,
                     <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                         {isRTL ? 'تفاصيل الضمان' : 'Warranty Details'} ({warranty.warranty_number})
                     </h2>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5" style={{ color: 'var(--text-secondary)' }}>✕</button>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5" style={{ color: 'var(--text-secondary)' }} aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto max-h-[70vh] space-y-6">

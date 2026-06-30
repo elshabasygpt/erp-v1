@@ -101,7 +101,7 @@ export default function AccountFormModal({
                             ? (isRTL ? 'تعديل حساب' : 'Edit Account') 
                             : (parentId ? (isRTL ? 'إضافة حساب فرعي' : 'Add Sub-Account') : (isRTL ? 'إضافة حساب رئيسي' : 'Add Root Account'))}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-full transition">✕</button>
+                    <button onClick={onClose} className="p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-full transition" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1">

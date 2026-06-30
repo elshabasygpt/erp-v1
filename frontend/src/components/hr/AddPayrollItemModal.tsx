@@ -64,7 +64,7 @@ export default function AddPayrollItemModal({ payroll, isRTL, onClose, onSuccess
                         </h2>
                         <p className="text-sm text-gray-500">{monthName}</p>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-4 space-y-4">

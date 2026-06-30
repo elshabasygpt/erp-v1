@@ -52,7 +52,7 @@ export default function ClaimModal({ warranty, isOpen, onClose, onSuccess, local
                     <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                         {isRTL ? 'تسجيل مطالبة ضمان' : 'Log Warranty Claim'}
                     </h2>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5" style={{ color: 'var(--text-secondary)' }}>✕</button>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5" style={{ color: 'var(--text-secondary)' }} aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6 space-y-4">

@@ -51,7 +51,7 @@ export default function AddTaskModal({ task, users, categories, isRTL, onClose, 
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         {task ? (isRTL ? '✏️ تعديل المهمة' : '✏️ Edit Task') : (isRTL ? '✅ مهمة جديدة' : '✅ New Task')}
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-4 space-y-4">

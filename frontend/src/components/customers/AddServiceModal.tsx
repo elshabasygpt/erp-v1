@@ -76,7 +76,7 @@ export default function AddServiceModal({ customerId, vehicleId, vehicleDisplayN
                         </h2>
                         <p className="text-sm font-medium text-blue-600 mt-1">🚗 {vehicleDisplayName}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5" style={{ color: 'var(--text-secondary)' }}>✕</button>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5" style={{ color: 'var(--text-secondary)' }} aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto">

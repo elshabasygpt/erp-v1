@@ -78,7 +78,7 @@ export default function PurchaseInstallmentsModal({ invoice, isRTL, onClose, for
                         <span>📅</span>
                         {isRTL ? 'جدولة أقساط المورد' : 'Supplier Installments'}
                     </h2>
-                    <button onClick={onClose} className="btn-icon text-surface-400 hover:text-red-500">✕</button>
+                    <button onClick={onClose} className="btn-icon text-surface-400 hover:text-red-500" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6">

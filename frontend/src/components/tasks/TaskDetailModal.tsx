@@ -73,7 +73,7 @@ export default function TaskDetailModal({ task, isRTL, onClose, onRefresh, onEdi
                     <div className="flex gap-2">
                         <button onClick={onEdit} className="btn-secondary px-3 py-1.5 text-sm" title="تعديل">✏️</button>
                         <button onClick={handleDelete} className="btn-secondary px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900" title="حذف">🗑️</button>
-                        <button onClick={onClose} className="btn-secondary px-3 py-1.5 text-sm">✕</button>
+                        <button onClick={onClose} className="btn-secondary px-3 py-1.5 text-sm" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                     </div>
                 </div>
 

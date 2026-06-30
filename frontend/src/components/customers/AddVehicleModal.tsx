@@ -126,7 +126,7 @@ export default function AddVehicleModal({ customerId, vehicle, isOpen, onClose, 
                     <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                         {vehicle ? (isRTL ? 'تعديل سيارة' : 'Edit Vehicle') : (isRTL ? 'إضافة سيارة للعميل' : 'Add Vehicle')}
                     </h2>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5" style={{ color: 'var(--text-secondary)' }}>✕</button>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5" style={{ color: 'var(--text-secondary)' }} aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto">

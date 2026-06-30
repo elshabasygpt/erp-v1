@@ -87,7 +87,7 @@ export default function EmployeeFormModal({
                             ? (isRTL ? 'تعديل بيانات موظف' : 'Edit Employee') 
                             : (isRTL ? 'إضافة موظف جديد' : 'Add New Employee')}
                     </h2>
-                    <button onClick={onClose} className="p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-full transition">✕</button>
+                    <button onClick={onClose} className="p-2 text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-full transition" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 <div className="p-6 overflow-y-auto flex-1">

@@ -283,7 +283,7 @@ export default function POSInvoiceModal({ dict, locale, onClose }: POSInvoiceMod
                         <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{s.createInvoice}</h2>
                         <span className="badge badge-primary text-xs">{invoiceNum}</span>
                     </div>
-                    <button onClick={onClose} className="btn-icon">✕</button>
+                    <button onClick={onClose} className="btn-icon" aria-label={isRTL ? 'إغلاق' : 'Close'}>✕</button>
                 </div>
 
                 {fetchingData ? (
