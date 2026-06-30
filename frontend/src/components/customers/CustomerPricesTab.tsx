@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { crmApi, productsApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
@@ -55,6 +56,8 @@ export default function CustomerPricesTab({ customerId, locale }: Props) {
     const [productResults, setProductResults] = useState<any[]>([]);
     const [searchingProducts, setSearchingProducts] = useState(false);
     const [showProductDropdown, setShowProductDropdown] = useState(false);
+
+    const modalRef = useModalA11y<HTMLDivElement>(showModal, () => setShowModal(false));
 
     const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
         setToast({ msg, type });
@@ -314,7 +317,7 @@ export default function CustomerPricesTab({ customerId, locale }: Props) {
             {/* Add/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-                    <div className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-md shadow-2xl animate-scale-in">
+                    <div ref={modalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-md shadow-2xl animate-scale-in">
                         <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
                             <div className="flex items-center gap-2">
                                 <span className="text-xl">{editingPrice ? '✏️' : '🏷️'}</span>

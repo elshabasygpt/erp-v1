@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { hrApi } from '@/lib/api';
@@ -53,6 +54,8 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
         },
         enabled: !!selectedLoanId,
     });
+
+    const detailModalRef = useModalA11y<HTMLDivElement>(!!selectedLoan, () => setSelectedLoanId(null));
 
     const refreshLoans = () => queryClient.invalidateQueries({ queryKey: ['loans'] });
 
@@ -265,6 +268,9 @@ export default function EmployeeLoansContent({ dict, locale }: EmployeeLoansCont
                 {selectedLoan && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" dir={isRTL ? 'rtl' : 'ltr'}>
                         <motion.div
+                            ref={detailModalRef}
+                            role="dialog"
+                            aria-modal="true"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -22,6 +23,9 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
     const [isReconModalOpen, setIsReconModalOpen] = useState(false);
     const [reconForm, setReconForm] = useState({ statement_date: '', statement_balance: 0 });
     const [importFile, setImportFile] = useState<File | null>(null);
+
+    const formModalRef = useModalA11y<HTMLFormElement>(isFormOpen, () => setIsFormOpen(false));
+    const reconModalRef = useModalA11y<HTMLDivElement>(isReconModalOpen && !!selectedBank, () => setIsReconModalOpen(false));
 
     const { data: banks = [], isLoading: loading, isError, refetch } = useQuery<any[]>({
         queryKey: ['bank-accounts'],
@@ -190,7 +194,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             {/* Create/Edit Form Modal */}
             {isFormOpen && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <form onSubmit={handleCreateOrUpdateBank} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+                    <form ref={formModalRef} role="dialog" aria-modal="true" onSubmit={handleCreateOrUpdateBank} className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                             <h2 className="font-bold text-lg">{editingBank ? (isRTL ? 'تعديل الحساب' : 'Edit Account') : (isRTL ? 'إضافة حساب بنكي' : 'Add Bank Account')}</h2>
                             <button type="button" onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl" aria-label={isRTL ? 'إغلاق' : 'Close'}>&times;</button>
@@ -230,7 +234,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             {/* Reconciliations Modal */}
             {isReconModalOpen && selectedBank && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+                    <div ref={reconModalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
                         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900">
                             <div>
                                 <h2 className="font-bold text-lg">{isRTL ? 'مطابقة الحساب:' : 'Reconciliation:'} {selectedBank.name}</h2>

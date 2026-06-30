@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { DeleteConfirmModal, ViewAccountModal, CustomerGroupsModal, ImportCustomersModal } from './CustomerModals';
 import { FollowUpsModal } from './FollowUpsModal';
 import { exportTableToPDF } from '@/lib/pdf-export';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { crmApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import DataState from '@/components/ui/DataState';
@@ -52,6 +53,8 @@ export default function CustomersContent({ dict, locale }: Props) {
     const [showImport, setShowImport] = useState(false);
     const [showFollowUps, setShowFollowUps] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+    const addEditModalRef = useModalA11y<HTMLDivElement>(showAddEdit, () => setShowAddEdit(false));
 
     const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
     const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -380,7 +383,7 @@ export default function CustomersContent({ dict, locale }: Props) {
             {/* ── Add/Edit Modal ── */}
             {showAddEdit && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && setShowAddEdit(false)}>
-                    <div className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl animate-scale-in">
+                    <div ref={addEditModalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl animate-scale-in">
                         <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white/80 dark:bg-surface-900/80 backdrop-blur-md z-10" style={{ borderColor: 'var(--border-default)' }}>
                             <div className="flex items-center gap-2">
                                 <span className="text-xl">{editingCustomer ? '✏️' : '➕'}</span>

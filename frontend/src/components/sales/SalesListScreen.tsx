@@ -10,6 +10,7 @@ import {
 import { format } from 'date-fns';
 import { Invoice } from '@/types';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import CustomerInstallmentsModal from './CustomerInstallmentsModal';
 
 /* ────────── helpers ────────── */
@@ -109,6 +110,8 @@ export default function SalesListScreen() {
   // Modal
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showInstallments, setShowInstallments] = useState(false);
+
+  const detailModalRef = useModalA11y<HTMLDivElement>(!!selectedInvoice, () => setSelectedInvoice(null));
 
   // Debounce ref
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -492,7 +495,7 @@ export default function SalesListScreen() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm print:bg-white print:p-0 print:block"
           onClick={e => { if (e.target === e.currentTarget) setSelectedInvoice(null); }}
         >
-          <div className="bg-white dark:bg-[#1a1a2e] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print:shadow-none print:h-auto print:max-w-full">
+          <div ref={detailModalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-[#1a1a2e] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] print:shadow-none print:h-auto print:max-w-full">
 
             {/* Modal header */}
             <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-white/10 print:hidden">

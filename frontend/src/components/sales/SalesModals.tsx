@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import POSInvoiceModal from './POSInvoiceModal';
 import SalesReturnModal from './SalesReturnModal';
 import QuotationModal from './QuotationModal';
@@ -36,11 +37,14 @@ const SalesModals = memo(function SalesModals({
 }: SalesModalsProps) {
     const s = dict.sales;
 
+    const detailModalRef = useModalA11y<HTMLDivElement>(!!showDetail, () => setShowDetail(null));
+    const printModalRef = useModalA11y<HTMLDivElement>(!!printingInvoice, () => setPrintingInvoice(null));
+
     return (
         <>
             {showDetail && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowDetail(null)}>
-                    <div className="modal-content !max-w-4xl animate-scale-in !bg-surface-950 flex flex-col max-h-[90vh]">
+                    <div ref={detailModalRef} role="dialog" aria-modal="true" className="modal-content !max-w-4xl animate-scale-in !bg-surface-950 flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-white/5 bg-gradient-to-r from-indigo-500/10 to-transparent flex justify-between items-start shrink-0">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-2xl border border-indigo-500/30">
@@ -162,7 +166,7 @@ const SalesModals = memo(function SalesModals({
             {/* Print Template Overlay */}
             {printingInvoice && (
                 <div className="fixed inset-0 z-50 bg-white overflow-auto flex justify-center">
-                    <div className="w-full max-w-[800px] bg-white text-black min-h-screen relative p-8">
+                    <div ref={printModalRef} role="dialog" aria-modal="true" className="w-full max-w-[800px] bg-white text-black min-h-screen relative p-8">
                         <div className="absolute top-4 right-4 print:hidden flex gap-2">
                             <button onClick={() => window.print()} className="btn-primary px-4 py-2 text-sm shadow-lg">🖨️ {isRTL ? 'طباعة الآن' : 'Print Now'}</button>
                             <button onClick={() => setPrintingInvoice(null)} className="btn-secondary px-4 py-2 text-sm shadow-lg border border-gray-300 !text-gray-700">❌ {isRTL ? 'إغلاق' : 'Close'}</button>

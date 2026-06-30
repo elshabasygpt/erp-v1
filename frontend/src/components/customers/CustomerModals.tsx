@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { exportTableToPDF } from '@/lib/pdf-export';
 import CustomerVehiclesTab from './CustomerVehiclesTab';
 import CustomerInsightsTab from './CustomerInsightsTab';
@@ -15,9 +16,10 @@ interface DeleteConfirmProps {
 }
 
 export function DeleteConfirmModal({ dict, customerName, onConfirm, onCancel }: DeleteConfirmProps) {
+    const modalRef = useModalA11y<HTMLDivElement>(true, onCancel);
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
-            <div className="modal-content !max-w-md">
+            <div ref={modalRef} role="dialog" aria-modal="true" className="modal-content !max-w-md">
                 <div className="p-6 text-center">
                     <span className="text-5xl mb-4 block">⚠️</span>
                     <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{dict.customers.deleteCustomer}</h3>
@@ -61,6 +63,8 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
     const isRTL = locale === 'ar';
     const c = dict.customers;
     const usedPercent = customer.creditLimit > 0 ? Math.round((customer.balance / customer.creditLimit) * 100) : 0;
+
+    const modalRef = useModalA11y<HTMLDivElement>(true, onClose);
 
     const [activeTab, setActiveTab] = useState<'account' | 'insights' | 'interactions' | 'vehicles' | 'prices'>('account');
 
@@ -173,7 +177,7 @@ export function ViewAccountModal({ dict, locale, customer, onClose, formatCurren
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-content !max-w-4xl">
+            <div ref={modalRef} role="dialog" aria-modal="true" className="modal-content !max-w-4xl">
                 <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
                     <div className="flex items-center gap-2">
                         <span className="text-xl">💰</span>
@@ -389,7 +393,8 @@ interface GroupsModalProps {
 export function CustomerGroupsModal({ dict, locale, customers, onClose }: GroupsModalProps) {
     const isRTL = locale === 'ar';
     const c = dict.customers;
-    
+    const modalRef = useModalA11y<HTMLDivElement>(true, onClose);
+
     // Find unique custom groups from customers data
     const defaultGroupKeys = ['vip', 'wholesale', 'retail', 'individual'];
     const customGroups = customers.reduce((acc, cu) => {
@@ -433,7 +438,7 @@ export function CustomerGroupsModal({ dict, locale, customers, onClose }: Groups
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl animate-scale-in">
+            <div ref={modalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-surface-900 rounded-2xl w-full max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl animate-scale-in">
                 <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-white/80 dark:bg-surface-900/80 backdrop-blur-md z-10" style={{ borderColor: 'var(--border-default)' }}>
                     <div className="flex items-center gap-2">
                         <span className="text-xl">🏷️</span>
@@ -506,7 +511,8 @@ interface ImportModalProps {
 export function ImportCustomersModal({ dict, locale, onClose }: ImportModalProps) {
     const isRTL = locale === 'ar';
     const c = dict.customers;
-    
+    const modalRef = useModalA11y<HTMLDivElement>(true, onClose);
+
     const [file, setFile] = useState<File | null>(null);
     const [importing, setImporting] = useState(false);
 
@@ -540,7 +546,7 @@ export function ImportCustomersModal({ dict, locale, onClose }: ImportModalProps
 
     return (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="modal-content !max-w-md">
+            <div ref={modalRef} role="dialog" aria-modal="true" className="modal-content !max-w-md">
                 <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
                     <div className="flex items-center gap-2">
                         <span className="text-xl">📥</span>

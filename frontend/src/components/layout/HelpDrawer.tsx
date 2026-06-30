@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { getHelpForPath, HelpArticle } from '@/lib/helpRegistry';
 
 interface HelpDrawerProps {
@@ -13,6 +14,7 @@ interface HelpDrawerProps {
 export default function HelpDrawer({ isOpen, onClose, locale }: HelpDrawerProps) {
     const pathname = usePathname();
     const isRTL = locale === 'ar';
+    const drawerRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
     const [helpContent, setHelpContent] = useState<HelpArticle | null>(null);
 
     useEffect(() => {
@@ -32,7 +34,10 @@ export default function HelpDrawer({ isOpen, onClose, locale }: HelpDrawerProps)
             />
 
             {/* Drawer */}
-            <div 
+            <div
+                ref={drawerRef}
+                role="dialog"
+                aria-modal="true"
                 className={`fixed top-0 bottom-0 z-[120] w-full max-w-sm sm:max-w-md bg-white dark:bg-surface-900 shadow-2xl transition-transform duration-300 flex flex-col ${
                     isRTL ? 'left-0' : 'right-0'
                 }`}

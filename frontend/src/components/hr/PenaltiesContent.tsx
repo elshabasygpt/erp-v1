@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,8 @@ export default function PenaltiesContent() {
     // Rules state
     const [showModal, setShowModal] = useState(false);
     const [editingRule, setEditingRule] = useState<any>(null);
+
+    const ruleModalRef = useModalA11y<HTMLDivElement>(showModal, () => setShowModal(false));
 
     // Form state
     const [form, setForm] = useState({
@@ -156,7 +159,7 @@ export default function PenaltiesContent() {
 
                     {showModal && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                            <Card className="p-6 w-[500px] max-w-full">
+                            <Card ref={ruleModalRef} role="dialog" aria-modal="true" className="p-6 w-[500px] max-w-full">
                                 <h2 className="text-xl font-bold mb-4">{editingRule ? 'تعديل القاعدة' : 'إضافة قاعدة'}</h2>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { HelpCircle, X, Info, BookOpen, Settings } from 'lucide-react';
 
 const helpData: Record<string, { title: string, titleEn: string, content: string, contentEn: string, steps: string[], stepsEn: string[] }> = {
@@ -91,6 +92,7 @@ export default function HelpSystem({ locale }: { locale: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname() || '';
     const isRTL = locale === 'ar';
+    const sidebarRef = useModalA11y<HTMLDivElement>(isOpen, () => setIsOpen(false));
 
     // Find current page help
     let currentHelpKey = Object.keys(helpData).find(key => pathname.includes(key));
@@ -125,7 +127,11 @@ export default function HelpSystem({ locale }: { locale: string }) {
             )}
 
             {/* Help Sidebar */}
-            <div 
+            <div
+                ref={sidebarRef}
+                role={isOpen ? 'dialog' : undefined}
+                aria-modal={isOpen ? 'true' : undefined}
+                aria-hidden={isOpen ? undefined : true}
                 className={`fixed top-0 bottom-0 ${isRTL ? 'left-0' : 'right-0'} w-full sm:w-[400px] bg-white dark:bg-[#1a1a2e] z-[1000] shadow-2xl transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full'}`}
             >
                 <div className="flex flex-col h-full">

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { exportTableToPDF } from '@/lib/pdf-export';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import Pagination from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 20;
@@ -53,6 +54,10 @@ export default function UsersContent({ dict, locale }: Props) {
     const [showPermissions, setShowPermissions] = useState<User | null>(null);
     const [showDelete, setShowDelete] = useState<User | null>(null);
     const [successMsg, setSuccessMsg] = useState('');
+
+    const userModalRef = useModalA11y<HTMLDivElement>(showModal, () => setShowModal(false));
+    const permissionsModalRef = useModalA11y<HTMLDivElement>(!!showPermissions, () => setShowPermissions(null));
+    const deleteModalRef = useModalA11y<HTMLDivElement>(!!showDelete, () => setShowDelete(null));
 
     const emptyForm = { name: '', nameAr: '', email: '', phone: '', role: 'cashier' as Role, branch: 'الرياض', password: '' };
     const [form, setForm] = useState(emptyForm);
@@ -322,7 +327,7 @@ export default function UsersContent({ dict, locale }: Props) {
             {/* ─── Add/Edit User Modal ─── */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                    <div className="w-full max-w-lg rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
+                    <div ref={userModalRef} role="dialog" aria-modal="true" className="w-full max-w-lg rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
                         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-default)' }}>
                             <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                                 {editUser ? '✏️' : '➕'} {editUser ? (isRTL ? 'تعديل مستخدم' : 'Edit User') : (isRTL ? 'إضافة مستخدم' : 'Add User')}
@@ -399,7 +404,7 @@ export default function UsersContent({ dict, locale }: Props) {
             {/* ─── Permissions Modal ─── */}
             {showPermissions && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                    <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
+                    <div ref={permissionsModalRef} role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
                         <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-default)' }}>
                             <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                                 🛡️ {isRTL ? 'صلاحيات' : 'Permissions'}: {isRTL ? showPermissions.nameAr : showPermissions.name}
@@ -444,7 +449,7 @@ export default function UsersContent({ dict, locale }: Props) {
             {/* ─── Delete Confirm ─── */}
             {showDelete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                    <div className="w-full max-w-sm rounded-2xl p-6 text-center" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                    <div ref={deleteModalRef} role="dialog" aria-modal="true" className="w-full max-w-sm rounded-2xl p-6 text-center" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(239,68,68,0.3)' }}>
                         <span className="text-5xl block mb-3">⚠️</span>
                         <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'حذف المستخدم' : 'Delete User'}</h3>
                         <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>

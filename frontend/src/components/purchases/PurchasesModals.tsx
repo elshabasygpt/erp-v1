@@ -1,4 +1,5 @@
 import React, { memo, useState } from 'react';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import PriceCompareModal from './PriceCompareModal';
 import PurchaseInstallmentsModal from './PurchaseInstallmentsModal';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
@@ -54,6 +55,11 @@ const PurchasesModals = memo(function PurchasesModals({
     const [showInstallments, setShowInstallments] = useState(false);
     const [labelItems, setLabelItems] = useState<LabelItem[] | null>(null);
 
+    const orderModalRef = useModalA11y<HTMLDivElement>(!!(showOrderModal && newOrder), () => setShowOrderModal(false));
+    const orderViewModalRef = useModalA11y<HTMLDivElement>(!!selectedOrder, () => setSelectedOrder(null));
+    const returnModalRef = useModalA11y<HTMLDivElement>(!!(showReturnModal && newReturn), () => setShowReturnModal(false));
+    const returnViewModalRef = useModalA11y<HTMLDivElement>(!!selectedReturn, () => setSelectedReturn(null));
+
     const productById = (id: string) => products.find((p: any) => p.id === id);
     // Build label items from purchase line items. Handles both the create-modal
     // shape ({ product_id, qty }) and the saved-invoice shape ({ product, quantity }).
@@ -78,7 +84,7 @@ const PurchasesModals = memo(function PurchasesModals({
 
             {showOrderModal && newOrder && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-surface-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowOrderModal(false)}>
-                    <div className="relative w-full max-w-5xl rounded-3xl overflow-hidden bg-white dark:bg-surface-900 shadow-2xl border border-surface-200 dark:border-surface-800 flex flex-col" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh' }}>
+                    <div ref={orderModalRef} role="dialog" aria-modal="true" className="relative w-full max-w-5xl rounded-3xl overflow-hidden bg-white dark:bg-surface-900 shadow-2xl border border-surface-200 dark:border-surface-800 flex flex-col" onClick={e => e.stopPropagation()} style={{ maxHeight: '90vh' }}>
                         {/* Modal Header */}
                         <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-800/50 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-surface-900 dark:text-white flex items-center gap-2">
@@ -246,7 +252,7 @@ const PurchasesModals = memo(function PurchasesModals({
 
             {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }} onClick={() => setSelectedOrder(null)}>
-                    <div className="relative w-full max-w-3xl rounded-2xl glass-card p-6" onClick={e => e.stopPropagation()}>
+                    <div ref={orderViewModalRef} role="dialog" aria-modal="true" className="relative w-full max-w-3xl rounded-2xl glass-card p-6" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h2 className="text-xl font-bold">{isRTL ? 'الفاتورة' : 'Invoice'} #{selectedOrder.number}</h2>
@@ -314,7 +320,7 @@ const PurchasesModals = memo(function PurchasesModals({
 
             {showReturnModal && newReturn && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-surface-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowReturnModal(false)}>
-                    <div className="relative w-full max-w-5xl rounded-3xl overflow-hidden bg-white dark:bg-surface-900 shadow-2xl border border-surface-200 dark:border-surface-800 flex flex-col" onClick={e=>e.stopPropagation()} style={{ maxHeight: '90vh' }}>
+                    <div ref={returnModalRef} role="dialog" aria-modal="true" className="relative w-full max-w-5xl rounded-3xl overflow-hidden bg-white dark:bg-surface-900 shadow-2xl border border-surface-200 dark:border-surface-800 flex flex-col" onClick={e=>e.stopPropagation()} style={{ maxHeight: '90vh' }}>
                         {/* Modal Header */}
                         <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800 bg-surface-50 dark:bg-surface-800/50 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-surface-900 dark:text-white flex items-center gap-2">
@@ -441,7 +447,7 @@ const PurchasesModals = memo(function PurchasesModals({
 
             {selectedReturn && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }} onClick={() => setSelectedReturn(null)}>
-                    <div className="relative w-full max-w-3xl rounded-2xl glass-card p-6" onClick={e => e.stopPropagation()}>
+                    <div ref={returnViewModalRef} role="dialog" aria-modal="true" className="relative w-full max-w-3xl rounded-2xl glass-card p-6" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h2 className="text-xl font-bold">{isRTL ? 'مرتجع' : 'Return'} #{selectedReturn.number}</h2>
