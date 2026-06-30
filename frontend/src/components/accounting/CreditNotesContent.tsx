@@ -53,7 +53,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
 
         const newErrors: Record<string, string> = {};
         if (!String(form.customer_id).trim()) newErrors.customer_id = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
-        if (!String(form.amount).trim()) newErrors.amount = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Number.isNaN(Number(form.amount)) || Number(form.amount) <= 0) newErrors.amount = isRTL ? 'أدخل مبلغاً صحيحاً' : 'Enter a valid amount';
         if (!String(form.date).trim()) newErrors.date = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
         if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
         setErrors({});
@@ -89,7 +89,11 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
 
         const newErrors: Record<string, string> = {};
         if (!String(applyForm.invoice_id).trim()) newErrors.invoice_id = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
-        if (!String(applyForm.amount).trim()) newErrors.amount = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Number.isNaN(Number(applyForm.amount)) || Number(applyForm.amount) <= 0) {
+            newErrors.amount = isRTL ? 'أدخل مبلغاً صحيحاً' : 'Enter a valid amount';
+        } else if (selectedNote && Number(applyForm.amount) > Number(selectedNote.remaining_amount)) {
+            newErrors.amount = isRTL ? 'المبلغ يتجاوز الرصيد المتاح' : 'Amount exceeds available credit';
+        }
         if (Object.keys(newErrors).length > 0) { setApplyErrors(newErrors); return; }
         setApplyErrors({});
 

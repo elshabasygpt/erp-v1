@@ -46,7 +46,6 @@ export default function WebhooksPage() {
       setWebhooks(res.data?.data || res.data || []);
     } catch {
       setLoadError(true);
-      setError(isRTL ? 'فشل تحميل البيانات' : 'Failed to load');
     } finally {
       setLoading(false);
     }

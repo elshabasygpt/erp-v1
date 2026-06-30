@@ -56,7 +56,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
         if (!String(form.bank_name).trim()) newErrors.bank_name = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
         if (!String(form.account_number).trim()) newErrors.account_number = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
         if (!String(form.currency).trim()) newErrors.currency = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
-        if (!String(form.opening_balance).trim()) newErrors.opening_balance = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Number.isNaN(Number(form.opening_balance))) newErrors.opening_balance = isRTL ? 'أدخل رقماً صحيحاً' : 'Enter a valid number';
         if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
         setErrors({});
 
@@ -111,7 +111,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
 
         const newErrors: Record<string, string> = {};
         if (!String(reconForm.statement_date).trim()) newErrors.statement_date = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
-        if (!String(reconForm.statement_balance).trim()) newErrors.statement_balance = isRTL ? 'هذا الحقل مطلوب' : 'This field is required';
+        if (Number.isNaN(Number(reconForm.statement_balance))) newErrors.statement_balance = isRTL ? 'أدخل رقماً صحيحاً' : 'Enter a valid number';
         if (Object.keys(newErrors).length > 0) { setReconErrors(newErrors); return; }
         setReconErrors({});
 

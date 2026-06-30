@@ -611,7 +611,16 @@ export const InventoryAdjustmentModal = memo(function InventoryAdjustmentModal({
         const key = `item_${index}_${field === 'productId' ? 'productId' : 'actual'}`;
         if (errors[key]) setErrors(prev => { const next = { ...prev }; delete next[key]; return next; });
     };
-    const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
+    const removeItem = (index: number) => {
+        setItems(items.filter((_, i) => i !== index));
+        // Item errors are index-keyed; drop them all on a structural change so
+        // stale errors don't land on the wrong rows (re-validated on next submit).
+        setErrors(prev => {
+            const next: Record<string, string> = {};
+            for (const k in prev) if (!k.startsWith('item_')) next[k] = prev[k];
+            return next;
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

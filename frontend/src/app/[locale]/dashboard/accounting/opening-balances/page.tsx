@@ -128,6 +128,7 @@ export default function OpeningBalancesPage() {
             </div>
 
             {/* Balance check banner */}
+            {!loading && !loadError && (
             <div className={`p-4 rounded-xl flex items-center gap-3 ${balanced ? 'bg-green-500/10 border border-green-500/30' : 'bg-yellow-500/10 border border-yellow-500/30'}`}>
                 <span className="text-2xl">{balanced ? '✅' : '⚠️'}</span>
                 <div>
@@ -143,6 +144,7 @@ export default function OpeningBalancesPage() {
                     </p>
                 </div>
             </div>
+            )}
 
             {/* Type breakdown */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

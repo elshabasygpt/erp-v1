@@ -33,7 +33,6 @@ export default function ApprovalsPage() {
       setInbox(res.data?.data || res.data || []);
     } catch {
       setLoadError(true);
-      setError(isRTL ? 'فشل تحميل البيانات' : 'Failed to load data');
     } finally {
       setLoading(false);
     }
