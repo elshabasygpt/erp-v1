@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Props {
     locale: string;
@@ -11,7 +12,7 @@ export default function ImportHistoryTab({ locale }: Props) {
     const isRTL = locale === 'ar';
     const [page, setPage] = useState(1);
 
-    const { data, isLoading, refetch } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['imports-history', page],
         queryFn: async () => {
             const token = localStorage.getItem('token');
@@ -36,15 +37,6 @@ export default function ImportHistoryTab({ locale }: Props) {
             toast.error(isRTL ? 'فشل تحميل ملف الأخطاء' : 'Failed to download error log');
         }
     };
-
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <div className="w-12 h-12 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
-                <div className="mt-4 text-surface-500 font-medium">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
-            </div>
-        );
-    }
 
     const items = data?.items || [];
 
@@ -87,7 +79,26 @@ export default function ImportHistoryTab({ locale }: Props) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-surface-200 dark:divide-surface-700">
-                            {items.length === 0 ? (
+                            {isLoading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                        {Array.from({ length: 4 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : isError ? (
+                                <tr>
+                                    <td colSpan={4} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ) : items.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="px-6 py-12 text-center text-surface-500">
                                         {isRTL ? 'لا توجد عمليات استيراد سابقة' : 'No previous imports found'}

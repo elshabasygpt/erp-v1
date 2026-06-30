@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi, treasuryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Wallet, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Wallet, CheckCircle2 } from 'lucide-react';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function CommissionsScreen() {
     const isRTL = true;
@@ -13,7 +14,7 @@ export default function CommissionsScreen() {
     const [payingSalespersonId, setPayingSalespersonId] = useState<string | null>(null);
     const [safeId, setSafeId] = useState('');
 
-    const { data: groups = [], isLoading } = useQuery({
+    const { data: groups = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['commissions', 'unpaid'],
         queryFn: async () => {
             const res = await salesApi.getUnpaidCommissions();
@@ -49,14 +50,6 @@ export default function CommissionsScreen() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[40vh]">
-                <RefreshCw className="w-8 h-8 animate-spin text-primary-500" />
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6 animate-fade-in">
             <div>
@@ -82,7 +75,20 @@ export default function CommissionsScreen() {
                 </select>
             </div>
 
-            {groups.length === 0 ? (
+            {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+            ) : isError ? (
+                <div className="glass-card p-8 text-center">
+                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                        {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                    </p>
+                    <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                        🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                    </button>
+                </div>
+            ) : groups.length === 0 ? (
                 <div className="glass-card p-12 text-center">
                     <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-emerald-500" />
                     <p style={{ color: 'var(--text-muted)' }}>

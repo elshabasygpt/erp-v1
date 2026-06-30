@@ -6,6 +6,7 @@ import { purchasesApi, inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function SmartOrdersPage({ params }: { params: { locale: string } }) {
     const isRTL = params.locale === 'ar';
@@ -14,7 +15,7 @@ export default function SmartOrdersPage({ params }: { params: { locale: string }
     const [activeTab, setActiveTab] = useState<'lowStock' | 'schedules'>('lowStock');
 
     // 1. استعلام القطع الناقصة مجمعة حسب المورد
-    const { data: lowStockData, isLoading: loadingLowStock } = useQuery({
+    const { data: lowStockData, isLoading: loadingLowStock, isError: errorLowStock, refetch: refetchLowStock } = useQuery({
         queryKey: ['smartOrdersLowStock'],
         queryFn: async () => {
             const res = await purchasesApi.getSmartOrderLowStock();
@@ -23,7 +24,7 @@ export default function SmartOrdersPage({ params }: { params: { locale: string }
     });
 
     // 2. استعلام جداول مواعيد الموردين
-    const { data: schedulesData, isLoading: loadingSchedules } = useQuery({
+    const { data: schedulesData, isLoading: loadingSchedules, isError: errorSchedules, refetch: refetchSchedules } = useQuery({
         queryKey: ['supplierOrderSchedules'],
         queryFn: async () => {
             const res = await purchasesApi.getSmartOrderUpcoming();
@@ -232,8 +233,17 @@ export default function SmartOrdersPage({ params }: { params: { locale: string }
             {activeTab === 'lowStock' && (
                 <div className="space-y-6">
                     {loadingLowStock ? (
-                        <div className="flex justify-center p-12">
-                            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="space-y-6">
+                            {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                        </div>
+                    ) : errorLowStock ? (
+                        <div className="text-center p-8">
+                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                            </p>
+                            <button onClick={() => refetchLowStock()} className="btn-secondary py-1.5 px-4 text-xs">
+                                🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                            </button>
                         </div>
                     ) : lowStockData?.by_supplier?.length > 0 ? (
                         lowStockData.by_supplier.map((group: any, idx: number) => {
@@ -389,8 +399,15 @@ export default function SmartOrdersPage({ params }: { params: { locale: string }
             {activeTab === 'schedules' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {loadingSchedules ? (
-                        <div className="col-span-full flex justify-center p-12">
-                            <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                        Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                    ) : errorSchedules ? (
+                        <div className="col-span-full text-center p-8">
+                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                            </p>
+                            <button onClick={() => refetchSchedules()} className="btn-secondary py-1.5 px-4 text-xs">
+                                🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                            </button>
                         </div>
                     ) : schedulesData?.length > 0 ? (
                         schedulesData.map((sched: any, idx: number) => (

@@ -7,15 +7,16 @@ import { useSafes, useExpenses } from '@/hooks/useAccounting';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import Skeleton, { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function AccountingContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
     const [activeTab, setActiveTab] = useState<'safes' | 'expenses' | 'transfers' | 'reports'>('safes');
     
     const queryClient = useQueryClient();
-    const { data: safesData, isLoading: isLoadingSafes } = useSafes();
-    const { data: expensesData, isLoading: isLoadingExpenses } = useExpenses();
-    
+    const { data: safesData, isLoading: isLoadingSafes, isError: isErrorSafes, refetch: refetchSafes } = useSafes();
+    const { data: expensesData, isLoading: isLoadingExpenses, isError: isErrorExpenses, refetch: refetchExpenses } = useExpenses();
+
     const safes = safesData || [];
     const expenses = expensesData?.expenses || [];
     const categories = expensesData?.categories || [];
@@ -116,7 +117,18 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
             {/* Safes Tab */}
             {activeTab === 'safes' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {loading ? <p>Loading...</p> : safes.map((safe: any) => (
+                    {loading ? (
+                        Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                    ) : isErrorSafes ? (
+                        <div className="col-span-full text-center p-8">
+                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                            </p>
+                            <button onClick={() => refetchSafes()} className="btn-secondary py-1.5 px-4 text-xs">
+                                🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                            </button>
+                        </div>
+                    ) : safes.map((safe: any) => (
                         <div key={safe.id} className="glass-card p-6 border-l-4" style={{ borderLeftColor: safe.type === 'bank' ? '#3b82f6' : '#22c55e' }}>
                             <div className="flex justify-between items-start mb-2">
                                 <h3 className="text-lg font-bold text-white">{safe.name}</h3>
@@ -136,19 +148,38 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
             {/* Expenses Tab */}
             {activeTab === 'expenses' && (
                 <div className="glass-card p-6">
-                    {loading ? <p>Loading...</p> : (
-                        <table className="data-table">
-                            <thead>
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>{isRTL ? 'البيان' : 'Description'}</th>
+                                <th>{isRTL ? 'التصنيف' : 'Category'}</th>
+                                <th>{isRTL ? 'الخزينة المسحوب منها' : 'Safe'}</th>
+                                <th>{isRTL ? 'المبلغ' : 'Amount'}</th>
+                                <th>{isRTL ? 'التاريخ' : 'Date'}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                        {Array.from({ length: 5 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : isErrorExpenses ? (
                                 <tr>
-                                    <th>{isRTL ? 'البيان' : 'Description'}</th>
-                                    <th>{isRTL ? 'التصنيف' : 'Category'}</th>
-                                    <th>{isRTL ? 'الخزينة المسحوب منها' : 'Safe'}</th>
-                                    <th>{isRTL ? 'المبلغ' : 'Amount'}</th>
-                                    <th>{isRTL ? 'التاريخ' : 'Date'}</th>
+                                    <td colSpan={5} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => refetchExpenses()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {expenses.map((exp: any) => (
+                            ) : (
+                                expenses.map((exp: any) => (
                                     <tr key={exp.id}>
                                         <td>{exp.description || '---'}</td>
                                         <td><span className="badge badge-info">{exp.category?.name}</span></td>
@@ -156,10 +187,10 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                                         <td className="text-red-400 font-bold">-{formatCurrency(exp.amount)}</td>
                                         <td className="opacity-70">{new Date(exp.expense_date).toLocaleDateString()}</td>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             )}
 

@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { purchasesApi, suppliersApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 import PriceCompareModal from './PriceCompareModal';
 
 export default function SupplierPricesContent({ dict, locale }: { dict: any; locale: string }) {
@@ -21,7 +22,7 @@ export default function SupplierPricesContent({ dict, locale }: { dict: any; loc
         },
     });
 
-    const { data: prices = [], isLoading } = useQuery<any[]>({
+    const { data: prices = [], isLoading, isError, refetch } = useQuery<any[]>({
         queryKey: ['supplier-prices', filters],
         queryFn: async () => {
             const res = await purchasesApi.getSupplierPrices({ ...filters, limit: 50 });
@@ -97,8 +98,23 @@ export default function SupplierPricesContent({ dict, locale }: { dict: any; loc
                         </thead>
                         <tbody>
                             {isLoading ? (
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                        {Array.from({ length: 7 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : isError ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-8">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td>
+                                    <td colSpan={7} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
+                                    </td>
                                 </tr>
                             ) : prices.length === 0 ? (
                                 <tr>

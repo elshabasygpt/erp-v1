@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { writeOffApi, inventoryApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Props { locale: string; dict: any; }
 
@@ -31,7 +32,7 @@ export default function WriteOffContent({ locale, dict }: Props) {
         setTimeout(() => setToast(null), 3500);
     };
 
-    const { data: list = [], isLoading } = useQuery({
+    const { data: list = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['write-offs'],
         queryFn: () => writeOffApi.getAll({ per_page: 30 }).then(r => r.data?.data?.data || r.data?.data || []),
     });
@@ -136,7 +137,40 @@ export default function WriteOffContent({ locale, dict }: Props) {
             {/* List */}
             <div className="glass-card p-6">
                 {isLoading ? (
-                    <div className="py-12 text-center"><div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+                    <div className="overflow-x-auto">
+                        <table className="data-table text-sm w-full">
+                            <thead>
+                                <tr>
+                                    <th>{isRTL ? 'الرقم المرجعي' : 'Reference'}</th>
+                                    <th>{isRTL ? 'المستودع' : 'Warehouse'}</th>
+                                    <th>{isRTL ? 'السبب' : 'Reason'}</th>
+                                    <th>{isRTL ? 'النوع' : 'Type'}</th>
+                                    <th>{isRTL ? 'عدد الأصناف' : 'Items'}</th>
+                                    <th>{isRTL ? 'إجمالي التكلفة' : 'Total Cost'}</th>
+                                    <th>{isRTL ? 'التاريخ' : 'Date'}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                        {Array.from({ length: 8 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : isError ? (
+                    <div className="py-12 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                        </p>
+                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                        </button>
+                    </div>
                 ) : list.length === 0 ? (
                     <div className="py-12 text-center">
                         <span className="text-5xl block mb-3">🗑️</span>

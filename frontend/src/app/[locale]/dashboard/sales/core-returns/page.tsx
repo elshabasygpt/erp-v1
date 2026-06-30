@@ -8,6 +8,7 @@ import { Plus, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
+import Skeleton from '@/components/ui/Skeleton';
 
 const STATUS_STYLES: Record<string, string> = {
     pending:  'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -26,7 +27,7 @@ export default function CustomerCoreReturnsPage() {
     const [page, setPage] = useState(1);
     const [status, setStatus] = useState('all');
 
-    const { data: response, isLoading } = useQuery({
+    const { data: response, isLoading, isError, refetch } = useQuery({
         queryKey: ['customer-core-returns', page, status],
         queryFn: () => customerCoreReturnsApi.getAll({ page, status: status === 'all' ? undefined : status }),
     });
@@ -74,7 +75,20 @@ export default function CustomerCoreReturnsPage() {
                     </thead>
                     <tbody className="divide-y">
                         {isLoading ? (
-                            <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                    {Array.from({ length: 6 }).map((__, j) => (
+                                        <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : isError ? (
+                            <tr>
+                                <td colSpan={6} className="p-8 text-center">
+                                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>Failed to load data.</p>
+                                    <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">🔄 Retry</button>
+                                </td>
+                            </tr>
                         ) : returns.length === 0 ? (
                             <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No core returns found.</td></tr>
                         ) : (

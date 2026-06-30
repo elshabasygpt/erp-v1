@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function PenaltiesContent() {
     const queryClient = useQueryClient();
@@ -32,7 +33,7 @@ export default function PenaltiesContent() {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
 
-    const { data: rules = [], isLoading: loadingRules } = useQuery<any[]>({
+    const { data: rules = [], isLoading: loadingRules, isError: errorRules, refetch: refetchRules } = useQuery<any[]>({
         queryKey: ['penalty-rules'],
         queryFn: async () => {
             const res = await hrApi.getPenaltyRules();
@@ -123,7 +124,14 @@ export default function PenaltiesContent() {
                     </div>
 
                     <div className="grid gap-4">
-                        {rules.map(rule => (
+                        {loadingRules ? (
+                            Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                        ) : errorRules ? (
+                            <div className="col-span-full text-center p-8">
+                                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>تعذّر تحميل البيانات.</p>
+                                <button onClick={() => refetchRules()} className="btn-secondary py-1.5 px-4 text-xs">🔄 إعادة المحاولة</button>
+                            </div>
+                        ) : rules.map(rule => (
                             <Card key={rule.id} className="p-4 flex justify-between items-center border-r-4 border-indigo-500">
                                 <div>
                                     <h3 className="font-bold text-lg mb-1">{rule.label_ar || rule.label} ({rule.late_from_minutes}-{rule.late_to_minutes === 0 ? 'فأكثر' : rule.late_to_minutes} دقيقة)</h3>
@@ -143,7 +151,7 @@ export default function PenaltiesContent() {
                                 </div>
                             </Card>
                         ))}
-                        {rules.length === 0 && !loadingRules && <p>لا توجد قواعد مسجلة</p>}
+                        {rules.length === 0 && !loadingRules && !errorRules && <p>لا توجد قواعد مسجلة</p>}
                     </div>
 
                     {showModal && (

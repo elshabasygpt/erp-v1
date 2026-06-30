@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { workshopApi, inventoryApi, crmApi, salesApi } from '@/lib/api';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Props { locale: string; dict: any; }
 
@@ -37,7 +38,7 @@ export default function WorkshopContent({ locale, dict }: Props) {
 
     // Fetch all jobs unfiltered so status-card counts are always accurate.
     // Client-side filtering is applied below for the table view.
-    const { data: allJobs = [], isLoading } = useQuery({
+    const { data: allJobs = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['workshop-jobs'],
         queryFn: async () => {
             const res = await workshopApi.getAll({ per_page: 100 });
@@ -220,7 +221,39 @@ export default function WorkshopContent({ locale, dict }: Props) {
             {/* Table */}
             <div className="glass-card p-6">
                 {isLoading ? (
-                    <div className="py-12 text-center"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+                    <div className="overflow-x-auto">
+                        <table className="data-table text-sm w-full">
+                            <thead>
+                                <tr>
+                                    <th>{isRTL ? 'رقم البطاقة' : 'Job #'}</th>
+                                    <th>{isRTL ? 'العميل' : 'Customer'}</th>
+                                    <th>{isRTL ? 'الشكوى' : 'Complaint'}</th>
+                                    <th>{isRTL ? 'الحالة' : 'Status'}</th>
+                                    <th>{isRTL ? 'التكلفة' : 'Cost'}</th>
+                                    <th>{isRTL ? 'التاريخ' : 'Date'}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                        {Array.from({ length: 7 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : isError ? (
+                    <div className="py-12 text-center">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                        </p>
+                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                        </button>
+                    </div>
                 ) : list.length === 0 ? (
                     <div className="py-12 text-center">
                         <span className="text-5xl block mb-3">🔧</span>

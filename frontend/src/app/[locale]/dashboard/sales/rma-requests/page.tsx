@@ -8,6 +8,7 @@ import { Plus, Eye, Clock, CheckCircle, XCircle, PackageCheck } from 'lucide-rea
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
+import Skeleton from '@/components/ui/Skeleton';
 
 const STATUS_STYLES: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
     submitted:    { label: 'Submitted',    className: 'bg-yellow-50 text-yellow-700 border-yellow-200',  icon: <Clock className="w-3 h-3 mr-1" /> },
@@ -28,7 +29,7 @@ export default function RmaRequestsPage() {
     const [status, setStatus] = useState('all');
     const [page, setPage] = useState(1);
 
-    const { data: response, isLoading } = useQuery({
+    const { data: response, isLoading, isError, refetch } = useQuery({
         queryKey: ['rma-requests', status, page],
         queryFn: () => rmaApi.getAll({ status: status === 'all' ? undefined : status, page }),
     });
@@ -88,7 +89,20 @@ export default function RmaRequestsPage() {
                     </thead>
                     <tbody className="divide-y">
                         {isLoading ? (
-                            <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                    {Array.from({ length: 8 }).map((__, j) => (
+                                        <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : isError ? (
+                            <tr>
+                                <td colSpan={8} className="p-8 text-center">
+                                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>Failed to load data.</p>
+                                    <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">🔄 Retry</button>
+                                </td>
+                            </tr>
                         ) : rmaList.length === 0 ? (
                             <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No RMA requests found.</td></tr>
                         ) : (

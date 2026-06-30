@@ -3,6 +3,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 interface Props {
     locale: string;
@@ -14,7 +15,7 @@ export default function ImportUndoTab({ locale }: Props) {
     const confirm = useConfirm();
     const [isUndoing, setIsUndoing] = useState<string | null>(null);
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ['imports-history', 1],
         queryFn: async () => {
             const token = localStorage.getItem('token');
@@ -47,14 +48,6 @@ export default function ImportUndoTab({ locale }: Props) {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <div className="w-12 h-12 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
-            </div>
-        );
-    }
-
     const items = data?.items || [];
     
     // Filter to only those with rollback_id and within 24 hours
@@ -84,7 +77,18 @@ export default function ImportUndoTab({ locale }: Props) {
             </div>
 
             <div className="space-y-4">
-                {undoableItems.length === 0 ? (
+                {isLoading ? (
+                    Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                ) : isError ? (
+                    <div className="text-center p-12 bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-surface-200 dark:border-surface-700">
+                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                        </p>
+                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                        </button>
+                    </div>
+                ) : undoableItems.length === 0 ? (
                     <div className="text-center p-12 bg-surface-50 dark:bg-surface-800/50 rounded-xl border border-surface-200 dark:border-surface-700">
                         <div className="text-4xl mb-4 opacity-50">🕒</div>
                         <p className="text-surface-500 font-bold">

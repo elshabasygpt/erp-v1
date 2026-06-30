@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountingApi, crmApi, salesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function CreditNotesContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -18,7 +19,7 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
     const [applyForm, setApplyForm] = useState({ invoice_id: '', amount: 0 });
 
-    const { data: creditNotes = [], isLoading: loading } = useQuery<any[]>({
+    const { data: creditNotes = [], isLoading: loading, isError, refetch } = useQuery<any[]>({
         queryKey: ['credit-notes'],
         queryFn: async () => {
             const res = await accountingApi.getCreditNotes();
@@ -119,7 +120,24 @@ export default function CreditNotesContent({ dict, locale }: { dict: any; locale
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={7} className="p-8 text-center text-slate-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                        {Array.from({ length: 7 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : isError ? (
+                                <tr>
+                                    <td colSpan={7} className="p-8 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
+                                    </td>
+                                </tr>
                             ) : creditNotes.length === 0 ? (
                                 <tr><td colSpan={7} className="p-8 text-center text-slate-500">{isRTL ? 'لا توجد إشعارات دائنة.' : 'No credit notes found.'}</td></tr>
                             ) : (

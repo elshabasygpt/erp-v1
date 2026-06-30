@@ -3,32 +3,52 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '@/lib/api';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function ReportsContent({ dict, locale }: { dict: any, locale: string }) {
     const isRTL = locale === 'ar';
     const [activeTab, setActiveTab] = useState('pl');
 
-    const { data: plData, isLoading: l1 } = useQuery({
+    const { data: plData, isLoading: l1, isError: e1, refetch: r1 } = useQuery({
         queryKey: ['reports', 'profit-and-loss'],
         queryFn: async () => (await reportsApi.getProfitAndLoss()).data?.data,
     });
-    const { data: invData, isLoading: l2 } = useQuery({
+    const { data: invData, isLoading: l2, isError: e2, refetch: r2 } = useQuery({
         queryKey: ['reports', 'inventory'],
         queryFn: async () => (await reportsApi.getInventoryReport()).data?.data,
     });
-    const { data: acctData, isLoading: l3 } = useQuery({
+    const { data: acctData, isLoading: l3, isError: e3, refetch: r3 } = useQuery({
         queryKey: ['reports', 'accounts'],
         queryFn: async () => (await reportsApi.getAccountsReport()).data?.data,
     });
-    const { data: kpiData, isLoading: l4 } = useQuery({
+    const { data: kpiData, isLoading: l4, isError: e4, refetch: r4 } = useQuery({
         queryKey: ['reports', 'general-kpis'],
         queryFn: async () => (await reportsApi.getGeneralKpis()).data?.data,
     });
 
     const loading = l1 || l2 || l3 || l4;
+    const isError = e1 || e2 || e3 || e4;
+    const refetch = () => { r1(); r2(); r3(); r4(); };
 
     if (loading) {
-        return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="text-center p-8">
+                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                    {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                </p>
+                <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                    🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                </button>
+            </div>
+        );
     }
 
     const tabs = [

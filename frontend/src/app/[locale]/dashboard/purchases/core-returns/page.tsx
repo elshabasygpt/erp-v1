@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 import { format } from 'date-fns';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function CoreReturnsPage() {
     const router = useRouter();
@@ -16,7 +17,7 @@ export default function CoreReturnsPage() {
     const [page, setPage] = useState(1);
     const [status, setStatus] = useState('all');
 
-    const { data: response, isLoading } = useQuery({
+    const { data: response, isLoading, isError, refetch } = useQuery({
         queryKey: ['core-returns', page, status],
         queryFn: () => coreReturnsApi.getCoreReturns({ page, status }),
     });
@@ -76,7 +77,20 @@ export default function CoreReturnsPage() {
                     </thead>
                     <tbody className="divide-y">
                         {isLoading ? (
-                            <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">Loading...</td></tr>
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                    {Array.from({ length: 6 }).map((__, j) => (
+                                        <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))
+                        ) : isError ? (
+                            <tr>
+                                <td colSpan={6} className="p-8 text-center">
+                                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>Failed to load data.</p>
+                                    <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">🔄 Retry</button>
+                                </td>
+                            </tr>
                         ) : returns.length === 0 ? (
                             <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No core returns found.</td></tr>
                         ) : (

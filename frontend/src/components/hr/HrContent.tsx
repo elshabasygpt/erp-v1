@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { hrApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
+import Skeleton, { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function HrContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -21,7 +22,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
     const [showPayModal, setShowPayModal] = useState(false);
     const [payData, setPayData] = useState({ employee_id: '', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
 
-    const { data: employees = [], isLoading: loadingEmployees } = useQuery<any[]>({
+    const { data: employees = [], isLoading: loadingEmployees, isError: errorEmployees, refetch: refetchEmployees } = useQuery<any[]>({
         queryKey: ['hr', 'employees'],
         queryFn: async () => {
             const res = await hrApi.getEmployees();
@@ -29,7 +30,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
         },
     });
 
-    const { data: attendances = [], isLoading: loadingAttendance } = useQuery<any[]>({
+    const { data: attendances = [], isLoading: loadingAttendance, isError: errorAttendance, refetch: refetchAttendance } = useQuery<any[]>({
         queryKey: ['hr', 'attendance'],
         queryFn: async () => {
             const res = await hrApi.getAttendance();
@@ -38,7 +39,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
         enabled: activeTab === 'attendance',
     });
 
-    const { data: payrolls = [], isLoading: loadingPayroll } = useQuery<any[]>({
+    const { data: payrolls = [], isLoading: loadingPayroll, isError: errorPayroll, refetch: refetchPayroll } = useQuery<any[]>({
         queryKey: ['hr', 'payrolls'],
         queryFn: async () => {
             const res = await hrApi.getPayrolls();
@@ -151,7 +152,18 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
             {/* Employees Tab */}
             {activeTab === 'employees' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {loading ? <p>Loading...</p> : employees.map(emp => (
+                    {loading ? (
+                        Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)
+                    ) : errorEmployees ? (
+                        <div className="col-span-full text-center p-8">
+                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                            </p>
+                            <button onClick={() => refetchEmployees()} className="btn-secondary py-1.5 px-4 text-xs">
+                                🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                            </button>
+                        </div>
+                    ) : employees.map(emp => (
                         <div key={emp.id} className="glass-card p-6 border-l-4 border-primary-500">
                             <h3 className="text-lg font-bold text-white">{emp.name}</h3>
                             <p className="text-sm opacity-70 mt-1">{emp.position || 'Employee'}</p>
@@ -167,7 +179,6 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
             {/* Attendance Tab */}
             {activeTab === 'attendance' && (
                 <div className="glass-card p-6">
-                    {loading ? <p>Loading...</p> : (
                         <table className="data-table">
                             <thead>
                                 <tr>
@@ -180,7 +191,26 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
                                 </tr>
                             </thead>
                             <tbody>
-                                {attendances.map(att => (
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                            {Array.from({ length: 6 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : errorAttendance ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-8 text-center">
+                                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                                {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                            </p>
+                                            <button onClick={() => refetchAttendance()} className="btn-secondary py-1.5 px-4 text-xs">
+                                                🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ) : attendances.map(att => (
                                     <tr key={att.id}>
                                         <td>{att.employee?.name}</td>
                                         <td>{att.date}</td>
@@ -196,14 +226,12 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
                                 ))}
                             </tbody>
                         </table>
-                    )}
                 </div>
             )}
 
             {/* Payrolls Tab */}
             {activeTab === 'payroll' && (
                 <div className="glass-card p-6">
-                    {loading ? <p>Loading...</p> : (
                         <table className="data-table">
                             <thead>
                                 <tr>
@@ -217,7 +245,26 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
                                 </tr>
                             </thead>
                             <tbody>
-                                {payrolls.map(pay => (
+                                {loading ? (
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`} className="border-b" style={{ borderColor: 'var(--border-default)' }}>
+                                            {Array.from({ length: 7 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
+                                ) : errorPayroll ? (
+                                    <tr>
+                                        <td colSpan={7} className="p-8 text-center">
+                                            <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                                {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                            </p>
+                                            <button onClick={() => refetchPayroll()} className="btn-secondary py-1.5 px-4 text-xs">
+                                                🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ) : payrolls.map(pay => (
                                     <tr key={pay.id}>
                                         <td className="font-bold">{pay.employee?.name}</td>
                                         <td>{pay.month} / {pay.year}</td>
@@ -240,7 +287,6 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
                                 ))}
                             </tbody>
                         </table>
-                    )}
                 </div>
             )}
 

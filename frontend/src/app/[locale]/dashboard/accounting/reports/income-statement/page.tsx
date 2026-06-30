@@ -6,6 +6,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { accountingApi } from '@/lib/api';
 import { TrendingUp, Search, Printer } from 'lucide-react';
 import dayjs from 'dayjs';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface StatementLine {
     account: { id?: string; code?: string; name?: string; name_ar?: string; type?: string };
@@ -48,7 +49,7 @@ export default function IncomeStatementPage() {
     const [toInput, setToInput] = useState(dayjs().format('YYYY-MM-DD'));
     const [range, setRange] = useState({ from: fromInput, to: toInput });
 
-    const { data, isLoading, isFetching, error } = useQuery({
+    const { data, isLoading, isFetching, error, refetch } = useQuery({
         queryKey: ['accounting', 'income-statement', range.from, range.to],
         queryFn: async () => {
             const res = await accountingApi.getIncomeStatement(range);
@@ -118,15 +119,23 @@ export default function IncomeStatementPage() {
             </div>
 
             {isLoading ? (
-                <div className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 px-6 py-16 text-center text-surface-500">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                        <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-                        {isRTL ? 'جاري جلب البيانات...' : 'Fetching data...'}
-                    </div>
+                <div className="space-y-6">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                        <div key={`sk-${i}`} className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 p-6 space-y-3">
+                            {Array.from({ length: 5 }).map((__, j) => (
+                                <Skeleton key={j} className="w-full h-5" />
+                            ))}
+                        </div>
+                    ))}
                 </div>
             ) : error ? (
-                <div className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 px-6 py-16 text-center text-rose-500">
-                    {isRTL ? 'فشل تحميل التقرير' : 'Failed to load report'}
+                <div className="bg-white dark:bg-surface-900 rounded-xl shadow-sm border border-surface-200 dark:border-surface-800 px-6 py-16 text-center">
+                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                        {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                    </p>
+                    <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                        🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                    </button>
                 </div>
             ) : (
                 <div className="space-y-6">

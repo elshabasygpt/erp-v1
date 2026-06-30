@@ -6,6 +6,7 @@ import TaskListView from './TaskListView';
 import KanbanView from './KanbanView';
 import AddTaskModal from './AddTaskModal';
 import TaskDetailModal from './TaskDetailModal';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function TasksContent({ dict, locale }: { dict: any, locale: string }) {
     const isRTL = locale === 'ar';
@@ -23,7 +24,7 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
     const [editingTask, setEditingTask] = useState<any>(null);
     const [detailTask, setDetailTask] = useState<any>(null);
 
-    const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+    const { data: tasks = [], isLoading: tasksLoading, isError: tasksError, refetch: refetchTasks } = useQuery({
         queryKey: ['tasks', 'list', filters],
         queryFn: async () => {
             const res = await tasksApi.getTasks({ ...filters, due: filters.due || undefined, per_page: 100 });
@@ -134,7 +135,18 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
 
             {/* Content */}
             {tasksLoading && tasks.length === 0 ? (
-                <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+            ) : tasksError ? (
+                <div className="text-center p-8">
+                    <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                        {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                    </p>
+                    <button onClick={() => refetchTasks()} className="btn-secondary py-1.5 px-4 text-xs">
+                        🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                    </button>
+                </div>
             ) : view === 'list' ? (
                 <TaskListView tasks={tasks} isRTL={isRTL} onRefresh={refresh} setDetailTask={setDetailTask} setEditingTask={setEditingTask} />
             ) : (

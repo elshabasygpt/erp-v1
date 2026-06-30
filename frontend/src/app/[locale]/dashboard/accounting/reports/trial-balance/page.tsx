@@ -6,6 +6,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { accountingApi } from '@/lib/api';
 import { Scale, Search, Printer } from 'lucide-react';
 import dayjs from 'dayjs';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface TrialBalanceRow {
     id: string;
@@ -22,7 +23,7 @@ export default function TrialBalancePage() {
     const [asOfInput, setAsOfInput] = useState(dayjs().format('YYYY-MM-DD'));
     const [asOf, setAsOf] = useState(asOfInput);
 
-    const { data, isLoading, isFetching, error } = useQuery({
+    const { data, isLoading, isFetching, error, refetch } = useQuery({
         queryKey: ['accounting', 'trial-balance', asOf],
         queryFn: async () => {
             const res = await accountingApi.getTrialBalance(asOf);
@@ -110,18 +111,22 @@ export default function TrialBalancePage() {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-surface-500">
-                                        <div className="flex flex-col items-center justify-center gap-3">
-                                            <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-                                            {isRTL ? 'جاري جلب البيانات...' : 'Fetching data...'}
-                                        </div>
-                                    </td>
-                                </tr>
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b border-surface-200 dark:border-surface-800">
+                                        {Array.from({ length: 5 }).map((__, j) => (
+                                            <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
                             ) : error ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-rose-500">
-                                        {isRTL ? 'فشل تحميل التقرير' : 'Failed to load report'}
+                                    <td colSpan={5} className="px-6 py-12 text-center">
+                                        <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
+                                            {isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}
+                                        </p>
+                                        <button onClick={() => refetch()} className="btn-secondary py-1.5 px-4 text-xs">
+                                            🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}
+                                        </button>
                                     </td>
                                 </tr>
                             ) : rows.length === 0 ? (

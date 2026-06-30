@@ -8,6 +8,7 @@ import {
     PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { CHART_COLORS } from '@/lib/chart-colors';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function AutoPartsReportsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -61,13 +62,13 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
         enabled: !!modelMakeFilter,
     });
 
-    const { data: slowData, isLoading: loadingSlow } = useQuery({
+    const { data: slowData, isLoading: loadingSlow, isError: errorSlow, refetch: refetchSlow } = useQuery({
         queryKey: ['auto-parts-reports', 'slow-moving', slowDays],
         queryFn: async () => (await reportsApi.getSlowMovingParts({ days: slowDays })).data?.data,
         enabled: activeTab === 'slow',
     });
 
-    const { data: deadStockData, isLoading: loadingDeadStock } = useQuery({
+    const { data: deadStockData, isLoading: loadingDeadStock, isError: errorDeadStock, refetch: refetchDeadStock } = useQuery({
         queryKey: ['auto-parts-reports', 'dead-stock-months'],
         queryFn: async () => (await reportsApi.getDeadStockByMonths({})).data?.data,
         enabled: activeTab === 'dead-months',
@@ -89,7 +90,7 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
         enabled: activeTab === 'top-make',
     });
 
-    const { data: turnoverData, isLoading: loadingTurnover } = useQuery({
+    const { data: turnoverData, isLoading: loadingTurnover, isError: errorTurnover, refetch: refetchTurnover } = useQuery({
         queryKey: ['auto-parts-reports', 'turnover-by-make', turnoverFrom, turnoverTo],
         queryFn: async () => (await reportsApi.getTurnoverByMake({ date_from: turnoverFrom, date_to: turnoverTo })).data?.data,
         enabled: activeTab === 'turnover',
@@ -112,7 +113,7 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
         enabled: activeTab === 'top-model',
     });
 
-    const { data: missingData, isLoading: loadingMissing } = useQuery({
+    const { data: missingData, isLoading: loadingMissing, isError: errorMissing, refetch: refetchMissing } = useQuery({
         queryKey: ['auto-parts-reports', 'missing-parts'],
         queryFn: async () => (await reportsApi.getMissingParts({})).data?.data,
         enabled: activeTab === 'missing',
@@ -312,7 +313,20 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        <tr><td colSpan={7} className="px-6 py-8 text-center">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+                                        Array.from({ length: 6 }).map((_, i) => (
+                                            <tr key={`sk-${i}`} className="border-b dark:border-gray-700">
+                                                {Array.from({ length: 7 }).map((__, j) => (
+                                                    <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                                ))}
+                                            </tr>
+                                        ))
+                                    ) : errorSlow ? (
+                                        <tr>
+                                            <td colSpan={7} className="px-6 py-8 text-center">
+                                                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                                <button onClick={() => refetchSlow()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                            </td>
+                                        </tr>
                                     ) : slowData?.items?.length === 0 ? (
                                         <tr><td colSpan={7} className="px-6 py-8 text-center">{isRTL ? 'لا توجد بيانات' : 'No data'}</td></tr>
                                     ) : (
@@ -445,7 +459,20 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        <tr><td colSpan={8} className="px-6 py-8 text-center">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+                                        Array.from({ length: 6 }).map((_, i) => (
+                                            <tr key={`sk-${i}`} className="border-b dark:border-gray-700">
+                                                {Array.from({ length: 8 }).map((__, j) => (
+                                                    <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                                ))}
+                                            </tr>
+                                        ))
+                                    ) : errorDeadStock ? (
+                                        <tr>
+                                            <td colSpan={8} className="px-6 py-8 text-center">
+                                                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                                <button onClick={() => refetchDeadStock()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                            </td>
+                                        </tr>
                                     ) : activeBucketItems.length === 0 ? (
                                         <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">{isRTL ? 'لا توجد بيانات' : 'No data'}</td></tr>
                                     ) : (
@@ -646,7 +673,20 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        <tr><td colSpan={8} className="px-6 py-8 text-center">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+                                        Array.from({ length: 6 }).map((_, i) => (
+                                            <tr key={`sk-${i}`} className="border-b dark:border-gray-700">
+                                                {Array.from({ length: 8 }).map((__, j) => (
+                                                    <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                                ))}
+                                            </tr>
+                                        ))
+                                    ) : errorTurnover ? (
+                                        <tr>
+                                            <td colSpan={8} className="px-6 py-8 text-center">
+                                                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                                <button onClick={() => refetchTurnover()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                            </td>
+                                        </tr>
                                     ) : (turnoverData?.items?.length ?? 0) === 0 ? (
                                         <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500">{isRTL ? 'لا توجد بيانات' : 'No data'}</td></tr>
                                     ) : (
@@ -849,7 +889,20 @@ export default function AutoPartsReportsContent({ dict, locale }: { dict: any; l
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        <tr><td colSpan={7} className="px-6 py-8 text-center">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+                                        Array.from({ length: 6 }).map((_, i) => (
+                                            <tr key={`sk-${i}`} className="border-b dark:border-gray-700">
+                                                {Array.from({ length: 7 }).map((__, j) => (
+                                                    <td key={j} className="px-6 py-4"><Skeleton className="w-3/4 h-4" /></td>
+                                                ))}
+                                            </tr>
+                                        ))
+                                    ) : errorMissing ? (
+                                        <tr>
+                                            <td colSpan={7} className="px-6 py-8 text-center">
+                                                <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
+                                                <button onClick={() => refetchMissing()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                            </td>
+                                        </tr>
                                     ) : missingData?.items?.length === 0 ? (
                                         <tr><td colSpan={7} className="px-6 py-8 text-center">{isRTL ? 'لا توجد نواقص' : 'No missing parts'}</td></tr>
                                     ) : (
