@@ -2,6 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 
+// Module-level stack of currently-open modal tokens. Only the topmost modal
+// responds to Escape, so a modal opened on top of another — or a ConfirmDialog
+// opened on top (delete confirmations etc.) — does not also close the ones
+// beneath it on a single Escape press.
+const modalStack: object[] = [];
+
 /**
  * Accessibility for hand-rolled modal dialogs. Attach the returned ref to the
  * modal's content container (the panel, not the backdrop) and set
@@ -25,15 +31,29 @@ export function useModalA11y<T extends HTMLElement = HTMLDivElement>(
     const ref = useRef<T>(null);
     const onCloseRef = useRef(onClose);
     onCloseRef.current = onClose;
+    const tokenRef = useRef<object>({});
 
-    // Escape closes.
+    // Track this modal on the open-modal stack while it is open.
+    useEffect(() => {
+        if (!isOpen) return;
+        const token = tokenRef.current;
+        modalStack.push(token);
+        return () => {
+            const i = modalStack.lastIndexOf(token);
+            if (i !== -1) modalStack.splice(i, 1);
+        };
+    }, [isOpen]);
+
+    // Escape closes — but only for the topmost modal, and never while a
+    // ConfirmDialog (which owns Escape itself) is open on top of it.
     useEffect(() => {
         if (!isOpen) return;
         const handleKey = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                e.stopPropagation();
-                onCloseRef.current();
-            }
+            if (e.key !== 'Escape') return;
+            if (document.querySelector('[data-confirm-dialog="true"]')) return;
+            if (modalStack[modalStack.length - 1] !== tokenRef.current) return;
+            e.stopPropagation();
+            onCloseRef.current();
         };
         window.addEventListener('keydown', handleKey, true);
         return () => window.removeEventListener('keydown', handleKey, true);

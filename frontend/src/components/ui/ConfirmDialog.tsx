@@ -118,6 +118,7 @@ export default function ConfirmDialog({
             aria-modal="true"
             aria-labelledby={titleId}
             aria-describedby={descId}
+            data-confirm-dialog="true"
         >
             {/* Backdrop */}
             <div
