@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { inventoryApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ interface Category {
 }
 
 export default function CategoriesPage() {
+    const { isRTL } = useLanguage();
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const confirm = useConfirm();
@@ -41,7 +43,7 @@ export default function CategoriesPage() {
             const data = res.data?.data ?? res.data ?? [];
             setCategories(Array.isArray(data) ? data : []);
         } catch {
-            toast.error('فشل تحميل الفئات');
+            toast.error(isRTL ? 'فشل تحميل الفئات' : 'Failed to load categories');
             setCategories([]);
         } finally {
             setLoading(false);
@@ -68,7 +70,7 @@ export default function CategoriesPage() {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             if (!file.type.startsWith('image/')) {
-                toast.error('يجب أن يكون الملف صورة');
+                toast.error(isRTL ? 'يجب أن يكون الملف صورة' : 'File must be an image');
                 return;
             }
             setImageFile(file);
@@ -80,7 +82,7 @@ export default function CategoriesPage() {
 
     const handleSave = async () => {
         if (!form.name.trim() || !form.name_ar.trim()) {
-            toast.error('الاسم مطلوب بالعربية والإنجليزية');
+            toast.error(isRTL ? 'الاسم مطلوب بالعربية والإنجليزية' : 'Name is required in both Arabic and English');
             return;
         }
         setSaving(true);
@@ -108,28 +110,28 @@ export default function CategoriesPage() {
 
             if (editing) {
                 await inventoryApi.updateCategory(editing.id, payload);
-                toast.success('تم تحديث الفئة');
+                toast.success(isRTL ? 'تم تحديث الفئة' : 'Category updated');
             } else {
                 await inventoryApi.createCategory(payload);
-                toast.success('تم إنشاء الفئة');
+                toast.success(isRTL ? 'تم إنشاء الفئة' : 'Category created');
             }
             setShowForm(false);
             fetchCategories();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'فشلت العملية');
+            toast.error(err.response?.data?.message || (isRTL ? 'فشلت العملية' : 'Operation failed'));
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!await confirm(`هل تريد حذف الفئة "${name}"؟`)) return;
+        if (!await confirm(isRTL ? `هل تريد حذف الفئة "${name}"؟` : `Delete category "${name}"?`)) return;
         try {
             await inventoryApi.deleteCategory(id);
-            toast.success('تم حذف الفئة');
+            toast.success(isRTL ? 'تم حذف الفئة' : 'Category deleted');
             fetchCategories();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'فشل الحذف');
+            toast.error(err.response?.data?.message || (isRTL ? 'فشل الحذف' : 'Failed to delete'));
         }
     };
 
@@ -169,10 +171,10 @@ export default function CategoriesPage() {
                         <p className="text-sm text-gray-500 truncate">{cat.name_ar}</p>
                     </div>
                     {cat.discount != null && cat.discount > 0 && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{cat.discount}% خصم</span>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{cat.discount}% {isRTL ? 'خصم' : 'off'}</span>
                     )}
                     <span className={`text-xs px-2 py-0.5 rounded-full ${cat.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {cat.is_active ? 'نشط' : 'غير نشط'}
+                        {cat.is_active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'غير نشط' : 'Inactive')}
                     </span>
                     <div className="flex gap-1">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(cat)}>
@@ -192,12 +194,12 @@ export default function CategoriesPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">فئات المنتجات / Product Categories</h1>
-                    <p className="text-gray-500 mt-1">إدارة تصنيفات المنتجات الهرمية</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isRTL ? 'فئات المنتجات' : 'Product Categories'}</h1>
+                    <p className="text-gray-500 mt-1">{isRTL ? 'إدارة تصنيفات المنتجات الهرمية' : 'Manage hierarchical product categories'}</p>
                 </div>
                 <Button onClick={openCreate} className="flex items-center gap-2">
                     <Plus className="w-4 h-4" />
-                    فئة جديدة
+                    {isRTL ? 'فئة جديدة' : 'New Category'}
                 </Button>
             </div>
 
@@ -205,44 +207,44 @@ export default function CategoriesPage() {
             {showForm && (
                 <Card className="p-5 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold text-lg">{editing ? 'تعديل الفئة' : 'إضافة فئة جديدة'}</h3>
+                        <h3 className="font-semibold text-lg">{editing ? (isRTL ? 'تعديل الفئة' : 'Edit Category') : (isRTL ? 'إضافة فئة جديدة' : 'Add New Category')}</h3>
                         <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-gray-400" /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">الاسم (English) *</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">{isRTL ? 'الاسم (English) *' : 'English Name *'}</label>
                             <input
                                 className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600"
                                 value={form.name}
                                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                placeholder="Category name"
+                                placeholder={isRTL ? 'اسم الفئة بالإنجليزية' : 'Category name'}
                             />
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">الاسم بالعربي *</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">{isRTL ? 'الاسم بالعربي *' : 'Arabic Name *'}</label>
                             <input
                                 className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600"
                                 value={form.name_ar}
                                 onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))}
-                                placeholder="اسم الفئة"
+                                placeholder={isRTL ? 'اسم الفئة' : 'Category name in Arabic'}
                                 dir="rtl"
                             />
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">الفئة الأم (اختياري)</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">{isRTL ? 'الفئة الأم (اختياري)' : 'Parent Category (optional)'}</label>
                             <select
                                 className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600"
                                 value={form.parent_id}
                                 onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
                             >
-                                <option value="">-- بدون فئة أم --</option>
+                                <option value="">{isRTL ? '-- بدون فئة أم --' : '-- No parent --'}</option>
                                 {categories.filter(c => c.id !== editing?.id).map(c => (
                                     <option key={c.id} value={c.id}>{c.name} / {c.name_ar}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">خصم الفئة %</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">{isRTL ? 'خصم الفئة %' : 'Category Discount %'}</label>
                             <input
                                 type="number"
                                 min="0"
@@ -254,7 +256,7 @@ export default function CategoriesPage() {
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">صورة الفئة (اختياري)</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">{isRTL ? 'صورة الفئة (اختياري)' : 'Category Image (optional)'}</label>
                             <div className="flex items-center gap-4">
                                 {imagePreview && (
                                     <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded border" />
@@ -269,15 +271,15 @@ export default function CategoriesPage() {
                         </div>
                         <div className="flex items-center gap-2 pt-2 md:col-span-2">
                             <input type="checkbox" id="cat_active" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
-                            <label htmlFor="cat_active" className="text-sm text-gray-700 dark:text-gray-300">نشط</label>
+                            <label htmlFor="cat_active" className="text-sm text-gray-700 dark:text-gray-300">{isRTL ? 'نشط' : 'Active'}</label>
                         </div>
                     </div>
                     <div className="flex gap-3 mt-4">
                         <Button onClick={handleSave} disabled={saving} className="flex items-center gap-2">
                             <Check className="w-4 h-4" />
-                            {saving ? 'جاري الحفظ...' : 'حفظ'}
+                            {saving ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
                         </Button>
-                        <Button variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
+                        <Button variant="outline" onClick={() => setShowForm(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
                     </div>
                 </Card>
             )}
@@ -285,13 +287,13 @@ export default function CategoriesPage() {
             {/* Categories Tree */}
             <Card className="overflow-hidden">
                 <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="font-semibold text-gray-700 dark:text-gray-300">قائمة الفئات ({categories.length})</h3>
-                    <button onClick={() => setExpandedIds(new Set(categories.map(c => c.id)))} className="text-sm text-blue-500 hover:underline">توسيع الكل</button>
+                    <h3 className="font-semibold text-gray-700 dark:text-gray-300">{isRTL ? 'قائمة الفئات' : 'Categories List'} ({categories.length})</h3>
+                    <button onClick={() => setExpandedIds(new Set(categories.map(c => c.id)))} className="text-sm text-blue-500 hover:underline">{isRTL ? 'توسيع الكل' : 'Expand All'}</button>
                 </div>
                 {loading ? (
-                    <div className="p-8 text-center text-gray-500">جاري التحميل...</div>
+                    <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
                 ) : categories.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">لا توجد فئات. أضف فئة جديدة للبدء.</div>
+                    <div className="p-8 text-center text-gray-500">{isRTL ? 'لا توجد فئات. أضف فئة جديدة للبدء.' : 'No categories found. Add a new category to start.'}</div>
                 ) : (
                     <div>{categories.map(cat => renderCategory(cat))}</div>
                 )}

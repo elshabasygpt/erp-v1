@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function BranchesPage() {
+    const { isRTL } = useLanguage();
     const [branches, setBranches] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const confirm = useConfirm();
@@ -45,20 +47,20 @@ export default function BranchesPage() {
             loadBranches();
         } catch (error) {
 
-            toast.error('Error saving branch');
+            toast.error(isRTL ? 'خطأ في حفظ الفرع' : 'Error saving branch');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!await confirm('Are you sure you want to delete this branch?')) return;
+        if (!await confirm(isRTL ? 'هل أنت متأكد من حذف هذا الفرع؟' : 'Are you sure you want to delete this branch?')) return;
         try {
             await inventoryApi.deleteBranch(id);
             loadBranches();
         } catch (error) {
 
-            toast.error('Cannot delete default branch or branch in use.');
+            toast.error(isRTL ? 'لا يمكن حذف الفرع الرئيسي أو فرع قيد الاستخدام.' : 'Cannot delete default branch or branch in use.');
         }
     };
 
@@ -66,8 +68,8 @@ export default function BranchesPage() {
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">إدارة الفروع</h1>
-                    <p className="text-sm text-gray-500 mt-1">تتبع وإدارة جميع فروع منشأتك عبر النظام الموحد</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{isRTL ? 'إدارة الفروع' : 'Branch Management'}</h1>
+                    <p className="text-sm text-gray-500 mt-1">{isRTL ? 'تتبع وإدارة جميع فروع منشأتك عبر النظام الموحد' : 'Track and manage all your business branches across the unified system'}</p>
                 </div>
                 <button
                     onClick={() => {
@@ -77,19 +79,19 @@ export default function BranchesPage() {
                     }}
                     className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm font-medium"
                 >
-                    + فرع جديد
+                    {isRTL ? '+ فرع جديد' : '+ New Branch'}
                 </button>
             </div>
 
             {isLoading ? (
-                <div className="text-center py-12 text-gray-500 animate-pulse">جاري تحميل الفروع...</div>
+                <div className="text-center py-12 text-gray-500 animate-pulse">{isRTL ? 'جاري تحميل الفروع...' : 'Loading branches...'}</div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {branches.map(branch => (
                         <div key={branch.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow relative group">
                             {branch.is_default && (
                                 <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-3 py-1 rounded-bl-xl">
-                                    الفرع الرئيسي
+                                    {isRTL ? 'الفرع الرئيسي' : 'Main Branch'}
                                 </div>
                             )}
                             <div className="p-6">
@@ -104,13 +106,13 @@ export default function BranchesPage() {
                                 </div>
                                 <div className="space-y-2 mb-6">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">الموقع:</span>
-                                        <span className="text-gray-900">{branch.location || 'غير محدد'}</span>
+                                        <span className="text-gray-500">{isRTL ? 'الموقع:' : 'Location:'}</span>
+                                        <span className="text-gray-900">{branch.location || (isRTL ? 'غير محدد' : 'Not specified')}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">الحالة:</span>
+                                        <span className="text-gray-500">{isRTL ? 'الحالة:' : 'Status:'}</span>
                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${branch.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            {branch.is_active ? 'نشط' : 'معطل'}
+                                            {branch.is_active ? (isRTL ? 'نشط' : 'Active') : (isRTL ? 'معطل' : 'Inactive')}
                                         </span>
                                     </div>
                                 </div>
@@ -124,14 +126,14 @@ export default function BranchesPage() {
                                         }}
                                         className="flex-1 bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-600 py-2 rounded-lg text-sm font-medium transition-colors"
                                     >
-                                        تعديل
+                                        {isRTL ? 'تعديل' : 'Edit'}
                                     </button>
                                     {!branch.is_default && (
                                         <button 
                                             onClick={() => handleDelete(branch.id)}
                                             className="flex-1 bg-gray-50 hover:bg-red-50 hover:text-red-600 text-gray-600 py-2 rounded-lg text-sm font-medium transition-colors"
                                         >
-                                            حذف
+                                            {isRTL ? 'حذف' : 'Delete'}
                                         </button>
                                     )}
                                 </div>
@@ -140,7 +142,7 @@ export default function BranchesPage() {
                     ))}
                     {!branches.length && (
                         <div className="col-span-full text-center py-12 text-gray-400 bg-white rounded-2xl border border-gray-100">
-                            لا توجد فروع مسجلة حتى الآن.
+                            {isRTL ? 'لا توجد فروع مسجلة حتى الآن.' : 'No branches registered yet.'}
                         </div>
                     )}
                 </div>
@@ -150,10 +152,10 @@ export default function BranchesPage() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="p-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">{editingId ? 'تعديل بيانات الفرع' : 'تسجيل فرع جديد'}</h2>
+                            <h2 className="text-xl font-bold text-gray-900 mb-6">{editingId ? (isRTL ? 'تعديل بيانات الفرع' : 'Edit Branch') : (isRTL ? 'تسجيل فرع جديد' : 'Register New Branch')}</h2>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">الاسم (عربي)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{isRTL ? 'الاسم (عربي)' : 'Arabic Name'}</label>
                                     <input 
                                         type="text" required 
                                         value={formData.name_ar} onChange={e => setFormData({...formData, name_ar: e.target.value})}
@@ -162,7 +164,7 @@ export default function BranchesPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">الاسم (إنجليزي)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{isRTL ? 'الاسم (إنجليزي)' : 'English Name'}</label>
                                     <input 
                                         type="text" required 
                                         value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
@@ -170,7 +172,7 @@ export default function BranchesPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">الموقع / العنوان</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{isRTL ? 'الموقع / العنوان' : 'Location / Address'}</label>
                                     <input 
                                         type="text"
                                         value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})}
@@ -183,15 +185,15 @@ export default function BranchesPage() {
                                         checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})}
                                         className="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4"
                                     />
-                                    <label htmlFor="is_active" className="text-sm font-medium text-gray-700">فرع نشط (يعمل حالياً)</label>
+                                    <label htmlFor="is_active" className="text-sm font-medium text-gray-700">{isRTL ? 'فرع نشط (يعمل حالياً)' : 'Active branch (currently operating)'}</label>
                                 </div>
 
                                 <div className="flex gap-3 pt-6 mt-6 border-t border-gray-100">
                                     <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors">
-                                        إلغاء
+                                        {isRTL ? 'إلغاء' : 'Cancel'}
                                     </button>
                                     <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl font-medium transition-colors disabled:opacity-50">
-                                        {isSubmitting ? 'جاري الحفظ...' : 'حفظ البيانات'}
+                                        {isSubmitting ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ البيانات' : 'Save')}
                                     </button>
                                 </div>
                             </form>

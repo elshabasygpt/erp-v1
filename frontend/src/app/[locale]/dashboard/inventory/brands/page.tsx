@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useLanguage } from '@/i18n/LanguageContext';
 import { inventoryApi } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ interface Brand {
 }
 
 export default function BrandsPage() {
+    const { isRTL } = useLanguage();
     const [brands, setBrands] = useState<Brand[]>([]);
     const [loading, setLoading] = useState(true);
     const confirm = useConfirm();
@@ -61,7 +63,7 @@ export default function BrandsPage() {
             const data = res.data?.data ?? res.data ?? [];
             setBrands(Array.isArray(data) ? data : []);
         } catch {
-            toast.error('فشل تحميل الماركات');
+            toast.error(isRTL ? 'فشل تحميل الماركات' : 'Failed to load brands');
             setBrands([]);
         } finally {
             setLoading(false);
@@ -87,13 +89,13 @@ export default function BrandsPage() {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 2 * 1024 * 1024) { toast.error('حجم الصورة يجب أن يكون أقل من 2 ميجا'); return; }
+        if (file.size > 2 * 1024 * 1024) { toast.error(isRTL ? 'حجم الصورة يجب أن يكون أقل من 2 ميجا' : 'Image size must be less than 2 MB'); return; }
         setImageFile(file);
         setImagePreview(URL.createObjectURL(file));
     };
 
     const handleSave = async () => {
-        if (!form.name.trim()) { toast.error('اسم الماركة مطلوب'); return; }
+        if (!form.name.trim()) { toast.error(isRTL ? 'اسم الماركة مطلوب' : 'Brand name is required'); return; }
         setSaving(true);
         try {
             // Use FormData only when there's an image, otherwise plain JSON
@@ -117,24 +119,24 @@ export default function BrandsPage() {
                     await inventoryApi.createBrand(payload);
                 }
             }
-            toast.success(editing ? 'تم تحديث الماركة' : 'تم إنشاء الماركة');
+            toast.success(editing ? (isRTL ? 'تم تحديث الماركة' : 'Brand updated') : (isRTL ? 'تم إنشاء الماركة' : 'Brand created'));
             setShowForm(false);
             fetchBrands();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'فشلت العملية');
+            toast.error(err.response?.data?.message || (isRTL ? 'فشلت العملية' : 'Operation failed'));
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!await confirm(`هل تريد حذف الماركة "${name}"؟`)) return;
+        if (!await confirm(isRTL ? `هل تريد حذف الماركة "${name}"؟` : `Delete brand "${name}"?`)) return;
         try {
             await inventoryApi.deleteBrand(id);
-            toast.success('تم الحذف');
+            toast.success(isRTL ? 'تم الحذف' : 'Deleted');
             fetchBrands();
         } catch (err: any) {
-            toast.error(err.response?.data?.message || 'فشل الحذف');
+            toast.error(err.response?.data?.message || (isRTL ? 'فشل الحذف' : 'Failed to delete'));
         }
     };
 
@@ -144,22 +146,22 @@ export default function BrandsPage() {
     );
 
     return (
-        <div className="space-y-6" dir="rtl">
+        <div className="space-y-6" dir={isRTL ? 'rtl' : 'ltr'}>
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">الماركات / Brands</h1>
-                    <p className="text-gray-500 mt-1">إدارة ماركات وعلامات المنتجات التجارية</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isRTL ? 'الماركات' : 'Brands'}</h1>
+                    <p className="text-gray-500 mt-1">{isRTL ? 'إدارة ماركات وعلامات المنتجات التجارية' : 'Manage product brands and trademarks'}</p>
                 </div>
                 <Button onClick={openCreate} className="flex items-center gap-2">
                     <Plus className="w-4 h-4" />
-                    ماركة جديدة
+                    {isRTL ? 'ماركة جديدة' : 'New Brand'}
                 </Button>
             </div>
 
             {showForm && (
                 <Card className="p-5 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10">
                     <div className="flex justify-between items-center mb-5">
-                        <h3 className="font-semibold text-lg">{editing ? 'تعديل الماركة' : 'إضافة ماركة جديدة'}</h3>
+                        <h3 className="font-semibold text-lg">{editing ? (isRTL ? 'تعديل الماركة' : 'Edit Brand') : (isRTL ? 'إضافة ماركة جديدة' : 'Add New Brand')}</h3>
                         <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-gray-400" /></button>
                     </div>
 
@@ -175,7 +177,7 @@ export default function BrandsPage() {
                                 ) : (
                                     <>
                                         <Upload className="w-7 h-7 text-purple-400 mb-1" />
-                                        <span className="text-xs text-purple-500 text-center">رفع شعار</span>
+                                        <span className="text-xs text-purple-500 text-center">{isRTL ? 'رفع شعار' : 'Upload Logo'}</span>
                                         <span className="text-xs text-gray-400">PNG / JPG</span>
                                     </>
                                 )}
@@ -185,7 +187,7 @@ export default function BrandsPage() {
                                     onClick={() => { setImageFile(null); setImagePreview(editing?.image_url ?? null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                                     className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1"
                                 >
-                                    <ImageOff className="w-3.5 h-3.5" /> إزالة الصورة
+                                    <ImageOff className="w-3.5 h-3.5" /> {isRTL ? 'إزالة الصورة' : 'Remove Image'}
                                 </button>
                             )}
                             <input
@@ -195,23 +197,23 @@ export default function BrandsPage() {
                                 className="hidden"
                                 onChange={handleImageChange}
                             />
-                            <p className="text-xs text-gray-400 text-center">الحد الأقصى 2 ميجا</p>
+                            <p className="text-xs text-gray-400 text-center">{isRTL ? 'الحد الأقصى 2 ميجا' : 'Max 2 MB'}</p>
                         </div>
 
                         {/* Fields — Arabic first (RTL layout) */}
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-sm font-medium mb-1 block">الاسم بالعربي</label>
+                                <label className="text-sm font-medium mb-1 block">{isRTL ? 'الاسم بالعربي' : 'Arabic Name'}</label>
                                 <input
                                     className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600"
                                     value={form.name_ar}
                                     onChange={e => setForm(f => ({ ...f, name_ar: e.target.value }))}
-                                    placeholder="تويوتا، سامسونج..."
+                                    placeholder={isRTL ? 'تويوتا، سامسونج...' : 'Toyota, Samsung...'}
                                     dir="rtl"
                                 />
                             </div>
                             <div>
-                                <label className="text-sm font-medium mb-1 block">الاسم بالإنجليزي *</label>
+                                <label className="text-sm font-medium mb-1 block">{isRTL ? 'الاسم بالإنجليزي *' : 'English Name *'}</label>
                                 <input
                                     className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600"
                                     value={form.name}
@@ -223,14 +225,14 @@ export default function BrandsPage() {
                             <div className="md:col-span-2">
                                 <label className="text-sm font-medium mb-1 block flex items-center gap-1">
                                     <Globe className="w-3.5 h-3.5 text-gray-400" />
-                                    بلد المنشأ
+                                    {isRTL ? 'بلد المنشأ' : 'Country of Origin'}
                                 </label>
                                 <select
                                     className="border rounded px-3 py-2 w-full bg-white dark:bg-gray-800 dark:border-gray-600"
                                     value={form.country_of_origin}
                                     onChange={e => setForm(f => ({ ...f, country_of_origin: e.target.value }))}
                                 >
-                                    <option value="">-- اختر البلد --</option>
+                                    <option value="">{isRTL ? '-- اختر البلد --' : '-- Select Country --'}</option>
                                     {COUNTRIES.map(c => (
                                         <option key={c.code} value={c.code}>
                                             {c.name} — {c.nameEn}
@@ -244,9 +246,9 @@ export default function BrandsPage() {
                     <div className="flex gap-3 mt-5">
                         <Button onClick={handleSave} disabled={saving} className="flex items-center gap-2">
                             <Check className="w-4 h-4" />
-                            {saving ? 'جاري الحفظ...' : 'حفظ'}
+                            {saving ? (isRTL ? 'جاري الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
                         </Button>
-                        <Button variant="outline" onClick={() => setShowForm(false)}>إلغاء</Button>
+                        <Button variant="outline" onClick={() => setShowForm(false)}>{isRTL ? 'إلغاء' : 'Cancel'}</Button>
                     </div>
                 </Card>
             )}
@@ -257,16 +259,16 @@ export default function BrandsPage() {
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
                             className="border rounded pr-9 pl-3 py-2 w-full bg-white dark:bg-gray-800"
-                            placeholder="بحث عن ماركة..."
+                            placeholder={isRTL ? 'بحث عن ماركة...' : 'Search brands...'}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
-                    <span className="text-sm text-gray-500 mr-3 flex-shrink-0">{filtered.length} ماركة</span>
+                    <span className="text-sm text-gray-500 mr-3 flex-shrink-0">{filtered.length} {isRTL ? 'ماركة' : 'brands'}</span>
                 </div>
 
                 {loading ? (
-                    <div className="p-8 text-center text-gray-500">جاري التحميل...</div>
+                    <div className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
                         {filtered.map(brand => (
@@ -291,7 +293,7 @@ export default function BrandsPage() {
                                     {brand.country_of_origin && (
                                         <p className="text-xs text-blue-500 mt-0.5 flex items-center justify-center gap-1">
                                             <Globe className="w-3 h-3" />
-                                            {COUNTRIES.find(c => c.code === brand.country_of_origin)?.name ?? brand.country_of_origin}
+                                            {(() => { const c = COUNTRIES.find(c => c.code === brand.country_of_origin); return c ? (isRTL ? c.name : c.nameEn) : brand.country_of_origin; })()}
                                         </p>
                                     )}
                                 </div>
@@ -308,7 +310,7 @@ export default function BrandsPage() {
                         {filtered.length === 0 && (
                             <div className="col-span-full py-12 text-center text-gray-400">
                                 <Award className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                <p>لا توجد ماركات. اضغط "ماركة جديدة" للبدء.</p>
+                                <p>{isRTL ? 'لا توجد ماركات. اضغط "ماركة جديدة" للبدء.' : 'No brands found. Click "New Brand" to start.'}</p>
                             </div>
                         )}
                     </div>
