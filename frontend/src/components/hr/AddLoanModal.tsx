@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 interface AddLoanModalProps {
     employees: any[];
@@ -30,6 +31,7 @@ export default function AddLoanModal({ employees, isRTL, onClose, onSuccess }: A
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const modalRef = useModalA11y(true, onClose);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -60,6 +62,9 @@ export default function AddLoanModal({ employees, isRTL, onClose, onSuccess }: A
         <AnimatePresence>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                 <motion.div
+                    ref={modalRef}
+                    role="dialog"
+                    aria-modal="true"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}

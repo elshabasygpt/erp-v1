@@ -9,6 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
 import {
     ProductLabel, LabelPrintSheet, usePrintLabels, labelCode,
@@ -26,6 +27,7 @@ export function LabelPrintModal({
     title?: string;
 }) {
     const { currencySymbol } = useRegionalSettings();
+    const modalRef = useModalA11y<HTMLDivElement>(true, onClose);
     const [options, setOptions] = useState<LabelOptions>(DEFAULT_LABEL_OPTIONS);
     const [companyName, setCompanyName] = useState('');
     const [rows, setRows] = useState<LabelItem[]>(items.map(it => ({ ...it })));
@@ -80,7 +82,7 @@ export function LabelPrintModal({
         <>
             <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                 onClick={e => e.target === e.currentTarget && onClose()}>
-                <div className="bg-white dark:bg-[#111118] w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 max-h-[90vh] flex flex-col">
+                <div ref={modalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-[#111118] w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-white/10 max-h-[90vh] flex flex-col">
                     <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-default)' }}>
                         <div className="flex items-center gap-2"><span className="text-xl">🏷️</span>
                             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{title || (isRTL ? 'طباعة الباركود' : 'Print Barcode')}</h2>

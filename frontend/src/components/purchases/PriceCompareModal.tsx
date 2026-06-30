@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { purchasesApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 interface PriceCompareModalProps {
     productId: string;
@@ -21,6 +22,7 @@ export default function PriceCompareModal({
 }: PriceCompareModalProps) {
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const modalRef = useModalA11y(true, onClose);
 
     useEffect(() => {
         purchasesApi.compareSupplierPrices(productId)
@@ -38,7 +40,7 @@ export default function PriceCompareModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+            <div ref={modalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
                 <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         📊 {isRTL ? 'مقارنة أسعار الموردين' : 'Supplier Price Comparison'} — {productName}

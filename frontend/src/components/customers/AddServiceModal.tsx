@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { crmApi, salesApi } from '@/lib/api';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import toast from 'react-hot-toast';
 
 interface AddServiceModalProps {
@@ -16,8 +17,9 @@ interface AddServiceModalProps {
 
 export default function AddServiceModal({ customerId, vehicleId, vehicleDisplayName, isOpen, onClose, onSuccess, locale }: AddServiceModalProps) {
     const isRTL = locale === 'ar';
+    const modalRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
     const [loading, setLoading] = useState(false);
-    
+
     const [form, setForm] = useState({
         service_type: 'parts_replacement',
         service_date: new Date().toISOString().split('T')[0],
@@ -68,7 +70,7 @@ export default function AddServiceModal({ customerId, vehicleId, vehicleDisplayN
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" style={{ background: 'var(--bg-surface)' }}>
+            <div ref={modalRef} role="dialog" aria-modal="true" className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" style={{ background: 'var(--bg-surface)' }}>
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50/50" style={{ borderColor: 'var(--border-default)' }}>
                     <div>
                         <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>

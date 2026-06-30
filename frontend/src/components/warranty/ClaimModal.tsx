@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { salesApi } from '@/lib/api';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import toast from 'react-hot-toast';
 
 interface ClaimModalProps {
@@ -14,6 +15,7 @@ interface ClaimModalProps {
 
 export default function ClaimModal({ warranty, isOpen, onClose, onSuccess, locale }: ClaimModalProps) {
     const isRTL = locale === 'ar';
+    const modalRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
     const [form, setForm] = useState({
         claim_type: 'replacement',
         complaint: '',
@@ -47,7 +49,7 @@ export default function ClaimModal({ warranty, isOpen, onClose, onSuccess, local
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ background: 'var(--bg-surface)' }}>
+            <div ref={modalRef} role="dialog" aria-modal="true" className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ background: 'var(--bg-surface)' }}>
                 <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-default)' }}>
                     <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                         {isRTL ? 'تسجيل مطالبة ضمان' : 'Log Warranty Claim'}

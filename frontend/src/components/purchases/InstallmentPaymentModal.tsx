@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Upload, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
 import { purchasesApi } from '@/lib/api';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import toast from 'react-hot-toast';
 
 interface InstallmentPaymentModalProps {
@@ -18,6 +19,7 @@ export function InstallmentPaymentModal({ isOpen, onClose, installment, onPaymen
     const [paymentMethod, setPaymentMethod] = useState<string>('bank_transfer');
     const [attachment, setAttachment] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const modalRef = useModalA11y(isOpen, onClose);
 
     // Set initial amount to remaining amount
     React.useEffect(() => {
@@ -65,7 +67,7 @@ export function InstallmentPaymentModal({ isOpen, onClose, installment, onPaymen
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="bg-white dark:bg-[#1a1a2e] rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div ref={modalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-[#1a1a2e] rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50 dark:bg-white/5">
                     <h3 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500" />

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { inventoryApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { X, Plus, Trash2, Upload } from 'lucide-react';
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function CrossReferenceManagerModal({ productId, productName, isRTL, onClose }: Props) {
+    const modalRef = useModalA11y<HTMLDivElement>(true, onClose);
     const [refs, setRefs] = useState<CrossRef[]>([]);
     const [loading, setLoading] = useState(true);
     const confirm = useConfirm();
@@ -122,6 +124,9 @@ export function CrossReferenceManagerModal({ productId, productName, isRTL, onCl
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
             <div
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
                 className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl"
                 style={{ background: 'var(--bg-card)' }}
                 dir={isRTL ? 'rtl' : 'ltr'}

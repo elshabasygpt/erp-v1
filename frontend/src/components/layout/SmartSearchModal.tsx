@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { inventoryApi } from '@/lib/api';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { Search, FileText, Package, X, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface SmartSearchModalProps {
@@ -26,6 +27,7 @@ export default function SmartSearchModal({ isOpen, onClose, locale, dict }: Smar
     const isRTL = locale === 'ar';
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
+    const modalRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
 
     const [query, setQuery] = useState('');
     const [products, setProducts] = useState<any[]>([]);
@@ -89,10 +91,13 @@ export default function SmartSearchModal({ isOpen, onClose, locale, dict }: Smar
                 onClick={onClose}
             />
             
-            <div 
+            <div
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
                 className="relative w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-                style={{ 
-                    background: 'var(--bg-surface)', 
+                style={{
+                    background: 'var(--bg-surface)',
                     border: '1px solid var(--border-default)'
                 }}
             >

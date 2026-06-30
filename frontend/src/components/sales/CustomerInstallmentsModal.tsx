@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { salesApi } from '@/lib/api';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -18,6 +19,7 @@ export default function CustomerInstallmentsModal({ invoice, isRTL, onClose, for
     const [installments, setInstallments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const modalRef = useModalA11y(true, onClose);
 
     const dueAmount = Number(invoice.total || 0) - Number(invoice.paid_amount || 0);
     const hasPaid = installments.some(i => Number(i.paid_amount) > 0);
@@ -73,7 +75,7 @@ export default function CustomerInstallmentsModal({ invoice, isRTL, onClose, for
 
     return (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose} dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="relative w-full max-w-xl rounded-2xl bg-surface-900 shadow-2xl border border-surface-800 flex flex-col" onClick={e => e.stopPropagation()}>
+            <div ref={modalRef} role="dialog" aria-modal="true" className="relative w-full max-w-xl rounded-2xl bg-surface-900 shadow-2xl border border-surface-800 flex flex-col" onClick={e => e.stopPropagation()}>
                 <div className="px-6 py-4 border-b border-surface-800 flex justify-between items-center bg-surface-800/30">
                     <h2 className="text-xl font-bold flex items-center gap-2 text-white">
                         <span>📅</span>

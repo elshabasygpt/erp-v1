@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 interface WarrantyDetailModalProps {
     warranty: any;
@@ -12,12 +13,13 @@ interface WarrantyDetailModalProps {
 }
 
 export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale, onOpenClaim, onResolveClaim }: WarrantyDetailModalProps) {
+    const modalRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
     if (!isOpen || !warranty) return null;
     const isRTL = locale === 'ar';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ background: 'var(--bg-surface)' }}>
+            <div ref={modalRef} role="dialog" aria-modal="true" className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ background: 'var(--bg-surface)' }}>
                 <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: 'var(--border-default)' }}>
                     <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
                         {isRTL ? 'تفاصيل الضمان' : 'Warranty Details'} ({warranty.warranty_number})

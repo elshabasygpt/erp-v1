@@ -2,18 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
-export default function AccountFormModal({ 
-    isOpen, 
-    onClose, 
-    onSuccess, 
-    account, 
+export default function AccountFormModal({
+    isOpen,
+    onClose,
+    onSuccess,
+    account,
     parentId,
-    allAccounts 
+    allAccounts
 }: any) {
     const { isRTL } = useLanguage();
+    const modalRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -104,7 +106,7 @@ export default function AccountFormModal({
 
     return (
         <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-            <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div ref={modalRef} role="dialog" aria-modal="true" className="bg-white dark:bg-surface-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="px-6 py-4 border-b border-surface-200 dark:border-surface-800 flex justify-between items-center">
                     <h2 className="text-xl font-bold">
                         {account 
