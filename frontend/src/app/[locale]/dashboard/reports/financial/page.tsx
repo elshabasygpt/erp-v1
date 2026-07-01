@@ -148,7 +148,7 @@ export default function FinancialReportsPage() {
                         {data.accounts_distribution && (
                             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
                                 <h3 className="font-bold mb-4">{isRTL ? '⚖️ التوزيع المالي' : '⚖️ Financial Distribution'}</h3>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {[
                                         { label_ar: 'الأصول', label_en: 'Assets', val: data.accounts_distribution.assets, color: 'text-green-600' },
                                         { label_ar: 'الالتزامات', label_en: 'Liabilities', val: data.accounts_distribution.liabilities, color: 'text-red-500' },

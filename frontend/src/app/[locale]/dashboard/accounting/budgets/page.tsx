@@ -270,7 +270,7 @@ export default function BudgetsPage() {
                                 ) : varianceData ? (
                                     <>
                                         {/* Summary cards */}
-                                        <div className="grid grid-cols-3 gap-3 mb-4">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                                             {[
                                                 { label: isRTL ? 'المخطط' : 'Budgeted', val: varianceData.summary?.total_budgeted, color: '#0ea5e9' },
                                                 { label: isRTL ? 'الفعلي' : 'Actual',   val: varianceData.summary?.total_actual,   color: '#10b981' },

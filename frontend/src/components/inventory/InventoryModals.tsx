@@ -443,7 +443,7 @@ export const StockMovementsModal = memo(function StockMovementsModal({ dict, loc
                     </div>
 
                     {/* Summary cards */}
-                    <div className="grid grid-cols-3 gap-3 mb-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
                         <div className="glass-card p-3 text-center">
                             <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>📥 {inv.incoming}</p>
                             <p className="text-lg font-bold text-green-500">+{totalIn}</p>

@@ -253,7 +253,7 @@ export default function OnboardingWizard() {
                                     ? 'تم إعداد نظامك بنجاح. يمكنك الآن البدء ببيع أول منتج أو استكشاف الوحدات المختلفة.'
                                     : 'Your system is all set. You can now sell your first product or explore the different modules.'}
                             </p>
-                            <div className="grid grid-cols-3 gap-3 mt-6 text-sm">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 text-sm">
                                 {[
                                     { icon: '📦', ar: 'أضف منتجاتك', en: 'Add Products', link: 'inventory' },
                                     { icon: '🛒', ar: 'أول عملية بيع', en: 'First Sale', link: 'pos' },

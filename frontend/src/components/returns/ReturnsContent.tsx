@@ -397,7 +397,7 @@ export default function ReturnsContent({ dict, locale }: Props) {
                                     <input type="number" className="input-field" min="0" step="0.01" value={newReturn.unitPrice} onChange={e => setNewReturn({ ...newReturn, unitPrice: parseFloat(e.target.value) || 0 })} />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{r.returnReason}</label>
                                     <select className="select-field" value={newReturn.reason} onChange={e => setNewReturn({ ...newReturn, reason: e.target.value })}>

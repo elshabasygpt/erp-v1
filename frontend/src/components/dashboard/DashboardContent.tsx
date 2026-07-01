@@ -589,7 +589,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                 {/* Inventory */}
                 <section className="glass-card p-6" aria-label={dict.dashboard.inventorySummary}>
                     <SectionHeader title={dict.dashboard.inventorySummary} href="/inventory" icon="📦" locale={locale} viewAllLabel={viewAll} />
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                         <MiniStat label={dict.dashboard.totalProducts}   value={statsSummary.totalProducts.toLocaleString()} />
                         <MiniStat label={dict.dashboard.activeProducts}  value={statsSummary.activeProducts.toLocaleString()} color="text-green-600 dark:text-green-400" />
                         <MiniStat label={dict.dashboard.lowStockItems}   value={(statsSummary.lowStockCount || aiForecasts.length).toString()} color="text-red-600 dark:text-red-400" />
@@ -636,7 +636,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                 {/* Accounting */}
                 <section className="glass-card p-6" aria-label={dict.dashboard.accountingSummary}>
                     <SectionHeader title={dict.dashboard.accountingSummary} href="/accounting" icon="📊" locale={locale} viewAllLabel={viewAll} />
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                         <MiniStat label={dict.dashboard.revenue}   value={formatCurrency(statsSummary.revenue)}   color="text-green-600 dark:text-green-400" />
                         <MiniStat label={dict.dashboard.expenses}  value={formatCurrency(statsSummary.expenses)}  color="text-red-600 dark:text-red-400" />
                         <MiniStat label={dict.dashboard.netIncome} value={formatCurrency(statsSummary.netIncome)} color="text-indigo-600 dark:text-indigo-400" />
@@ -672,7 +672,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                 {/* Customers */}
                 <section className="glass-card p-6" aria-label={dict.dashboard.customersSummary}>
                     <SectionHeader title={dict.dashboard.customersSummary} href="/customers" icon="👥" locale={locale} viewAllLabel={viewAll} />
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                         <MiniStat label={dict.dashboard.activeCustomers} value={statsSummary.activeCustomers.toLocaleString()} color="text-green-600 dark:text-green-400" />
                         <MiniStat label={dict.dashboard.newThisMonth}    value={statsSummary.newCustomersThisMonth.toString()}  color="text-indigo-600 dark:text-indigo-400" />
                         <MiniStat label={dict.dashboard.overduePayments} value={statsSummary.overduePaymentsCount.toString()}   color="text-red-600 dark:text-red-400" />

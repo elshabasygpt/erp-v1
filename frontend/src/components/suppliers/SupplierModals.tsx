@@ -111,7 +111,7 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
                     {supplier.paymentType === 'credit' && (
                         <div className="glass-card p-4">
                             <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>💳 {s.creditInfo}</h4>
-                            <div className="grid grid-cols-3 gap-4 mb-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-3">
                                 <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.creditLimit}</p><p className="font-bold text-primary-400">{formatCurrency(supplier.creditLimit || 0)}</p></div>
                                 <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.usedCredit}</p><p className="font-bold text-red-500">{formatCurrency(currentBalance)}</p></div>
                                 <div><p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.availableCredit}</p><p className="font-bold text-green-500">{formatCurrency(Math.max((supplier.creditLimit || 0) - currentBalance, 0))}</p></div>

@@ -340,7 +340,7 @@ export default function PartnershipsPage({ params }: { params: { locale: string 
                                         {isRTL ? 'نتائج الحسبة المحاسبية' : 'Calculation Results'}
                                     </h3>
                                     
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                         <div className="p-4 rounded-xl bg-surface-100 dark:bg-surface-800 text-center border border-default">
                                             <p className="text-xs text-muted mb-1">{isRTL ? 'إجمالي المبيعات' : 'Total Revenue'}</p>
                                             <p className="text-xl font-bold text-emerald-500">{Number(previewData.total_revenue).toLocaleString()}</p>

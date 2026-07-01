@@ -132,7 +132,7 @@ export default function PortalDashboard({ params }: { params: { locale: string }
                     </div>
 
                     {/* Summary row */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                         {[
                             { l: isRTL ? 'إجمالي الدائن' : 'Total Credits', v: statement?.summary?.total_credited },
                             { l: isRTL ? 'المسحوب' : 'Withdrawn', v: statement?.summary?.total_withdrawn },

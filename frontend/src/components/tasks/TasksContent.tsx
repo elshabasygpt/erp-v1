@@ -84,7 +84,7 @@ export default function TasksContent({ dict, locale }: { dict: any, locale: stri
 
             {/* KPIs */}
             {dashboard && (
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {[
                         { label: isRTL ? 'للتنفيذ' : 'Todo', value: dashboard?.counts?.todo || 0, color: 'text-blue-500' },
                         { label: isRTL ? 'جاري' : 'In Progress', value: dashboard?.counts?.in_progress || 0, color: 'text-yellow-500' },

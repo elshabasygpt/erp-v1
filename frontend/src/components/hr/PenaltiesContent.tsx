@@ -232,7 +232,7 @@ export default function PenaltiesContent() {
 
                     {report && (
                         <>
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 <Card className="p-4 text-center">
                                     <div className="text-sm text-gray-500">{isRTL ? 'أيام تأخير' : 'Late days'}</div>
                                     <div className="text-2xl font-bold">{report.totals.total_late_days} {isRTL ? 'يوم' : 'day(s)'}</div>
