@@ -61,6 +61,7 @@ export default function UsersContent({ dict, locale }: Props) {
 
     const emptyForm = { name: '', nameAr: '', email: '', phone: '', role: 'cashier' as Role, branch: 'الرياض', password: '' };
     const [form, setForm] = useState(emptyForm);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const filtered = useMemo(() => users.filter(u => {
         const name = isRTL ? u.nameAr : u.name;
@@ -87,7 +88,10 @@ export default function UsersContent({ dict, locale }: Props) {
     const openEdit = (u: User) => { setEditUser(u); setForm({ name: u.name, nameAr: u.nameAr, email: u.email, phone: u.phone, role: u.role, branch: u.branch, password: '' }); setShowModal(true); };
 
     const saveUser = () => {
-        if (!form.email) return;
+        const emailVal = form.email.trim();
+        if (!emailVal) { setErrors({ email: isRTL ? 'البريد الإلكتروني مطلوب' : 'Email is required' }); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) { setErrors({ email: isRTL ? 'صيغة بريد إلكتروني غير صحيحة' : 'Invalid email format' }); return; }
+        setErrors({});
         if (editUser) {
             setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, ...form } : u));
         } else {
@@ -349,7 +353,8 @@ export default function UsersContent({ dict, locale }: Props) {
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold mb-1.5 uppercase" style={{ color: 'var(--text-muted)' }}>{isRTL ? 'البريد الإلكتروني *' : 'Email *'}</label>
-                                <input type="email" className="input-field w-full py-2 text-sm" dir="ltr" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                                <input type="email" aria-invalid={!!errors.email} aria-describedby={errors.email ? 'user-email-error' : undefined} className={`input-field w-full py-2 text-sm ${errors.email ? 'border-red-500' : ''}`} dir="ltr" value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); if (errors.email) setErrors(prev => { const n = { ...prev }; delete n.email; return n; }); }} />
+                                {errors.email && <p id="user-email-error" role="alert" className="text-xs text-red-500 mt-1">{errors.email}</p>}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
