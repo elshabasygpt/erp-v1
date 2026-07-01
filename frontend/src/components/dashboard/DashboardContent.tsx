@@ -503,7 +503,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                         <MiniStat label={dict.dashboard.netIncome}      value={formatCurrency(statsSummary.netIncome)} color="text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-default)' }}>
-                        <table className="data-table">
+                        <div className="overflow-x-auto"><table className="data-table">
                             <thead>
                                 <tr>
                                     <th>{dict.sales.invoiceNumber}</th>
@@ -530,7 +530,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                     <EmptyRow cols={4} message={isRTL ? 'لا توجد فواتير حديثة' : 'No recent invoices'} />
                                 )}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 </div>
             </section>
@@ -546,7 +546,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                         <MiniStat label={dict.dashboard.pendingDelivery}   value={statsSummary.pendingDelivery.toString()} color="text-yellow-500 dark:text-yellow-400" />
                     </div>
                     <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-default)' }}>
-                        <table className="data-table">
+                        <div className="overflow-x-auto"><table className="data-table">
                             <thead>
                                 <tr>
                                     <th>{dict.purchases.orderNumber}</th>
@@ -573,7 +573,7 @@ export default function DashboardContent({ dict, locale }: DashboardContentProps
                                     <EmptyRow cols={4} message={isRTL ? 'لا توجد مشتريات حديثة' : 'No recent purchases'} />
                                 )}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 </div>
             </section>

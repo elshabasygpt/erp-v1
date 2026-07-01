@@ -253,7 +253,7 @@ export default function ZakatReportPage() {
                 <div>
                 <h3 className="font-semibold mb-3 text-lg text-emerald-600">{isRTL ? 'الموجودات (الأصول المتداولة الزكوية)' : 'Assets (Zakatable Current Assets)'}</h3>
                 <div className="border rounded-lg">
-                    <table className="w-full text-sm text-left rtl:text-right">
+                    <div className="overflow-x-auto"><table className="w-full text-sm text-left rtl:text-right">
                     <tbody className="divide-y">
                         {report.assets.map((a: any) => (
                         <tr key={a.id}><td className="px-4 py-2">{a.name_ar}</td><td className="px-4 py-2 font-mono">{a.balance.toFixed(2)}</td></tr>
@@ -262,14 +262,14 @@ export default function ZakatReportPage() {
                         <td className="px-4 py-3">{isRTL ? 'إجمالي الموجودات الزكوية' : 'Total Zakatable Assets'}</td><td className="px-4 py-3 font-mono">{report.total_assets.toFixed(2)}</td>
                         </tr>
                     </tbody>
-                    </table>
+                    </table></div>
                 </div>
                 </div>
 
                 <div>
                 <h3 className="font-semibold mb-3 text-lg text-rose-600">{isRTL ? 'المطلوبات (الخصوم المتداولة المحسومة)' : 'Liabilities (Deductible Current Liabilities)'}</h3>
                 <div className="border rounded-lg">
-                    <table className="w-full text-sm text-left rtl:text-right">
+                    <div className="overflow-x-auto"><table className="w-full text-sm text-left rtl:text-right">
                     <tbody className="divide-y">
                         {report.liabilities.map((l: any) => (
                         <tr key={l.id}><td className="px-4 py-2">{l.name_ar}</td><td className="px-4 py-2 font-mono">{l.balance.toFixed(2)}</td></tr>
@@ -278,14 +278,14 @@ export default function ZakatReportPage() {
                         <td className="px-4 py-3">{isRTL ? 'إجمالي المطلوبات المحسومة' : 'Total Deductible Liabilities'}</td><td className="px-4 py-3 font-mono">{report.total_liabilities.toFixed(2)}</td>
                         </tr>
                     </tbody>
-                    </table>
+                    </table></div>
                 </div>
                 </div>
               </div>
           ) : (
               <div className="grid grid-cols-1 gap-8">
                  <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full text-sm text-left rtl:text-right">
+                    <div className="overflow-x-auto"><table className="w-full text-sm text-left rtl:text-right">
                         <thead className="bg-gray-100 dark:bg-gray-800">
                             <tr><th className="px-4 py-3">{isRTL ? 'البند' : 'Item'}</th><th className="px-4 py-3">{isRTL ? 'الرصيد المضاف (+)' : 'Added Balance (+)'}</th><th className="px-4 py-3">{isRTL ? 'الرصيد المحسوم (-)' : 'Deducted Balance (−)'}</th></tr>
                         </thead>
@@ -313,7 +313,7 @@ export default function ZakatReportPage() {
                                 </td>
                             </tr>
                         </tbody>
-                    </table>
+                    </table></div>
                  </div>
               </div>
           )}

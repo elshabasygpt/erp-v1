@@ -165,7 +165,7 @@ export default function ExpensesPage() {
 
       {loading ? (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <tbody className="divide-y divide-gray-100">
               {Array.from({ length: 6 }).map((_, i) => (
                 <tr key={`sk-${i}`}>
@@ -175,7 +175,7 @@ export default function ExpensesPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       ) : loadError ? (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden text-center py-12">
@@ -188,7 +188,7 @@ export default function ExpensesPage() {
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-3 text-start font-medium text-gray-600">
@@ -227,7 +227,7 @@ export default function ExpensesPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

@@ -150,7 +150,7 @@ export default function FixedAssetsPage() {
 
             {/* Assets Table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto"><table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
                         <tr>
                             {[
@@ -228,7 +228,7 @@ export default function FixedAssetsPage() {
                                             ) : schedule.length === 0 ? (
                                                 <p className="text-xs text-slate-500">{isRTL ? 'لا توجد قيود استهلاك مرحلة بعد' : 'No depreciation entries posted yet'}</p>
                                             ) : (
-                                                <table className="w-full text-xs">
+                                                <div className="overflow-x-auto"><table className="w-full text-xs">
                                                     <thead>
                                                         <tr className="text-slate-500">
                                                             <th className={`py-1 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'الفترة' : 'Period'}</th>
@@ -247,7 +247,7 @@ export default function FixedAssetsPage() {
                                                             </tr>
                                                         ))}
                                                     </tbody>
-                                                </table>
+                                                </table></div>
                                             )}
                                         </td>
                                     </tr>
@@ -256,7 +256,7 @@ export default function FixedAssetsPage() {
                             );
                         })}
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             {/* Modal */}

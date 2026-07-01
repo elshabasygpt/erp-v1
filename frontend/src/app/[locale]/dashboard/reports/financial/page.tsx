@@ -236,7 +236,7 @@ export default function FinancialReportsPage() {
                                 <div className="px-5 py-4 border-b border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20">
                                     <h3 className="font-bold text-orange-700 dark:text-orange-400">⚠️ {isRTL ? `أصناف ذات مخزون منخفض (${data.low_stock_alerts.length})` : `Low Stock Alerts (${data.low_stock_alerts.length})`}</h3>
                                 </div>
-                                <table className="w-full text-sm">
+                                <div className="overflow-x-auto"><table className="w-full text-sm">
                                     <thead className="bg-slate-50 dark:bg-slate-900">
                                         <tr>
                                             {[isRTL ? 'اسم الصنف' : 'Product', isRTL ? 'المخزون الحالي' : 'Current Stock', isRTL ? 'القيمة' : 'Value'].map(h => (
@@ -255,7 +255,7 @@ export default function FinancialReportsPage() {
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         )}
                     </div>

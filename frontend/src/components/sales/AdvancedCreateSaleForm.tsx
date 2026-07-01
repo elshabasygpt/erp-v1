@@ -42,7 +42,7 @@ function PrintPreviewModal() {
             <p className="text-sm mt-2 text-slate-500 font-bold">NO: {savedInvoiceData.invoice_number}</p>
             <p className="text-sm text-slate-500">{savedInvoiceData.invoice_date}</p>
           </div>
-          <table className="w-full text-sm mb-8 text-slate-800">
+          <div className="overflow-x-auto"><table className="w-full text-sm mb-8 text-slate-800">
             <thead className="border-b-2 border-slate-300 text-start">
               <tr>
                 <th className="py-3 text-start font-black">{isRTL ? 'الصنف' : 'Item'}</th>
@@ -65,7 +65,7 @@ function PrintPreviewModal() {
                   );
               })}
             </tbody>
-          </table>
+          </table></div>
           <div className="border-t-2 border-slate-300 pt-6 space-y-2 text-sm flex flex-col items-end text-slate-800">
             <div className="flex w-64 justify-between font-bold"><span>{isRTL ? 'المجموع الفرعي' : 'Subtotal'}:</span> <span>{savedInvoiceData.subtotal.toFixed(2)}</span></div>
             <div className="flex w-64 justify-between font-bold"><span>{isRTL ? 'الضريبة المضافة' : 'VAT'}:</span> <span>{savedInvoiceData.vat_amount.toFixed(2)}</span></div>

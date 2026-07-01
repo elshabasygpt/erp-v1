@@ -120,7 +120,7 @@ export default function StockTransfersPage() {
 
             {/* List Table */}
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
-                <table className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
+                <div className="overflow-x-auto"><table className={`w-full text-sm ${isRTL ? 'text-right' : 'text-left'}`}>
                     <thead className="bg-gray-50 text-gray-500 text-xs uppercase border-b border-gray-100">
                         <tr>
                             <th className="px-6 py-4">{isRTL ? 'رقم المرجع' : 'Reference No.'}</th>
@@ -162,7 +162,7 @@ export default function StockTransfersPage() {
                             </tr>
                         )}
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             {/* View / Process Modal */}

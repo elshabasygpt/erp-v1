@@ -62,7 +62,7 @@ export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale,
                         </div>
                         
                         {warranty.claims && warranty.claims.length > 0 ? (
-                            <table className="w-full text-sm text-left" style={{ color: 'var(--text-primary)' }}>
+                            <div className="overflow-x-auto"><table className="w-full text-sm text-left" style={{ color: 'var(--text-primary)' }}>
                                 <thead>
                                     <tr className="border-b" style={{ borderColor: 'var(--border-default)' }}>
                                         <th className="p-2">{isRTL ? 'رقم' : 'No'}</th>
@@ -97,7 +97,7 @@ export default function WarrantyDetailModal({ warranty, isOpen, onClose, locale,
                                         </tr>
                                     ))}
                                 </tbody>
-                            </table>
+                            </table></div>
                         ) : (
                             <p className="text-sm italic" style={{ color: 'var(--text-secondary)' }}>{isRTL ? 'لا توجد مطالبات مسجلة.' : 'No claims logged.'}</p>
                         )}

@@ -93,7 +93,7 @@ export default function DeliveriesPage() {
         <DeliveryMapDashboard dict={{}} locale={isRTL ? 'ar' : 'en'} />
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-3 text-start font-medium text-gray-600">
@@ -165,7 +165,7 @@ export default function DeliveriesPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

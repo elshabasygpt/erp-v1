@@ -207,7 +207,7 @@ export default function RmaRequestDetailPage() {
                     <div className="bg-white border rounded-xl p-6 shadow-sm">
                         <h3 className="font-semibold border-b pb-2 mb-4">Items ({rma.items?.length ?? 0})</h3>
                         {rma.items?.length > 0 ? (
-                            <table className="w-full text-sm">
+                            <div className="overflow-x-auto"><table className="w-full text-sm">
                                 <thead className="bg-gray-50 text-gray-500 border-b">
                                     <tr>
                                         <th className="px-3 py-2 text-left font-medium">Product</th>
@@ -227,7 +227,7 @@ export default function RmaRequestDetailPage() {
                                         </tr>
                                     ))}
                                 </tbody>
-                            </table>
+                            </table></div>
                         ) : (
                             <p className="text-sm text-gray-400">No items listed.</p>
                         )}

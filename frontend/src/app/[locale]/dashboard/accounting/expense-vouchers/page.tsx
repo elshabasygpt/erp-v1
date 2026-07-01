@@ -204,7 +204,7 @@ export default function ExpenseVouchersPage() {
                     <h3 className="font-semibold text-gray-700 dark:text-gray-300">{isRTL ? 'سندات الصرف' : 'Expense Vouchers'} ({vouchers.length})</h3>
                 </div>
                 {loading ? (
-                    <table className="w-full text-left">
+                    <div className="overflow-x-auto"><table className="w-full text-left">
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <tr key={`sk-${i}`}>
@@ -214,7 +214,7 @@ export default function ExpenseVouchersPage() {
                                 </tr>
                             ))}
                         </tbody>
-                    </table>
+                    </table></div>
                 ) : loadError ? (
                     <div className="p-12 text-center">
                         <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>
@@ -230,7 +230,7 @@ export default function ExpenseVouchersPage() {
                         <p>{isRTL ? 'لا توجد سندات صرف. أنشئ سنداً جديداً للبدء.' : 'No expense vouchers. Create a new one to get started.'}</p>
                     </div>
                 ) : (
-                    <table className="w-full text-left">
+                    <div className="overflow-x-auto"><table className="w-full text-left">
                         <thead className="bg-gray-50 dark:bg-gray-800/50">
                             <tr>
                                 <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'رقم السند' : 'Voucher No.'}</th>
@@ -267,7 +267,7 @@ export default function ExpenseVouchersPage() {
                                 </tr>
                             ))}
                         </tbody>
-                    </table>
+                    </table></div>
                 )}
             </Card>
         </div>

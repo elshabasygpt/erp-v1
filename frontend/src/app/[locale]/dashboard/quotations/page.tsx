@@ -155,7 +155,7 @@ export default function QuotationsPage() {
 
             {/* Table */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <table className="w-full text-sm">
+                    <div className="overflow-x-auto"><table className="w-full text-sm">
                         <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
                             <tr>
                                 {[isRTL ? 'رقم العرض' : '#', isRTL ? 'العميل' : 'Customer',
@@ -227,7 +227,7 @@ export default function QuotationsPage() {
                                 </td></tr>
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
             </div>
 
             {/* Create / Edit Modal */}

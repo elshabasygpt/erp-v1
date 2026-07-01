@@ -459,7 +459,7 @@ export const StockMovementsModal = memo(function StockMovementsModal({ dict, loc
                     </div>
 
                     {/* Movement History */}
-                    <table className="data-table text-sm">
+                    <div className="overflow-x-auto"><table className="data-table text-sm">
                         <thead><tr><th>#</th><th>{inv.movementType}</th><th>{inv.movementQty}</th><th>{inv.movementDate}</th><th>{inv.movementNote}</th></tr></thead>
                         <tbody>
                             {movements.map((m, i) => (
@@ -472,7 +472,7 @@ export const StockMovementsModal = memo(function StockMovementsModal({ dict, loc
                                 </tr>
                             ))}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             </div>
         </div>

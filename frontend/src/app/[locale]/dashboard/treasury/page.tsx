@@ -445,7 +445,7 @@ export default function TreasuryPage() {
                             {loadingTransactions ? (
                                 <div className="p-10 text-center text-slate-400">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
                             ) : (
-                                <table className="w-full text-left border-collapse text-sm">
+                                <div className="overflow-x-auto"><table className="w-full text-left border-collapse text-sm">
                                     <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0">
                                         <tr>
                                             <th className="p-3 font-medium text-slate-500">{isRTL ? 'التاريخ' : 'Date'}</th>
@@ -475,7 +475,7 @@ export default function TreasuryPage() {
                                             </tr>
                                         )}
                                     </tbody>
-                                </table>
+                                </table></div>
                             )}
                         </div>
                         <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-right">

@@ -350,7 +350,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
 
                     {/* List */}
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                        <table className="w-full text-left text-sm">
+                        <div className="overflow-x-auto"><table className="w-full text-left text-sm">
                             <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
                                 <tr>
                                     <th className={`p-4 font-semibold ${isRTL ? 'text-right' : ''}`}>{isRTL ? 'اسم الفترة' : 'Period Name'}</th>
@@ -392,7 +392,7 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 </div>
             )}

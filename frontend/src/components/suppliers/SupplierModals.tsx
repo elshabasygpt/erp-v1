@@ -152,7 +152,7 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
                             <div className="text-center py-6 text-sm text-gray-500">جاري تحميل كشف الحساب...</div>
                         ) : (
                             <div className="max-h-[400px] overflow-y-auto">
-                                <table className="data-table text-sm">
+                                <div className="overflow-x-auto"><table className="data-table text-sm">
                                     <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10">
                                         <tr><th>#</th><th>{isRTL ? 'البيان' : 'Type'}</th><th>{isRTL ? 'مدين (دفعنا)' : 'Debit'}</th><th>{isRTL ? 'دائن (مشتريات)' : 'Credit'}</th><th>{isRTL ? 'الرصيد للتسديد' : 'Balance'}</th><th>{isRTL ? 'التاريخ' : 'Date'}</th></tr>
                                     </thead>
@@ -166,7 +166,7 @@ export function ViewAccountModal({ dict, locale, supplier, onClose, formatCurren
                                             <td style={{ color: 'var(--text-muted)' }} className="text-xs whitespace-nowrap">{t.date}</td>
                                         </tr>
                                     ))}</tbody>
-                                </table>
+                                </table></div>
                             </div>
                         )}
                     </div>

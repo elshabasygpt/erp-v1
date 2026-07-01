@@ -123,7 +123,7 @@ export default function CustomerCoreReturnDetailsPage() {
                 <div className="col-span-2 space-y-6">
                     <div className="bg-white border rounded-xl p-6 shadow-sm">
                         <h3 className="text-lg font-semibold mb-4">Returned Core Parts</h3>
-                        <table className="w-full text-sm text-left">
+                        <div className="overflow-x-auto"><table className="w-full text-sm text-left">
                             <thead className="bg-gray-50 border-b text-gray-500">
                                 <tr>
                                     <th className="px-4 py-2 font-medium">Part #</th>
@@ -169,7 +169,7 @@ export default function CustomerCoreReturnDetailsPage() {
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                         <div className="mt-4 flex justify-end">
                             <div className="text-lg font-bold">
                                 Total Deposit: <span className="text-green-600">{formatCurrency(data.total_deposit_value)}</span>

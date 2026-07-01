@@ -193,7 +193,7 @@ export default function PayslipModal({ payrollId, isRTL, onClose }: PayslipModal
                                         <p className="font-bold text-green-700 text-sm mb-2">
                                             ✅ {isRTL ? 'الإضافات والمكافآت' : 'Additions & Bonuses'}
                                         </p>
-                                        <table className="w-full text-xs" style={{borderCollapse: 'collapse'}}>
+                                        <div className="overflow-x-auto"><table className="w-full text-xs" style={{borderCollapse: 'collapse'}}>
                                             <thead>
                                                 <tr className="bg-green-50">
                                                     <th className="p-2 border border-gray-200" style={{textAlign: isRTL ? 'right' : 'left'}}>{isRTL ? 'البيان' : 'Description'}</th>
@@ -222,7 +222,7 @@ export default function PayslipModal({ payrollId, isRTL, onClose }: PayslipModal
                                                     </td>
                                                 </tr>
                                             </tbody>
-                                        </table>
+                                        </table></div>
                                     </div>
 
                                     {/* Deductions */}
@@ -230,7 +230,7 @@ export default function PayslipModal({ payrollId, isRTL, onClose }: PayslipModal
                                         <p className="font-bold text-red-700 text-sm mb-2">
                                             ❌ {isRTL ? 'الخصومات والاستقطاعات' : 'Deductions'}
                                         </p>
-                                        <table className="w-full text-xs" style={{borderCollapse: 'collapse'}}>
+                                        <div className="overflow-x-auto"><table className="w-full text-xs" style={{borderCollapse: 'collapse'}}>
                                             <thead>
                                                 <tr className="bg-red-50">
                                                     <th className="p-2 border border-gray-200" style={{textAlign: isRTL ? 'right' : 'left'}}>{isRTL ? 'البيان' : 'Description'}</th>
@@ -259,7 +259,7 @@ export default function PayslipModal({ payrollId, isRTL, onClose }: PayslipModal
                                                     </td>
                                                 </tr>
                                             </tbody>
-                                        </table>
+                                        </table></div>
                                     </div>
                                 </div>
                             </div>

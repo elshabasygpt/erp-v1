@@ -150,7 +150,7 @@ export function CrossReferenceManagerModal({ productId, productName, isRTL, onCl
                     <div>
                         {loading ? (
                             <div className="border rounded-lg overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
-                                <table className="w-full text-sm">
+                                <div className="overflow-x-auto"><table className="w-full text-sm">
                                     <tbody>
                                         {Array.from({ length: 6 }).map((_, i) => (
                                             <tr key={`sk-${i}`} style={{ borderTop: i > 0 ? '1px solid var(--border-default)' : undefined }}>
@@ -160,7 +160,7 @@ export function CrossReferenceManagerModal({ productId, productName, isRTL, onCl
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         ) : refs.length === 0 ? (
                             <div className="text-center py-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -168,7 +168,7 @@ export function CrossReferenceManagerModal({ productId, productName, isRTL, onCl
                             </div>
                         ) : (
                             <div className="border rounded-lg overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
-                                <table className="w-full text-sm">
+                                <div className="overflow-x-auto"><table className="w-full text-sm">
                                     <thead>
                                         <tr style={{ background: 'var(--bg-secondary)' }}>
                                             <th className="px-3 py-2 text-start font-medium" style={{ color: 'var(--text-secondary)' }}>
@@ -211,7 +211,7 @@ export function CrossReferenceManagerModal({ productId, productName, isRTL, onCl
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         )}
                     </div>

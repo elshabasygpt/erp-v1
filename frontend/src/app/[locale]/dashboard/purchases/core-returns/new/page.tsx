@@ -133,7 +133,7 @@ export default function NewCoreReturnPage() {
                                 No items added yet. Click "Add Part" to begin.
                             </div>
                         ) : (
-                            <table className="w-full text-sm">
+                            <div className="overflow-x-auto"><table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b">
                                         <th className="text-left pb-2 w-1/2">Product / Part</th>
@@ -195,7 +195,7 @@ export default function NewCoreReturnPage() {
                                         <td></td>
                                     </tr>
                                 </tfoot>
-                            </table>
+                            </table></div>
                         )}
                     </div>
 

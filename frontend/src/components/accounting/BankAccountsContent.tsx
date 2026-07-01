@@ -328,7 +328,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                             <div>
                                 <h3 className="font-bold mb-4">{isRTL ? 'سجل المطابقات' : 'Reconciliation History'}</h3>
                                 <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                                    <table className="w-full text-sm text-left">
+                                    <div className="overflow-x-auto"><table className="w-full text-sm text-left">
                                         <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-500">
                                             <tr>
                                                 <th className={`p-3 font-semibold ${isRTL ? 'text-right' : ''}`}>{isRTL ? 'تاريخ الكشف' : 'Statement Date'}</th>
@@ -359,7 +359,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                                                 ))
                                             )}
                                         </tbody>
-                                    </table>
+                                    </table></div>
                                 </div>
                             </div>
                         </div>

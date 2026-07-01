@@ -340,7 +340,7 @@ export default function BinLocationsPage() {
                     </div>
 
                     {loading ? (
-                        <table className="w-full text-left">
+                        <div className="overflow-x-auto"><table className="w-full text-left">
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                 {Array.from({ length: 6 }).map((_, i) => (
                                     <tr key={`sk-${i}`}>
@@ -350,14 +350,14 @@ export default function BinLocationsPage() {
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                     ) : loadError ? (
                         <div className="p-8 text-center">
                             <p className="mb-3 text-sm" style={{ color: 'var(--text-danger, #dc2626)' }}>{isRTL ? 'تعذّر تحميل البيانات.' : 'Failed to load data.'}</p>
                             <button onClick={() => fetchBinLocations()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
                         </div>
                     ) : view === 'tree' ? renderTree() : (
-                        <table className="w-full text-left">
+                        <div className="overflow-x-auto"><table className="w-full text-left">
                             <thead className="bg-gray-50 dark:bg-gray-800/50">
                                 <tr>
                                     <th className="px-4 py-3 font-medium text-gray-500">{isRTL ? 'المسار الكامل' : 'Full Path'}</th>
@@ -399,7 +399,7 @@ export default function BinLocationsPage() {
                                     <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">{isRTL ? 'لا توجد مواقع. اختر مستودعاً وأضف مواقع تخزين.' : 'No bin locations. Select a warehouse and add storage locations.'}</td></tr>
                                 )}
                             </tbody>
-                        </table>
+                        </table></div>
                     )}
                 </Card>
             )}

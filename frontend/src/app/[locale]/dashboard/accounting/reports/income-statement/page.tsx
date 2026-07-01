@@ -27,7 +27,7 @@ function LinesTable({ lines, isRTL, accentClass }: { lines: StatementLine[]; isR
         return <p className="px-6 py-6 text-center text-surface-500 text-sm">{isRTL ? 'لا توجد بيانات' : 'No data'}</p>;
     }
     return (
-        <table className="w-full text-left text-sm whitespace-nowrap">
+        <div className="overflow-x-auto"><table className="w-full text-left text-sm whitespace-nowrap">
             <tbody>
                 {lines.map((line, idx) => (
                     <tr key={line.account?.id || idx} className="border-b border-surface-200 dark:border-surface-800">
@@ -39,7 +39,7 @@ function LinesTable({ lines, isRTL, accentClass }: { lines: StatementLine[]; isR
                     </tr>
                 ))}
             </tbody>
-        </table>
+        </table></div>
     );
 }
 

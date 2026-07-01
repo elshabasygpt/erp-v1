@@ -197,7 +197,7 @@ export default function NewRmaRequestPage() {
                             No items added. Click "Add Item" to specify which products are being returned.
                         </div>
                     ) : (
-                        <table className="w-full text-sm">
+                        <div className="overflow-x-auto"><table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b text-gray-500">
                                     <th className="text-left pb-2">Product</th>
@@ -248,7 +248,7 @@ export default function NewRmaRequestPage() {
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                     )}
                 </div>
 

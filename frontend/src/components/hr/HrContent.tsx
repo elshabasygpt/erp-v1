@@ -179,7 +179,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
             {/* Attendance Tab */}
             {activeTab === 'attendance' && (
                 <div className="glass-card p-6">
-                        <table className="data-table">
+                        <div className="overflow-x-auto"><table className="data-table">
                             <thead>
                                 <tr>
                                     <th>{isRTL ? 'الموظف' : 'Employee'}</th>
@@ -225,14 +225,14 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                 </div>
             )}
 
             {/* Payrolls Tab */}
             {activeTab === 'payroll' && (
                 <div className="glass-card p-6">
-                        <table className="data-table">
+                        <div className="overflow-x-auto"><table className="data-table">
                             <thead>
                                 <tr>
                                     <th>{isRTL ? 'الموظف' : 'Employee'}</th>
@@ -286,7 +286,7 @@ export default function HrContent({ dict, locale }: { dict: any; locale: string 
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
                 </div>
             )}
 

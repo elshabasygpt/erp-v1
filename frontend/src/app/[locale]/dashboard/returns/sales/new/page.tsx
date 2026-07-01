@@ -166,7 +166,7 @@ export default function NewSalesReturnPage() {
                                 {isRTL ? 'لم تتم إضافة منتجات بعد.' : 'No items added yet.'}
                             </div>
                         ) : (
-                            <table className="w-full text-sm">
+                            <div className="overflow-x-auto"><table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b">
                                         <th className="text-left pb-2 w-1/2">{isRTL ? 'المنتج' : 'Product'}</th>
@@ -199,7 +199,7 @@ export default function NewSalesReturnPage() {
                                         </tr>
                                     ))}
                                 </tbody>
-                            </table>
+                            </table></div>
                         )}
                     </div>
 

@@ -62,7 +62,7 @@ export default function CustomerCoreReturnsPage() {
             </div>
 
             <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
-                <table className="w-full text-sm text-left">
+                <div className="overflow-x-auto"><table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 border-b text-gray-500">
                         <tr>
                             <th className="px-4 py-3 font-medium">Return No.</th>
@@ -118,7 +118,7 @@ export default function CustomerCoreReturnsPage() {
                             ))
                         )}
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             {meta && meta.last_page > 1 && (

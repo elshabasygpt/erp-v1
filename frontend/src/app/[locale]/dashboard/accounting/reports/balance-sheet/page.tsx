@@ -44,7 +44,7 @@ function Section({
             {lines.length === 0 ? (
                 <p className="px-6 py-6 text-center text-surface-500 text-sm">{isRTL ? 'لا توجد بيانات' : 'No data'}</p>
             ) : (
-                <table className="w-full text-left text-sm whitespace-nowrap">
+                <div className="overflow-x-auto"><table className="w-full text-left text-sm whitespace-nowrap">
                     <tbody>
                         {lines.map((line, idx) => (
                             <tr key={line.account?.id || idx} className="border-b border-surface-200 dark:border-surface-800">
@@ -56,7 +56,7 @@ function Section({
                             </tr>
                         ))}
                     </tbody>
-                </table>
+                </table></div>
             )}
             <div className="px-6 py-3 border-t border-surface-200 dark:border-surface-800 flex justify-between font-bold">
                 <span>{totalLabel}</span>

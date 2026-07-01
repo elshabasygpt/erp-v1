@@ -246,7 +246,7 @@ export default function VatReportContent({ dict, locale }: VatReportContentProps
                     <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{isRTL ? 'ملخص الإقرار الضريبي' : 'VAT Declaration Summary'}</h3>
                 </div>
                 <div className="p-6">
-                    <table className="data-table">
+                    <div className="overflow-x-auto"><table className="data-table">
                         <thead>
                             <tr>
                                 <th>{isRTL ? 'البند' : 'Item'}</th>
@@ -293,7 +293,7 @@ export default function VatReportContent({ dict, locale }: VatReportContentProps
                                 </td>
                             </tr>
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             </div>
 

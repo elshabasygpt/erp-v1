@@ -215,7 +215,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                     </div>
                                 )}
 
-                                <table style={{ width: '100%', fontSize: 11, marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '5px' }}>
+                                <div className="overflow-x-auto"><table style={{ width: '100%', fontSize: 11, marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '5px' }}>
                                     <thead>
                                         <tr style={{ borderBottom: '1px dashed #000' }}>
                                             <th style={{ textAlign: isRTL ? 'right' : 'left', paddingBottom: 4 }}>{isRTL ? 'الصنف' : 'Item'}</th>
@@ -242,7 +242,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>
+                                </table></div>
 
                                 <div style={{ fontSize: 11, textAlign: 'right', marginBottom: '10px', borderBottom: '1px dashed #000', paddingBottom: '10px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -295,7 +295,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                 <div style={{ display: 'inline-block', background: '#10b981', color: '#fff', padding: '6px 16px', borderRadius: 8, fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
                                     {typeLabel}
                                 </div>
-                                <table style={{ fontSize: 13 }}>
+                                <div className="overflow-x-auto"><table style={{ fontSize: 13 }}>
                                     <tbody>
                                         <tr>
                                             <td style={{ color: '#64748b', paddingInlineEnd: 12 }}>{isRTL ? 'رقم الفاتورة:' : 'Invoice #:'}</td>
@@ -320,7 +320,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                             </tr>
                                         )}
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         </div>
 
@@ -350,7 +350,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                         )}
 
                         {/* ── Items Table ── */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 13 }}>
+                        <div className="overflow-x-auto"><table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, fontSize: 13 }}>
                             <thead>
                                 <tr style={{ background: '#10b981', color: '#fff' }}>
                                     <th style={{ padding: '8px 10px', textAlign: isRTL ? 'right' : 'left' }}>#</th>
@@ -385,7 +385,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </table></div>
 
                         {/* ── Totals + QR ── */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 24 }}>
@@ -408,7 +408,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
 
                             {/* Summary */}
                             <div style={{ minWidth: 260 }}>
-                                <table style={{ width: '100%', fontSize: 13 }}>
+                                <div className="overflow-x-auto"><table style={{ width: '100%', fontSize: 13 }}>
                                     <tbody>
                                         <tr>
                                             <td style={{ color: '#64748b', padding: '4px 0' }}>{isRTL ? 'المجموع قبل الضريبة' : 'Subtotal (excl. VAT)'}</td>
@@ -423,7 +423,7 @@ export default function InvoicePrintTemplate({ invoice, locale, onClose }: Invoi
                                             <td style={{ textAlign: 'end', fontWeight: 800, fontSize: 18, color: '#10b981', padding: '8px 0 0' }}>{formatAmount(grandTotal)}</td>
                                         </tr>
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                         </div>
 

@@ -148,7 +148,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
             {/* Expenses Tab */}
             {activeTab === 'expenses' && (
                 <div className="glass-card p-6">
-                    <table className="data-table">
+                    <div className="overflow-x-auto"><table className="data-table">
                         <thead>
                             <tr>
                                 <th>{isRTL ? 'البيان' : 'Description'}</th>
@@ -190,7 +190,7 @@ export default function AccountingContent({ dict, locale }: { dict: any; locale:
                                 ))
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             )}
 

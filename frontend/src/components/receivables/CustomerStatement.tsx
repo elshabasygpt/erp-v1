@@ -99,7 +99,7 @@ export default function CustomerStatement({ isRTL }: { isRTL: boolean }) {
                         </div>
                     </div>
 
-                    <table className="w-full text-start text-sm">
+                    <div className="overflow-x-auto"><table className="w-full text-start text-sm">
                         <thead>
                             <tr className="bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                                 <th className="p-3 font-semibold text-start">{isRTL ? 'التاريخ' : 'Date'}</th>
@@ -148,7 +148,7 @@ export default function CustomerStatement({ isRTL }: { isRTL: boolean }) {
                                 ))
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
                 </Card>
             )}
         </div>

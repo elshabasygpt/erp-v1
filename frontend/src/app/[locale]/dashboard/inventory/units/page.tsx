@@ -158,7 +158,7 @@ export default function UnitsPage() {
                     />
                 </div>
                 {(
-                    <table className="w-full text-left">
+                    <div className="overflow-x-auto"><table className="w-full text-left">
                         <thead className="bg-gray-50 dark:bg-gray-800/50">
                             <tr>
                                 <th className="px-4 py-3 font-medium text-gray-500">#</th>
@@ -211,7 +211,7 @@ export default function UnitsPage() {
                                 <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">{isRTL ? 'لا توجد وحدات قياس. أضف وحدة جديدة للبدء.' : 'No units of measure found. Add a new unit to start.'}</td></tr>
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
                 )}
             </Card>
         </div>

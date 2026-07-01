@@ -140,7 +140,7 @@ export default function BackupsSettingsSection({ dict, locale }: { dict: any; lo
             </div>
 
             <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto"><table className="w-full text-sm">
                     <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
                         <tr>
                             {[
@@ -208,7 +208,7 @@ export default function BackupsSettingsSection({ dict, locale }: { dict: any; lo
                             </tr>
                         ))}
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             {restoreTarget && (
