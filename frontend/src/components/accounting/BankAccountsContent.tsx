@@ -25,6 +25,9 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
     const [reconForm, setReconForm] = useState({ statement_date: '', statement_balance: 0 });
     const [reconErrors, setReconErrors] = useState<Record<string, string>>({});
     const [importFile, setImportFile] = useState<File | null>(null);
+    const [savingBank, setSavingBank] = useState(false);
+    const [savingRecon, setSavingRecon] = useState(false);
+    const [savingImport, setSavingImport] = useState(false);
 
     const formModalRef = useModalA11y<HTMLFormElement>(isFormOpen, () => setIsFormOpen(false));
     const reconModalRef = useModalA11y<HTMLDivElement>(isReconModalOpen && !!selectedBank, () => setIsReconModalOpen(false));
@@ -60,6 +63,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
         if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
         setErrors({});
 
+        setSavingBank(true);
         try {
             if (editingBank) {
                 await accountingApi.updateBankAccount(editingBank.id, form);
@@ -74,6 +78,8 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             loadBanks();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Error saving bank account');
+        } finally {
+            setSavingBank(false);
         }
     };
 
@@ -116,18 +122,22 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
         setReconErrors({});
 
         if (!selectedBank) return;
+        setSavingRecon(true);
         try {
             await accountingApi.startReconciliation(selectedBank.id, reconForm);
             queryClient.invalidateQueries({ queryKey: ['bank-accounts', 'reconciliations', selectedBank.id] });
             setReconForm({ statement_date: '', statement_balance: 0 });
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Error starting reconciliation');
+        } finally {
+            setSavingRecon(false);
         }
     };
 
     const handleImportTransactions = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedBank || !importFile) return;
+        setSavingImport(true);
         try {
             await accountingApi.importBankTransactions(selectedBank.id, importFile);
             toast.success(isRTL ? 'تم استيراد الحركات بنجاح' : 'Transactions imported successfully');
@@ -135,6 +145,8 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
             // Reload reconciliations if needed
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Error importing transactions');
+        } finally {
+            setSavingImport(false);
         }
     };
 
@@ -250,7 +262,7 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                         </div>
                         <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
                             <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 font-medium text-slate-600">{isRTL ? 'إلغاء' : 'Cancel'}</button>
-                            <button type="submit" className="px-6 py-2 font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700">{isRTL ? 'حفظ الحساب' : 'Save Account'}</button>
+                            <button type="submit" disabled={savingBank} className="px-6 py-2 font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{savingBank ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : (isRTL ? 'حفظ الحساب' : 'Save Account')}</button>
                         </div>
                     </form>
                 </div>
@@ -284,8 +296,8 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                                         onChange={(e) => setImportFile(e.target.files?.[0] || null)}
                                         className="text-sm flex-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
                                     />
-                                    <button type="submit" disabled={!importFile} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 whitespace-nowrap">
-                                        {isRTL ? 'رفع الكشف' : 'Upload'}
+                                    <button type="submit" disabled={savingImport || !importFile} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+                                        {savingImport ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : (isRTL ? 'رفع الكشف' : 'Upload')}
                                     </button>
                                 </form>
                             </div>
@@ -304,8 +316,8 @@ export default function BankAccountsContent({ dict, locale }: { dict: any; local
                                         <input required type="number" step="0.01" value={reconForm.statement_balance} onChange={e => { setReconForm({...reconForm, statement_balance: parseFloat(e.target.value)}); if (reconErrors.statement_balance) setReconErrors(prev => { const next = { ...prev }; delete next.statement_balance; return next; }); }} aria-invalid={!!reconErrors.statement_balance} aria-describedby={reconErrors.statement_balance ? 'recon-statement_balance-error' : undefined} className={`w-full p-2.5 bg-slate-50 dark:bg-slate-900 border rounded-lg text-sm ${reconErrors.statement_balance ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`} />
                                         {reconErrors.statement_balance && <p id="recon-statement_balance-error" role="alert" className="text-xs text-red-500 mt-1">{reconErrors.statement_balance}</p>}
                                     </div>
-                                    <button type="submit" className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm whitespace-nowrap transition">
-                                        {isRTL ? 'بدء المطابقة' : 'Start'}
+                                    <button type="submit" disabled={savingRecon} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                        {savingRecon ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : (isRTL ? 'بدء المطابقة' : 'Start')}
                                     </button>
                                 </form>
                             </div>

@@ -39,6 +39,7 @@ export default function QuotationsPage() {
     const [selectedQ, setSelectedQ] = useState<any>(null);
     const [form, setForm] = useState<any>(EMPTY_FORM);
     const [filterStatus, setFilterStatus] = useState('all');
+    const [saving, setSaving] = useState(false);
 
     const fetch = useCallback(async () => {
         setLoading(true);
@@ -72,12 +73,14 @@ export default function QuotationsPage() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSaving(true);
         try {
             if (form.id) { await salesApi.updateQuotation(form.id, form); }
             else { await salesApi.createQuotation(form); }
             setIsModalOpen(false);
             fetch();
         } catch (err: any) { toast.error(err?.response?.data?.message || 'Error saving quotation'); }
+        finally { setSaving(false); }
     };
 
     const handleStatusChange = async (id: string, status: string) => {
@@ -313,8 +316,8 @@ export default function QuotationsPage() {
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">
                                     {isRTL ? 'إلغاء' : 'Cancel'}
                                 </button>
-                                <button type="submit" className="px-5 py-2 text-sm bg-gradient-to-r from-violet-500 to-indigo-600 text-white rounded-lg hover:opacity-90 font-medium">
-                                    {isRTL ? 'حفظ' : 'Save'}
+                                <button type="submit" disabled={saving} className="px-5 py-2 text-sm bg-gradient-to-r from-violet-500 to-indigo-600 text-white rounded-lg hover:opacity-90 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                                    {saving ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}
                                 </button>
                             </div>
                         </form>

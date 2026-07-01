@@ -15,6 +15,7 @@ export default function WebhooksPage() {
     const [formVisible, setFormVisible] = useState(false);
     const [formData, setFormData] = useState({ name: '', url: '', is_active: true, events: [] as string[] });
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
 
     const availableEvents = [
         'invoice.created', 'invoice.updated', 'invoice.paid',
@@ -44,6 +45,7 @@ export default function WebhooksPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSaving(true);
         try {
             if (editingId) {
                 await webhooksApi.updateWebhook(editingId, formData);
@@ -56,6 +58,8 @@ export default function WebhooksPage() {
             loadData();
         } catch (err: any) {
             toast.error(err.response?.data?.message || 'Error saving webhook');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -121,7 +125,7 @@ export default function WebhooksPage() {
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                         <button type="button" onClick={() => setFormVisible(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium">{isRTL ? 'إلغاء' : 'Cancel'}</button>
-                        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">{isRTL ? 'حفظ' : 'Save'}</button>
+                        <button type="submit" disabled={saving} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">{saving ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : (isRTL ? 'حفظ' : 'Save')}</button>
                     </div>
                 </form>
             )}

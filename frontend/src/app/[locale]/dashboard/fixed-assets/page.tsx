@@ -20,6 +20,7 @@ export default function FixedAssetsPage() {
     const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
     const [schedule, setSchedule] = useState<any[]>([]);
     const [scheduleLoading, setScheduleLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     const loadAssets = async () => {
         setLoading(true);
@@ -44,6 +45,7 @@ export default function FixedAssetsPage() {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSaving(true);
         try {
             await fixedAssetsApi.createAsset({
                 name: form.name,
@@ -59,6 +61,8 @@ export default function FixedAssetsPage() {
             loadAssets();
         } catch (error: any) {
             toast.error(error?.response?.data?.message || 'Error saving asset');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -306,7 +310,7 @@ export default function FixedAssetsPage() {
                             </div>
                             <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm bg-slate-100 rounded-lg hover:bg-slate-200">{isRTL ? 'إلغاء' : 'Cancel'}</button>
-                                <button type="submit" className="px-5 py-2 text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:opacity-90 font-medium">{isRTL ? 'حفظ الأصل' : 'Save Asset'}</button>
+                                <button type="submit" disabled={saving} className="px-5 py-2 text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg hover:opacity-90 font-medium disabled:opacity-50 disabled:cursor-not-allowed">{saving ? (isRTL ? 'جارٍ الحفظ...' : 'Saving...') : (isRTL ? 'حفظ الأصل' : 'Save Asset')}</button>
                             </div>
                         </form>
                     </div>
