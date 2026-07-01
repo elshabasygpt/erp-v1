@@ -7,6 +7,7 @@ import { automationApi } from '@/lib/api';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { CardSkeleton } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function AutomationListPage() {
     const { isRTL } = useLanguage();
@@ -95,8 +96,13 @@ export default function AutomationListPage() {
                 ))}
                 
                 {workflows.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-surface-500 border-2 border-dashed border-surface-200 dark:border-surface-800 rounded-2xl">
-                        {isRTL ? 'لا توجد قواعد بعد. انقر على "قاعدة جديدة" للبدء.' : 'No automated rules yet. Click "New Rule" to start.'}
+                    <div className="col-span-full">
+                        <EmptyState
+                            icon="⚙️"
+                            title={isRTL ? 'لا توجد قواعد أتمتة بعد' : 'No automation rules yet'}
+                            description={isRTL ? 'انقر على "قاعدة جديدة" لإنشاء أول قاعدة أتمتة.' : 'Click "New Rule" to create your first automation.'}
+                            isRTL={isRTL}
+                        />
                     </div>
                 )}
                   </>

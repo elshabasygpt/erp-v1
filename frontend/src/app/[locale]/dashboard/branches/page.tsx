@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default function BranchesPage() {
     const { isRTL } = useLanguage();
@@ -141,8 +142,13 @@ export default function BranchesPage() {
                         </div>
                     ))}
                     {!branches.length && (
-                        <div className="col-span-full text-center py-12 text-gray-400 bg-white rounded-2xl border border-gray-100">
-                            {isRTL ? 'لا توجد فروع مسجلة حتى الآن.' : 'No branches registered yet.'}
+                        <div className="col-span-full">
+                            <EmptyState
+                                icon="🏢"
+                                title={isRTL ? 'لا توجد فروع' : 'No branches yet'}
+                                description={isRTL ? 'لم يتم تسجيل أي فرع حتى الآن. أضف أول فرع للبدء.' : 'No branches registered yet. Add your first branch to get started.'}
+                                isRTL={isRTL}
+                            />
                         </div>
                     )}
                 </div>
