@@ -91,8 +91,8 @@ export default function RmaRequestDetailPage() {
         <div className="p-6 max-w-5xl mx-auto space-y-6">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-4 w-1/2" />
-            <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white border rounded-xl p-6 shadow-sm space-y-3">
                         <Skeleton className="h-6 w-1/3" />
                         <Skeleton className="h-4 w-full" />
@@ -147,9 +147,9 @@ export default function RmaRequestDetailPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left — details */}
-                <div className="col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                     {/* Return Info */}
                     <div className="bg-white border rounded-xl p-6 shadow-sm space-y-3">
                         <h3 className="font-semibold border-b pb-2">Return Information</h3>

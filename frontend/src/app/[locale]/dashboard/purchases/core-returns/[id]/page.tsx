@@ -50,8 +50,8 @@ export default function CoreReturnDetailsPage() {
         <div className="p-6 max-w-5xl mx-auto space-y-6">
             <Skeleton className="h-8 w-1/3" />
             <Skeleton className="h-4 w-1/2" />
-            <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 bg-white border rounded-xl p-6 shadow-sm space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white border rounded-xl p-6 shadow-sm space-y-3">
                     <Skeleton className="h-6 w-1/4" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
@@ -78,8 +78,8 @@ export default function CoreReturnDetailsPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6">
-                <div className="col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white border rounded-xl p-6 shadow-sm">
                         <h3 className="text-lg font-semibold mb-4">Returned Cores</h3>
                         <div className="overflow-x-auto"><table className="w-full text-sm text-left">
