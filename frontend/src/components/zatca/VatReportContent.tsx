@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportsApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface VatReportContentProps {
     dict: any;
@@ -192,7 +193,7 @@ export default function VatReportContent({ dict, locale }: VatReportContentProps
                         ))}
                     </select>
 
-                    {loading && <span className="text-xs text-primary animate-pulse">جاري التحميل...</span>}
+                    {loading && <Skeleton className="h-4 w-24" />}
 
                     <div className="ms-auto flex items-center gap-2">
                         <span className="px-3 py-1 rounded-lg text-xs font-semibold" style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}>

@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { webhooksApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 export default function WebhooksPage() {
     const { isRTL } = useLanguage();
@@ -125,7 +126,11 @@ export default function WebhooksPage() {
                 </form>
             )}
 
-            {loading && !formVisible ? <div className="text-center p-10">Loading...</div> : (
+            {loading && !formVisible ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+            ) : (
                 <div className="space-y-4">
                     {webhooks.length === 0 && !formVisible && (
                         <div className="text-center p-10 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 text-slate-500">

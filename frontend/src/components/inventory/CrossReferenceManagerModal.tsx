@@ -6,6 +6,7 @@ import { useModalA11y } from '@/hooks/useModalA11y';
 import { inventoryApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { X, Plus, Trash2, Upload } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface CrossRef {
     id: string;
@@ -148,7 +149,19 @@ export function CrossReferenceManagerModal({ productId, productName, isRTL, onCl
                     {/* Existing refs table */}
                     <div>
                         {loading ? (
-                            <div className="text-center py-6" style={{ color: 'var(--text-secondary)' }}>جاري التحميل...</div>
+                            <div className="border rounded-lg overflow-hidden" style={{ borderColor: 'var(--border-default)' }}>
+                                <table className="w-full text-sm">
+                                    <tbody>
+                                        {Array.from({ length: 6 }).map((_, i) => (
+                                            <tr key={`sk-${i}`} style={{ borderTop: i > 0 ? '1px solid var(--border-default)' : undefined }}>
+                                                {Array.from({ length: 4 }).map((__, j) => (
+                                                    <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         ) : refs.length === 0 ? (
                             <div className="text-center py-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
                                 {isRTL ? 'لا توجد أرقام بديلة مضافة بعد' : 'No cross-reference numbers added yet'}

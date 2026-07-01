@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { purchasesApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface PriceCompareModalProps {
     productId: string;
@@ -50,7 +51,15 @@ export default function PriceCompareModal({
 
                 <div className="p-4 flex-1 overflow-y-auto">
                     {isLoading ? (
-                        <div className="text-center py-10">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                        <div className="space-y-4">
+                            <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded border space-y-2">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-2/3" />
+                            </div>
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <Skeleton key={i} className="h-16 w-full rounded" />
+                            ))}
+                        </div>
                     ) : !data ? (
                         <div className="text-center py-10 text-red-500">{isRTL ? 'حدث خطأ' : 'Error occurred'}</div>
                     ) : (

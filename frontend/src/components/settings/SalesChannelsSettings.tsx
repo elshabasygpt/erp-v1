@@ -5,6 +5,7 @@ import { useConfirm } from '@/components/ui/ConfirmProvider';
 import api from '@/lib/api';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
     const [channels, setChannels] = useState<any[]>([]);
@@ -150,7 +151,19 @@ export default function SalesChannelsSettings({ isRTL }: { isRTL: boolean }) {
             </div>
 
             {loading ? (
-                <div className="text-center py-6">Loading...</div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-start">
+                        <tbody>
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                    {Array.from({ length: 5 }).map((__, j) => (
+                                        <td key={j} className="py-3 pr-4"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             ) : channels.length === 0 ? (
                 <div className="text-center py-6 text-sm" style={{ color: 'var(--text-muted)' }}>
                     {isRTL ? 'لا توجد قنوات بيع مضافة' : 'No sales channels added yet'}

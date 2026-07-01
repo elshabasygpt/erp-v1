@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { getHelpForPath, HelpArticle } from '@/lib/helpRegistry';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface HelpDrawerProps {
     isOpen: boolean;
@@ -115,9 +116,17 @@ export default function HelpDrawer({ isOpen, onClose, locale }: HelpDrawerProps)
                             </div>
                         </>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-40 text-surface-400">
-                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-surface-300 border-t-primary-600 mb-4" />
-                            <p>{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-1/2" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-5/6" />
+                            </div>
+                            <div className="p-4 rounded-2xl bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-900/20 space-y-3">
+                                <Skeleton className="h-4 w-1/3" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                            </div>
                         </div>
                     )}
                 </div>

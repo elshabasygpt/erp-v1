@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { crmApi } from '@/lib/api';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 interface Props {
     locale: string;
@@ -44,8 +45,8 @@ export function FollowUpsModal({ locale, onClose }: Props) {
                 
                 <div className="p-5">
                     {isLoading ? (
-                        <div className="text-center py-10" style={{ color: 'var(--text-muted)' }}>
-                            {isRTL ? 'جاري التحميل...' : 'Loading...'}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
                         </div>
                     ) : followUps.length === 0 ? (
                         <div className="text-center py-10" style={{ color: 'var(--text-muted)' }}>

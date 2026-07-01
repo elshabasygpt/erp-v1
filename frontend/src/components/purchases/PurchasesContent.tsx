@@ -9,6 +9,7 @@ import PurchasesTable from './PurchasesTable';
 import PurchaseReturnsTable from './PurchaseReturnsTable';
 import PurchasesModals from './PurchasesModals';
 import { useRegionalSettings } from '@/providers/RegionalSettingsProvider';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface PurchasesContentProps {
     dict: any;
@@ -64,9 +65,40 @@ export default function PurchasesContent({ dict, locale }: PurchasesContentProps
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-                <div className="w-12 h-12 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin"></div>
-                <div className="text-surface-500 dark:text-surface-400 font-medium">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+            <div className="space-y-6 animate-fade-in">
+                {/* Header placeholder */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-7 w-56" />
+                        <Skeleton className="h-4 w-80" />
+                    </div>
+                    <Skeleton className="h-10 w-40 rounded-lg" />
+                </div>
+
+                {/* Stats placeholder */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="glass-card p-5 space-y-3">
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-7 w-3/4" />
+                        </div>
+                    ))}
+                </div>
+
+                {/* Table placeholder */}
+                <div className="glass-card overflow-x-auto">
+                    <table className="w-full text-left">
+                        <tbody>
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} className="border-b">
+                                    {Array.from({ length: 6 }).map((__, j) => (
+                                        <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         );
     }

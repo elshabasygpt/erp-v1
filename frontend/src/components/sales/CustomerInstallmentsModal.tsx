@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { salesApi } from '@/lib/api';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Props {
     invoice: any;
@@ -111,7 +112,11 @@ export default function CustomerInstallmentsModal({ invoice, isRTL, onClose, for
                     )}
 
                     {loading ? (
-                        <div className="py-8 text-center text-surface-400">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                        <div className="space-y-3">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                            ))}
+                        </div>
                     ) : (
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                             {installments.length === 0 ? (

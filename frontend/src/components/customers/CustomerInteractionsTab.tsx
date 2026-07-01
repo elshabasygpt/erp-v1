@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { crmApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Props {
     locale: string;
@@ -90,7 +91,15 @@ export default function CustomerInteractionsTab({ locale, customerId, insightsDa
     };
 
     if (!insightsData) {
-        return <div className="p-8 text-center text-gray-500">Loading...</div>;
+        return (
+            <div className="p-5 space-y-3 min-h-[400px]">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-5/6" />
+            </div>
+        );
     }
 
     const { recent_notes = [], communication_history = [], active_follow_ups = [] } = insightsData;

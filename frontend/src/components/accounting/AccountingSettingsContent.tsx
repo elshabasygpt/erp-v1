@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { accountingApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function AccountingSettingsContent({ dict, locale }: { dict: any; locale: string }) {
     const isRTL = locale === 'ar';
@@ -361,7 +362,13 @@ export default function AccountingSettingsContent({ dict, locale }: { dict: any;
                             </thead>
                             <tbody>
                                 {loadingPeriods ? (
-                                    <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading...</td></tr>
+                                    Array.from({ length: 6 }).map((_, i) => (
+                                        <tr key={`sk-${i}`} className="border-b border-slate-100 dark:border-slate-700">
+                                            {Array.from({ length: 5 }).map((__, j) => (
+                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                            ))}
+                                        </tr>
+                                    ))
                                 ) : periods.length === 0 ? (
                                     <tr><td colSpan={5} className="p-8 text-center text-slate-500">{isRTL ? 'لا توجد فترات مالية.' : 'No fiscal periods found.'}</td></tr>
                                 ) : periods.map(p => (

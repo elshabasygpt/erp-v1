@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { InstallmentPaymentModal } from './InstallmentPaymentModal';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { FileText, CreditCard } from 'lucide-react';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Props {
     invoice: any;
@@ -100,7 +101,11 @@ export default function PurchaseInstallmentsModal({ invoice, isRTL, onClose, for
                     </div>
 
                     {loading ? (
-                        <div className="py-8 text-center text-surface-400">Loading...</div>
+                        <div className="space-y-3">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+                            ))}
+                        </div>
                     ) : (
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                             {installments.length === 0 ? (

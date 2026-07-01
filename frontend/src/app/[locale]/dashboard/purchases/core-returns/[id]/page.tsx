@@ -9,6 +9,7 @@ import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Truck, CheckCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function CoreReturnDetailsPage() {
     const params = useParams();
@@ -45,7 +46,25 @@ export default function CoreReturnDetailsPage() {
         }
     });
 
-    if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+    if (isLoading) return (
+        <div className="p-6 max-w-5xl mx-auto space-y-6">
+            <Skeleton className="h-8 w-1/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <div className="grid grid-cols-3 gap-6">
+                <div className="col-span-2 bg-white border rounded-xl p-6 shadow-sm space-y-3">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                </div>
+                <div className="bg-white border rounded-xl p-6 shadow-sm space-y-3">
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                </div>
+            </div>
+        </div>
+    );
     const data = response?.data?.data;
     if (!data) return <div className="p-8 text-center text-red-500">Core Return not found.</div>;
 

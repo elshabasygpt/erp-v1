@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Car, Package, Plus, Loader2, ChevronDown, CheckCircle2, Hash } from 'lucide-react';
 import { inventoryApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface VehicleSearchPanelProps {
   isOpen: boolean;
@@ -309,9 +310,10 @@ export function VehicleSearchPanel({
         {/* ═══ RESULTS ═══ */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-              <span className="text-sm">{isAr ? 'جاري البحث...' : 'Searching...'}</span>
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+              ))}
             </div>
           ) : products.length > 0 ? (
             <div className="p-4 space-y-3">

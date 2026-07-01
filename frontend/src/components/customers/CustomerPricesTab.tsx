@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { crmApi, productsApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 import { useCurrencyFormatter } from '@/hooks/useCurrencyFormatter';
 
 interface CustomerPrice {
@@ -205,9 +206,18 @@ export default function CustomerPricesTab({ customerId, locale }: Props) {
 
             {/* Content */}
             {loading ? (
-                <div className="py-8 text-center">
-                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
+                <div className="overflow-x-auto">
+                    <table className="data-table text-sm w-full">
+                        <tbody>
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`}>
+                                    {Array.from({ length: 8 }).map((__, j) => (
+                                        <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             ) : prices.length === 0 ? (
                 <div className="py-10 text-center">

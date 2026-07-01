@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/card';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function CustomerStatement({ isRTL }: { isRTL: boolean }) {
     const [customers, setCustomers] = useState<any[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<string>('');
     const [statement, setStatement] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     
     const [filters, setFilters] = useState({
         from_date: '',
@@ -27,9 +29,11 @@ export default function CustomerStatement({ isRTL }: { isRTL: boolean }) {
     const fetchStatement = () => {
         if (!selectedCustomer) return;
         setLoading(true);
+        setLoadError(false);
         const query = new URLSearchParams(filters).toString();
         api.get(`/crm/receivables/statement/${selectedCustomer}?${query}`)
             .then(res => setStatement(res.data?.data || []))
+            .catch(() => setLoadError(true))
             .finally(() => setLoading(false));
     };
 
@@ -109,7 +113,20 @@ export default function CustomerStatement({ isRTL }: { isRTL: boolean }) {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={7} className="p-8 text-center text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b">
+                                        {Array.from({ length: 7 }).map((__, j) => (
+                                            <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : loadError ? (
+                                <tr>
+                                    <td colSpan={7} className="p-8 text-center">
+                                        <p className="mb-3 text-sm text-red-600">{isRTL ? 'تعذّر تحميل كشف الحساب.' : 'Failed to load statement.'}</p>
+                                        <button onClick={() => fetchStatement()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                    </td>
+                                </tr>
                             ) : statement.length === 0 ? (
                                 <tr><td colSpan={7} className="p-8 text-center text-gray-500">{isRTL ? 'لا توجد حركات مسجلة' : 'No transactions found'}</td></tr>
                             ) : (

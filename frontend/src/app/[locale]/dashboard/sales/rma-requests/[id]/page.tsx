@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle, XCircle, PackageCheck, AlertCircle, Clock } fro
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 const REASON_LABELS: Record<string, string> = {
     defective_manufacturing: 'Defective — Manufacturing',
@@ -86,7 +87,34 @@ export default function RmaRequestDetailPage() {
         onError:   (e: any) => toast.error(e?.response?.data?.message ?? 'Failed to update status'),
     });
 
-    if (isLoading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
+    if (isLoading) return (
+        <div className="p-6 max-w-5xl mx-auto space-y-6">
+            <Skeleton className="h-8 w-1/3" />
+            <Skeleton className="h-4 w-1/2" />
+            <div className="grid grid-cols-3 gap-6">
+                <div className="col-span-2 space-y-6">
+                    <div className="bg-white border rounded-xl p-6 shadow-sm space-y-3">
+                        <Skeleton className="h-6 w-1/3" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-5/6" />
+                    </div>
+                    <div className="bg-white border rounded-xl p-6 shadow-sm space-y-3">
+                        <Skeleton className="h-6 w-1/4" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <div className="bg-white border rounded-xl p-6 shadow-sm space-y-3">
+                        <Skeleton className="h-6 w-1/2" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-9 w-full" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
     const rma = response?.data?.data;
     if (!rma)   return <div className="p-8 text-center text-red-500">RMA request not found.</div>;
 

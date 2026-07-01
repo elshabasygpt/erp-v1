@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { subscriptionsApiNew as subscriptionsApi } from '@/lib/api';
+import Skeleton from '@/components/ui/Skeleton';
 
 type Subscription = {
   id: string;
@@ -50,8 +51,17 @@ export default function SubscriptionsPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-12 text-gray-400">
-          {isRTL ? 'جاري التحميل...' : 'Loading...'}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+            <Skeleton className="h-6 w-20" />
+          </div>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
         </div>
       ) : !subscription ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">

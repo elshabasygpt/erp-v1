@@ -3,16 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/card';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function ReceivablesDashboard({ isRTL }: { isRTL: boolean }) {
     const [agingData, setAgingData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
 
-    useEffect(() => {
+    const loadAging = () => {
+        setLoading(true);
+        setLoadError(false);
         api.get('/crm/receivables/aging')
             .then(res => setAgingData(res.data?.data || []))
-            .catch(() => setAgingData([]))
+            .catch(() => { setAgingData([]); setLoadError(true); })
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        loadAging();
     }, []);
 
     const totalDue = agingData.reduce((sum, item) => sum + Number(item.total_due), 0);
@@ -65,7 +73,20 @@ export default function ReceivablesDashboard({ isRTL }: { isRTL: boolean }) {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                             {loading ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-slate-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</td></tr>
+                                Array.from({ length: 6 }).map((_, i) => (
+                                    <tr key={`sk-${i}`} className="border-b">
+                                        {Array.from({ length: 6 }).map((__, j) => (
+                                            <td key={j} className="p-4"><Skeleton className="w-3/4 h-4" /></td>
+                                        ))}
+                                    </tr>
+                                ))
+                            ) : loadError ? (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center">
+                                        <p className="mb-3 text-sm text-red-600">{isRTL ? 'تعذّر تحميل تقرير المديونيات.' : 'Failed to load receivables report.'}</p>
+                                        <button onClick={() => loadAging()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                                    </td>
+                                </tr>
                             ) : agingData.length === 0 ? (
                                 <tr><td colSpan={6} className="p-8 text-center text-slate-500">{isRTL ? 'لا توجد مديونيات' : 'No receivables found'}</td></tr>
                             ) : (

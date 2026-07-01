@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useConfirm } from '@/components/ui/ConfirmProvider';
 import { crmApi } from '@/lib/api';
+import Skeleton, { CardSkeleton } from '@/components/ui/Skeleton';
 import AddVehicleModal from './AddVehicleModal';
 import AddServiceModal from './AddServiceModal';
 
@@ -83,7 +84,13 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
     };
 
     if (loading) {
-        return <div className="p-4 text-center">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>;
+        return (
+            <div className="p-4 space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -143,7 +150,19 @@ export default function CustomerVehiclesTab({ customerId, locale }: CustomerVehi
                                         </button>
                                     </div>
                                     {historyLoading ? (
-                                        <div className="text-sm text-center py-2">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm text-start">
+                                                <tbody>
+                                                    {Array.from({ length: 6 }).map((_, i) => (
+                                                        <tr key={`sk-${i}`} className="border-b last:border-0" style={{ borderColor: 'var(--border-default)' }}>
+                                                            {Array.from({ length: 4 }).map((__, j) => (
+                                                                <td key={j} className="p-3"><Skeleton className="w-3/4 h-4" /></td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     ) : historyData?.history?.length > 0 ? (
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm text-start">

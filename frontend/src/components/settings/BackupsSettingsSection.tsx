@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { backupsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 const STATUS_STYLES: Record<string, string> = {
     completed: 'bg-emerald-100 text-emerald-700',
@@ -155,7 +156,13 @@ export default function BackupsSettingsSection({ dict, locale }: { dict: any; lo
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={5} className="p-8 text-center text-slate-500">Loading...</td></tr>
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <tr key={`sk-${i}`} className="border-b border-slate-100 dark:border-slate-700">
+                                    {Array.from({ length: 5 }).map((__, j) => (
+                                        <td key={j} className="px-4 py-3"><Skeleton className="w-3/4 h-4" /></td>
+                                    ))}
+                                </tr>
+                            ))
                         ) : backups.length === 0 ? (
                             <tr><td colSpan={5} className="p-8 text-center text-slate-500">{isRTL ? 'لا توجد نسخ احتياطية بعد' : 'No backups yet'}</td></tr>
                         ) : backups.map(b => (

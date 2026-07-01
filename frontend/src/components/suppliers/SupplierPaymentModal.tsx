@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { purchasesApi, treasuryApi } from '@/lib/api';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Props {
     supplier: any;
@@ -94,7 +95,18 @@ export default function SupplierPaymentModal({ supplier, isRTL, onClose, onSucce
 
                 <div className="p-6 overflow-y-auto space-y-4">
                     {loading ? (
-                        <div className="py-8 text-center text-surface-400">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                            </div>
+                            <Skeleton className="h-4 w-full" />
+                            <div className="border-t border-surface-800 pt-4 space-y-2">
+                                {Array.from({ length: 3 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-4 w-full" />
+                                ))}
+                            </div>
+                        </div>
                     ) : (
                         <>
                             <div className="grid grid-cols-2 gap-3">

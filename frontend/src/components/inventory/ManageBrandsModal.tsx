@@ -7,6 +7,7 @@ import { inventoryApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useParams } from 'next/navigation';
 import { toRelativeImageUrl } from '@/lib/utils';
+import Skeleton from '@/components/ui/Skeleton';
 
 interface Brand {
     id: string;
@@ -181,7 +182,17 @@ export default function ManageBrandsModal({ isOpen, onClose, onSuccess }: Manage
 
                     {/* Brands list */}
                     {isLoading ? (
-                        <div className="text-center py-4 text-gray-500">{isRTL ? 'جاري التحميل...' : 'Loading...'}</div>
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="glass-card p-3 flex items-center gap-3">
+                                    <Skeleton variant="rounded" className="w-10 h-10 flex-shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <Skeleton className="h-4 w-1/3" />
+                                        <Skeleton className="h-3 w-1/4" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : (
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
                             {brands.map(brand => (

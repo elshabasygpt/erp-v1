@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import toast from 'react-hot-toast';
+import Skeleton from '@/components/ui/Skeleton';
 
 export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
     const [customers, setCustomers] = useState<any[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<string>('');
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loadingInvoices, setLoadingInvoices] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     
     const [form, setForm] = useState({
         payment_date: new Date().toISOString().split('T')[0],
@@ -31,15 +33,21 @@ export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
         api.get('/crm/customers').then(res => setCustomers(extractArray(res)));
     }, []);
 
-    useEffect(() => {
-        if (selectedCustomer) {
-            setLoadingInvoices(true);
-            api.get(`/sales/invoices?customer_id=${selectedCustomer}&payment_status=unpaid`)
-                .then(res => setInvoices(extractArray(res).filter((i:any) => i.type === 'credit' && i.payment_status !== 'paid')))
-                .finally(() => setLoadingInvoices(false));
-        } else {
+    const loadInvoices = () => {
+        if (!selectedCustomer) {
             setInvoices([]);
+            return;
         }
+        setLoadingInvoices(true);
+        setLoadError(false);
+        api.get(`/sales/invoices?customer_id=${selectedCustomer}&payment_status=unpaid`)
+            .then(res => setInvoices(extractArray(res).filter((i:any) => i.type === 'credit' && i.payment_status !== 'paid')))
+            .catch(() => setLoadError(true))
+            .finally(() => setLoadingInvoices(false));
+    };
+
+    useEffect(() => {
+        loadInvoices();
     }, [selectedCustomer]);
 
     const handleAllocateAll = () => {
@@ -87,8 +95,7 @@ export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
             setForm({...form, amount: 0, transaction_id: '', notes: ''});
             setAllocations({});
             // Reload invoices
-            api.get(`/sales/invoices?customer_id=${selectedCustomer}&payment_status=unpaid`)
-                .then(res => setInvoices(extractArray(res).filter((i:any) => i.type === 'credit' && i.payment_status !== 'paid')));
+            loadInvoices();
         } catch (e: any) {
             toast.error(e.response?.data?.message || 'Error collecting payment');
         }
@@ -176,7 +183,22 @@ export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
                         </div>
 
                         {loadingInvoices ? (
-                            <p className="text-center text-slate-500 py-10">{isRTL ? 'جاري التحميل...' : 'Loading...'}</p>
+                            <div className="space-y-3">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={`sk-${i}`} className="border border-slate-200 dark:border-white/10 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-white/5">
+                                        <div className="space-y-2 flex-1">
+                                            <Skeleton className="h-4 w-1/3" />
+                                            <Skeleton className="h-3 w-2/3" />
+                                        </div>
+                                        <Skeleton className="h-9 w-full sm:w-1/3" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : loadError ? (
+                            <div className="text-center py-20">
+                                <p className="mb-3 text-sm text-red-600">{isRTL ? 'تعذّر تحميل الفواتير المستحقة.' : 'Failed to load due invoices.'}</p>
+                                <button onClick={() => loadInvoices()} className="btn-secondary py-1.5 px-4 text-xs">🔄 {isRTL ? 'إعادة المحاولة' : 'Retry'}</button>
+                            </div>
                         ) : !selectedCustomer ? (
                             <div className="text-center py-20 text-slate-400">
                                 <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
