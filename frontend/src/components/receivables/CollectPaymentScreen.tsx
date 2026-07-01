@@ -34,12 +34,12 @@ export default function CollectPaymentScreen({ isRTL }: { isRTL: boolean }) {
     }, []);
 
     const loadInvoices = () => {
+        setLoadError(false);
         if (!selectedCustomer) {
             setInvoices([]);
             return;
         }
         setLoadingInvoices(true);
-        setLoadError(false);
         api.get(`/sales/invoices?customer_id=${selectedCustomer}&payment_status=unpaid`)
             .then(res => setInvoices(extractArray(res).filter((i:any) => i.type === 'credit' && i.payment_status !== 'paid')))
             .catch(() => setLoadError(true))

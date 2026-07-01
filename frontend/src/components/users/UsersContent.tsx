@@ -84,8 +84,8 @@ export default function UsersContent({ dict, locale }: Props) {
         { label: isRTL ? 'محاسبين' : 'Accountants', value: users.filter(u => u.role === 'accountant').length, icon: '📊', color: '#a78bfa' },
     ];
 
-    const openAdd = () => { setEditUser(null); setForm(emptyForm); setShowModal(true); };
-    const openEdit = (u: User) => { setEditUser(u); setForm({ name: u.name, nameAr: u.nameAr, email: u.email, phone: u.phone, role: u.role, branch: u.branch, password: '' }); setShowModal(true); };
+    const openAdd = () => { setEditUser(null); setForm(emptyForm); setErrors({}); setShowModal(true); };
+    const openEdit = (u: User) => { setEditUser(u); setForm({ name: u.name, nameAr: u.nameAr, email: u.email, phone: u.phone, role: u.role, branch: u.branch, password: '' }); setErrors({}); setShowModal(true); };
 
     const saveUser = () => {
         const emailVal = form.email.trim();
